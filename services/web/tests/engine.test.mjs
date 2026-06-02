@@ -13,6 +13,7 @@ import { EASING_FUNCTIONS, getEasing, evaluateEasing, overshootSettle } from '..
 import { generateShapePoints, generateHeartPoints, generateSquarePoints, generateCirclePoints, pathLength } from '../src/engine/geometry.js';
 import { resamplePoints, interpolatePoints, interpolateColor, lerp } from '../src/engine/transform.js';
 import { isClipActive, getClipProgress, blendClipResults } from '../src/engine/blending.js';
+import { EASING_MAP } from '../src/export/manim.js';
 
 let passed = 0;
 let failed = 0;
@@ -213,7 +214,6 @@ assertApprox(indBlended.objectOverrides['obj_1'].opacity, 0.5, 0.01, 'obj_1 opac
 assertApprox(indBlended.objectOverrides['obj_2'].opacity, 0.8, 0.01, 'obj_2 opacity should be 0.8');
 
 // ── Easing map tests ──────────────────────────────────────────────────────────
-import { EASING_MAP } from '../src/export/manim.js';
 
 section('Easing Map');
 
@@ -225,6 +225,8 @@ assert(EASING_MAP.ease_in_out_quart, 'ease_in_out_quart must be mapped');
 assert(EASING_MAP.ease_in_out_back, 'ease_in_out_back must be mapped');
 assert(EASING_MAP.ease_out_elastic, 'ease_out_elastic must be mapped');
 assert(EASING_MAP.ease_in_elastic, 'ease_in_elastic must be mapped');
+assert(EASING_MAP.ease_in_out_cubic === 'rate_functions.ease_in_out_cubic', 'ease_in_out_cubic must map to rate_functions.ease_in_out_cubic');
+assert(EASING_MAP.spring === 'rate_functions.ease_out_elastic', 'spring must map to rate_functions.ease_out_elastic');
 
 const EXPECTED_KEYS = [
   'linear','ease_in','ease_out','ease_in_out',

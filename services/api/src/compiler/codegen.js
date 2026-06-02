@@ -10,6 +10,7 @@
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+// NOTE: keep in sync with services/web/src/export/manim.js EASING_MAP
 const EASING_MAP = {
   linear:            'linear',
   ease_in:           'rate_functions.ease_in_sine',

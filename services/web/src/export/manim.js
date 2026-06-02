@@ -10,6 +10,7 @@
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+// NOTE: keep in sync with services/api/src/compiler/codegen.js EASING_MAP
 const EASING_MAP = {
   linear:            'linear',
   ease_in:           'rate_functions.ease_in_sine',
