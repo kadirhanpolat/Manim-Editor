@@ -595,6 +595,10 @@ export default {
         store.project.stage.backgroundColor = result.stage.backgroundColor;
         store.project.objects = result.objects;
         store.project.tracks = result.tracks;
+        if (result.cameraType) actions.setCameraType(result.cameraType);
+        if (Array.isArray(result.cameraTrack) && result.cameraTrack.length > 0) {
+          store.project.cameraTrack = result.cameraTrack;
+        }
         actions.deselectAll();
 
         this.codeEdited = false;

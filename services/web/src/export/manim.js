@@ -618,6 +618,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const objById = {};
 
   let bgColor = '#000000';
+  let cameraType = 'static';
+  const cameraTrack = [];
   let ct = 0;
   let clipIdx = 0;
   let objIdx  = 0;
@@ -670,6 +672,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
   for (const line of lines) {
     let m;
+
+    // MovingCameraScene
+    m = line.match(/^class\s+\w+\(MovingCameraScene\)/);
+    if (m) { cameraType = 'moving'; continue; }
 
     // Background
     m = line.match(/self\.camera\.background_color\s*=\s*["']([^"']+)["']/);
@@ -1035,6 +1041,25 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // self.camera.frame.animate.move_to([x,y,0]).set_width(w)
+    m = line.match(/^self\.play\(self\.camera\.frame\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)\.set_width\(([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    if (m) {
+      const [, mx, my, fw, rtStr] = m;
+      const dur = parseFloat(rtStr || 1);
+      const sp = manimToStage(parseFloat(mx), parseFloat(my), sw, sh);
+      const zoom = parseFloat((14 / parseFloat(fw)).toFixed(4));
+      cameraTrack.push({
+        id: `cam_${clipIdx++}`,
+        type: 'camera_move',
+        startTime: ct,
+        duration: dur,
+        easing: 'ease_in_out',
+        params: { targetX: Math.round(sp.x), targetY: Math.round(sp.y), zoom },
+      });
+      ct += dur;
+      continue;
+    }
+
     // VMobject() — start of a path definition
     m = line.match(/^(\w+)\s*=\s*VMobject\(\)/);
     if (m) {
@@ -1085,7 +1110,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   return {
     objects,
     tracks: clips.length > 0 ? [{ id: 'track_parsed', name: 'Track 1', clips }] : [],
-    stage: { backgroundColor: bgColor, width: sw, height: sh }
+    stage: { backgroundColor: bgColor, width: sw, height: sh },
+    cameraType,
+    cameraTrack,
   };
 }
 
