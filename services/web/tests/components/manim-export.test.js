@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { generateManimScript } from '../../src/export/manim.js';
 
 const SW = 1920, SH = 1080;
