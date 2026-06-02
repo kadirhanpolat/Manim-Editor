@@ -368,9 +368,9 @@
             Run in parallel with same-time clips
           </label>
           <div v-if="clip.parallel" class="flex items-center gap-2">
-            <span class="text-[9px] text-studio-text-muted w-16">Lag ratio</span>
+            <span class="text-[9px] text-studio-text-muted w-16" title="Applied to the whole parallel group (highest value wins)">Lag ratio</span>
             <input type="number" class="input input-sm w-16" :value="clip.lag_ratio || 0" min="0" max="1" step="0.1"
-              @change="uc('lag_ratio', Number($event.target.value))" />
+              @input="uc('lag_ratio', Number($event.target.value))" />
             <span class="text-[8px] text-studio-text-muted/50">0 = AnimationGroup</span>
           </div>
         </div>

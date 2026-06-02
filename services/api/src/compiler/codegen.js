@@ -477,7 +477,47 @@ export function generatePythonCode(project, assetsPath) {
       }
       if (code) steps.push({ time: c.startTime, order: 1, code, dur });
     } else {
-      // Parallel group: AnimationGroup or LaggedStart
+      // Degenerate case: only one clip marked parallel, treat as sequential
+      if (cg.clips.length === 1) {
+        const c = cg.clips[0];
+        const sn = vn(c.sourceId);
+        const dur = c.duration;
+        const rtStr = rtOpt(dur);
+        const rfStr = rfOpt(c.easing);
+        let code;
+        switch (c.type) {
+          case 'transform': {
+            const tn = vn(c.targetId);
+            const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
+            const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+            const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
+            code = `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`;
+            break;
+          }
+          case 'move': {
+            const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
+            code = `self.play(${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])${rtStr}${rfStr})`;
+            break;
+          }
+          case 'scale':
+            code = `self.play(${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})${rtStr}${rfStr})`;
+            break;
+          case 'fade': {
+            const op = c.params?.targetOpacity ?? 0;
+            code = op < 0.01
+              ? `self.play(FadeOut(${sn})${rtStr}${rfStr})`
+              : `self.play(${sn}.animate.set_opacity(${op.toFixed(2)})${rtStr}${rfStr})`;
+            break;
+          }
+          case 'rotate': {
+            const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+            code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+            break;
+          }
+        }
+        if (code) steps.push({ time: c.startTime, order: 1, code, dur });
+      } else {
+      // Multi-clip parallel group: AnimationGroup or LaggedStart
       const groupClips = cg.clips;
       const dur = Math.max(...groupClips.map(c => c.duration));
       const rtStr = rtOpt(dur);
@@ -514,9 +554,13 @@ export function generatePythonCode(project, assetsPath) {
         const animList = animExprs.join(', ');
         const groupFn = maxLag > 0 ? 'LaggedStart' : 'AnimationGroup';
         const lagStr = maxLag > 0 ? `, lag_ratio=${maxLag.toFixed(2)}` : '';
-        const code = `self.play(${groupFn}(${animList}${lagStr})${rtStr})`;
+        // Apply the first clip's easing to the whole group (best approximation)
+        const firstEasing = groupClips[0]?.easing || 'ease_in_out';
+        const groupRfStr = rfOpt(firstEasing);
+        const code = `self.play(${groupFn}(${animList}${lagStr})${rtStr}${groupRfStr})`;
         steps.push({ time: cg.startTime, order: 1, code, dur });
       }
+      } // end multi-clip parallel group
     }
   }
 
