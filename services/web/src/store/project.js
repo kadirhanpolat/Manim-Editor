@@ -117,7 +117,7 @@ export const store = Vue.observable({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 let _counter = 0;
-function uid(prefix = 'id') {
+export function uid(prefix = 'id') {
   _counter++;
   return `${prefix}_${Date.now().toString(36)}_${_counter}`;
 }
