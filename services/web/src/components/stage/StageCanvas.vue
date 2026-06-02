@@ -7,7 +7,7 @@
     @drop.prevent="onDrop"
   >
     <div ref="container" class="flex-1 rounded-xl overflow-hidden relative" style="min-height: 0; background: var(--studio-surface2);">
-      <v-stage ref="konvaStage" :config="stageConfig" @mousedown="handleStageMouseDown" @wheel="handleWheel">
+      <v-stage ref="konvaStage" :config="stageConfig" @mousedown="handleStageMouseDown" @dblclick="onStageDblClick" @wheel="handleWheel">
         <!-- Background layer -->
         <v-layer>
           <v-rect :config="bgConfig" />
@@ -107,6 +107,12 @@
           <v-line v-for="(m, mi) in morphShapes" :key="'m'+mi" :config="morphCfg(m)" />
         </v-layer>
 
+        <!-- Path draw preview layer -->
+        <v-layer v-if="pathDrawing && pathPoints.length >= 1">
+          <v-line v-if="pathPoints.length >= 2" :config="pathPreviewLineCfg" />
+          <v-circle v-for="(pt, pi) in pathCanvasPoints" :key="'pp'+pi" :config="{ x: pt.cx, y: pt.cy, radius: 5, fill: '#a855f7', stroke: '#fff', strokeWidth: 1, listening: false }" />
+        </v-layer>
+
         <!-- Group bounds layer -->
         <v-layer>
           <v-rect v-for="gb in groupBounds" :key="'gb-'+gb.id" :config="gb" />
@@ -164,7 +170,10 @@ export default {
       fontLoadKey: 0, // Used to force re-render when fonts load
       shiftKey: false, // When true, transformer keeps aspect ratio
       // Live transform during drag (canvas px) — avoids store updates so resize/rotate stay smooth
-      liveTransform: null
+      liveTransform: null,
+      pathDrawing: false,
+      pathPoints: [],
+      pathSourceId: null,
     };
   },
 
@@ -230,6 +239,28 @@ export default {
         rotateEnabled: true, keepRatio: this.shiftKey,
         enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
         boundBoxFunc: (o, n) => (n.width < 10 || n.height < 10) ? o : n
+      };
+    },
+
+    pathCanvasPoints() {
+      if (!this.pathPoints.length) return [];
+      const sw = this.stg.width;
+      const sh = this.stg.height;
+      const cw = this.stageConfig.width;
+      const ch = this.stageConfig.height;
+      return this.pathPoints.map(p => ({
+        cx: (p.x / sw) * cw,
+        cy: (p.y / sh) * ch,
+      }));
+    },
+    pathPreviewLineCfg() {
+      const pts = this.pathCanvasPoints.flatMap(p => [p.cx, p.cy]);
+      return {
+        points: pts,
+        stroke: '#a855f7',
+        strokeWidth: 2,
+        dash: [6, 3],
+        listening: false,
       };
     },
 
@@ -602,8 +633,39 @@ export default {
       return { x: p.x, y: p.y, points: sp, closed: true, fill: m.fill || '#fff', stroke: m.stroke || '#fff', strokeWidth: (m.strokeWidth || 2) * this.vs / 2, opacity: m.opacity ?? 1, listening: false };
     },
 
+    // ── Path draw ──
+    startPathDraw(sourceId) {
+      this.pathDrawing = true;
+      this.pathPoints = [];
+      this.pathSourceId = sourceId;
+    },
+
+    onStageDblClick(e) {
+      if (!this.pathDrawing) return;
+      if (this.pathPoints.length >= 2) {
+        actions.addPathMoveClip(this.pathSourceId, [...this.pathPoints]);
+      }
+      this.pathDrawing = false;
+      this.pathPoints = [];
+      this.pathSourceId = null;
+    },
+
     // ── Events ──
     handleStageMouseDown(e) {
+      if (this.pathDrawing) {
+        // Convert canvas click position to project coordinates
+        const stage = e.target.getStage();
+        const pos = stage.getPointerPosition();
+        if (!pos) return;
+        const sw = this.stg.width;
+        const sh = this.stg.height;
+        const cw = this.stageConfig.width;
+        const ch = this.stageConfig.height;
+        const projectX = Math.round((pos.x / cw) * sw);
+        const projectY = Math.round((pos.y / ch) * sh);
+        this.pathPoints.push({ x: projectX, y: projectY });
+        return;
+      }
       const t = e.target; const s = this.$refs.konvaStage?.getNode();
       if (!s) return;
       const ev = e.evt;

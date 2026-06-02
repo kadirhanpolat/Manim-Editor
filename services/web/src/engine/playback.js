@@ -398,6 +398,41 @@ export class PlaybackEngine {
         overrides.rotation = lerp(startRot, targetRot, easedT);
         break;
       }
+      case 'path_move': {
+        if (!clip.path || clip.path.length < 2) break;
+        const pts = clip.path;
+        // Compute cumulative arc lengths
+        let totalLen = 0;
+        const segLens = [];
+        for (let k = 1; k < pts.length; k++) {
+          const dx = pts[k].x - pts[k-1].x;
+          const dy = pts[k].y - pts[k-1].y;
+          const len = Math.sqrt(dx*dx + dy*dy);
+          segLens.push(len);
+          totalLen += len;
+        }
+        if (totalLen === 0) break;
+        // Find position at easedT along path
+        const target = easedT * totalLen;
+        let cumLen = 0;
+        let px = pts[0].x, py = pts[0].y;
+        for (let k = 0; k < segLens.length; k++) {
+          if (cumLen + segLens[k] >= target) {
+            const t2 = (target - cumLen) / segLens[k];
+            px = lerp(pts[k].x, pts[k+1].x, t2);
+            py = lerp(pts[k].y, pts[k+1].y, t2);
+            break;
+          }
+          cumLen += segLens[k];
+          if (k === segLens.length - 1) {
+            px = pts[pts.length - 1].x;
+            py = pts[pts.length - 1].y;
+          }
+        }
+        overrides.x = px;
+        overrides.y = py;
+        break;
+      }
     }
 
     return {

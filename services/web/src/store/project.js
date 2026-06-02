@@ -1073,7 +1073,21 @@ export const actions = {
     store.theme = id;
     document.documentElement.setAttribute('data-theme', id);
     try { localStorage.setItem('manim-motion-theme', id); } catch {}
-  }
+  },
+
+  addPathMoveClip(sourceId, pathPoints, trackIndex = 0) {
+    if (!sourceId || !pathPoints || pathPoints.length < 2) return null;
+    const clip = actions.addClip(trackIndex, {
+      type: 'path_move',
+      sourceId,
+      startTime: 0,
+      duration: 2.0,
+      easing: 'ease_in_out',
+      path: pathPoints,   // [{x, y}, ...]
+      params: {},
+    });
+    return clip;
+  },
 };
 
 export default { store, getters, actions, SHAPE_DEFAULTS, SHAPE_COLORS };

@@ -474,6 +474,21 @@ export function generatePythonCode(project, assetsPath) {
           code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
           break;
         }
+        case 'path_move': {
+          if (!c.path || c.path.length < 2) break;
+          const pn = `path_${sn}`;
+          const pts = c.path.map(p => {
+            const m = stageToManim(p.x, p.y, sw, sh);
+            return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
+          });
+          const ptsStr = pts.join(', ');
+          code = [
+            `${pn} = VMobject()`,
+            `${pn}.set_points_as_corners([np.array(p) for p in [${ptsStr}]])`,
+            `self.play(MoveAlongPath(${sn}, ${pn})${rtStr}${rfStr})`,
+          ].join(`\n${indent}`);
+          break;
+        }
       }
       if (code) steps.push({ time: c.startTime, order: 1, code, dur });
     } else {
@@ -512,6 +527,21 @@ export function generatePythonCode(project, assetsPath) {
           case 'rotate': {
             const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
             code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+            break;
+          }
+          case 'path_move': {
+            if (!c.path || c.path.length < 2) break;
+            const pn = `path_${sn}`;
+            const pts = c.path.map(p => {
+              const m = stageToManim(p.x, p.y, sw, sh);
+              return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
+            });
+            const ptsStr = pts.join(', ');
+            code = [
+              `${pn} = VMobject()`,
+              `${pn}.set_points_as_corners([np.array(p) for p in [${ptsStr}]])`,
+              `self.play(MoveAlongPath(${sn}, ${pn})${rtStr}${rfStr})`,
+            ].join(`\n${indent}`);
             break;
           }
         }
