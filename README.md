@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-1.2.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.0.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -51,13 +51,17 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
 - **16 shape types** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, and more
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `E = mc^2`) that render natively in Manim
-- **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps
+- **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
+- **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
 
 ### Animation & Timeline
 - **Multi-track timeline** -- Up to 5 tracks with draggable, resizable animation clips
 - **Transform morphing** -- Select two shapes and morph between them with customizable easing
 - **Animation types** -- Transform, Move, Scale, Fade, Rotate with 17 easing functions
+- **AnimationGroup / LaggedStart** -- Mark clips as parallel (`∥`) to run simultaneously; set `lag_ratio` for staggered starts; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)` in Manim
+- **Path animation (MoveAlongPath)** -- Draw a Bezier path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation
+- **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim
 - **Timeline scrubbing** -- Arrange and trim clips; render to video via Docker
 - **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
 
@@ -198,20 +202,27 @@ Click **File > Export .py** to download a standalone `scene.py` you can run loca
 ```
 Project
  +-- id, name, sceneDuration
+ +-- cameraType: 'static' | 'moving'
+ +-- cameraTrack[]: { id, type:'camera_move', startTime, duration, easing,
+ |                    params: { targetX, targetY, zoom } }
  +-- stage: { width, height, backgroundColor, grid*, snap* }
  +-- objects[]: { id, type, name, x, y, width, height, rotation,
  |               fill, stroke, opacity, zOrder, enterTime, duration,
- |               enterAnim, exitAnim, latex?, xRange?, yRange?, assetId? }
+ |               enterAnim, exitAnim, latex?, xRange?, yRange?, assetId?,
+ |               graphs?: [{ id, expression, color, xMin, xMax, strokeWidth }] }
  +-- groups[]: { id, name, childIds[], margin, collapsed }
  +-- tracks[]: { id, name, clips[] }
  |    +-- clip: { id, type, startTime, duration, easing,
- |                sourceId, targetId?, params, overshoot, morphQuality }
+ |                sourceId, targetId?, params, overshoot, morphQuality,
+ |                parallel, lag_ratio, path? }
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`
+**Object types**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
 
-**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`
+**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene)
+
+**Parallel clips**: Any clip can be marked `parallel: true` with a `lag_ratio` to group with adjacent clips into `AnimationGroup` / `LaggedStart`.
 
 **Easing functions** (17): linear, ease_in, ease_out, ease_in_out, cubic/quart variants, back variants, elastic in/out, bounce, spring
 
@@ -322,10 +333,9 @@ All Docker containers run with **least-privilege non-root users**:
 
 ```bash
 cd services/web
-npm test
+npm test          # 89 engine tests (easing, geometry, transform, blending)
+npm run test:unit # 29 unit tests (store, templates, graphs, parallel clips, path, camera)
 ```
-
-30+ assertions covering easing functions, point resampling, timeline scheduling, and blending logic.
 
 ---
 
@@ -357,7 +367,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v1.2.0 (current)
+### v2.0.0 (current)
+
+- **Feature**: Function graphs on Axes — add `f(x) = x**2`, `sin(x)` etc. from the Inspector; canvas shows live curve preview; generates `axes.plot(lambda x: ...)` in Manim
+- **Feature**: NumberPlane and NumberLine — new shape types with full codegen support
+- **Feature**: AnimationGroup / LaggedStart — mark any clip as parallel (`∥`) with a `lag_ratio`; timeline badge indicator; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)`
+- **Feature**: Path animation (MoveAlongPath) — click to draw a path on the canvas, double-click to finish; object follows the path; generates `VMobject` + `MoveAlongPath` in Manim
+- **Feature**: Camera animations — 🎥 toggle activates `MovingCameraScene`; camera track in timeline; generates `self.camera.frame.animate.move_to().set_width()` with absolute zoom
+- **Fix**: `RenderPanel.vue` render button always disabled — `store.project.elements` corrected to `store.project.objects`
+- **Fix**: `api.js` duplicate `renders.list` removed — all callers now use `renders.getInfo`
+- **Fix**: `templates/index.js` uid collision — replaced Math.random-based uid with the store's counter+timestamp uid
+- **Security**: Graph expression whitelist validation in both codegen and canvas preview (`new Function`) to prevent injection
+
+### v1.2.0
 
 - **Fix**: Easing mapping — 7 yanlış/eksik `EASING_MAP` girişi düzeltildi; `ease_in_out_cubic → rate_functions.ease_in_out_cubic`, `spring → rate_functions.ease_out_elastic`, 5 eksik easing (`ease_in/out_quart`, `ease_in_out_quart/back`, `ease_in/out_elastic`) eklendi
 - **Feature**: WebSocket render takibi — 2 saniyelik client-side polling, server-side 500ms Redis poll + WebSocket push ile değiştirildi; `GET /ws` üzerinden anlık iş güncellemeleri
