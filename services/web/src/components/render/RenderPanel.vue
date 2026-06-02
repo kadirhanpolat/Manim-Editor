@@ -90,7 +90,7 @@ export default {
   
   computed: {
     projectId() { return store.project.id; },
-    hasElements() { return store.project.elements.length > 0; },
+    hasElements() { return store.project.objects.length > 0; },
     renderStatus() { return store.renderStatus; },
     isRendering() { return ['queued', 'running'].includes(this.renderStatus); },
     
