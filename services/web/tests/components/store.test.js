@@ -66,3 +66,20 @@ describe('groupObjects', () => {
     expect(result).toBeNull();
   });
 });
+
+import TEMPLATES from '../../src/templates/index.js';
+
+describe('TEMPLATES', () => {
+  it('has 5 entries', () => {
+    expect(TEMPLATES).toHaveLength(5);
+  });
+
+  it('each non-blank template returns a valid project', () => {
+    for (const tpl of TEMPLATES.filter(t => t.project !== null)) {
+      const p = tpl.project();
+      expect(p.objects.length).toBeGreaterThan(0);
+      expect(p.stage).toBeDefined();
+      expect(Array.isArray(p.tracks)).toBe(true);
+    }
+  });
+});

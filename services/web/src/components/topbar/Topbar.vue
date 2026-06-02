@@ -221,6 +221,25 @@
             </button>
           </div>
 
+          <!-- Template selector (only for visual mode) -->
+          <template v-if="newProjectMode === 'visual'">
+            <label class="np-label" style="margin-top:12px;">Şablon</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;">
+              <button
+                v-for="tpl in templates"
+                :key="tpl.id"
+                class="np-mode-btn"
+                :class="{ active: newProjectTemplate && newProjectTemplate.id === tpl.id || (!newProjectTemplate && tpl.id === 'blank') }"
+                @click="newProjectTemplate = tpl.id === 'blank' ? null : tpl"
+                style="text-align:left; padding:10px 12px;"
+              >
+                <span style="font-size:18px; display:block; margin-bottom:4px;">{{ tpl.icon }}</span>
+                <span class="np-mode-label">{{ tpl.label }}</span>
+                <span class="np-mode-desc">{{ tpl.description }}</span>
+              </button>
+            </div>
+          </template>
+
           <div class="np-actions">
             <button class="np-btn np-btn-cancel" @click="cancelNewProject">Cancel</button>
             <button class="np-btn np-btn-create" @click="confirmNewProject">Create Project</button>
@@ -234,6 +253,7 @@
 <script>
 import { store, actions } from '../../store/project.js';
 import { generateManimScript } from '../../export/manim.js';
+import TEMPLATES from '../../templates/index.js';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const mod = isMac ? '\u2318' : 'Ctrl+';
@@ -250,11 +270,13 @@ export default {
       _resizeObs: null,
       showNewProjectDialog: false,
       newProjectName: 'My Animation',
-      newProjectMode: 'visual'
+      newProjectMode: 'visual',
+      newProjectTemplate: null,
     };
   },
 
   computed: {
+    templates() { return TEMPLATES; },
     projectName() { return store.project.name; },
     projectId()   { return store.project.id; },
     isDirty()     { return store.isDirty; },
@@ -481,12 +503,24 @@ export default {
     },
     confirmNewProject() {
       const name = this.newProjectName.trim() || 'My Animation';
-      actions.newProject(name, this.newProjectMode);
+      const tpl  = this.newProjectTemplate;
+
+      if (tpl && tpl.project) {
+        const projectData = tpl.project();
+        projectData.name = name;
+        projectData.id   = null;
+        actions.importJSON(JSON.stringify(projectData));
+      } else {
+        actions.newProject(name, this.newProjectMode);
+      }
       this.showNewProjectDialog = false;
-      this.$emit('mode-changed');
+      this.newProjectName       = 'My Animation';
+      this.newProjectTemplate   = null;
     },
     cancelNewProject() {
       this.showNewProjectDialog = false;
+      this.newProjectName       = 'My Animation';
+      this.newProjectTemplate   = null;
     },
     async loadProject() {
       if (store.isDirty && !confirm('Discard unsaved changes?')) return;
