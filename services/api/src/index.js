@@ -1,3 +1,7 @@
+/**
+ * Manim Studio API Server
+ */
+
 import express from 'express';
 import http from 'http';
 import cors from 'cors';

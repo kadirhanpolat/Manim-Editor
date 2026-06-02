@@ -11,8 +11,7 @@
  */
 
 import Vue from 'vue';
-import api from '../api.js';
-import { connectJobWebSocket } from '../api.js';
+import api, { connectJobWebSocket } from '../api.js';
 
 const MAX_HISTORY = 50;
 
