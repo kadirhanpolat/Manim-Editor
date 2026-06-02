@@ -12,6 +12,7 @@
 
 import Vue from 'vue';
 import api from '../api.js';
+import { connectJobWebSocket } from '../api.js';
 
 const MAX_HISTORY = 50;
 
@@ -136,7 +137,7 @@ function nextPosition(stageW, stageH) {
   return pos;
 }
 
-let _pollTimer = null;
+let _pollDisconnect = null;
 
 // ─── Entrance / Exit animation types ─────────────────────────────────────────
 
@@ -897,39 +898,33 @@ export const actions = {
     }
   },
 
-  /** @private Start polling a render job */
+  /** @private Start WebSocket subscription for a render job */
   _startPollRender(jobId, projectId) {
     actions._stopPollRender();
 
-    _pollTimer = setInterval(async () => {
-      try {
-        const job = await api.jobs.get(jobId);
-
-        if (job.status === 'running') {
-          store.renderStatus = 'running';
-          if (job.stdout) store.renderLog = job.stdout;
-        } else if (job.status === 'completed') {
-          store.renderStatus = 'completed';
-          store.renderVideoUrl = api.renders.getLatestUrl(projectId);
-          store.renderLog = job.stdout || '';
-          actions._stopPollRender();
-        } else if (job.status === 'failed') {
-          store.renderStatus = 'failed';
-          store.renderError = job.error || job.stderr || 'Render failed';
-          store.renderLog = (job.stdout || '') + '\n' + (job.stderr || '');
-          actions._stopPollRender();
-        }
-      } catch (err) {
-        console.warn('[poll] Error:', err);
+    _pollDisconnect = connectJobWebSocket(jobId, (msg) => {
+      if (msg.status === 'running') {
+        store.renderStatus = 'running';
+        if (msg.stdout) store.renderLog = msg.stdout;
+      } else if (msg.status === 'completed') {
+        store.renderStatus = 'completed';
+        store.renderVideoUrl = api.renders.getLatestUrl(projectId);
+        store.renderLog = msg.stdout || '';
+        actions._stopPollRender();
+      } else if (msg.status === 'failed') {
+        store.renderStatus = 'failed';
+        store.renderError = msg.error || msg.stderr || 'Render failed';
+        store.renderLog = (msg.stdout || '') + '\n' + (msg.stderr || '');
+        actions._stopPollRender();
       }
-    }, 2000);
+    });
   },
 
-  /** @private Stop polling */
+  /** @private Stop WebSocket subscription */
   _stopPollRender() {
-    if (_pollTimer) {
-      clearInterval(_pollTimer);
-      _pollTimer = null;
+    if (_pollDisconnect) {
+      _pollDisconnect();
+      _pollDisconnect = null;
     }
   },
 

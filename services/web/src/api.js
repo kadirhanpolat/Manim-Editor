@@ -123,4 +123,28 @@ export async function checkHealth() {
   }
 }
 
-export default { projects, assets, jobs, renders, checkHealth };
+// ─── WebSocket ────────────────────────────────────────────────────────────────
+
+/**
+ * Connect to the job WebSocket and subscribe to updates for a specific job.
+ * @param {string} jobId
+ * @param {function({status, stdout, stderr, error}): void} onUpdate
+ * @returns {function(): void} disconnect function
+ */
+export function connectJobWebSocket(jobId, onUpdate) {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe', jobId }));
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'job_update' && msg.jobId === jobId) onUpdate(msg);
+    } catch {}
+  };
+  ws.onerror = () => ws.close();
+
+  return () => ws.close();
+}
+
+export default { projects, assets, jobs, renders, checkHealth, connectJobWebSocket };
