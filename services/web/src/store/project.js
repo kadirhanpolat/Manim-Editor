@@ -701,6 +701,8 @@ export const actions = {
       if (!data.groups) data.groups = [];
       if (!data.editorMode) data.editorMode = 'visual';
       if (data.codeSource === undefined) data.codeSource = '';
+      if (!('cameraType' in data)) data.cameraType = 'static';
+      if (!Array.isArray(data.cameraTrack)) data.cameraTrack = [];
       store.project = data;
       store.selectedObjectIds = [];
       store.selectedClipId = null;
@@ -859,6 +861,8 @@ export const actions = {
       if (!project.groups) project.groups = [];
       if (!project.editorMode) project.editorMode = 'visual';
       if (project.codeSource === undefined) project.codeSource = '';
+      if (!('cameraType' in project)) project.cameraType = 'static';
+      if (!Array.isArray(project.cameraTrack)) project.cameraTrack = [];
 
       store.project = project;
       store.selectedObjectIds = [];

@@ -191,17 +191,24 @@ export class PlaybackEngine {
     // Apply entrance/exit animations on top
     this._applyEnterExitAnims(frame, time, objects);
 
-    // Camera clips
+    // Camera clips — sort by startTime and interpolate FROM previous clip's target state
     frame.cameraState = null;
     if (cameraTrack && cameraTrack.length > 0) {
-      for (const camClip of cameraTrack) {
+      const sortedCam = [...cameraTrack].sort((a, b) => a.startTime - b.startTime);
+      for (let ci = 0; ci < sortedCam.length; ci++) {
+        const camClip = sortedCam[ci];
         if (!isClipActive(camClip, time)) continue;
         const progress = getClipProgress(camClip, time);
         const easedT = evaluateEasing(progress, camClip.easing || 'ease_in_out', 0, 1);
+        // Interpolate FROM the previous clip's target (or default origin for first clip)
+        const prev = ci > 0 ? sortedCam[ci - 1].params : null;
+        const fromX = prev?.targetX || 0;
+        const fromY = prev?.targetY || 0;
+        const fromZoom = prev?.zoom || 1;
         frame.cameraState = {
-          x: lerp(0, camClip.params?.targetX || 0, easedT),
-          y: lerp(0, camClip.params?.targetY || 0, easedT),
-          zoom: lerp(1, camClip.params?.zoom || 1, easedT),
+          x: lerp(fromX, camClip.params?.targetX || 0, easedT),
+          y: lerp(fromY, camClip.params?.targetY || 0, easedT),
+          zoom: lerp(fromZoom, camClip.params?.zoom || 1, easedT),
         };
         break; // Use first active camera clip
       }

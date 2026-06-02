@@ -608,8 +608,12 @@ export function generatePythonCode(project, assetsPath) {
         camClip.params?.targetY || 0,
         sw, sh
       );
-      const zoom = (camClip.params?.zoom || 1).toFixed(2);
-      const code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).scale(${zoom})${rtStr}${rfStr})`;
+      // camera frame animate: set_width gives absolute zoom (14/zoom units wide)
+      // .scale() is relative/cumulative; set_width is absolute and idempotent
+      const sceneWidth = 14;
+      const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
+      const frameWidth = (sceneWidth / zoom).toFixed(3);
+      const code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
       steps.push({ time: camClip.startTime, order: 1, code, dur });
     }
   }

@@ -425,8 +425,17 @@ export default {
       if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey) { actions.setActiveTool('hand'); e.preventDefault(); }
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && !e.ctrlKey) {
-        if (store.selectedClipId) { actions.deleteClip(store.selectedClipId); e.preventDefault(); }
-        else if (store.selectedObjectIds.length > 0) {
+        if (store.selectedClipId) {
+          // Check if it's a camera clip first (camera clips live in cameraTrack, not regular tracks)
+          const isCameraClip = store.project.cameraTrack?.some(c => c.id === store.selectedClipId);
+          if (isCameraClip) {
+            actions.deleteCameraClip(store.selectedClipId);
+          } else {
+            actions.deleteClip(store.selectedClipId);
+          }
+          store.selectedClipId = null;
+          e.preventDefault();
+        } else if (store.selectedObjectIds.length > 0) {
           [...store.selectedObjectIds].forEach(id => actions.deleteObject(id));
           e.preventDefault();
         }
