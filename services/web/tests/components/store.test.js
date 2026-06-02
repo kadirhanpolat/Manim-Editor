@@ -74,12 +74,18 @@ describe('TEMPLATES', () => {
     expect(TEMPLATES).toHaveLength(5);
   });
 
-  it('each non-blank template returns a valid project', () => {
+  it('each non-blank template returns a valid project with required object fields', () => {
+    const REQUIRED_FIELDS = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'stroke', 'opacity', 'zOrder', 'enterTime', 'duration', 'enterAnim', 'exitAnim'];
     for (const tpl of TEMPLATES.filter(t => t.project !== null)) {
       const p = tpl.project();
       expect(p.objects.length).toBeGreaterThan(0);
       expect(p.stage).toBeDefined();
       expect(Array.isArray(p.tracks)).toBe(true);
+      for (const obj of p.objects) {
+        for (const field of REQUIRED_FIELDS) {
+          expect(obj[field], `${tpl.id} template object missing field: ${field}`).toBeDefined();
+        }
+      }
     }
   });
 });

@@ -70,7 +70,7 @@ export const TEMPLATES = [
             id: tgt, type: 'square', name: 'Hedef',
             x: 960, y: 540, width: 200, height: 200, rotation: 0,
             fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2, opacity: 1, zOrder: 1,
-            enterTime: 0, duration: 4, enterAnim: 'none', exitAnim: 'none',
+            enterTime: 1.5, duration: 4, enterAnim: 'none', exitAnim: 'none',
             enterAnimDur: 0.5, exitAnimDur: 0.5,
           },
         ],

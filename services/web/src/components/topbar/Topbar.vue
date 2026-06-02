@@ -509,6 +509,16 @@ export default {
         const projectData = tpl.project();
         projectData.name = name;
         projectData.id   = null;
+        // Render ve playback state'ini temizle (importJSON bunları sıfırlamaz)
+        actions._stopPollRender();
+        store.playbackTime    = 0;
+        store.playbackPlaying = false;
+        store.frameState      = { objectOverrides: {}, morphShapes: [], hiddenIds: new Set() };
+        store.renderStatus    = null;
+        store.renderJobId     = null;
+        store.renderVideoUrl  = null;
+        store.renderLog       = '';
+        store.renderError     = null;
         actions.importJSON(JSON.stringify(projectData));
       } else {
         actions.newProject(name, this.newProjectMode);
