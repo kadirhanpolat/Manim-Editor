@@ -84,34 +84,55 @@ router.get('/:projectId/latest.mp4', async (req, res, next) => {
 router.get('/:projectId', async (req, res, next) => {
   try {
     const rendersDir = path.join(req.dataDir, 'renders', req.params.projectId);
-    
-    try {
-      await fs.access(rendersDir);
-    } catch {
-      return res.json({ renders: [], hasLatest: false });
+
+    try { await fs.access(rendersDir); } catch {
+      return res.json({ renders: [], hasLatest: false, history: [] });
     }
-    
-    // Check for latest.mp4
+
     const latestPath = path.join(rendersDir, 'latest.mp4');
     let hasLatest = false;
     let latestStats = null;
-    
-    try {
-      latestStats = await fs.stat(latestPath);
-      hasLatest = true;
-    } catch {
-      // No latest render
-    }
-    
+    try { latestStats = await fs.stat(latestPath); hasLatest = true; } catch {}
+
+    const entries = await fs.readdir(rendersDir);
+    const historyFiles = entries
+      .filter(f => f.startsWith('render_') && f.endsWith('.mp4'))
+      .sort()
+      .reverse()
+      .slice(0, 5);
+
+    const history = await Promise.all(
+      historyFiles.map(async (name) => {
+        const fPath = path.join(rendersDir, name);
+        const stat  = await fs.stat(fPath).catch(() => null);
+        return stat ? { name, size: stat.size, modifiedAt: stat.mtime, url: `/api/renders/${req.params.projectId}/${name}` } : null;
+      })
+    );
+
     res.json({
-      renders: hasLatest ? [{
-        name: 'latest.mp4',
-        size: latestStats.size,
-        modifiedAt: latestStats.mtime
-      }] : [],
-      hasLatest
+      renders: hasLatest ? [{ name: 'latest.mp4', size: latestStats.size, modifiedAt: latestStats.mtime, url: `/api/renders/${req.params.projectId}/latest.mp4` }] : [],
+      hasLatest,
+      history: history.filter(Boolean),
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Serve a specific history render file.
+ * GET /api/renders/:projectId/:filename
+ */
+router.get('/:projectId/:filename', async (req, res, next) => {
+  try {
+    const { projectId, filename } = req.params;
+    if (!/^[\w.-]+\.mp4$/.test(filename)) return res.status(400).json({ error: 'Invalid filename' });
+
+    const filePath = path.join(req.dataDir, 'renders', projectId, filename);
+    await fs.access(filePath);
+    res.sendFile(filePath);
+  } catch (err) {
+    if (err.code === 'ENOENT') return res.status(404).json({ error: 'File not found' });
     next(err);
   }
 });

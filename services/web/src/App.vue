@@ -214,6 +214,16 @@
                   Render Again
                 </button>
               </div>
+              <!-- Render History -->
+              <div v-if="renderHistory.length > 0" class="mt-4">
+                <p class="text-xs font-medium uppercase tracking-wider mb-2" style="color: var(--studio-text-muted);">Render Geçmişi</p>
+                <div class="space-y-1.5">
+                  <div v-for="r in renderHistory" :key="r.name" class="flex items-center justify-between px-3 py-2 rounded-lg" style="background: var(--studio-bg);">
+                    <span class="text-[11px] font-mono" style="color: var(--studio-text-muted);">{{ formatRenderDate(r.name) }}</span>
+                    <a :href="r.url" download class="text-[11px] px-2 py-1 rounded" style="color: var(--studio-accent); background: var(--studio-accent-subtle);">İndir</a>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -285,6 +295,7 @@
 
 <script>
 import hljs from 'highlight.js';
+import * as api from './api.js';
 import { store, actions, getters } from './store/project.js';
 import { getPlaybackEngine } from './engine/playback.js';
 import { generateManimScript, downloadManimScript, parseManimScript } from './export/manim.js';
@@ -302,6 +313,7 @@ export default {
     return {
       copied: false,
       selectedQuality: 'high',
+      renderHistory: [],
       qualities: [
         { value: 'low',        label: 'Low',        desc: '480p 15fps (fastest)' },
         { value: 'medium',     label: 'Medium',     desc: '720p 30fps' },
@@ -323,6 +335,7 @@ export default {
 
   computed: {
     store()              { return store; },
+    projectId()          { return store.project.id; },
     isCodeMode()         { return store.project.editorMode === 'code'; },
     error()              { return store.error; },
     showExport()         { return store.showExportDialog; },
@@ -363,6 +376,11 @@ export default {
   },
 
   watch: {
+    renderStatus(status) {
+      if (status === 'completed' && this.projectId) {
+        this.loadRenderHistory();
+      }
+    },
     'store.project.objects': {
       handler() { if (!this.isCodeMode && this.stageViewMode === 'code' && !this.codeEdited) this._debouncedUpdateCode(); },
       deep: true
@@ -605,6 +623,20 @@ export default {
       } else {
         downloadManimScript(store.project);
       }
+    },
+
+    // ── Render history ──
+    async loadRenderHistory() {
+      try {
+        const info = await api.renders.list(this.projectId);
+        this.renderHistory = info.history || [];
+      } catch {}
+    },
+
+    formatRenderDate(filename) {
+      const m = filename.match(/render_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+      if (!m) return filename;
+      return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
     },
 
     // ── Error ──

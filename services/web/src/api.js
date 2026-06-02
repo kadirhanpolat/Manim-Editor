@@ -109,7 +109,8 @@ export const jobs = {
 
 export const renders = {
   getLatestUrl: (projectId) => `${API_BASE}/renders/${projectId}/latest.mp4?t=${Date.now()}`,
-  getInfo: (projectId) => request(`/renders/${projectId}`)
+  getInfo:      (projectId) => request(`/renders/${projectId}`),
+  list:         (projectId) => request(`/renders/${projectId}`),
 };
 
 // ─── Health ───────────────────────────────────────────────────────────────────

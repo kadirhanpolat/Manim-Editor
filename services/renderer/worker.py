@@ -116,9 +116,26 @@ def render_job(payload: dict) -> dict:
             
             # Copy instead of symlink for Docker compatibility
             shutil.copy2(output_video, latest_link)
-            
+
             print(f"[render] Output saved to: {latest_link}")
-        
+
+        # Save a timestamped copy for history (keep last 5)
+        if output_video and os.path.exists(output_video):
+            timestamp = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
+            history_path = os.path.join(media_dir, f"render_{timestamp}.mp4")
+            shutil.copy2(output_video, history_path)
+
+            # Prune: keep only the 5 most recent history files
+            history_files = sorted(
+                [f for f in os.listdir(media_dir) if f.startswith("render_") and f.endswith(".mp4")],
+                reverse=True
+            )
+            for old in history_files[5:]:
+                try:
+                    os.remove(os.path.join(media_dir, old))
+                except Exception:
+                    pass
+
         return {
             "ok": result.returncode == 0,
             "stdout": result.stdout[-8000:] if result.stdout else "",
