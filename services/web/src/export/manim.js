@@ -626,6 +626,48 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
   const pendingPaths = {};  // varName → [{ mx, my }]
 
+  function parseAnimExpr(expr) {
+    expr = expr.trim();
+    let m2;
+    // obj.animate.move_to([x, y, 0])
+    m2 = expr.match(/^(\w+)\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)/);
+    if (m2) {
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      const sp = manimToStage(parseFloat(m2[2]), parseFloat(m2[3]), sw, sh);
+      return { type: 'move', sourceId: id, params: { targetX: Math.round(sp.x), targetY: Math.round(sp.y) } };
+    }
+    // obj.animate.scale(s)
+    m2 = expr.match(/^(\w+)\.animate\.scale\(([\d.]+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return { type: 'scale', sourceId: id, params: { targetScaleX: parseFloat(m2[2]), targetScaleY: parseFloat(m2[2]) } };
+    }
+    // obj.animate.set_opacity(o)
+    m2 = expr.match(/^(\w+)\.animate\.set_opacity\(([\d.]+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return { type: 'fade', sourceId: id, params: { targetOpacity: parseFloat(m2[2]) } };
+    }
+    // FadeOut(obj)
+    m2 = expr.match(/^FadeOut\((\w+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return { type: 'fade', sourceId: id, params: { targetOpacity: 0 } };
+    }
+    // Rotate(obj, angle=a)
+    m2 = expr.match(/^Rotate\((\w+),\s*angle=([-\d.]+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return { type: 'rotate', sourceId: id, params: { targetRotation: Math.round(parseFloat(m2[2]) * 180 / Math.PI) } };
+    }
+    return null;
+  }
+
   for (const line of lines) {
     let m;
 
@@ -867,6 +909,47 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // ── Animations ──
+
+    // AnimationGroup / LaggedStart
+    m = line.match(/^self\.play\((AnimationGroup|LaggedStart)\(/);
+    if (m) {
+      const fn = m[1];
+      const lagMatch = line.match(/lag_ratio=([\d.]+)/);
+      const rtMatch = line.match(/run_time=([\d.]+)/);
+      const lagRatio = lagMatch ? parseFloat(lagMatch[1]) : 0;
+      const dur = rtMatch ? parseFloat(rtMatch[1]) : 1;
+
+      // Extract inner content by bracket matching starting after "AnimationGroup(" or "LaggedStart("
+      const fnStart = line.indexOf(fn + '(') + fn.length + 1;
+      let depth = 1, end = fnStart;
+      while (end < line.length && depth > 0) {
+        if (line[end] === '(' || line[end] === '[') depth++;
+        else if (line[end] === ')' || line[end] === ']') depth--;
+        end++;
+      }
+      const inner = line.substring(fnStart, end - 1);
+
+      // Split inner content by ',' respecting bracket depth
+      const exprs = [];
+      let cur = '', d = 0;
+      for (const ch of inner) {
+        if (ch === '(' || ch === '[') d++;
+        else if (ch === ')' || ch === ']') d--;
+        if (ch === ',' && d === 0) {
+          const t = cur.trim();
+          if (t && !/^(lag_ratio|run_time|rate_func)/.test(t)) exprs.push(t);
+          cur = '';
+        } else { cur += ch; }
+      }
+      if (cur.trim() && !/^(lag_ratio|run_time|rate_func)/.test(cur.trim())) exprs.push(cur.trim());
+
+      const parsedClips = exprs.map(e => parseAnimExpr(e)).filter(Boolean);
+      for (const pc of parsedClips) {
+        clips.push({ id: `clip_${clipIdx++}`, type: pc.type, sourceId: pc.sourceId, startTime: ct, duration: dur, easing: 'ease_in_out', parallel: true, lag_ratio: lagRatio, params: pc.params });
+      }
+      if (parsedClips.length > 0) ct += dur;
+      continue;
+    }
 
     m = line.match(/^self\.wait\(([\d.]+)\)/);
     if (m) { ct += parseFloat(m[1]); continue; }
