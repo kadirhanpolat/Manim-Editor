@@ -778,6 +778,45 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // NumberPlane
+    m = line.match(/^(\w+)\s*=\s*NumberPlane\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+    if (m) {
+      const [, name, x0, x1, xs, y0, y1, ys] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'numberplane', name, x: sw / 2, y: sh / 2, width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], xStep: parseFloat(xs), yStep: parseFloat(ys), enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // NumberLine
+    m = line.match(/^(\w+)\s*=\s*NumberLine\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+    if (m) {
+      const [, name, x0, x1, xs] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'numberline', name, x: sw / 2, y: sh / 2, width: 400, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // axes.plot() — adds a graph to the axes object referenced by axesVar
+    m = line.match(/^(\w+)\s*=\s*(\w+)\.plot\(lambda x:\s*([^,]+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\](?:,\s*color=["']([^"']+)["'])?(?:,\s*stroke_width=([\d.]+))?\)/);
+    if (m) {
+      const [, graphVar, axesVar, expr, xMin, xMax, color, sw2] = m;
+      const axesId = varMap[axesVar];
+      if (axesId && objById[axesId] && objById[axesId].type === 'axes') {
+        if (!objById[axesId].graphs) objById[axesId].graphs = [];
+        objById[axesId].graphs.push({
+          id: uid('graph').split('_').slice(-2).join('_'),
+          expression: expr.trim(),
+          color: color || '#F59E0B',
+          xMin: parseFloat(xMin),
+          xMax: parseFloat(xMax),
+          strokeWidth: sw2 ? parseFloat(sw2) : 3,
+        });
+      }
+      continue;
+    }
+
     // ── Property setters ──
 
     m = line.match(/^(\w+)\.set_fill\(color=["']([^"']+)["'](?:,\s*opacity=([\d.]+))?\)/);
