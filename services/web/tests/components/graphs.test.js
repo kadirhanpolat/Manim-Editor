@@ -51,4 +51,13 @@ describe('addGraph / removeGraph', () => {
     const result = actions.addGraph(obj.id, { expression: 'x**2' });
     expect(result).toBeNull();
   });
+
+  it('updates a graph property on an axes object', () => {
+    const obj = actions.addObject('axes', 960, 540);
+    const graph = actions.addGraph(obj.id, { expression: 'x**2', color: '#ff0000' });
+    actions.updateGraph(obj.id, graph.id, { expression: 'Math.sin(x)', color: '#00ff00' });
+    const updated = getters.objectById(obj.id);
+    expect(updated.graphs[0].expression).toBe('Math.sin(x)');
+    expect(updated.graphs[0].color).toBe('#00ff00');
+  });
 });
