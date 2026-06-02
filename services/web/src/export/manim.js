@@ -399,45 +399,120 @@ export function generateManimScript(project) {
     steps.push({ time: t, order: 0, code: enterCode, dur: enterAnim === 'none' ? 0 : dur });
   }
 
-  // Clip animations
-  for (const c of clips) {
+  // ── Group parallel clips ──
+  const clipGroups = [];
+  let gi = 0;
+  while (gi < clips.length) {
+    const c = clips[gi];
+    if (c.parallel) {
+      const group = [c];
+      let j = gi + 1;
+      while (j < clips.length && clips[j].parallel && Math.abs(clips[j].startTime - c.startTime) < 0.01) {
+        group.push(clips[j]);
+        j++;
+      }
+      clipGroups.push({ type: 'group', clips: group, startTime: c.startTime });
+      gi = j;
+    } else {
+      clipGroups.push({ type: 'single', clip: c, startTime: c.startTime });
+      gi++;
+    }
+  }
+
+  // ── Build clip animation steps ──
+  function singleClipCode(c) {
     const sn = v(c.sourceId);
     const dur = c.duration;
     const rtStr = rtOpt(dur);
     const rfStr = rfOpt(c.easing);
-    let code;
-
     switch (c.type) {
       case 'transform': {
         const tn = v(c.targetId);
         const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
         const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
         const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
-        code = `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`;
-        break;
+        return { code: `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`, dur };
       }
       case 'move': {
         const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
-        code = `self.play(${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])${rtStr}${rfStr})`;
-        break;
+        return { code: `self.play(${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])${rtStr}${rfStr})`, dur };
       }
       case 'scale':
-        code = `self.play(${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})${rtStr}${rfStr})`;
-        break;
+        return { code: `self.play(${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})${rtStr}${rfStr})`, dur };
       case 'fade': {
         const op = c.params?.targetOpacity ?? 0;
-        code = op < 0.01
-          ? `self.play(FadeOut(${sn})${rtStr}${rfStr})`
-          : `self.play(${sn}.animate.set_opacity(${op.toFixed(2)})${rtStr}${rfStr})`;
-        break;
+        return { code: op < 0.01 ? `self.play(FadeOut(${sn})${rtStr}${rfStr})` : `self.play(${sn}.animate.set_opacity(${op.toFixed(2)})${rtStr}${rfStr})`, dur };
       }
       case 'rotate': {
         const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
-        code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
-        break;
+        return { code: `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`, dur };
+      }
+      case 'path_move': {
+        if (!c.path || c.path.length < 2) return null;
+        const cn = (c.id || sn).replace(/[^a-zA-Z0-9_]/g, '_');
+        const pn = `path_${cn}`;
+        const pts = c.path.map(p => {
+          const m = stageToManim(p.x, p.y, sw, sh);
+          return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
+        });
+        const multiLine = [
+          `${pn} = VMobject()`,
+          `${pn}.set_points_as_corners([np.array(p) for p in [${pts.join(', ')}]])`,
+          `self.play(MoveAlongPath(${sn}, ${pn})${rtStr}${rfStr})`,
+        ].join(`\n${indent}`);
+        return { code: multiLine, dur };
+      }
+      default: return null;
+    }
+  }
+
+  function animExpr(c) {
+    const sn = v(c.sourceId);
+    switch (c.type) {
+      case 'move': {
+        const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
+        return `${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])`;
+      }
+      case 'scale':
+        return `${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})`;
+      case 'fade': {
+        const op = c.params?.targetOpacity ?? 0;
+        return op < 0.01 ? `FadeOut(${sn})` : `${sn}.animate.set_opacity(${op.toFixed(2)})`;
+      }
+      case 'rotate': {
+        const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+        return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
+      }
+      case 'transform': {
+        const tn = v(c.targetId);
+        const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
+        const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+        return hasRaster ? `FadeTransform(${sn}, ${tn})` : `ReplacementTransform(${sn}, ${tn})`;
+      }
+      default: return null;
+    }
+  }
+
+  for (const cg of clipGroups) {
+    if (cg.type === 'single') {
+      const result = singleClipCode(cg.clip);
+      if (result) steps.push({ time: cg.clip.startTime, order: 1, ...result });
+    } else if (cg.clips.length === 1) {
+      const result = singleClipCode(cg.clips[0]);
+      if (result) steps.push({ time: cg.startTime, order: 1, ...result });
+    } else {
+      const groupClips = cg.clips;
+      const dur = Math.max(...groupClips.map(c => c.duration));
+      const rtStr = rtOpt(dur);
+      const maxLag = Math.max(...groupClips.map(c => c.lag_ratio || 0));
+      const exprs = groupClips.map(animExpr).filter(Boolean);
+      if (exprs.length > 0) {
+        const groupFn = maxLag > 0 ? 'LaggedStart' : 'AnimationGroup';
+        const lagStr = maxLag > 0 ? `, lag_ratio=${maxLag.toFixed(2)}` : '';
+        const rfStr = rfOpt(groupClips[0]?.easing || 'ease_in_out');
+        steps.push({ time: cg.startTime, order: 1, code: `self.play(${groupFn}(${exprs.join(', ')}${lagStr})${rtStr}${rfStr})`, dur });
       }
     }
-    if (code) steps.push({ time: c.startTime, order: 1, code, dur });
   }
 
   // Exit: skip objects that are transform sources
