@@ -555,7 +555,9 @@ export const actions = {
     const clip = {
       id: uid('clip'), type: 'transform', startTime: 0, duration: 1.5,
       easing: 'ease_in_out', sourceId: null, targetId: null, params: {},
-      overshoot: 0, settle: 1.0, morphQuality: 'medium', ...clipData
+      overshoot: 0, settle: 1.0, morphQuality: 'medium',
+      parallel: false, lag_ratio: 0,
+      ...clipData
     };
     store.project.tracks[trackIndex].clips.push(clip);
     store.isDirty = true;

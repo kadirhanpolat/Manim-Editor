@@ -361,6 +361,21 @@
         <Num label="Degrees" :value="(clip.params||{}).targetRotation||360" @input="up('targetRotation', $event)" />
       </Section>
 
+      <Section label="Parallel (AnimationGroup)">
+        <div class="space-y-1.5">
+          <label class="flex items-center gap-2 text-xs text-studio-text-muted cursor-pointer">
+            <input type="checkbox" :checked="clip.parallel" @change="uc('parallel', $event.target.checked)" class="accent-violet-500" />
+            Run in parallel with same-time clips
+          </label>
+          <div v-if="clip.parallel" class="flex items-center gap-2">
+            <span class="text-[9px] text-studio-text-muted w-16">Lag ratio</span>
+            <input type="number" class="input input-sm w-16" :value="clip.lag_ratio || 0" min="0" max="1" step="0.1"
+              @change="uc('lag_ratio', Number($event.target.value))" />
+            <span class="text-[8px] text-studio-text-muted/50">0 = AnimationGroup</span>
+          </div>
+        </div>
+      </Section>
+
       <div class="px-3 py-3">
         <button class="btn btn-danger btn-xs w-full" @click="delClip">Delete Animation</button>
       </div>

@@ -9,6 +9,7 @@
     <div class="clip-inner">
       <span class="clip-icon" v-html="typeIcon"></span>
       <span class="clip-label">{{ label }}</span>
+      <span v-if="clip.parallel" class="inline-block ml-1 px-1 text-[8px] rounded bg-violet-500/30 text-violet-300 leading-none align-middle" title="Parallel (AnimationGroup)">∥</span>
     </div>
     <div class="resize-handle left" @mousedown.stop="resize('left', $event)"></div>
     <div class="resize-handle right" @mousedown.stop="resize('right', $event)"></div>

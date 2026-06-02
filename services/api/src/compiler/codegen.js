@@ -417,45 +417,107 @@ export function generatePythonCode(project, assetsPath) {
     steps.push({ time: t, order: 0, code: enterCode, dur: enterAnim === 'none' ? 0 : dur });
   }
 
-  // Clip animations
-  for (const c of clips) {
-    const sn = vn(c.sourceId);
-    const dur = c.duration;
-    const rtStr = rtOpt(dur);
-    const rfStr = rfOpt(c.easing);
-    let code;
+  // Clip animations — parallel clips grouped into AnimationGroup/LaggedStart
+  const clipGroups = [];
+  let i = 0;
+  while (i < clips.length) {
+    const c = clips[i];
+    if (c.parallel) {
+      const group = [c];
+      let j = i + 1;
+      while (j < clips.length && clips[j].parallel && Math.abs(clips[j].startTime - c.startTime) < 0.01) {
+        group.push(clips[j]);
+        j++;
+      }
+      clipGroups.push({ type: 'group', clips: group, startTime: c.startTime });
+      i = j;
+    } else {
+      clipGroups.push({ type: 'single', clip: c, startTime: c.startTime });
+      i++;
+    }
+  }
 
-    switch (c.type) {
-      case 'transform': {
-        const tn = vn(c.targetId);
-        const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
-        const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
-        const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
-        code = `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`;
-        break;
+  for (const cg of clipGroups) {
+    if (cg.type === 'single') {
+      const c = cg.clip;
+      const sn = vn(c.sourceId);
+      const dur = c.duration;
+      const rtStr = rtOpt(dur);
+      const rfStr = rfOpt(c.easing);
+      let code;
+      switch (c.type) {
+        case 'transform': {
+          const tn = vn(c.targetId);
+          const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
+          const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+          const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
+          code = `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`;
+          break;
+        }
+        case 'move': {
+          const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
+          code = `self.play(${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])${rtStr}${rfStr})`;
+          break;
+        }
+        case 'scale':
+          code = `self.play(${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})${rtStr}${rfStr})`;
+          break;
+        case 'fade': {
+          const op = c.params?.targetOpacity ?? 0;
+          code = op < 0.01
+            ? `self.play(FadeOut(${sn})${rtStr}${rfStr})`
+            : `self.play(${sn}.animate.set_opacity(${op.toFixed(2)})${rtStr}${rfStr})`;
+          break;
+        }
+        case 'rotate': {
+          const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+          code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+          break;
+        }
       }
-      case 'move': {
-        const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
-        code = `self.play(${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])${rtStr}${rfStr})`;
-        break;
-      }
-      case 'scale':
-        code = `self.play(${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})${rtStr}${rfStr})`;
-        break;
-      case 'fade': {
-        const op = c.params?.targetOpacity ?? 0;
-        code = op < 0.01
-          ? `self.play(FadeOut(${sn})${rtStr}${rfStr})`
-          : `self.play(${sn}.animate.set_opacity(${op.toFixed(2)})${rtStr}${rfStr})`;
-        break;
-      }
-      case 'rotate': {
-        const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
-        code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
-        break;
+      if (code) steps.push({ time: c.startTime, order: 1, code, dur });
+    } else {
+      // Parallel group: AnimationGroup or LaggedStart
+      const groupClips = cg.clips;
+      const dur = Math.max(...groupClips.map(c => c.duration));
+      const rtStr = rtOpt(dur);
+      const maxLag = Math.max(...groupClips.map(c => c.lag_ratio || 0));
+
+      const animExprs = groupClips.map(c => {
+        const sn = vn(c.sourceId);
+        switch (c.type) {
+          case 'move': {
+            const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
+            return `${sn}.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0])`;
+          }
+          case 'scale':
+            return `${sn}.animate.scale(${(c.params?.targetScaleX || 1).toFixed(2)})`;
+          case 'fade': {
+            const op = c.params?.targetOpacity ?? 0;
+            return op < 0.01 ? `FadeOut(${sn})` : `${sn}.animate.set_opacity(${op.toFixed(2)})`;
+          }
+          case 'rotate': {
+            const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+            return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
+          }
+          case 'transform': {
+            const tn = vn(c.targetId);
+            const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
+            const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+            return hasRaster ? `FadeTransform(${sn}, ${tn})` : `ReplacementTransform(${sn}, ${tn})`;
+          }
+          default: return null;
+        }
+      }).filter(Boolean);
+
+      if (animExprs.length > 0) {
+        const animList = animExprs.join(', ');
+        const groupFn = maxLag > 0 ? 'LaggedStart' : 'AnimationGroup';
+        const lagStr = maxLag > 0 ? `, lag_ratio=${maxLag.toFixed(2)}` : '';
+        const code = `self.play(${groupFn}(${animList}${lagStr})${rtStr})`;
+        steps.push({ time: cg.startTime, order: 1, code, dur });
       }
     }
-    if (code) steps.push({ time: c.startTime, order: 1, code, dur });
   }
 
   // Exit (skip transform sources)
