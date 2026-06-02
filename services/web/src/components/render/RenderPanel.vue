@@ -70,6 +70,7 @@
 <script>
 import { store, actions } from '../../store/project.js';
 import { QUALITY_PRESETS } from '../../constants/animations.js';
+import { renders } from '../../api.js';
 import VideoPreview from './VideoPreview.vue';
 
 export default {
@@ -134,7 +135,7 @@ export default {
     async checkExistingRender() {
       if (!this.projectId) return;
       try {
-        const info = await fetch(`/api/renders/${this.projectId}`).then(r => r.json());
+        const info = await renders.getInfo(this.projectId);
         this.hasRender = info.hasLatest;
       } catch { /* ignore */ }
     },

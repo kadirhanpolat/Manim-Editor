@@ -628,7 +628,7 @@ export default {
     // ── Render history ──
     async loadRenderHistory() {
       try {
-        const info = await api.renders.list(this.projectId);
+        const info = await api.renders.getInfo(this.projectId);
         this.renderHistory = info.history || [];
       } catch {}
     },
