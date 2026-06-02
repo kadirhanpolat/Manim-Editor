@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-1.1.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -357,7 +357,16 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v1.1.0 (current)
+### v1.2.0 (current)
+
+- **Fix**: Easing mapping — 7 yanlış/eksik `EASING_MAP` girişi düzeltildi; `ease_in_out_cubic → rate_functions.ease_in_out_cubic`, `spring → rate_functions.ease_out_elastic`, 5 eksik easing (`ease_in/out_quart`, `ease_in_out_quart/back`, `ease_in/out_elastic`) eklendi
+- **Feature**: WebSocket render takibi — 2 saniyelik client-side polling, server-side 500ms Redis poll + WebSocket push ile değiştirildi; `GET /ws` üzerinden anlık iş güncellemeleri
+- **Feature**: Vitest test altyapısı — `npm run test:unit` ile Vue 2 uyumlu unit testler; `@vue/test-utils@1`, jsdom ortamı
+- **Feature**: 5 proje şablonu — "New Project" diyaloğuna şablon seçici eklendi: Boş Proje, Formül Tanıtım, Şekil Dönüşümü, Başlık Slaydı, Koordinat Sistemi
+- **Feature**: Paralel render worker — `docker-compose.yml`'e `renderer-2` servisi eklendi; aynı Redis kuyruğundan iki iş eş zamanlı işlenebilir
+- **Feature**: Render geçmişi — Her render sonunda tarihli kopya (`render_YYYYMMDD_HHMMSS.mp4`) kaydedilir, son 5 kopya tutulur; render diyaloğunda geçmiş listesi ve indirme bağlantıları
+
+### v1.1.0
 
 - **Feature**: Dual editor modes -- choose **Visual (UI)** or **Code Only** when creating a new project
 - **Feature**: Code-Only mode provides full Manim library access; write raw Python, render directly, see errors in-app
