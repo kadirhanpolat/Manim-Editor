@@ -624,6 +624,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${(objIdx++).toString(36)}`;
 
+  const pendingPaths = {};  // varName → [{ mx, my }]
+
   for (const line of lines) {
     let m;
 
@@ -947,6 +949,47 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         clips.push({ id: `clip_${clipIdx++}`, type: 'fade', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { targetOpacity: parseFloat(m[2]) } });
         ct += dur;
       }
+      continue;
+    }
+
+    // VMobject() — start of a path definition
+    m = line.match(/^(\w+)\s*=\s*VMobject\(\)/);
+    if (m) {
+      pendingPaths[m[1]] = [];
+      continue;
+    }
+
+    // set_points_as_corners — parse Manim coordinate list into pending path
+    m = line.match(/^(\w+)\.set_points_as_corners\(\[np\.array\(p\) for p in \[(.+)\]\]\)/);
+    if (m) {
+      const [, pathVar, pointsStr] = m;
+      if (pendingPaths[pathVar] !== undefined) {
+        const pointMatches = [...pointsStr.matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*0\]/g)];
+        pendingPaths[pathVar] = pointMatches.map(pm => ({
+          mx: parseFloat(pm[1]),
+          my: parseFloat(pm[2]),
+        }));
+      }
+      continue;
+    }
+
+    // MoveAlongPath — create path_move clip from pending path
+    m = line.match(/^self\.play\(MoveAlongPath\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
+    if (m) {
+      const [, objVar, pathVar, rtStr, rfStr] = m;
+      const objId = varMap[objVar];
+      const pathPoints = pendingPaths[pathVar];
+      if (objId && pathPoints && pathPoints.length >= 2) {
+        const dur = parseFloat(rtStr || 1);
+        const easing = rfStr ? (EASING_REV[rfStr] || 'linear') : 'linear';
+        const path = pathPoints.map(p => {
+          const sp = manimToStage(p.mx, p.my, sw, sh);
+          return { x: Math.round(sp.x), y: Math.round(sp.y) };
+        });
+        clips.push({ id: `clip_${clipIdx++}`, type: 'path_move', sourceId: objId, startTime: ct, duration: dur, easing, parallel: false, lag_ratio: 0, path });
+        ct += dur;
+      }
+      delete pendingPaths[pathVar];
       continue;
     }
   }
