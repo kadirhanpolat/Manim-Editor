@@ -212,6 +212,29 @@ const indBlended = blendClipResults(independentClips, {});
 assertApprox(indBlended.objectOverrides['obj_1'].opacity, 0.5, 0.01, 'obj_1 opacity should be 0.5');
 assertApprox(indBlended.objectOverrides['obj_2'].opacity, 0.8, 0.01, 'obj_2 opacity should be 0.8');
 
+// ── Easing map tests ──────────────────────────────────────────────────────────
+import { EASING_MAP } from '../src/export/manim.js';
+
+section('Easing Map');
+
+assert(EASING_MAP.ease_in_out_cubic !== 'rate_functions.smooth', 'ease_in_out_cubic must not be smooth');
+assert(EASING_MAP.spring !== 'rate_functions.smooth', 'spring must not be smooth');
+assert(EASING_MAP.ease_in_quart, 'ease_in_quart must be mapped');
+assert(EASING_MAP.ease_out_quart, 'ease_out_quart must be mapped');
+assert(EASING_MAP.ease_in_out_quart, 'ease_in_out_quart must be mapped');
+assert(EASING_MAP.ease_in_out_back, 'ease_in_out_back must be mapped');
+assert(EASING_MAP.ease_out_elastic, 'ease_out_elastic must be mapped');
+assert(EASING_MAP.ease_in_elastic, 'ease_in_elastic must be mapped');
+
+const EXPECTED_KEYS = [
+  'linear','ease_in','ease_out','ease_in_out',
+  'ease_in_cubic','ease_out_cubic','ease_in_out_cubic',
+  'ease_in_quart','ease_out_quart','ease_in_out_quart',
+  'ease_in_back','ease_out_back','ease_in_out_back',
+  'ease_out_elastic','ease_in_elastic','ease_out_bounce','spring'
+];
+for (const k of EXPECTED_KEYS) assert(EASING_MAP[k], `EASING_MAP missing key: ${k}`);
+
 // ─── Summary ─────────────────────────────────────────────────────────────────
 
 console.log(`\n${'='.repeat(50)}`);

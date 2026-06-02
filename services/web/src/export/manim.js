@@ -11,12 +11,23 @@
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const EASING_MAP = {
-  linear: 'linear', ease_in: 'rate_functions.ease_in_sine',
-  ease_out: 'rate_functions.ease_out_sine', ease_in_out: 'rate_functions.smooth',
-  ease_in_cubic: 'rate_functions.ease_in_cubic', ease_out_cubic: 'rate_functions.ease_out_cubic',
-  ease_in_out_cubic: 'rate_functions.smooth', ease_in_back: 'rate_functions.ease_in_back',
-  ease_out_back: 'rate_functions.ease_out_back', ease_out_bounce: 'rate_functions.ease_out_bounce',
-  spring: 'rate_functions.smooth'
+  linear:            'linear',
+  ease_in:           'rate_functions.ease_in_sine',
+  ease_out:          'rate_functions.ease_out_sine',
+  ease_in_out:       'rate_functions.smooth',
+  ease_in_cubic:     'rate_functions.ease_in_cubic',
+  ease_out_cubic:    'rate_functions.ease_out_cubic',
+  ease_in_out_cubic: 'rate_functions.ease_in_out_cubic',
+  ease_in_quart:     'rate_functions.ease_in_quart',
+  ease_out_quart:    'rate_functions.ease_out_quart',
+  ease_in_out_quart: 'rate_functions.ease_in_out_quart',
+  ease_in_back:      'rate_functions.ease_in_back',
+  ease_out_back:     'rate_functions.ease_out_back',
+  ease_in_out_back:  'rate_functions.ease_in_out_back',
+  ease_out_elastic:  'rate_functions.ease_out_elastic',
+  ease_in_elastic:   'rate_functions.ease_in_elastic',
+  ease_out_bounce:   'rate_functions.ease_out_bounce',
+  spring:            'rate_functions.ease_out_elastic',
 };
 
 const EASING_REV = {};
@@ -797,4 +808,5 @@ export function downloadManimScript(project) {
   return script;
 }
 
+export { EASING_MAP };
 export default { generateManimScript, parseManimScript, downloadManimScript };
