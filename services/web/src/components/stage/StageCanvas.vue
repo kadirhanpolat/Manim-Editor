@@ -84,6 +84,21 @@
               <!-- Graph curves preview -->
               <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc'+gi" :config="gc" />
             </v-group>
+
+            <!-- NumberPlane -->
+            <v-group v-if="obj.type === 'numberplane' && isVis(obj.id)" :key="obj.id" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: false }" />
+              <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
+              <v-line :config="{ points: [0, -obj.height/2 * vs, 0, obj.height/2 * vs], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
+              <v-text :config="{ text: 'NumberPlane', x: -40, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
+            </v-group>
+
+            <!-- NumberLine -->
+            <v-group v-if="obj.type === 'numberline' && isVis(obj.id)" :key="obj.id" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
+              <v-line :config="{ points: [obj.width/2 * vs - 8, -5, obj.width/2 * vs, 0, obj.width/2 * vs - 8, 5], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
+              <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
+            </v-group>
           </template>
         </v-layer>
 
@@ -752,6 +767,7 @@ export default {
           if (!Number.isFinite(y)) continue;
           const cx = ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
           const cy = -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
+          if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
           points.push(cx, cy);
         }
         if (points.length >= 4) {

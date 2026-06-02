@@ -534,6 +534,7 @@ export const actions = {
     if (!graph) return;
     for (const key of Object.keys(updates)) Vue.set(graph, key, updates[key]);
     store.isDirty = true;
+    actions.commitState();
   },
 
   addClip(trackIndex, clipData) {

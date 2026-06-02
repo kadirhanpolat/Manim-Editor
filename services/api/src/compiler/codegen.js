@@ -59,6 +59,15 @@ function safeOpacity(v) {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
 }
 
+/** Validate a graph expression: only allow math-safe characters. */
+function safeMathExpr(expr) {
+  if (!expr || typeof expr !== 'string') return 'x**2';
+  // Allow: digits, letters, spaces, math operators, parentheses, brackets, dots, commas
+  // Reject: semicolons, quotes, newlines, backslashes, hash (comment), backticks
+  if (/[;\n\r'"#\\`]/.test(expr)) return 'x**2';
+  return expr.trim() || 'x**2';
+}
+
 /** Sanitise text for Python string literals. */
 function safeText(s) {
   if (!s || typeof s !== 'string') return 'Text';
@@ -218,7 +227,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
           const col = hex(g.color) || '"#F59E0B"';
           const xMin = g.xMin ?? xr[0];
           const xMax = g.xMax ?? xr[1];
-          lines.push(`${gn} = ${n}.plot(lambda x: ${g.expression || 'x**2'}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
+          lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
         }
       }
       break;
@@ -233,7 +242,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
     }
     case 'numberline': {
       const xr = obj.xRange || [-5, 5, 1];
-      lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2]}], length=${(obj.width / sw * 14).toFixed(1)})`);
+      lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * 14).toFixed(1)})`);
       break;
     }
     default:
@@ -310,12 +319,12 @@ export function generatePythonCode(project, assetsPath) {
   for (const obj of project.objects) {
     oMap[obj.id] = obj;
     objectCode(obj, sw, sh, assetsPath, assetMap).forEach(l => L.push(indent + l));
-    // Axes: add graph objects to scene
+    // Axes: add graph curves as children of the axes object
     if (obj.type === 'axes' && obj.graphs && obj.graphs.length > 0) {
       const nn = vn(obj.id);
       for (const g of obj.graphs) {
         const gn = `${nn}_graph_${g.id.replace(/[^a-zA-Z0-9_]/g, '_')}`;
-        L.push(`${indent}self.add(${gn})`);
+        L.push(`${indent}${nn}.add(${gn})`);
       }
     }
     L.push('');
