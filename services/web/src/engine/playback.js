@@ -400,6 +400,7 @@ export class PlaybackEngine {
       }
       case 'path_move': {
         if (!clip.path || clip.path.length < 2) break;
+        const clampedT = Math.max(0, Math.min(1, easedT));
         const pts = clip.path;
         // Compute cumulative arc lengths
         let totalLen = 0;
@@ -412,8 +413,8 @@ export class PlaybackEngine {
           totalLen += len;
         }
         if (totalLen === 0) break;
-        // Find position at easedT along path
-        const target = easedT * totalLen;
+        // Find position at clampedT along path
+        const target = clampedT * totalLen;
         let cumLen = 0;
         let px = pts[0].x, py = pts[0].y;
         for (let k = 0; k < segLens.length; k++) {
@@ -424,10 +425,11 @@ export class PlaybackEngine {
             break;
           }
           cumLen += segLens[k];
-          if (k === segLens.length - 1) {
-            px = pts[pts.length - 1].x;
-            py = pts[pts.length - 1].y;
-          }
+        }
+        // Post-loop fallback (safety: clampedT <= 1 should always break above)
+        if (cumLen >= totalLen) {
+          px = pts[pts.length - 1].x;
+          py = pts[pts.length - 1].y;
         }
         overrides.x = px;
         overrides.y = py;

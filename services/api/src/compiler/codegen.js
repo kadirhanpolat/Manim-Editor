@@ -476,7 +476,8 @@ export function generatePythonCode(project, assetsPath) {
         }
         case 'path_move': {
           if (!c.path || c.path.length < 2) break;
-          const pn = `path_${sn}`;
+          const cn = c.id ? c.id.replace(/[^a-zA-Z0-9_]/g, '_') : sn;
+          const pn = `path_${cn}`;
           const pts = c.path.map(p => {
             const m = stageToManim(p.x, p.y, sw, sh);
             return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
@@ -531,7 +532,8 @@ export function generatePythonCode(project, assetsPath) {
           }
           case 'path_move': {
             if (!c.path || c.path.length < 2) break;
-            const pn = `path_${sn}`;
+            const cn = c.id ? c.id.replace(/[^a-zA-Z0-9_]/g, '_') : sn;
+            const pn = `path_${cn}`;
             const pts = c.path.map(p => {
               const m = stageToManim(p.x, p.y, sw, sh);
               return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;

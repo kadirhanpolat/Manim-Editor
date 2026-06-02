@@ -174,6 +174,7 @@ export default {
       pathDrawing: false,
       pathPoints: [],
       pathSourceId: null,
+      _pathLastClick: 0,
     };
   },
 
@@ -244,14 +245,10 @@ export default {
 
     pathCanvasPoints() {
       if (!this.pathPoints.length) return [];
-      const sw = this.stg.width;
-      const sh = this.stg.height;
-      const cw = this.stageConfig.width;
-      const ch = this.stageConfig.height;
-      return this.pathPoints.map(p => ({
-        cx: (p.x / sw) * cw,
-        cy: (p.y / sh) * ch,
-      }));
+      return this.pathPoints.map(p => {
+        const cp = this.s2c(p.x, p.y);
+        return { cx: cp.x, cy: cp.y };
+      });
     },
     pathPreviewLineCfg() {
       const pts = this.pathCanvasPoints.flatMap(p => [p.cx, p.cy]);
@@ -653,17 +650,14 @@ export default {
     // ── Events ──
     handleStageMouseDown(e) {
       if (this.pathDrawing) {
-        // Convert canvas click position to project coordinates
+        const now = Date.now();
+        if (now - this._pathLastClick < 350) return; // absorb second mousedown of dblclick
+        this._pathLastClick = now;
         const stage = e.target.getStage();
         const pos = stage.getPointerPosition();
         if (!pos) return;
-        const sw = this.stg.width;
-        const sh = this.stg.height;
-        const cw = this.stageConfig.width;
-        const ch = this.stageConfig.height;
-        const projectX = Math.round((pos.x / cw) * sw);
-        const projectY = Math.round((pos.y / ch) * sh);
-        this.pathPoints.push({ x: projectX, y: projectY });
+        const sp = this.c2s(pos.x, pos.y);
+        this.pathPoints.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
         return;
       }
       const t = e.target; const s = this.$refs.konvaStage?.getNode();

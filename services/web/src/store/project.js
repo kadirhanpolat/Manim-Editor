@@ -1075,12 +1075,19 @@ export const actions = {
     try { localStorage.setItem('manim-motion-theme', id); } catch {}
   },
 
-  addPathMoveClip(sourceId, pathPoints, trackIndex = 0) {
+  addPathMoveClip(sourceId, pathPoints) {
     if (!sourceId || !pathPoints || pathPoints.length < 2) return null;
+    // Find first empty track
+    let trackIndex = 0;
+    for (let i = 0; i < store.project.tracks.length; i++) {
+      if (store.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+      trackIndex = i + 1;
+    }
+    trackIndex = Math.min(trackIndex, 4);
     const clip = actions.addClip(trackIndex, {
       type: 'path_move',
       sourceId,
-      startTime: 0,
+      startTime: store.playbackTime || 0,
       duration: 2.0,
       easing: 'ease_in_out',
       path: pathPoints,   // [{x, y}, ...]
