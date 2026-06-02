@@ -292,7 +292,8 @@ export function generatePythonCode(project, assetsPath) {
   }
   L.push('');
   L.push('');
-  L.push('class MainScene(Scene):');
+  const sceneBase = project.cameraType === 'moving' ? 'MovingCameraScene' : 'Scene';
+  L.push(`class MainScene(${sceneBase}):`);
   L.push('    def construct(self):');
   const bgColor = hex(project.stage.backgroundColor) || '"#000000"';
   L.push(`        self.camera.background_color = ${bgColor}`);
@@ -593,6 +594,23 @@ export function generatePythonCode(project, assetsPath) {
         steps.push({ time: cg.startTime, order: 1, code, dur });
       }
       } // end multi-clip parallel group
+    }
+  }
+
+  // Camera clips
+  if (project.cameraType === 'moving' && project.cameraTrack?.length > 0) {
+    for (const camClip of project.cameraTrack) {
+      const dur = camClip.duration;
+      const rtStr = rtOpt(dur);
+      const rfStr = rfOpt(camClip.easing);
+      const mp = stageToManim(
+        camClip.params?.targetX || 0,
+        camClip.params?.targetY || 0,
+        sw, sh
+      );
+      const zoom = (camClip.params?.zoom || 1).toFixed(2);
+      const code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).scale(${zoom})${rtStr}${rfStr})`;
+      steps.push({ time: camClip.startTime, order: 1, code, dur });
     }
   }
 

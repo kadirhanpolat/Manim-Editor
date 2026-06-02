@@ -16,6 +16,7 @@ import { blendClipResults, isClipActive, getClipProgress, isClipCompleted, apply
  * @property {Object} objectOverrides - Per-object property overrides
  * @property {Array} morphShapes - Active morph shapes to render
  * @property {Set} hiddenIds - Object IDs that should be hidden
+ * @property {Object|null} cameraState - Camera pan/zoom state {x, y, zoom} or null
  */
 
 export class PlaybackEngine {
@@ -57,13 +58,14 @@ export class PlaybackEngine {
   /**
    * Start playback.
    */
-  play(tracks, objects, duration) {
+  play(tracks, objects, duration, cameraTrack) {
     if (this.playing) return;
     this.playing = true;
     this.duration = duration || this.duration;
     this._lastTimestamp = null;
     this._tracks = tracks;
     this._objects = objects;
+    this._cameraTrack = cameraTrack || [];
     this._objectMap = new Map(objects.map(o => [o.id, o]));
     this._tick = this._tick.bind(this);
     this._frameId = requestAnimationFrame(this._tick);
@@ -97,18 +99,19 @@ export class PlaybackEngine {
   /**
    * Seek to a specific time.
    */
-  seekTo(time, tracks, objects) {
+  seekTo(time, tracks, objects, cameraTrack) {
     this.currentTime = Math.max(0, Math.min(time, this.duration));
     if (tracks) this._tracks = tracks;
     if (objects) {
       this._objects = objects;
       this._objectMap = new Map(objects.map(o => [o.id, o]));
     }
+    if (cameraTrack !== undefined) this._cameraTrack = cameraTrack;
     if (this._onTimeUpdate) this._onTimeUpdate(this.currentTime);
 
     // Compute and emit frame at this time
     if (this._tracks && this._objects) {
-      const frame = this.computeFrame(this.currentTime, this._tracks, this._objects);
+      const frame = this.computeFrame(this.currentTime, this._tracks, this._objects, this._cameraTrack);
       if (this._onFrame) this._onFrame(frame);
     }
   }
@@ -145,7 +148,7 @@ export class PlaybackEngine {
     if (this._onTimeUpdate) this._onTimeUpdate(this.currentTime);
 
     // Compute frame
-    const frame = this.computeFrame(this.currentTime, this._tracks, this._objects);
+    const frame = this.computeFrame(this.currentTime, this._tracks, this._objects, this._cameraTrack);
     if (this._onFrame) this._onFrame(frame);
 
     // Schedule next frame
@@ -156,15 +159,16 @@ export class PlaybackEngine {
 
   /**
    * Compute the full frame state at a given time.
-   * 
+   *
    * @param {number} time - Current time in seconds
    * @param {Array} tracks - Track array with clips
    * @param {Array} objects - Object array
+   * @param {Array} [cameraTrack] - Optional camera clip array
    * @returns {FrameState}
    */
-  computeFrame(time, tracks, objects) {
+  computeFrame(time, tracks, objects, cameraTrack) {
     if (!tracks || !objects) {
-      return { objectOverrides: {}, morphShapes: [], hiddenIds: new Set() };
+      return { objectOverrides: {}, morphShapes: [], hiddenIds: new Set(), cameraState: null };
     }
 
     const objectMap = this._objectMap || new Map(objects.map(o => [o.id, o]));
@@ -186,6 +190,22 @@ export class PlaybackEngine {
 
     // Apply entrance/exit animations on top
     this._applyEnterExitAnims(frame, time, objects);
+
+    // Camera clips
+    frame.cameraState = null;
+    if (cameraTrack && cameraTrack.length > 0) {
+      for (const camClip of cameraTrack) {
+        if (!isClipActive(camClip, time)) continue;
+        const progress = getClipProgress(camClip, time);
+        const easedT = evaluateEasing(progress, camClip.easing || 'ease_in_out', 0, 1);
+        frame.cameraState = {
+          x: lerp(0, camClip.params?.targetX || 0, easedT),
+          y: lerp(0, camClip.params?.targetY || 0, easedT),
+          zoom: lerp(1, camClip.params?.zoom || 1, easedT),
+        };
+        break; // Use first active camera clip
+      }
+    }
 
     return frame;
   }

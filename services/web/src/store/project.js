@@ -53,7 +53,9 @@ function createDefaultProject(editorMode = 'visual') {
     tracks: [
       { id: 'track_1', name: 'Track 1', clips: [] }
     ],
-    sceneDuration: 10
+    sceneDuration: 10,
+    cameraType: 'static',   // 'static' | 'moving'
+    cameraTrack: [],         // camera_move clips
   };
 }
 
@@ -1094,6 +1096,59 @@ export const actions = {
       params: {},
     });
     return clip;
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Camera
+  // ══════════════════════════════════════════════════════════════════════════
+
+  setCameraType(type) {
+    Vue.set(store.project, 'cameraType', type);
+    if (!store.project.cameraTrack) Vue.set(store.project, 'cameraTrack', []);
+    store.isDirty = true;
+    actions.commitState();
+  },
+
+  addCameraMoveClip(params = {}) {
+    if (!store.project.cameraTrack) Vue.set(store.project, 'cameraTrack', []);
+    const clip = {
+      id: uid('cam'),
+      type: 'camera_move',
+      startTime: params.startTime ?? (store.playbackTime || 0),
+      duration: params.duration || 2.0,
+      easing: params.easing || 'ease_in_out',
+      params: {
+        targetX: params.targetX || 0,
+        targetY: params.targetY || 0,
+        zoom: params.zoom || 1.0,
+      },
+    };
+    store.project.cameraTrack.push(clip);
+    store.isDirty = true;
+    actions.commitState();
+    return clip;
+  },
+
+  updateCameraClip(clipId, updates) {
+    const clip = store.project.cameraTrack?.find(c => c.id === clipId);
+    if (!clip) return;
+    if (updates.params) {
+      for (const k of Object.keys(updates.params)) Vue.set(clip.params, k, updates.params[k]);
+    }
+    const topLevel = Object.keys(updates).filter(k => k !== 'params');
+    for (const k of topLevel) Vue.set(clip, k, updates[k]);
+    store.isDirty = true;
+    actions.commitState();
+  },
+
+  deleteCameraClip(clipId) {
+    if (!store.project.cameraTrack) return;
+    const idx = store.project.cameraTrack.findIndex(c => c.id === clipId);
+    if (idx !== -1) {
+      store.project.cameraTrack.splice(idx, 1);
+      store.isDirty = true;
+      actions.commitState();
+    }
   },
 };
 

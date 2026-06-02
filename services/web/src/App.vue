@@ -450,7 +450,7 @@ export default {
         engine.pause();
         actions.setPlaybackPlaying(false);
       } else {
-        engine.play(store.project.tracks, store.project.objects, getters.computedDuration());
+        engine.play(store.project.tracks, store.project.objects, getters.computedDuration(), store.project.cameraTrack || []);
         actions.setPlaybackPlaying(true);
       }
     },

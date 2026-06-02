@@ -70,6 +70,29 @@
           :pps="pps"
           :labelW="labelW"
         />
+
+        <!-- Camera Track -->
+        <div v-if="project.cameraType === 'moving'" class="timeline-row camera-track-row border-b border-studio-border/30 flex flex-shrink-0" style="height: 40px;">
+          <div class="flex-shrink-0 flex items-center px-2 bg-studio-bg/30 border-r border-studio-border/50 text-[10px] text-violet-300 font-medium gap-1" :style="{ width: labelW + 'px' }">
+            🎥 <span>Camera</span>
+            <button class="ml-auto text-[10px] text-studio-accent hover:opacity-80 leading-none" @click="addCameraClip" title="Add camera clip at playhead">+</button>
+          </div>
+          <div class="flex-1 relative overflow-hidden">
+            <div class="track-clips relative h-full" :style="{ width: totalW + 'px' }">
+              <div
+                v-for="clip in cameraClips"
+                :key="clip.id"
+                class="absolute top-1 h-6 rounded text-[9px] flex items-center justify-center px-1 cursor-pointer select-none border"
+                :class="selectedClipId === clip.id ? 'bg-violet-500/50 border-violet-400' : 'bg-violet-500/20 border-violet-500/40 text-violet-200'"
+                :style="{ left: (clip.startTime * pps) + 'px', width: Math.max(20, clip.duration * pps) + 'px' }"
+                @click="selectCameraClip(clip.id)"
+              >
+                ×{{ (clip.params && clip.params.zoom || 1).toFixed(1) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="totalClipCount === 0 && objects.length > 0" class="px-4 py-3 text-[10px] text-studio-text-muted/60 text-center">
           Select two objects and click "Transform" to create your first animation
         </div>
@@ -102,6 +125,9 @@ export default {
     canTransform() { return store.selectedObjectIds.length === 2; },
     totalClipCount() { let c = 0; for (const t of store.project.tracks) c += t.clips.length; return c; },
     totalW() { return this.totalDuration * this.pps + 50; },
+    project() { return store.project; },
+    cameraClips() { return store.project.cameraTrack || []; },
+    selectedClipId() { return store.selectedClipId; },
     ticks() {
       const t = []; const iv = this.pps >= 100 ? 0.5 : 1; const miv = this.pps >= 100 ? 1 : 5;
       for (let s = 0; s <= this.totalDuration; s += iv) {
@@ -177,7 +203,16 @@ export default {
     createTransform() {
       const clip = actions.createTransform();
       if (clip) actions.selectClip(clip.id);
-    }
+    },
+
+    addCameraClip() {
+      actions.addCameraMoveClip({});
+      store.selectedClipId = store.project.cameraTrack[store.project.cameraTrack.length - 1]?.id || null;
+    },
+    selectCameraClip(clipId) {
+      store.selectedClipId = clipId;
+      store.selectedObjectIds = [];
+    },
   }
 };
 </script>
