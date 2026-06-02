@@ -195,6 +195,35 @@
         </div>
       </Section>
 
+      <!-- Axes: Graph Functions -->
+      <Section v-if="obj && obj.type === 'axes'" label="Graphs">
+        <div v-for="graph in (obj.graphs || [])" :key="graph.id" class="mb-2 p-2 rounded bg-studio-surface2 border border-studio-border">
+          <div class="flex items-center gap-1 mb-1">
+            <input
+              class="input input-sm flex-1 font-mono text-xs"
+              :value="graph.expression"
+              placeholder="x**2"
+              @change="updateGraph(graph.id, 'expression', $event.target.value)"
+            />
+            <input
+              type="color"
+              class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+              :value="graph.color"
+              @input="updateGraph(graph.id, 'color', $event.target.value)"
+            />
+            <button class="text-studio-error hover:opacity-80 text-xs px-1" @click="removeGraph(graph.id)">✕</button>
+          </div>
+          <div class="grid grid-cols-2 gap-1">
+            <Num label="x min" :value="graph.xMin" @input="updateGraph(graph.id, 'xMin', $event)" />
+            <Num label="x max" :value="graph.xMax" @input="updateGraph(graph.id, 'xMax', $event)" />
+          </div>
+        </div>
+        <button
+          class="w-full mt-1 py-1 text-xs rounded border border-dashed border-studio-accent/50 text-studio-accent hover:bg-studio-accent/10"
+          @click="addGraph"
+        >+ Add Graph</button>
+      </Section>
+
       <!-- Z-Order -->
       <Section label="Layer Order">
         <input class="input input-sm w-16" type="number" min="0" :value="obj.zOrder || 0" @change="u('zOrder', Number($event.target.value))" />
@@ -541,6 +570,18 @@ export default {
       if (type === 'fade') { p.targetOpacity = 0; }
       if (type === 'rotate') { p.targetRotation = (this.obj.rotation || 0) + 360; }
       actions.createAnimation(type, p);
+    },
+    addGraph() {
+      if (!this.obj || this.obj.type !== 'axes') return;
+      actions.addGraph(this.obj.id);
+    },
+    removeGraph(graphId) {
+      if (!this.obj) return;
+      actions.removeGraph(this.obj.id, graphId);
+    },
+    updateGraph(graphId, key, value) {
+      if (!this.obj) return;
+      actions.updateGraph(this.obj.id, graphId, { [key]: value });
     }
   }
 };

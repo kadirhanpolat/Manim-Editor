@@ -185,7 +185,9 @@ export const SHAPE_DEFAULTS = {
   image:    { width: 200, height: 200, fill: 'transparent', stroke: 'transparent', strokeWidth: 0 },
   svg_asset:{ width: 200, height: 200, fill: 'transparent', stroke: 'transparent', strokeWidth: 0 },
   latex:    { width: 200, height: 80,  fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
-  axes:     { width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 }
+  axes:     { width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  numberplane:{ width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
+  numberline: { width: 500, height: 60,  fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -194,7 +196,8 @@ export const SHAPE_COLORS = {
   line: '#94a3b8', arrow: '#ef4444',
   heart: '#ec4899', dot: '#94a3b8', dot_grid: '#a855f7',
   text: '#f472b6', image: '#f59e0b', svg_asset: '#f59e0b',
-  latex: '#a855f7', axes: '#10b981'
+  latex: '#a855f7', axes: '#10b981',
+  numberplane: '#334155', numberline: '#10b981'
 };
 
 // ─── Getters ─────────────────────────────────────────────────────────────────
@@ -279,7 +282,8 @@ export const actions = {
       dot_grid: 'Dot Grid', svg_asset: 'SVG', rectangle: 'Rectangle',
       ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
       polygon: 'Polygon', line: 'Line', arrow: 'Arrow', text: 'Text',
-      latex: 'LaTeX', axes: 'Axes'
+      latex: 'LaTeX', axes: 'Axes',
+      numberplane: 'NumberPlane', numberline: 'NumberLine'
     };
     const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -309,7 +313,9 @@ export const actions = {
       ...(type === 'polygon' ? { sides: 6 } : {}),
       ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
       ...(type === 'latex' ? { latex: 'E = mc^2' } : {}),
-      ...(type === 'axes' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1] } : {}),
+      ...(type === 'axes'        ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
+      ...(type === 'numberplane' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 } : {}),
+      ...(type === 'numberline'  ? { xRange: [-5, 5, 1] } : {}),
       ...extraProps
     };
 
@@ -491,6 +497,44 @@ export const actions = {
   // ══════════════════════════════════════════════════════════════════════════
   // Clips
   // ══════════════════════════════════════════════════════════════════════════
+
+  addGraph(objId, graphData = {}) {
+    const obj = getters.objectById(objId);
+    if (!obj || obj.type !== 'axes') return null;
+    if (!obj.graphs) Vue.set(obj, 'graphs', []);
+    const graph = {
+      id: uid('graph'),
+      expression: graphData.expression || 'x**2',
+      color: graphData.color || '#f59e0b',
+      xMin: graphData.xMin ?? (obj.xRange?.[0] ?? -5),
+      xMax: graphData.xMax ?? (obj.xRange?.[1] ?? 5),
+      strokeWidth: graphData.strokeWidth || 3,
+    };
+    obj.graphs.push(graph);
+    store.isDirty = true;
+    actions.commitState();
+    return graph;
+  },
+
+  removeGraph(objId, graphId) {
+    const obj = getters.objectById(objId);
+    if (!obj || !obj.graphs) return;
+    const idx = obj.graphs.findIndex(g => g.id === graphId);
+    if (idx !== -1) {
+      obj.graphs.splice(idx, 1);
+      store.isDirty = true;
+      actions.commitState();
+    }
+  },
+
+  updateGraph(objId, graphId, updates) {
+    const obj = getters.objectById(objId);
+    if (!obj || !obj.graphs) return;
+    const graph = obj.graphs.find(g => g.id === graphId);
+    if (!graph) return;
+    for (const key of Object.keys(updates)) Vue.set(graph, key, updates[key]);
+    store.isDirty = true;
+  },
 
   addClip(trackIndex, clipData) {
     while (store.project.tracks.length <= trackIndex) {

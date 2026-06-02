@@ -81,6 +81,8 @@
               <v-line v-for="(tick, ti) in axesYTicks(obj)" :key="'yt'+ti" :config="tick" />
               <v-text :config="axesLabelCfg(obj, 'x')" />
               <v-text :config="axesLabelCfg(obj, 'y')" />
+              <!-- Graph curves preview -->
+              <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc'+gi" :config="gc" />
             </v-group>
           </template>
         </v-layer>
@@ -722,7 +724,47 @@ export default {
       this.liveTransform = null;
     },
     _isGroupType(type) {
-      return type === 'axes' || type === 'latex' || type === 'dot_grid';
+      return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'numberline';
+    },
+    axesGraphCurves(obj) {
+      if (!obj.graphs || obj.graphs.length === 0) return [];
+      const curves = [];
+      const xr = obj.xRange || [-5, 5, 1];
+      const yr = obj.yRange || [-3, 3, 1];
+      const xMin = xr[0], xMax = xr[1];
+      const yMin = yr[0], yMax = yr[1];
+      const pw = obj.width * this.vs;
+      const ph = obj.height * this.vs;
+
+      for (const graph of obj.graphs) {
+        let fn;
+        try {
+          // eslint-disable-next-line no-new-func
+          fn = new Function('x', `"use strict"; return (${graph.expression});`);
+        } catch { continue; }
+
+        const steps = 80;
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+          const x = xMin + (xMax - xMin) * (i / steps);
+          let y;
+          try { y = fn(x); } catch { continue; }
+          if (!Number.isFinite(y)) continue;
+          const cx = ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
+          const cy = -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
+          points.push(cx, cy);
+        }
+        if (points.length >= 4) {
+          curves.push({
+            points,
+            stroke: graph.color || '#f59e0b',
+            strokeWidth: graph.strokeWidth || 3,
+            listening: false,
+            tension: 0.3,
+          });
+        }
+      }
+      return curves;
     },
     onTextDblClick(id) {
       // Could implement inline editing; for now, focus the properties panel
