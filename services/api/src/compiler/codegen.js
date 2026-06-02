@@ -59,13 +59,17 @@ function safeOpacity(v) {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
 }
 
-/** Validate a graph expression: only allow math-safe characters. */
+/** Validate a math expression: only allow characters safe for both Python and JS math. */
 function safeMathExpr(expr) {
   if (!expr || typeof expr !== 'string') return 'x**2';
-  // Allow: digits, letters, spaces, math operators, parentheses, brackets, dots, commas
-  // Reject: semicolons, quotes, newlines, backslashes, hash (comment), backticks
-  if (/[;\n\r'"#\\`]/.test(expr)) return 'x**2';
-  return expr.trim() || 'x**2';
+  const trimmed = expr.trim();
+  if (!trimmed) return 'x**2';
+  // Whitelist: digits, letters (for sin/cos/pi/Math/np etc.), math operators, parens, dot, comma, space
+  // Reject anything with underscores (blocks __import__, __builtins__ etc.)
+  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(trimmed)) return 'x**2';
+  // Also reject if it contains 'import', 'eval', 'exec', 'open', '__'
+  if (/import|eval|exec|open|__/.test(trimmed)) return 'x**2';
+  return trimmed;
 }
 
 /** Sanitise text for Python string literals. */
@@ -220,13 +224,13 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
     case 'axes': {
       const xr = obj.xRange || [-5, 5, 1];
       const yr = obj.yRange || [-3, 3, 1];
-      lines.push(`${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2]}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2]}], x_length=${(obj.width / sw * 14).toFixed(1)}, y_length=${(obj.height / sh * 8).toFixed(1)}, tips=True)`);
+      lines.push(`${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * 14).toFixed(1)}, y_length=${(obj.height / sh * 8).toFixed(1)}, tips=True)`);
       if (obj.graphs && obj.graphs.length > 0) {
         for (const g of obj.graphs) {
           const gn = `${n}_graph_${g.id.replace(/[^a-zA-Z0-9_]/g, '_')}`;
           const col = hex(g.color) || '"#F59E0B"';
-          const xMin = g.xMin ?? xr[0];
-          const xMax = g.xMax ?? xr[1];
+          const xMin = Number.isFinite(g.xMin) ? g.xMin : xr[0];
+          const xMax = Number.isFinite(g.xMax) ? g.xMax : xr[1];
           lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
         }
       }

@@ -96,7 +96,7 @@
             <!-- NumberLine -->
             <v-group v-if="obj.type === 'numberline' && isVis(obj.id)" :key="obj.id" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
               <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
-              <v-line :config="{ points: [obj.width/2 * vs - 8, -5, obj.width/2 * vs, 0, obj.width/2 * vs - 8, 5], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
+              <v-line :config="{ points: [obj.width/2 * vs - 8 * vs, -5 * vs, obj.width/2 * vs, 0, obj.width/2 * vs - 8 * vs, 5 * vs], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
               <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
             </v-group>
           </template>
@@ -753,9 +753,18 @@ export default {
 
       for (const graph of obj.graphs) {
         let fn;
+        // Validate expression before eval
+        const safeExpr = (() => {
+          const e = (graph.expression || '').trim();
+          if (!e) return null;
+          if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(e)) return null;
+          if (/import|eval|exec|open|__/.test(e)) return null;
+          return e;
+        })();
+        if (!safeExpr) continue;
         try {
           // eslint-disable-next-line no-new-func
-          fn = new Function('x', `"use strict"; return (${graph.expression});`);
+          fn = new Function('x', `"use strict"; return (${safeExpr});`);
         } catch { continue; }
 
         const steps = 80;
