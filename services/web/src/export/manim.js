@@ -60,6 +60,15 @@ function safeOpacity(val) {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
 }
 
+function safeMathExpr(expr) {
+  if (!expr || typeof expr !== 'string') return 'x**2';
+  const t = expr.trim();
+  if (!t) return 'x**2';
+  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(t)) return 'x**2';
+  if (/import|eval|exec|open|__/.test(t)) return 'x**2';
+  return t;
+}
+
 /** Sanitise text for Python string literals. */
 function safeText(s) {
   if (!s || typeof s !== 'string') return 'Text';
@@ -211,7 +220,29 @@ function objCode(obj, sw, sh) {
     case 'axes': {
       const xr = obj.xRange || [-5, 5, 1];
       const yr = obj.yRange || [-3, 3, 1];
-      lines.push(`${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2]}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2]}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)}, tips=True)`);
+      lines.push(`${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)}, tips=True)`);
+      if (obj.graphs && obj.graphs.length > 0) {
+        for (const g of obj.graphs) {
+          const gn = `${n}_graph_${g.id.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+          const col = hex(g.color) || '"#F59E0B"';
+          const xMin = Number.isFinite(g.xMin) ? g.xMin : xr[0];
+          const xMax = Number.isFinite(g.xMax) ? g.xMax : xr[1];
+          lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
+        }
+      }
+      break;
+    }
+    case 'numberplane': {
+      const xr = obj.xRange || [-5, 5, 1];
+      const yr = obj.yRange || [-3, 3, 1];
+      const xs = obj.xStep || 1;
+      const ys = obj.yStep || 1;
+      lines.push(`${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
+      break;
+    }
+    case 'numberline': {
+      const xr = obj.xRange || [-5, 5, 1];
+      lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)})`);
       break;
     }
     default:
