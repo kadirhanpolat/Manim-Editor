@@ -384,6 +384,12 @@ const highlightedCode = computed(() => {
 });
 
 // ── Watchers ──
+watch(
+  () => store.project.keyframeDefaults,
+  (defaults) => { getPlaybackEngine().setKeyframeDefaults(defaults); },
+  { immediate: true, deep: true }
+);
+
 watch(renderStatus, (status) => {
   if (status === 'completed' && projectId.value) {
     loadRenderHistory();

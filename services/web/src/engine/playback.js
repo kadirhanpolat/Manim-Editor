@@ -10,6 +10,7 @@ import { getEasing, evaluateEasing } from './easing.js';
 import { generateShapePoints, pointsToFlat } from './geometry.js';
 import { resamplePoints, computeMorphState, lerp, interpolateColor } from './transform.js';
 import { blendClipResults, isClipActive, getClipProgress, isClipCompleted, applyOverrides } from './blending.js';
+import { interpolateKeyframes, getKeyframeRange } from './keyframe.js';
 
 /**
  * @typedef {Object} FrameState
@@ -32,6 +33,9 @@ export class PlaybackEngine {
 
     // Cache for resampled points (cleared when project changes)
     this._pointsCache = new Map();
+
+    // Keyframe defaults (mode: 'opt-in' or 'additive')
+    this._keyframeDefaults = { mode: 'opt-in' };
   }
 
   /**
@@ -53,6 +57,13 @@ export class PlaybackEngine {
    */
   clearCache() {
     this._pointsCache.clear();
+  }
+
+  /**
+   * Set keyframe defaults (mode: 'opt-in' | 'additive').
+   */
+  setKeyframeDefaults(defaults) {
+    this._keyframeDefaults = defaults || { mode: 'opt-in' };
   }
 
   /**
@@ -188,6 +199,9 @@ export class PlaybackEngine {
 
     const frame = blendClipResults(evaluatedClips, objectMap);
 
+    // Apply keyframe overrides (per-property interpolation)
+    this._applyKeyframeOverrides(frame, time, objects);
+
     // Apply entrance/exit animations on top
     this._applyEnterExitAnims(frame, time, objects);
 
@@ -215,6 +229,41 @@ export class PlaybackEngine {
     }
 
     return frame;
+  }
+
+  /**
+   * Apply keyframe overrides to objects.
+   * Per-property keyframes that interpolate values over time.
+   * Respects mode (opt-in vs additive) and keyframeDefaults.
+   */
+  _applyKeyframeOverrides(frame, time, objects) {
+    for (const obj of objects) {
+      if (!obj.keyframes || Object.keys(obj.keyframes).length === 0) continue;
+
+      for (const [prop, keyframes] of Object.entries(obj.keyframes)) {
+        if (!keyframes || keyframes.length === 0) continue;
+
+        const mode = (obj.keyframeMode && obj.keyframeMode[prop]) ||
+          this._keyframeDefaults.mode || 'opt-in';
+
+        if (mode === 'opt-in') {
+          const range = getKeyframeRange(keyframes);
+          if (!range || time < range.start || time > range.end) continue;
+        }
+
+        const kfValue = interpolateKeyframes(keyframes, time);
+        if (kfValue === null) continue;
+
+        const overrides = frame.objectOverrides[obj.id] || {};
+        if (mode === 'additive') {
+          const base = overrides[prop] !== undefined ? overrides[prop] : (obj[prop] || 0);
+          overrides[prop] = base + kfValue;
+        } else {
+          overrides[prop] = kfValue;
+        }
+        frame.objectOverrides[obj.id] = overrides;
+      }
+    }
   }
 
   /**
