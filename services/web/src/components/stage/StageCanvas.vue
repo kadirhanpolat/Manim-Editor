@@ -99,7 +99,50 @@
               <v-line :config="{ points: [obj.width/2 * vs - 8 * vs, -5 * vs, obj.width/2 * vs, 0, obj.width/2 * vs - 8 * vs, 5 * vs], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
               <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
             </v-group>
+
+            <!-- 3D: Sphere iso -->
+            <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'iso')" />
+            </template>
+
+            <!-- 3D: Cube iso -->
+            <template v-if="obj.type === 'cube' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-line :config="cube3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'iso')" />
+            </template>
+
+            <!-- 3D: Cone/Cylinder/Torus iso -->
+            <template v-if="['cone', 'cylinder', 'torus'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-ellipse :config="generic3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'iso')" />
+            </template>
+
+            <!-- 3D: Axes3D iso -->
+            <template v-if="obj.type === 'axes3d' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-group :config="{ x: 0, y: 0 }" @mousedown="onObjDown(obj.id, $event)">
+                <v-line v-for="(axLine, axIdx) in axes3dLines(obj)" :key="'ax3d' + axIdx" :config="axLine" />
+              </v-group>
+            </template>
+
+            <!-- 3D Top View: Sphere -->
+            <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d-top'">
+              <v-circle :config="sphere3dTopCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'top')" />
+            </template>
+
+            <!-- 3D Top View: Cube -->
+            <template v-if="obj.type === 'cube' && is3D && isVis(obj.id)" :key="obj.id + '-3d-top'">
+              <v-rect :config="cube3dTopCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'top')" />
+            </template>
+
+            <!-- 3D Top View: Cone/Cylinder/Torus -->
+            <template v-if="['cone', 'cylinder', 'torus'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d-top'">
+              <v-circle :config="generic3dTopCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'top')" />
+            </template>
           </template>
+
+          <!-- 3D Split Divider -->
+          <v-line
+            v-if="is3D"
+            :config="{ points: [splitX, 0, splitX, stageConfig.height], stroke: '#475569', strokeWidth: 2, dash: [6, 3] }"
+          />
         </v-layer>
 
         <!-- Morph preview layer -->
@@ -159,6 +202,20 @@ import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 
 const store = useProjectStore();
 
+// ── 3D Projection ─────────────────────────────────────────────────────────
+const cos30 = Math.cos(Math.PI / 6);
+const sin30 = Math.sin(Math.PI / 6);
+
+function iso(x3d, y3d, z3d, cx, cy, scale) {
+  const px = (x3d - z3d) * cos30;
+  const py = -y3d + (x3d + z3d) * sin30;
+  return { px: cx + px * scale, py: cy + py * scale };
+}
+
+function top(x3d, z3d, cx2, cy2, scale) {
+  return { px: cx2 + x3d * scale, py: cy2 + z3d * scale };
+}
+
 // ── Reactive state ──
 const containerWidth = ref(800);
 const containerHeight = ref(500);
@@ -215,6 +272,19 @@ const oy = computed(() => {
 });
 
 const stageConfig = computed(() => ({ width: containerWidth.value, height: containerHeight.value }));
+
+const is3D = computed(() => store.project?.sceneType === '3d');
+const splitRatio = ref(0.5);
+
+const leftPanelWidth = computed(() => Math.floor((stageConfig.value?.width ?? 1920) * splitRatio.value));
+const rightPanelWidth = computed(() => (stageConfig.value?.width ?? 1920) - leftPanelWidth.value);
+const splitX = computed(() => leftPanelWidth.value);
+
+const proj3DScale = computed(() => leftPanelWidth.value / 16);
+const projCx = computed(() => leftPanelWidth.value / 2);
+const projCy = computed(() => (stageConfig.value?.height ?? 1080) / 2);
+const projCx2 = computed(() => splitX.value + rightPanelWidth.value / 2);
+const projCy2 = computed(() => (stageConfig.value?.height ?? 1080) / 2);
 const bgConfig = computed(() => ({
   x: ox.value, y: oy.value,
   width: stg.value.width * vs.value, height: stg.value.height * vs.value,
@@ -734,6 +804,26 @@ function onDragEnd(id, e) {
   }
   store.updateObject(id, { x: Math.round(newX), y: Math.round(newY) });
 }
+function onDrag3DEnd(objId, e, panel) {
+  const node = e.target;
+  const canvasX = node.x();
+  const canvasY = node.y();
+  const scale = proj3DScale.value;
+
+  if (panel === 'iso') {
+    const dx = (canvasX - projCx.value) / scale;
+    const dz = (canvasY - projCy.value) / scale;
+    const x3d = (dx / cos30 + dz / sin30) / 2;
+    const z3d = (dz / sin30 - dx / cos30) / 2;
+    store.updateObject(objId, { x3d: parseFloat(x3d.toFixed(3)), z3d: parseFloat(z3d.toFixed(3)) });
+  } else {
+    const x3d = (canvasX - projCx2.value) / scale;
+    const z3d = (canvasY - projCy2.value) / scale;
+    store.updateObject(objId, { x3d: parseFloat(x3d.toFixed(3)), z3d: parseFloat(z3d.toFixed(3)) });
+  }
+  store.commitState();
+  node.position({ x: 0, y: 0 });
+}
 function onTransform(id, e) {
   const node = e.target;
   const obj = store.project.objects.find(o => o.id === id);
@@ -863,6 +953,97 @@ function axesGraphCurves(obj) {
   }
   return curves;
 }
+// ── 3D shape configs ──────────────────────────────────────────────────────
+function sphere3dCfg(obj) {
+  const p = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
+  const isSelected = store.selectedObjectId === obj.id;
+  return {
+    x: p.px, y: p.py, radius: r,
+    fill: obj.fill ?? '#e67700', opacity: obj.opacity ?? 1,
+    stroke: isSelected ? '#60a5fa' : 'transparent', strokeWidth: isSelected ? 2 : 0,
+    draggable: true,
+  };
+}
+
+function cube3dCfg(obj) {
+  const s = (obj.sideLength ?? 1.0) * proj3DScale.value;
+  const hs = s / 2 / proj3DScale.value;
+  const cx = obj.x3d ?? 0, cy = obj.y3d ?? 0, cz = obj.z3d ?? 0;
+  const tl = iso(cx - hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
+  const tr = iso(cx + hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
+  const br = iso(cx + hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
+  const bl = iso(cx - hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
+  const isSelected = store.selectedObjectId === obj.id;
+  return {
+    points: [tl.px, tl.py, tr.px, tr.py, br.px, br.py, bl.px, bl.py],
+    fill: obj.fill ?? '#3b5bdb', closed: true, opacity: obj.opacity ?? 1,
+    stroke: isSelected ? '#60a5fa' : (obj.stroke ?? '#ffffff'), strokeWidth: isSelected ? 2 : 1,
+    draggable: true,
+  };
+}
+
+function generic3dCfg(obj) {
+  const p = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
+  const isSelected = store.selectedObjectId === obj.id;
+  return {
+    x: p.px, y: p.py,
+    radiusX: r, radiusY: r * 0.5,
+    fill: obj.fill ?? '#888888', opacity: obj.opacity ?? 1,
+    stroke: isSelected ? '#60a5fa' : 'transparent', strokeWidth: isSelected ? 2 : 0,
+    draggable: true,
+  };
+}
+
+function axes3dLines(obj) {
+  const origin = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const xEnd = iso((obj.x3d ?? 0) + 3, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const yEnd = iso(obj.x3d ?? 0, (obj.y3d ?? 0) + 3, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const zEnd = iso(obj.x3d ?? 0, obj.y3d ?? 0, (obj.z3d ?? 0) + 3, projCx.value, projCy.value, proj3DScale.value);
+  return [
+    { points: [origin.px, origin.py, xEnd.px, xEnd.py], stroke: '#ff6b6b', strokeWidth: 2 },
+    { points: [origin.px, origin.py, yEnd.px, yEnd.py], stroke: '#69db7c', strokeWidth: 2 },
+    { points: [origin.px, origin.py, zEnd.px, zEnd.py], stroke: '#74c0fc', strokeWidth: 2 },
+  ];
+}
+
+function sphere3dTopCfg(obj) {
+  const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
+  const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
+  const isSelected = store.selectedObjectId === obj.id;
+  return {
+    x: p.px, y: p.py, radius: r,
+    fill: (obj.fill ?? '#e67700') + '80',
+    stroke: isSelected ? '#60a5fa' : (obj.fill ?? '#e67700'), strokeWidth: 1.5,
+    draggable: true,
+  };
+}
+
+function cube3dTopCfg(obj) {
+  const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
+  const s = Math.max(8, (obj.sideLength ?? 1.0) * proj3DScale.value);
+  const isSelected = store.selectedObjectId === obj.id;
+  return {
+    x: p.px - s / 2, y: p.py - s / 2, width: s, height: s,
+    fill: (obj.fill ?? '#3b5bdb') + '80',
+    stroke: isSelected ? '#60a5fa' : (obj.fill ?? '#3b5bdb'), strokeWidth: 1.5,
+    draggable: true,
+  };
+}
+
+function generic3dTopCfg(obj) {
+  const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
+  const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
+  const isSelected = store.selectedObjectId === obj.id;
+  return {
+    x: p.px, y: p.py, radius: r,
+    fill: (obj.fill ?? '#888888') + '80',
+    stroke: isSelected ? '#60a5fa' : (obj.fill ?? '#888888'), strokeWidth: 1.5,
+    draggable: true,
+  };
+}
+
 function onTextDblClick(id) {
   // Could implement inline editing; for now, focus the properties panel
 }
