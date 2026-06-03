@@ -67,7 +67,13 @@ export async function getJobStatus(jobId) {
 export async function enqueueAudioJob(job) {
   const redis = await getRedisClient();
 
+  // Validate job type
+  if (!['gtts', 'coqui'].includes(job.type)) {
+    throw new Error(`Invalid audio job type: ${job.type}`);
+  }
+
   // Create job record
+  // Note: audio jobs use 'pending' status (not 'queued') — lifecycle is pending → running → ready/error
   await redis.hSet(`audio:job:${job.jobId}`, {
     status: 'pending',
     clipId: job.clipId,
@@ -108,11 +114,11 @@ export async function getAudioJobStatus(jobId) {
 export async function updateAudioJobStatus(jobId, updates) {
   const redis = await getRedisClient();
 
-  // Ensure all values are strings for Redis hash storage
-  const stringified = {};
+  // Filter out null/undefined values and ensure remaining values are strings
+  const safe = {};
   for (const [k, v] of Object.entries(updates)) {
-    stringified[k] = String(v);
+    if (v != null) safe[k] = String(v);
   }
 
-  await redis.hSet(`audio:job:${jobId}`, stringified);
+  await redis.hSet(`audio:job:${jobId}`, safe);
 }
