@@ -308,10 +308,12 @@ function generateKeyframeSteps(project, steps, sw, sh) {
         }
       } else if (codegenMode === 'ValueTracker') {
         const safeProp = prop.replace(/[^a-zA-Z0-9_]/g, '_');
+        const vtSetter = _kfUpdater(prop);
+        if (!vtSetter) continue;
         const trackVar = `_vt_${n}_${safeProp}`;
         const initVal = sorted[0].value;
         let block = `${trackVar} = ValueTracker(${initVal})\n`;
-        block += `${n}.add_updater(lambda m: m.${_kfUpdater(prop) || safeProp}(${trackVar}.get_value()))\n`;
+        block += `${n}.add_updater(lambda m: m.${vtSetter}(${trackVar}.get_value()))\n`;
         for (let i = 0; i < sorted.length - 1; i++) {
           const k1 = sorted[i], k2 = sorted[i + 1];
           const dur = parseFloat((k2.time - k1.time).toFixed(2));
@@ -331,13 +333,13 @@ function generateKeyframeSteps(project, steps, sw, sh) {
           if (!setter) continue;
           const rt = rtOpt(dur);
           const v0 = k1.value.toFixed(4), v1 = k2.value.toFixed(4);
-          const t0 = k1.time.toFixed(4), t1 = k2.time.toFixed(4);
+          const t0 = k1.time.toFixed(4);
           const block =
             `def ${kfVar}_fn(mob, alpha):\n` +
             `    t = ${t0} + alpha * ${dur.toFixed(4)}\n` +
             `    v = ${v0} + (${v1} - ${v0}) * max(0, min(1, (t - ${t0}) / ${dur.toFixed(4)}))\n` +
             `    mob.${setter}(v)\n` +
-            `self.play(UpdateFromFunc(${n}, ${kfVar}_fn, run_time=${dur.toFixed(1)}, rate_func=linear))`;
+            `self.play(UpdateFromAlphaFunc(${n}, ${kfVar}_fn, run_time=${dur.toFixed(1)}, rate_func=linear))`;
           steps.push({ time: k1.time, order: 0.5, code: block, dur });
         }
       }

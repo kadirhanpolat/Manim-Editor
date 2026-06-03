@@ -51,7 +51,7 @@ describe('keyframe codegen — animate mode', () => {
 });
 
 describe('keyframe codegen — UpdateFromAlphaFunc mode', () => {
-  it('generates _kf_ function and UpdateFromFunc call', () => {
+  it('generates _kf_ function and UpdateFromAlphaFunc call', () => {
     const proj = makeProject({
       objects: [{
         id: 'obj_1', type: 'circle', name: 'Circle', x: 100, y: 540, width: 120, height: 120,
@@ -68,7 +68,8 @@ describe('keyframe codegen — UpdateFromAlphaFunc mode', () => {
     });
     const code = generateManimScript(proj);
     expect(code).toContain('_kf_obj_1_x');
-    expect(code).toContain('UpdateFromFunc');
+    expect(code).toContain('UpdateFromAlphaFunc');
+    expect(code).not.toMatch(/\bUpdateFromFunc\b(?!Alpha)/);
     expect(code).toContain('run_time=1.5');
   });
 });
