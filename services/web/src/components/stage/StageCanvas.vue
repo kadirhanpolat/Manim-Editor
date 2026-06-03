@@ -362,7 +362,7 @@ export default {
             const img = new window.Image();
             img.crossOrigin = 'anonymous';
             img.src = asset.dataUrl;
-            img.onload = () => { this.$set(this.imageElements, obj.assetId, img); };
+            img.onload = () => { this.imageElements[obj.assetId] = img; };
           }
         }
       }
