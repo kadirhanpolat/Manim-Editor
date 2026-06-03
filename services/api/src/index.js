@@ -14,6 +14,7 @@ import assetsRouter   from './routes/assets.js';
 import rendersRouter  from './routes/renders.js';
 import jobsRouter     from './routes/jobs.js';
 import fontsRouter    from './routes/fonts.js';
+import audioRouter    from './routes/audio.js';
 import { attachWebSocket } from './ws.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +37,7 @@ app.use('/api/assets',   assetsRouter);
 app.use('/api/renders',  rendersRouter);
 app.use('/api/jobs',     jobsRouter);
 app.use('/api/fonts',    fontsRouter);
+app.use('/api/audio',   audioRouter);
 
 app.use((err, req, res, _next) => {
   console.error('[API Error]', err);
