@@ -16,10 +16,10 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 ## Running Tests
 
 ```bash
-# Unit tests (store, components, export) — 62 tests
+# Unit tests (store, components, export) — 78 tests
 cd services/web && npm run test:unit
 
-# Engine tests (easing, geometry, transform) — 89 tests
+# Engine tests (easing, geometry, transform, keyframe) — 105 tests
 cd services/web && npm test
 
 # Both must pass before any commit
@@ -34,9 +34,14 @@ cd services/web && npm test
 | `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON (server-side) |
 | `services/web/src/export/manim.js` | Client-side .py generator + parser (mirrors codegen.js semantics) |
 | `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; camera preview via vs/ox/oy |
-| `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio panels) |
+| `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio, Keyframe panels) |
 | `services/web/src/components/inspector/AudioPanel.vue` | Per-clip audio: file upload, gTTS/Coqui TTS, sync mode |
-| `services/web/src/components/timeline/Timeline.vue` | Multi-track timeline + camera track |
+| `services/web/src/components/inspector/KeyframePanel.vue` | Selected keyframe editor — time (read-only), value, mode, delete |
+| `services/web/src/components/timeline/Timeline.vue` | Multi-track timeline + camera track + keyframe lanes |
+| `services/web/src/components/timeline/KeyframeLanesPanel.vue` | Keyframe lane panel — shown below selected clip, one lane per property |
+| `services/web/src/components/timeline/KeyframeLane.vue` | Single-property keyframe lane — diamond markers, drag, add/remove |
+| `services/web/src/components/timeline/KeyframeEasingPopup.vue` | Segment Bezier easing editor — draggable handles, presets, codegenMode selector |
+| `services/web/src/engine/keyframe.js` | Keyframe interpolation engine — `interpolateKeyframes`, `getKeyframeRange`, Bezier solver |
 | `services/api/src/routes/audio.js` | Audio upload, TTS job, worker callback, delete endpoints |
 | `services/api/src/ws.js` | WebSocket push for render and audio job events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
@@ -175,6 +180,71 @@ What was done:
 4. Upgraded `@vue/test-utils@1` → `@vue/test-utils@2`
 5. Removed `@vue/compat` — now pure Vue 3
 
+## Keyframe Animation System (Completed — 2026-06-03)
+
+### Data Model
+
+Objects carry three optional fields (all absent until first keyframe is added):
+
+```js
+obj.keyframes = {
+  x: [{ time: 0.5, value: 300, easing: { type: 'linear' } }, ...],
+  opacity: [...],
+}
+obj.keyframeMode = {
+  x: 'override',    // 'override' | 'additive' | 'opt-in'
+}
+obj.keyframeCodegen = {
+  x: 'UpdateFromAlphaFunc',  // 'UpdateFromAlphaFunc' | 'animate' | 'ValueTracker'
+}
+```
+
+Project-level defaults (`store.project.keyframeDefaults`):
+```js
+{ mode: 'opt-in', codegenMode: 'UpdateFromAlphaFunc' }
+```
+
+Store state: `selectedKeyframeId: { objId, prop, time } | null`
+
+### Store Actions
+
+| Action | Parameters | Notes |
+|--------|-----------|-------|
+| `addKeyframe` | `(objId, prop, time, value)` | Upserts within 0.01s tolerance; keeps sorted |
+| `removeKeyframe` | `(objId, prop, time)` | Cleans up empty arrays + `keyframes` object |
+| `updateKeyframeValue` | `(objId, prop, time, value)` | Value only; preserves easing |
+| `updateKeyframeEasing` | `(objId, prop, time, easing)` | `{ type, handles? }` |
+| `setKeyframeMode` | `(objId, prop, mode)` | Per-property mode override |
+| `setKeyframeCodegen` | `(objId, prop, codegenMode)` | Per-property codegen override |
+| `selectKeyframe` | `(objId, prop, time)` | Null args clears selection |
+
+All actions call `commitState()` for undo/redo support.
+
+### Playback Pipeline
+
+`computeFrame` order per-property:
+1. Clip blending → `clipValue`
+2. `_applyKeyframeOverrides(frame, time, objects)` — reads `keyframes` + mode, writes to `frame.objectOverrides`
+3. `_applyEnterExitAnims`
+
+Mode behaviours:
+- `opt-in`: applies only within `[getKeyframeRange.start, .end]`
+- `override`: `overrides[prop] = kfValue`
+- `additive`: `overrides[prop] = clipValue + kfValue`
+
+Drag in `KeyframeLane` mutates Pinia state directly (no `commitState()` per pixel); single `commitState()` fires on `mouseup`.
+
+### Codegen
+
+`generateKeyframeSteps(project, steps, sw, sh)` is called in both `codegen.js` and `manim.js` before camera clips. Outputs per `codegenMode`:
+
+- **`UpdateFromAlphaFunc`** (default): `def _kf_<obj>_<prop>_<i>_fn(mob, alpha)` + `self.play(UpdateFromAlphaFunc(...))`
+- **`animate`**: sequential `self.play(obj.animate.set_x(...), run_time=...)`
+- **`ValueTracker`**: `_vt = ValueTracker(init)`, `add_updater`, `self.play(_vt.animate.set_value(...))`, `clear_updaters`
+
+ValueTracker and UpdateFromAlphaFunc skip properties where `_kfUpdater(prop)` returns null (unsupported setters).
+
 ## Technical Debt (known)
 
 - `FRAME_WIDTH = 14 + 2/9` used in `manim.js` vs `14` in `codegen.js` — ~0.065 Manim unit divergence at stage edges
+- `_kfPropSet` in both codegen files uses `14` (not `FRAME_WIDTH`) for x-coordinate conversion — same divergence applies to keyframe-driven x positions in `manim.js`

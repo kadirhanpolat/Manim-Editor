@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.1.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.2.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -65,6 +65,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Audio / Voiceover** -- Attach audio to any clip: upload `.mp3`/`.wav`/`.ogg`, synthesize with **gTTS** (online) or **Coqui TTS** (offline); auto-sync stretches clip duration to match audio; manual mode lets you set offset; generates `VoiceoverScene` + `with self.voiceover(audio=...)` in Manim
 - **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
 - **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
+- **Keyframe animation** -- Per-property absolute-time keyframes independent of clips; add keyframe lanes to any numeric property (x, y, opacity, rotation, scale…); drag diamond markers to adjust timing; Bezier easing editor with draggable handles and Linear/Ease In/Out presets; 3 behavior modes (opt-in, override, additive) and 3 Python codegen modes (UpdateFromAlphaFunc, animate, ValueTracker) configurable per property
 
 ### Code-Only Editor
 - **Full Manim power** -- Write any valid Manim code (imports, custom classes, 3D scenes) and render it directly
@@ -218,7 +219,10 @@ Project
  +-- objects[]: { id, type, name, x, y, width, height, rotation,
  |               fill, stroke, opacity, zOrder, enterTime, duration,
  |               enterAnim, exitAnim, latex?, xRange?, yRange?, assetId?,
- |               graphs?: [{ id, expression, color, xMin, xMax, strokeWidth }] }
+ |               graphs?: [{ id, expression, color, xMin, xMax, strokeWidth }],
+ |               keyframes?: { propName: [{ time, value, easing: { type, handles? } }] },
+ |               keyframeMode?: { propName: 'opt-in' | 'override' | 'additive' },
+ |               keyframeCodegen?: { propName: 'UpdateFromAlphaFunc' | 'animate' | 'ValueTracker' } }
  +-- groups[]: { id, name, childIds[], margin, collapsed }
  +-- tracks[]: { id, name, clips[] }
  |    +-- clip: { id, type, startTime, duration, easing,
@@ -363,8 +367,8 @@ All Docker containers run with **least-privilege non-root users**:
 
 ```bash
 cd services/web
-npm test          # 89 engine tests (easing, geometry, transform, blending)
-npm run test:unit # 62 unit tests (store, templates, graphs, parallel clips, path, camera, audio, manim export)
+npm test          # 105 engine tests (easing, geometry, transform, blending, keyframe interpolation)
+npm run test:unit # 78 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export)
 ```
 
 ---
@@ -397,7 +401,21 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.1.0 (current)
+### v3.2.0 (current)
+
+- **Feature**: Keyframe animation system — per-property absolute-time keyframes independent of clips; survives clip deletion
+- **Feature**: Keyframe lanes in Timeline — select a clip to reveal per-property keyframe lanes below it; double-click lane to add a keyframe at that time; drag diamond markers to move keyframes; right-click to delete
+- **Feature**: Bezier easing popup — click the segment between two keyframes to open a floating easing editor with draggable SVG handles and Linear / Ease In / Ease Out / Ease In-Out presets
+- **Feature**: `KeyframePanel` in Inspector — shows selected keyframe's time, value editor, and mode selector (opt-in / override / additive); delete button
+- **Feature**: 3 behavior modes per property — `opt-in` (active only within keyframe range), `override` (always replaces clip value), `additive` (adds to clip value)
+- **Feature**: 3 Python codegen modes per property — `UpdateFromAlphaFunc` (interpolation function + `UpdateFromAlphaFunc`), `animate` (sequential `obj.animate` calls), `ValueTracker` (`ValueTracker` + `add_updater`)
+- **Feature**: `project.keyframeDefaults` — project-level fallback mode and codegenMode; configurable in Settings
+- **Engine**: `services/web/src/engine/keyframe.js` — `interpolateKeyframes` (binary search + Newton-Raphson cubic Bezier solver), `getKeyframeRange`
+- **Playback**: `_applyKeyframeOverrides` in `playback.js` — applied after clip blending, before enter/exit anims; skips objects with no keyframes (zero-cost fast path at 60fps)
+- **Codegen**: `generateKeyframeSteps` added to both `codegen.js` (server) and `manim.js` (client) in sync
+- **Tests**: 31 new tests — 16 engine (Bezier solver, interpolation edge cases) + 13 store (all 7 keyframe actions + undo) + 3 codegen (no-keyframe regression, animate mode, UpdateFromAlphaFunc mode); total 78 unit + 105 engine
+
+### v3.1.0
 
 - **Refactor**: Vue 2.7 → Vue 3 — pure Vue 3 with no compat shims
 - **Refactor**: `Vue.observable` store → Pinia `defineStore`; `Vue.set` → direct assignment
