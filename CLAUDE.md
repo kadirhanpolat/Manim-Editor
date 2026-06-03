@@ -16,7 +16,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 ## Running Tests
 
 ```bash
-# Unit tests (store, components, export) — 78 tests
+# Unit tests (store, components, export) — 109 tests
 cd services/web && npm run test:unit
 
 # Engine tests (easing, geometry, transform, keyframe) — 105 tests
@@ -33,8 +33,9 @@ cd services/web && npm test
 | `services/web/src/engine/playback.js` | 60fps rAF playback engine — evaluates clips, computes frame state |
 | `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON (server-side) |
 | `services/web/src/export/manim.js` | Client-side .py generator + parser (mirrors codegen.js semantics) |
-| `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; camera preview via vs/ox/oy |
-| `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio, Keyframe panels) |
+| `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; split viewport for 3D (iso + top); camera preview via vs/ox/oy |
+| `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio, Keyframe, Position3D panels) |
+| `services/web/src/components/inspector/Position3DPanel.vue` | 3D position/rotation editor — x3d/y3d/z3d, rx/ry/rz, resolution, xRange inputs |
 | `services/web/src/components/inspector/AudioPanel.vue` | Per-clip audio: file upload, gTTS/Coqui TTS, sync mode |
 | `services/web/src/components/inspector/KeyframePanel.vue` | Selected keyframe editor — time (read-only), value, mode, delete |
 | `services/web/src/components/timeline/Timeline.vue` | Multi-track timeline + camera track + keyframe lanes |
@@ -51,6 +52,7 @@ cd services/web && npm test
 - **Project coords**: 0–1920 (x), 0–1080 (y), origin top-left
 - **Manim coords**: `stageToManim(px, py, sw, sh)` → approx −7 to +7 (x), −4 to +4 (y)
 - **Canvas coords**: Use `c2s(cx, cy)` / `s2c(px, py)` in StageCanvas.vue — accounts for pan offset (`ox`, `oy`) and zoom (`vs`)
+- **3D coords**: `obj.x3d / obj.y3d / obj.z3d` — direct Manim units (−7..+7 / −4..+4 / −4..+4); NOT converted through `stageToManim`. `iso()` and `top()` in StageCanvas.vue project 3D→2D for canvas rendering.
 
 ## Store Patterns
 
@@ -102,9 +104,13 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 ## Object Types
 
-`rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
+**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
+
+**3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`
 
 `axes` objects have a `graphs: []` array — each graph has `{ id, expression, color, xMin, xMax, strokeWidth }`.
+
+3D objects have additional fields: `x3d, y3d, z3d` (position in Manim units), `rx, ry, rz` (rotation degrees), `resolution` (surface quality), `sideLength` (cube), `radius` (sphere/cone/cylinder/torus), `height` (cone/cylinder), `majorRadius/minorRadius` (torus), `xRange/yRange/zRange` (axes3d).
 
 ## Security
 
@@ -119,7 +125,9 @@ This check exists in `codegen.js` (`safeMathExpr`), `manim.js` (`safeMathExpr`),
 
 - Project-level: `cameraType: 'static' | 'moving'`, `cameraTrack: []`
 - `camera_move` clips live in `cameraTrack`, not in regular `tracks[]`
-- Codegen: `MovingCameraScene` base class + `self.camera.frame.animate.move_to().set_width(14/zoom)`
+- **2D codegen**: `MovingCameraScene` base class + `self.camera.frame.animate.move_to().set_width(14/zoom)`
+- **3D codegen**: `ThreeDScene` base class + `self.move_camera(phi=... * DEGREES, theta=... * DEGREES, zoom=..., run_time=...)`
+- `camera_move` clip params for 3D: `{ phi, theta, zoom }` — angles in degrees, stored in `project.camera3d`
 - Delete key and inspector work for camera clips (handled separately from regular clips in App.vue)
 
 ## Audio / Voiceover
@@ -165,9 +173,47 @@ cd services/api && npm run dev
 
 `services/web/src/export/manim.js` supports the same features as `codegen.js`:
 - Generator: `numberplane`, `numberline`, `axes` + `graphs[]`, `AnimationGroup`/`LaggedStart`, `path_move`, `camera_move`, `MovingCameraScene`, `VoiceoverScene` + per-clip `with self.voiceover(...)` blocks
+- **3D**: `ThreeDScene` + `objectCode3d()` for 6 3D types, `set_camera_orientation`, `self.move_camera()`, `Rotate(axis=RIGHT/UP/OUT)`, keyframe `x3d/y3d/z3d → move_to([...])`, `ThreeDScene, VoiceoverScene` mixin
 - Parser: all of the above in reverse (`.py` → project JSON); returns `cameraType` and `cameraTrack`
 
 **Keep `manim.js` and `codegen.js` semantically in sync.** When adding a new object or clip type, update both.
+
+## 3D Scene Support (Completed — 2026-06-03)
+
+Design spec: `docs/superpowers/specs/2026-06-03-3d-scene-design.md`
+
+### Project-Level Fields
+
+```js
+store.project.sceneType = '2d' | '3d'  // default: '2d'
+store.project.camera3d = { phi: 75, theta: -45, zoom: 1.0 }
+```
+
+### Codegen Priority (3D)
+
+`is3D && hasReadyAudio → 'ThreeDScene, VoiceoverScene'` > `is3D → 'ThreeDScene'` > (existing 2D chain)
+
+### Split Viewport (StageCanvas.vue)
+
+When `sceneType === '3d'`, canvas splits 50/50 into:
+- **Left (iso)**: `iso(x3d, y3d, z3d, cx, cy, scale)` — `px=(x3d-z3d)*cos30`, `py=-y3d+(x3d+z3d)*sin30`
+- **Right (top/XZ)**: `top(x3d, z3d, cx2, cy2, scale)` — `px=cx2+x3d*scale`, `py=cy2+z3d*scale`
+
+Drag on iso panel updates `x3d/z3d` (inverse iso formula). Drag on top panel updates `x3d/z3d` directly.
+
+### Keyframe 3D (animate mode)
+
+Simultaneous `x3d/y3d/z3d` keyframes in the same segment are merged into **one** `move_to([x, y, z])` call. Each `[t1, t2]` segment uses "last known value" for each axis.
+
+### Store Actions
+
+- `setSceneType(type)` — `'2d' | '3d'`; calls `commitState()`
+- `setCamera3d(params)` — `Object.assign(project.camera3d, params)`; calls `commitState()`
+
+### Known Constraints
+
+- Isometric projection optimized for `phi=75°` — canvas preview diverges with other angles
+- `path_move` 3D and full `axes3d` range inspector (yRange/zRange) left for a future PR
 
 ## Vue 3 Migration (Completed — 2026-06-03)
 

@@ -122,9 +122,9 @@ function top(x3d, z3d, cx2, cy2, scale) {
 
 ### Base class öncelik sırası
 
-```
-MovingCameraScene3D > VoiceoverScene3D > ThreeDScene
-```
+`ThreeDScene` kamera hareketini (`self.move_camera()`) natively destekler — ayrı bir `MovingCameraScene3D` sınıfı gerekmez.
+
+Katman 4'te voiceover eklendiğinde mixin kullanılır (bkz. Bölüm 7).
 
 ```python
 class Scene_<id>(ThreeDScene):
@@ -184,7 +184,7 @@ self.play(s.animate.scale(1.5), run_time=0.8)
 
 ## 6. Timeline Uzantısı (Katman 3)
 
-- 3D nesneler mevcut `move / rotate / scale` klip tiplerini kullanır; codegen farkı Katman 2'de halledilir
+- 3D nesneler mevcut `move / rotate / scale` klip tiplerini kullanır; codegen farkı Katman 1'de halledilir
 - `camera_move` clipine `phi` ve `theta` alanları eklenir:
 
 ```python
@@ -207,13 +207,19 @@ self.move_camera(phi=60 * DEGREES, theta=-60 * DEGREES, run_time=2)
 
 ### Voiceover + ThreeDScene
 
-`MovingCameraScene` ve `VoiceoverScene` birleşimi:
+Manim CE'de `ThreeDScene` + `VoiceoverScene` birleşimi çoklu kalıtımla sağlanır:
 
 ```python
-class Scene_<id>(ThreeDScene):  # VoiceoverScene mixin Katman 4'te
+from manim_voiceover import VoiceoverScene
+
+class Scene_<id>(ThreeDScene, VoiceoverScene):
+    def construct(self):
+        self.set_camera_orientation(phi=75 * DEGREES, theta=-45 * DEGREES)
+        with self.voiceover(audio="...") as tracker:
+            ...
 ```
 
-Ses sistemi değişmez; `codegen.js` base class seçimini günceller.
+Ses sistemi değişmez; `codegen.js` base class satırını `(ThreeDScene, VoiceoverScene)` olarak günceller.
 
 ---
 

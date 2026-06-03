@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.2.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.3.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -49,7 +49,9 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
 - **Light & Dark themes** -- Toggle between warm light and sleek dark palettes via View > Theme; persists across sessions
 - **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
-- **16 shape types** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, and more
+- **16 shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, and more
+- **6 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes — available when scene is switched to 3D mode
+- **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `E = mc^2`) that render natively in Manim
 - **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
 - **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
@@ -61,11 +63,12 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Animation types** -- Transform, Move, Scale, Fade, Rotate with 17 easing functions
 - **AnimationGroup / LaggedStart** -- Mark clips as parallel (`∥`) to run simultaneously; set `lag_ratio` for staggered starts; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)` in Manim
 - **Path animation (MoveAlongPath)** -- Draw a Bezier path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation
-- **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim
+- **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim (2D) or `self.move_camera(phi=..., theta=...)` (3D)
+- **Split viewport (3D)** -- In 3D mode, the canvas splits into perspective (isometric) + top-down (XZ) views; drag objects in either panel to position them; Blender/Unity style
 - **Audio / Voiceover** -- Attach audio to any clip: upload `.mp3`/`.wav`/`.ogg`, synthesize with **gTTS** (online) or **Coqui TTS** (offline); auto-sync stretches clip duration to match audio; manual mode lets you set offset; generates `VoiceoverScene` + `with self.voiceover(audio=...)` in Manim
 - **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
 - **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
-- **Keyframe animation** -- Per-property absolute-time keyframes independent of clips; add keyframe lanes to any numeric property (x, y, opacity, rotation, scale…); drag diamond markers to adjust timing; Bezier easing editor with draggable handles and Linear/Ease In/Out presets; 3 behavior modes (opt-in, override, additive) and 3 Python codegen modes (UpdateFromAlphaFunc, animate, ValueTracker) configurable per property
+- **Keyframe animation** -- Per-property absolute-time keyframes independent of clips; add keyframe lanes to any numeric property (x, y, opacity, rotation, scale, x3d, y3d, z3d…); drag diamond markers to adjust timing; Bezier easing editor with draggable handles and Linear/Ease In/Out presets; 3 behavior modes (opt-in, override, additive) and 3 Python codegen modes (UpdateFromAlphaFunc, animate, ValueTracker) configurable per property; simultaneous 3D coordinate keyframes merged into a single `move_to([x, y, z])` call
 
 ### Code-Only Editor
 - **Full Manim power** -- Write any valid Manim code (imports, custom classes, 3D scenes) and render it directly
@@ -233,9 +236,11 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
 
-**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene)
+**Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
+
+**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene / ThreeDScene)
 
 **Parallel clips**: Any clip can be marked `parallel: true` with a `lag_ratio` to group with adjacent clips into `AnimationGroup` / `LaggedStart`.
 
@@ -368,7 +373,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 105 engine tests (easing, geometry, transform, blending, keyframe interpolation)
-npm run test:unit # 78 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export)
+npm run test:unit # 109 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene)
 ```
 
 ---
@@ -401,7 +406,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.2.0 (current)
+### v3.3.0 (current)
+
+- **Feature**: 3D scene support — switch any project to 3D mode via the Topbar toggle; generates `ThreeDScene` base class with `set_camera_orientation(phi, theta, zoom)`
+- **Feature**: 6 new 3D shape types — Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes; positioned with `x3d/y3d/z3d` in Manim units
+- **Feature**: Split viewport — 3D mode shows isometric (perspective) + top-down (XZ) side-by-side views; drag shapes in either panel; divider adjustable
+- **Feature**: Position3DPanel in Inspector — x/y/z position, rotation (rx/ry/rz), resolution, and axis range inputs for 3D objects
+- **Feature**: 3D camera animate — `camera_move` clips generate `self.move_camera(phi, theta, zoom, run_time)` in 3D scenes
+- **Feature**: 3D rotate axis — rotate clips on 3D objects expose X/Y/Z axis selector; generates `Rotate(obj, angle=..., axis=RIGHT/UP/OUT)`
+- **Feature**: Keyframe 3D — `x3d/y3d/z3d` properties supported as keyframe lanes; simultaneous coordinate keyframes are merged into a single `move_to([x, y, z])` to avoid overwrite
+- **Feature**: VoiceoverScene mixin — 3D scenes with audio use `class Scene(ThreeDScene, VoiceoverScene):`
+- **Tests**: 31 new tests — 3D store (8), codegen (9), viewport (6), Layer 3 (4), Layer 4 (4); total 109 unit + 105 engine
+
+### v3.2.0
 
 - **Feature**: Keyframe animation system — per-property absolute-time keyframes independent of clips; survives clip deletion
 - **Feature**: Keyframe lanes in Timeline — select a clip to reveal per-property keyframe lanes below it; double-click lane to add a keyframe at that time; drag diamond markers to move keyframes; right-click to delete
