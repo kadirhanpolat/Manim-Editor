@@ -7,8 +7,8 @@ services:
     volumes:
       - manim_motion_data:/data
     command: >
-      sh -c "mkdir -p /data/projects /data/assets /data/renders && 
-             chmod -R 777 /data && 
+      sh -c "mkdir -p /data/projects /data/assets /data/assets/audio /data/renders &&
+             chmod -R 777 /data &&
              echo 'Data directories initialized'"
     restart: "no"
 
@@ -110,6 +110,57 @@ services:
         delay: 10s
         max_attempts: 5
 
+  audio:
+    build: ./services/audio
+    environment:
+      - DATA_DIR=/data
+      - REDIS_URL=redis://redis:6379
+      - API_URL=http://api:3000
+    volumes:
+      - manim_motion_data:/data
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  audio-coqui:
+    build:
+      context: ./services/audio
+      dockerfile: Dockerfile.coqui
+    environment:
+      - DATA_DIR=/data
+      - REDIS_URL=redis://redis:6379
+      - API_URL=http://api:3000
+      - ENABLE_COQUI=1
+    volumes:
+      - manim_motion_data:/data
+      - coqui_models:/root/.local/share/tts
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    profiles:
+      - coqui
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+
   web:
     build: ./services/web
     ports:
@@ -142,3 +193,4 @@ volumes:
   redis_data:
   api_node_modules:
   web_node_modules:
+  coqui_models:
