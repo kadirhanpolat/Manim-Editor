@@ -10,7 +10,7 @@
  * Server actions: saveToServer, loadFromServer, renderOnServer, pollRenderJob
  */
 
-import Vue from 'vue';
+import { createPinia, defineStore, setActivePinia } from 'pinia';
 import api, { connectJobWebSocket } from '../api.js';
 
 const MAX_HISTORY = 50;
@@ -58,63 +58,6 @@ function createDefaultProject(editorMode = 'visual') {
     cameraTrack: [],         // camera_move clips
   };
 }
-
-// ─── Reactive Store ──────────────────────────────────────────────────────────
-
-export const store = Vue.observable({
-  project: createDefaultProject(),
-
-  selectedObjectIds: [],
-  selectedClipId: null,
-  activeTool: 'select',
-
-  // Playback
-  playbackTime: 0,
-  playbackPlaying: false,
-  playbackLoop: true,
-
-  // Frame state from playback engine
-  frameState: {
-    objectOverrides: {},
-    morphShapes: [],
-    hiddenIds: new Set()
-  },
-
-  // Export dialog
-  showExportDialog: false,
-  exportCode: '',
-
-  // Render
-  showRenderDialog: false,
-  renderJobId: null,
-  renderStatus: null,    // null | 'uploading' | 'saving' | 'queued' | 'running' | 'completed' | 'failed'
-  renderError: null,
-  renderQuality: 'high',
-  renderVideoUrl: null,
-  renderLog: '',
-
-  // Server project browser
-  showProjectBrowser: false,
-  serverProjects: [],
-
-  // API connectivity
-  apiAvailable: null,    // null = unknown, true/false
-
-  // History (undo/redo)
-  history: { past: [], future: [] },
-
-  // Clipboard (copy/paste)
-  clipboard: [],
-
-  // UI
-  isDirty: false,
-  error: null,
-  loading: false,
-  savingToServer: false,
-
-  // Theme ('light' or 'dark')
-  theme: (typeof localStorage !== 'undefined' && localStorage.getItem('manim-motion-theme')) || 'light'
-});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -202,990 +145,1033 @@ export const SHAPE_COLORS = {
   numberplane: '#334155', numberline: '#10b981'
 };
 
-// ─── Getters ─────────────────────────────────────────────────────────────────
+// ─── Pinia Store ─────────────────────────────────────────────────────────────
 
-export const getters = {
-  selectedObjects() {
-    return store.selectedObjectIds.map(id => store.project.objects.find(o => o.id === id)).filter(Boolean);
-  },
-  selectedObject() {
-    if (store.selectedObjectIds.length !== 1) return null;
-    return store.project.objects.find(o => o.id === store.selectedObjectIds[0]) || null;
-  },
-  selectedClip() {
-    if (!store.selectedClipId) return null;
-    for (const track of store.project.tracks) {
-      const clip = track.clips.find(c => c.id === store.selectedClipId);
-      if (clip) return clip;
-    }
-    return null;
-  },
-  objectById(id) {
-    return store.project.objects.find(o => o.id === id) || null;
-  },
-  assetById(id) {
-    return store.project.assets.find(a => a.id === id) || null;
-  },
-  groupById(id) {
-    return (store.project.groups || []).find(g => g.id === id) || null;
-  },
-  objectGroup(objId) {
-    return (store.project.groups || []).find(g => g.childIds && g.childIds.includes(objId)) || null;
-  },
-  computedDuration() {
-    let maxEnd = 5;
-    for (const obj of store.project.objects) {
-      const end = (obj.enterTime || 0) + (obj.duration || 5);
-      if (end > maxEnd) maxEnd = end;
-    }
-    for (const track of store.project.tracks) {
-      for (const clip of track.clips) {
-        const end = clip.startTime + clip.duration;
+export const pinia = createPinia();
+setActivePinia(pinia);
+
+const useProjectStore = defineStore('project', {
+  state: () => ({
+    project: createDefaultProject(),
+    selectedObjectIds: [],
+    selectedClipId: null,
+    activeTool: 'select',
+    playbackTime: 0,
+    playbackPlaying: false,
+    playbackLoop: true,
+    frameState: {
+      objectOverrides: {},
+      morphShapes: [],
+      hiddenIds: new Set()
+    },
+    showExportDialog: false,
+    exportCode: '',
+    showRenderDialog: false,
+    renderJobId: null,
+    renderStatus: null,
+    renderError: null,
+    renderQuality: 'high',
+    renderVideoUrl: null,
+    renderLog: '',
+    showProjectBrowser: false,
+    serverProjects: [],
+    apiAvailable: null,
+    history: { past: [], future: [] },
+    clipboard: [],
+    isDirty: false,
+    error: null,
+    loading: false,
+    savingToServer: false,
+    theme: (typeof localStorage !== 'undefined' && localStorage.getItem('manim-motion-theme')) || 'light'
+  }),
+  getters: {
+    selectedObjects: (state) => state.selectedObjectIds.map(id => state.project.objects.find(o => o.id === id)).filter(Boolean),
+    selectedObject: (state) => {
+      if (state.selectedObjectIds.length !== 1) return null;
+      return state.project.objects.find(o => o.id === state.selectedObjectIds[0]) || null;
+    },
+    selectedClip: (state) => {
+      if (!state.selectedClipId) return null;
+      for (const track of state.project.tracks) {
+        const clip = track.clips.find(c => c.id === state.selectedClipId);
+        if (clip) return clip;
+      }
+      return null;
+    },
+    objectById: (state) => (id) => state.project.objects.find(o => o.id === id) || null,
+    assetById: (state) => (id) => state.project.assets.find(a => a.id === id) || null,
+    groupById: (state) => (id) => (state.project.groups || []).find(g => g.id === id) || null,
+    objectGroup: (state) => (objId) => (state.project.groups || []).find(g => g.childIds && g.childIds.includes(objId)) || null,
+    computedDuration: (state) => {
+      let maxEnd = 5;
+      for (const obj of state.project.objects) {
+        const end = (obj.enterTime || 0) + (obj.duration || 5);
         if (end > maxEnd) maxEnd = end;
       }
-    }
-    return Math.max(store.project.sceneDuration, maxEnd + 1);
-  },
-  visibleTracks() {
-    const all = store.project.tracks;
-    const activeCount = all.filter(t => t.clips.length > 0).length;
-    const showCount = Math.min(5, Math.max(1, activeCount + 1));
-    return all.slice(0, showCount);
-  },
-  objectsAtTime(time) {
-    return store.project.objects.filter(o => {
+      for (const track of state.project.tracks) {
+        for (const clip of track.clips) {
+          const end = clip.startTime + clip.duration;
+          if (end > maxEnd) maxEnd = end;
+        }
+      }
+      return Math.max(state.project.sceneDuration, maxEnd + 1);
+    },
+    visibleTracks: (state) => {
+      const all = state.project.tracks;
+      const activeCount = all.filter(t => t.clips.length > 0).length;
+      const showCount = Math.min(5, Math.max(1, activeCount + 1));
+      return all.slice(0, showCount);
+    },
+    objectsAtTime: (state) => (time) => state.project.objects.filter(o => {
       const enter = o.enterTime || 0;
       const exit = enter + (o.duration || 999);
       return time >= enter && time < exit;
-    });
-  },
-  hasPendingAudio() {
-    return store.project.tracks.some(t =>
+    }),
+    hasPendingAudio: (state) => state.project.tracks.some(t =>
       t.clips.some(c => c.audio && c.audio.status === 'pending')
-    );
+    ),
   },
-};
+  actions: {
+    // ══════════════════════════════════════════════════════════════════════════
+    // Objects
+    // ══════════════════════════════════════════════════════════════════════════
 
-// ─── Actions ─────────────────────────────────────────────────────────────────
+    addObject(type, x, y, extraProps = {}) {
+      const stage = this.project.stage;
+      const d = SHAPE_DEFAULTS[type] || SHAPE_DEFAULTS.circle;
+      const pos = (x !== undefined && y !== undefined)
+        ? { x, y }
+        : nextPosition(stage.width, stage.height);
 
-export const actions = {
-  // ══════════════════════════════════════════════════════════════════════════
-  // Objects
-  // ══════════════════════════════════════════════════════════════════════════
+      const lastEnd = this.project.objects.reduce((max, o) => {
+        const end = (o.enterTime || 0) + (o.duration || 5);
+        return end > max ? end : max;
+      }, 0);
 
-  addObject(type, x, y, extraProps = {}) {
-    const stage = store.project.stage;
-    const d = SHAPE_DEFAULTS[type] || SHAPE_DEFAULTS.circle;
-    const pos = (x !== undefined && y !== undefined)
-      ? { x, y }
-      : nextPosition(stage.width, stage.height);
-
-    const lastEnd = store.project.objects.reduce((max, o) => {
-      const end = (o.enterTime || 0) + (o.duration || 5);
-      return end > max ? end : max;
-    }, 0);
-
-    const nameMap = {
-      dot_grid: 'Dot Grid', svg_asset: 'SVG', rectangle: 'Rectangle',
-      ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
-      polygon: 'Polygon', line: 'Line', arrow: 'Arrow', text: 'Text',
-      latex: 'LaTeX', axes: 'Axes',
-      numberplane: 'NumberPlane', numberline: 'NumberLine'
-    };
-    const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
-
-    const obj = {
-      id: uid('obj'),
-      type,
-      name: `${displayName} ${store.project.objects.length + 1}`,
-      x: Math.round(pos.x),
-      y: Math.round(pos.y),
-      width: d.width,
-      height: d.height,
-      rotation: 0,
-      fill: d.fill,
-      stroke: d.stroke,
-      strokeWidth: d.strokeWidth,
-      opacity: 1,
-      zOrder: store.project.objects.length,
-      visible: true,
-      enterTime: store.project.objects.length === 0 ? 0 : Math.round(lastEnd * 10) / 10,
-      duration: 3,
-      enterAnim: 'fade_in',
-      exitAnim: 'fade_out',
-      enterAnimDur: 0.5,
-      exitAnimDur: 0.5,
-      ...(type === 'dot_grid' ? { gridCols: 5, gridRows: 5, dotRadius: 5, dotSpacing: 40 } : {}),
-      ...(type === 'text' ? { content: 'Hello World', fontSize: 48, fontFamily: 'Roboto', textAlign: 'center', fontWeight: 'normal', fontStyle: 'normal' } : {}),
-      ...(type === 'polygon' ? { sides: 6 } : {}),
-      ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
-      ...(type === 'latex' ? { latex: 'E = mc^2' } : {}),
-      ...(type === 'axes'        ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
-      ...(type === 'numberplane' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 } : {}),
-      ...(type === 'numberline'  ? { xRange: [-5, 5, 1] } : {}),
-      ...extraProps
-    };
-
-    store.project.objects.push(obj);
-    store.isDirty = true;
-    actions.commitState();
-    return obj;
-  },
-
-  addImageObject(assetId, x, y) {
-    const asset = store.project.assets.find(a => a.id === assetId);
-    if (!asset) return null;
-
-    const type = asset.type === 'svg' ? 'svg_asset' : 'image';
-    const aspectRatio = (asset.width && asset.height) ? asset.width / asset.height : 1;
-    const height = 200;
-    const width = Math.round(height * aspectRatio);
-
-    return actions.addObject(type, x, y, {
-      name: asset.name,
-      assetId: asset.id,
-      width,
-      height,
-      naturalWidth: asset.width || width,
-      naturalHeight: asset.height || height
-    });
-  },
-
-  updateObject(id, updates) {
-    const obj = store.project.objects.find(o => o.id === id);
-    if (!obj) return;
-    for (const key of Object.keys(updates)) {
-      Vue.set(obj, key, updates[key]);
-    }
-    store.isDirty = true;
-    actions._debouncedCommit();
-  },
-
-  deleteObject(id) {
-    const idx = store.project.objects.findIndex(o => o.id === id);
-    if (idx === -1) return;
-    store.project.objects.splice(idx, 1);
-    const selIdx = store.selectedObjectIds.indexOf(id);
-    if (selIdx !== -1) store.selectedObjectIds.splice(selIdx, 1);
-    for (const track of store.project.tracks) {
-      track.clips = track.clips.filter(c => c.sourceId !== id && c.targetId !== id);
-    }
-    // Remove from any group
-    for (const group of (store.project.groups || [])) {
-      const gIdx = (group.childIds || []).indexOf(id);
-      if (gIdx !== -1) group.childIds.splice(gIdx, 1);
-    }
-    // Remove empty groups
-    if (store.project.groups) {
-      store.project.groups = store.project.groups.filter(g => g.childIds && g.childIds.length > 0);
-    }
-    store.isDirty = true;
-    actions.commitState();
-  },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Groups
-  // ══════════════════════════════════════════════════════════════════════════
-
-  groupObjects(ids) {
-    if (!ids || ids.length < 2) {
-      actions.setError('Select at least 2 objects to group');
-      return null;
-    }
-    // Remove these objects from existing groups
-    for (const group of (store.project.groups || [])) {
-      group.childIds = (group.childIds || []).filter(cid => !ids.includes(cid));
-    }
-    // Clean empty groups
-    if (!store.project.groups) Vue.set(store.project, 'groups', []);
-    store.project.groups = store.project.groups.filter(g => g.childIds && g.childIds.length > 0);
-
-    const group = {
-      id: uid('group'),
-      name: `Group ${(store.project.groups || []).length + 1}`,
-      childIds: [...ids],
-      margin: 10,
-      collapsed: false
-    };
-    store.project.groups.push(group);
-    store.isDirty = true;
-    actions.commitState();
-    return group;
-  },
-
-  ungroupObjects(groupId) {
-    if (!store.project.groups) return;
-    const idx = store.project.groups.findIndex(g => g.id === groupId);
-    if (idx !== -1) {
-      store.project.groups.splice(idx, 1);
-      store.isDirty = true;
-      actions.commitState();
-    }
-  },
-
-  updateGroup(groupId, updates) {
-    const group = (store.project.groups || []).find(g => g.id === groupId);
-    if (!group) return;
-    for (const key of Object.keys(updates)) {
-      Vue.set(group, key, updates[key]);
-    }
-    store.isDirty = true;
-  },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Assets
-  // ══════════════════════════════════════════════════════════════════════════
-
-  async uploadAsset(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        const img = new Image();
-        img.onload = () => {
-          const asset = {
-            id: uid('asset'),
-            name: file.name.replace(/\.[^.]+$/, ''),
-            filename: file.name,
-            type: file.type.includes('svg') ? 'svg' : 'image',
-            dataUrl,
-            width: img.naturalWidth,
-            height: img.naturalHeight,
-            serverFilename: null
-          };
-          store.project.assets.push(asset);
-          store.isDirty = true;
-          resolve(asset);
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = dataUrl;
+      const nameMap = {
+        dot_grid: 'Dot Grid', svg_asset: 'SVG', rectangle: 'Rectangle',
+        ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
+        polygon: 'Polygon', line: 'Line', arrow: 'Arrow', text: 'Text',
+        latex: 'LaTeX', axes: 'Axes',
+        numberplane: 'NumberPlane', numberline: 'NumberLine'
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-  },
+      const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
-  removeAsset(id) {
-    const idx = store.project.assets.findIndex(a => a.id === id);
-    if (idx !== -1) {
-      store.project.assets.splice(idx, 1);
-      store.isDirty = true;
-    }
-  },
+      const obj = {
+        id: uid('obj'),
+        type,
+        name: `${displayName} ${this.project.objects.length + 1}`,
+        x: Math.round(pos.x),
+        y: Math.round(pos.y),
+        width: d.width,
+        height: d.height,
+        rotation: 0,
+        fill: d.fill,
+        stroke: d.stroke,
+        strokeWidth: d.strokeWidth,
+        opacity: 1,
+        zOrder: this.project.objects.length,
+        visible: true,
+        enterTime: this.project.objects.length === 0 ? 0 : Math.round(lastEnd * 10) / 10,
+        duration: 3,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        enterAnimDur: 0.5,
+        exitAnimDur: 0.5,
+        ...(type === 'dot_grid' ? { gridCols: 5, gridRows: 5, dotRadius: 5, dotSpacing: 40 } : {}),
+        ...(type === 'text' ? { content: 'Hello World', fontSize: 48, fontFamily: 'Roboto', textAlign: 'center', fontWeight: 'normal', fontStyle: 'normal' } : {}),
+        ...(type === 'polygon' ? { sides: 6 } : {}),
+        ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
+        ...(type === 'latex' ? { latex: 'E = mc^2' } : {}),
+        ...(type === 'axes'        ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
+        ...(type === 'numberplane' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 } : {}),
+        ...(type === 'numberline'  ? { xRange: [-5, 5, 1] } : {}),
+        ...extraProps
+      };
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Selection
-  // ══════════════════════════════════════════════════════════════════════════
+      this.project.objects.push(obj);
+      this.isDirty = true;
+      this.commitState();
+      return obj;
+    },
 
-  selectObject(id, addToSelection = false) {
-    if (!id) { store.selectedObjectIds = []; store.selectedClipId = null; return; }
-    if (addToSelection) {
-      const idx = store.selectedObjectIds.indexOf(id);
-      if (idx !== -1) store.selectedObjectIds.splice(idx, 1);
-      else store.selectedObjectIds.push(id);
-    } else {
-      store.selectedObjectIds = [id];
-    }
-    store.selectedClipId = null;
-  },
+    addImageObject(assetId, x, y) {
+      const asset = this.project.assets.find(a => a.id === assetId);
+      if (!asset) return null;
 
-  selectClip(clipId) {
-    store.selectedClipId = clipId;
-    store.selectedObjectIds = [];
-  },
+      const type = asset.type === 'svg' ? 'svg_asset' : 'image';
+      const aspectRatio = (asset.width && asset.height) ? asset.width / asset.height : 1;
+      const height = 200;
+      const width = Math.round(height * aspectRatio);
 
-  deselectAll() {
-    store.selectedObjectIds = [];
-    store.selectedClipId = null;
-  },
-
-  setActiveTool(tool) { store.activeTool = tool; },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Clips
-  // ══════════════════════════════════════════════════════════════════════════
-
-  addGraph(objId, graphData = {}) {
-    const obj = getters.objectById(objId);
-    if (!obj || obj.type !== 'axes') return null;
-    if (!obj.graphs) Vue.set(obj, 'graphs', []);
-    const graph = {
-      id: uid('graph'),
-      expression: graphData.expression || 'x**2',
-      color: graphData.color || '#f59e0b',
-      xMin: graphData.xMin ?? (obj.xRange?.[0] ?? -5),
-      xMax: graphData.xMax ?? (obj.xRange?.[1] ?? 5),
-      strokeWidth: graphData.strokeWidth || 3,
-    };
-    obj.graphs.push(graph);
-    store.isDirty = true;
-    actions.commitState();
-    return graph;
-  },
-
-  removeGraph(objId, graphId) {
-    const obj = getters.objectById(objId);
-    if (!obj || !obj.graphs) return;
-    const idx = obj.graphs.findIndex(g => g.id === graphId);
-    if (idx !== -1) {
-      obj.graphs.splice(idx, 1);
-      store.isDirty = true;
-      actions.commitState();
-    }
-  },
-
-  updateGraph(objId, graphId, updates) {
-    const obj = getters.objectById(objId);
-    if (!obj || !obj.graphs) return;
-    const graph = obj.graphs.find(g => g.id === graphId);
-    if (!graph) return;
-    for (const key of Object.keys(updates)) Vue.set(graph, key, updates[key]);
-    store.isDirty = true;
-    actions.commitState();
-  },
-
-  addClip(trackIndex, clipData) {
-    while (store.project.tracks.length <= trackIndex) {
-      store.project.tracks.push({
-        id: `track_${store.project.tracks.length + 1}`,
-        name: `Track ${store.project.tracks.length + 1}`,
-        clips: []
+      return this.addObject(type, x, y, {
+        name: asset.name,
+        assetId: asset.id,
+        width,
+        height,
+        naturalWidth: asset.width || width,
+        naturalHeight: asset.height || height
       });
-    }
-    while (store.project.tracks.length < 5) {
-      store.project.tracks.push({
-        id: `track_${store.project.tracks.length + 1}`,
-        name: `Track ${store.project.tracks.length + 1}`,
-        clips: []
-      });
-    }
-    const clip = {
-      id: uid('clip'), type: 'transform', startTime: 0, duration: 1.5,
-      easing: 'ease_in_out', sourceId: null, targetId: null, params: {},
-      overshoot: 0, settle: 1.0, morphQuality: 'medium',
-      parallel: false, lag_ratio: 0,
-      ...clipData
-    };
-    store.project.tracks[trackIndex].clips.push(clip);
-    store.isDirty = true;
-    actions.commitState();
-    return clip;
-  },
+    },
 
-  updateClip(clipId, updates) {
-    for (const track of store.project.tracks) {
-      const clip = track.clips.find(c => c.id === clipId);
-      if (clip) {
-        for (const key of Object.keys(updates)) Vue.set(clip, key, updates[key]);
-        store.isDirty = true;
-        return;
+    updateObject(id, updates) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj) return;
+      for (const key of Object.keys(updates)) {
+        obj[key] = updates[key];
       }
-    }
-  },
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
 
-  deleteClip(clipId) {
-    for (const track of store.project.tracks) {
-      const idx = track.clips.findIndex(c => c.id === clipId);
+    deleteObject(id) {
+      const idx = this.project.objects.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      this.project.objects.splice(idx, 1);
+      const selIdx = this.selectedObjectIds.indexOf(id);
+      if (selIdx !== -1) this.selectedObjectIds.splice(selIdx, 1);
+      for (const track of this.project.tracks) {
+        track.clips = track.clips.filter(c => c.sourceId !== id && c.targetId !== id);
+      }
+      // Remove from any group
+      for (const group of (this.project.groups || [])) {
+        const gIdx = (group.childIds || []).indexOf(id);
+        if (gIdx !== -1) group.childIds.splice(gIdx, 1);
+      }
+      // Remove empty groups
+      if (this.project.groups) {
+        this.project.groups = this.project.groups.filter(g => g.childIds && g.childIds.length > 0);
+      }
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Groups
+    // ══════════════════════════════════════════════════════════════════════════
+
+    groupObjects(ids) {
+      if (!ids || ids.length < 2) {
+        this.setError('Select at least 2 objects to group');
+        return null;
+      }
+      // Remove these objects from existing groups
+      for (const group of (this.project.groups || [])) {
+        group.childIds = (group.childIds || []).filter(cid => !ids.includes(cid));
+      }
+      // Clean empty groups
+      if (!this.project.groups) this.project.groups = [];
+      this.project.groups = this.project.groups.filter(g => g.childIds && g.childIds.length > 0);
+
+      const group = {
+        id: uid('group'),
+        name: `Group ${(this.project.groups || []).length + 1}`,
+        childIds: [...ids],
+        margin: 10,
+        collapsed: false
+      };
+      this.project.groups.push(group);
+      this.isDirty = true;
+      this.commitState();
+      return group;
+    },
+
+    ungroupObjects(groupId) {
+      if (!this.project.groups) return;
+      const idx = this.project.groups.findIndex(g => g.id === groupId);
       if (idx !== -1) {
-        track.clips.splice(idx, 1);
-        if (store.selectedClipId === clipId) store.selectedClipId = null;
-        store.isDirty = true;
-        actions.commitState();
-        return;
+        this.project.groups.splice(idx, 1);
+        this.isDirty = true;
+        this.commitState();
       }
-    }
-  },
+    },
 
-  setClipAudio(clipId, audioData) {
-    for (const track of store.project.tracks) {
-      const clip = track.clips.find(c => c.id === clipId);
-      if (clip) {
-        Vue.set(clip, 'audio', { ...audioData });
-        if (audioData.syncMode === 'auto' && audioData.status === 'ready' && audioData.duration != null) {
-          Vue.set(clip, 'duration', audioData.duration);
-        }
-        store.isDirty = true;
-        actions.commitState();
-        return;
+    updateGroup(groupId, updates) {
+      const group = (this.project.groups || []).find(g => g.id === groupId);
+      if (!group) return;
+      for (const key of Object.keys(updates)) {
+        group[key] = updates[key];
       }
-    }
-  },
+      this.isDirty = true;
+    },
 
-  removeClipAudio(clipId) {
-    for (const track of store.project.tracks) {
-      const clip = track.clips.find(c => c.id === clipId);
-      if (clip && clip.audio) {
-        Vue.delete(clip, 'audio');
-        store.isDirty = true;
-        actions.commitState();
-        return;
-      }
-    }
-  },
+    // ══════════════════════════════════════════════════════════════════════════
+    // Assets
+    // ══════════════════════════════════════════════════════════════════════════
 
-  createTransform() {
-    if (store.selectedObjectIds.length !== 2) {
-      actions.setError('Select exactly 2 objects to create a transform');
-      return null;
-    }
-    const [sourceId, targetId] = store.selectedObjectIds;
-    const src = getters.objectById(sourceId);
-    const tgt = getters.objectById(targetId);
-    if (!src || !tgt) return null;
-
-    const startTime = (src.enterTime || 0) + (src.duration || 3) - 0.5;
-
-    let trackIndex = 0;
-    for (let i = 0; i < store.project.tracks.length; i++) {
-      if (store.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
-      trackIndex = i + 1;
-    }
-    trackIndex = Math.min(trackIndex, 4);
-
-    const clip = actions.addClip(trackIndex, {
-      type: 'transform', startTime: Math.max(0, startTime), duration: 1.5,
-      easing: 'ease_in_out_cubic', sourceId, targetId, morphQuality: 'medium'
-    });
-    store.selectedClipId = clip.id;
-    store.selectedObjectIds = [];
-    return clip;
-  },
-
-  createAnimation(type, params = {}) {
-    if (store.selectedObjectIds.length !== 1) {
-      actions.setError('Select 1 object to animate');
-      return null;
-    }
-    const sourceId = store.selectedObjectIds[0];
-    const src = getters.objectById(sourceId);
-    const startTime = src ? (src.enterTime || 0) : 0;
-
-    let trackIndex = 0;
-    for (let i = 0; i < store.project.tracks.length; i++) {
-      if (store.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
-      trackIndex = i + 1;
-    }
-    trackIndex = Math.min(trackIndex, 4);
-
-    const clip = actions.addClip(trackIndex, {
-      type, startTime, duration: 1.0, easing: 'ease_in_out', sourceId, params
-    });
-    store.selectedClipId = clip.id;
-    return clip;
-  },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Alignment (3x3 grid)
-  // ══════════════════════════════════════════════════════════════════════════
-
-  alignObject(objId, anchor) {
-    const obj = store.project.objects.find(o => o.id === objId);
-    if (!obj) return;
-    const stage = store.project.stage;
-    const pad = 50;
-
-    const positions = {
-      'TOP_LEFT':     { x: pad + obj.width / 2, y: pad + obj.height / 2 },
-      'TOP':          { x: stage.width / 2, y: pad + obj.height / 2 },
-      'TOP_RIGHT':    { x: stage.width - pad - obj.width / 2, y: pad + obj.height / 2 },
-      'LEFT':         { x: pad + obj.width / 2, y: stage.height / 2 },
-      'CENTER':       { x: stage.width / 2, y: stage.height / 2 },
-      'RIGHT':        { x: stage.width - pad - obj.width / 2, y: stage.height / 2 },
-      'BOTTOM_LEFT':  { x: pad + obj.width / 2, y: stage.height - pad - obj.height / 2 },
-      'BOTTOM':       { x: stage.width / 2, y: stage.height - pad - obj.height / 2 },
-      'BOTTOM_RIGHT': { x: stage.width - pad - obj.width / 2, y: stage.height - pad - obj.height / 2 }
-    };
-
-    const pos = positions[anchor];
-    if (pos) {
-      actions.updateObject(objId, { x: Math.round(pos.x), y: Math.round(pos.y) });
-    }
-  },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Playback
-  // ══════════════════════════════════════════════════════════════════════════
-
-  setPlaybackTime(t) { store.playbackTime = t; },
-  setPlaybackPlaying(p) { store.playbackPlaying = p; },
-  setFrameState(s) { store.frameState = s; },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Stage
-  // ══════════════════════════════════════════════════════════════════════════
-
-  updateStage(u) { for (const k of Object.keys(u)) Vue.set(store.project.stage, k, u[k]); store.isDirty = true; },
-  toggleGrid() { store.project.stage.gridVisible = !store.project.stage.gridVisible; },
-  toggleSnap() { store.project.stage.snapEnabled = !store.project.stage.snapEnabled; },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Local Project I/O  (file-based, existing behaviour)
-  // ══════════════════════════════════════════════════════════════════════════
-
-  exportJSON() { return JSON.stringify(JSON.parse(JSON.stringify(store.project)), null, 2); },
-
-  importJSON(jsonStr) {
-    try {
-      const data = JSON.parse(jsonStr);
-      if (!data.stage || !Array.isArray(data.objects)) throw new Error('Invalid project');
-      if (!data.tracks) data.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
-      if (!data.assets) data.assets = [];
-      if (!data.groups) data.groups = [];
-      if (!data.editorMode) data.editorMode = 'visual';
-      if (data.codeSource === undefined) data.codeSource = '';
-      if (!('cameraType' in data)) data.cameraType = 'static';
-      if (!Array.isArray(data.cameraTrack)) data.cameraTrack = [];
-      store.project = data;
-      store.selectedObjectIds = [];
-      store.selectedClipId = null;
-      store.isDirty = false;
-      store.error = null;
-      store.history.past = [];
-      store.history.future = [];
-      actions.commitState();
-      return true;
-    } catch (err) {
-      store.error = `Could not open project: ${err.message}`;
-      return false;
-    }
-  },
-
-  saveToFile() {
-    const json = actions.exportJSON();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${store.project.name || 'project'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    store.isDirty = false;
-  },
-
-  loadFromFile() {
-    return new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) { resolve(false); return; }
+    async uploadAsset(file) {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (ev) => resolve(actions.importJSON(ev.target.result));
-        reader.onerror = () => { store.error = 'Failed to read file'; resolve(false); };
-        reader.readAsText(file);
-      };
-      input.click();
-    });
-  },
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          const img = new Image();
+          img.onload = () => {
+            const asset = {
+              id: uid('asset'),
+              name: file.name.replace(/\.[^.]+$/, ''),
+              filename: file.name,
+              type: file.type.includes('svg') ? 'svg' : 'image',
+              dataUrl,
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+              serverFilename: null
+            };
+            this.project.assets.push(asset);
+            this.isDirty = true;
+            resolve(asset);
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = dataUrl;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+    },
 
-  newProject(name = 'My Animation', editorMode = 'visual') {
-    store.project = createDefaultProject(editorMode);
-    store.project.name = name;
-    store.selectedObjectIds = [];
-    store.selectedClipId = null;
-    store.isDirty = false;
-    store.error = null;
-    store.playbackTime = 0;
-    store.playbackPlaying = false;
-    store.frameState = { objectOverrides: {}, morphShapes: [], hiddenIds: new Set() };
-    store.renderJobId = null;
-    store.renderStatus = null;
-    store.renderError = null;
-    store.renderVideoUrl = null;
-    store.renderLog = '';
-    store.history.past = [];
-    store.history.future = [];
-    store.clipboard = [];
-    _objectAddCount = 0;
-  },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Server Project I/O  (Docker / API)
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /** Check if the API server is reachable */
-  async checkApi() {
-    try {
-      const ok = await api.checkHealth();
-      store.apiAvailable = ok;
-      return ok;
-    } catch {
-      store.apiAvailable = false;
-      return false;
-    }
-  },
-
-  /**
-   * Save the current project to the server (explicit action).
-   * Creates the project on the server if it has no ID.
-   * Uploads any assets that haven't been synced yet.
-   */
-  async saveToServer() {
-    store.savingToServer = true;
-    store.loading = true;
-    try {
-      // 1. Create on server if no project ID
-      if (!store.project.id) {
-        const created = await api.projects.create(store.project.name, store.project.editorMode);
-        Vue.set(store.project, 'id', created.id);
+    removeAsset(id) {
+      const idx = this.project.assets.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        this.project.assets.splice(idx, 1);
+        this.isDirty = true;
       }
+    },
 
-      const projectId = store.project.id;
+    // ══════════════════════════════════════════════════════════════════════════
+    // Selection
+    // ══════════════════════════════════════════════════════════════════════════
 
-      // 2. Upload any assets that need syncing
-      for (const asset of store.project.assets) {
-        if (asset.dataUrl && !asset.serverFilename) {
-          try {
-            const result = await api.assets.uploadBase64(projectId, {
-              name: asset.filename || asset.name || 'asset',
-              type: asset.type,
-              data: asset.dataUrl
-            });
-            Vue.set(asset, 'serverFilename', result.filename);
-          } catch (err) {
-            console.warn('[saveToServer] Asset upload failed:', asset.name, err);
+    selectObject(id, addToSelection = false) {
+      if (!id) { this.selectedObjectIds = []; this.selectedClipId = null; return; }
+      if (addToSelection) {
+        const idx = this.selectedObjectIds.indexOf(id);
+        if (idx !== -1) this.selectedObjectIds.splice(idx, 1);
+        else this.selectedObjectIds.push(id);
+      } else {
+        this.selectedObjectIds = [id];
+      }
+      this.selectedClipId = null;
+    },
+
+    selectClip(clipId) {
+      this.selectedClipId = clipId;
+      this.selectedObjectIds = [];
+    },
+
+    deselectAll() {
+      this.selectedObjectIds = [];
+      this.selectedClipId = null;
+    },
+
+    setActiveTool(tool) { this.activeTool = tool; },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Clips
+    // ══════════════════════════════════════════════════════════════════════════
+
+    addGraph(objId, graphData = {}) {
+      const obj = this.objectById(objId);
+      if (!obj || obj.type !== 'axes') return null;
+      if (!obj.graphs) obj.graphs = [];
+      const graph = {
+        id: uid('graph'),
+        expression: graphData.expression || 'x**2',
+        color: graphData.color || '#f59e0b',
+        xMin: graphData.xMin ?? (obj.xRange?.[0] ?? -5),
+        xMax: graphData.xMax ?? (obj.xRange?.[1] ?? 5),
+        strokeWidth: graphData.strokeWidth || 3,
+      };
+      obj.graphs.push(graph);
+      this.isDirty = true;
+      this.commitState();
+      return graph;
+    },
+
+    removeGraph(objId, graphId) {
+      const obj = this.objectById(objId);
+      if (!obj || !obj.graphs) return;
+      const idx = obj.graphs.findIndex(g => g.id === graphId);
+      if (idx !== -1) {
+        obj.graphs.splice(idx, 1);
+        this.isDirty = true;
+        this.commitState();
+      }
+    },
+
+    updateGraph(objId, graphId, updates) {
+      const obj = this.objectById(objId);
+      if (!obj || !obj.graphs) return;
+      const graph = obj.graphs.find(g => g.id === graphId);
+      if (!graph) return;
+      for (const key of Object.keys(updates)) graph[key] = updates[key];
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addClip(trackIndex, clipData) {
+      while (this.project.tracks.length <= trackIndex) {
+        this.project.tracks.push({
+          id: `track_${this.project.tracks.length + 1}`,
+          name: `Track ${this.project.tracks.length + 1}`,
+          clips: []
+        });
+      }
+      while (this.project.tracks.length < 5) {
+        this.project.tracks.push({
+          id: `track_${this.project.tracks.length + 1}`,
+          name: `Track ${this.project.tracks.length + 1}`,
+          clips: []
+        });
+      }
+      const clip = {
+        id: uid('clip'), type: 'transform', startTime: 0, duration: 1.5,
+        easing: 'ease_in_out', sourceId: null, targetId: null, params: {},
+        overshoot: 0, settle: 1.0, morphQuality: 'medium',
+        parallel: false, lag_ratio: 0,
+        ...clipData
+      };
+      this.project.tracks[trackIndex].clips.push(clip);
+      this.isDirty = true;
+      this.commitState();
+      return clip;
+    },
+
+    updateClip(clipId, updates) {
+      for (const track of this.project.tracks) {
+        const clip = track.clips.find(c => c.id === clipId);
+        if (clip) {
+          for (const key of Object.keys(updates)) clip[key] = updates[key];
+          this.isDirty = true;
+          return;
+        }
+      }
+    },
+
+    deleteClip(clipId) {
+      for (const track of this.project.tracks) {
+        const idx = track.clips.findIndex(c => c.id === clipId);
+        if (idx !== -1) {
+          track.clips.splice(idx, 1);
+          if (this.selectedClipId === clipId) this.selectedClipId = null;
+          this.isDirty = true;
+          this.commitState();
+          return;
+        }
+      }
+    },
+
+    setClipAudio(clipId, audioData) {
+      for (const track of this.project.tracks) {
+        const clip = track.clips.find(c => c.id === clipId);
+        if (clip) {
+          clip.audio = { ...audioData };
+          if (audioData.syncMode === 'auto' && audioData.status === 'ready' && audioData.duration != null) {
+            clip.duration = audioData.duration;
+          }
+          this.isDirty = true;
+          this.commitState();
+          return;
+        }
+      }
+    },
+
+    removeClipAudio(clipId) {
+      for (const track of this.project.tracks) {
+        const clip = track.clips.find(c => c.id === clipId);
+        if (clip && clip.audio) {
+          delete clip.audio;
+          this.isDirty = true;
+          this.commitState();
+          return;
+        }
+      }
+    },
+
+    createTransform() {
+      if (this.selectedObjectIds.length !== 2) {
+        this.setError('Select exactly 2 objects to create a transform');
+        return null;
+      }
+      const [sourceId, targetId] = this.selectedObjectIds;
+      const src = this.objectById(sourceId);
+      const tgt = this.objectById(targetId);
+      if (!src || !tgt) return null;
+
+      const startTime = (src.enterTime || 0) + (src.duration || 3) - 0.5;
+
+      let trackIndex = 0;
+      for (let i = 0; i < this.project.tracks.length; i++) {
+        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        trackIndex = i + 1;
+      }
+      trackIndex = Math.min(trackIndex, 4);
+
+      const clip = this.addClip(trackIndex, {
+        type: 'transform', startTime: Math.max(0, startTime), duration: 1.5,
+        easing: 'ease_in_out_cubic', sourceId, targetId, morphQuality: 'medium'
+      });
+      this.selectedClipId = clip.id;
+      this.selectedObjectIds = [];
+      return clip;
+    },
+
+    createAnimation(type, params = {}) {
+      if (this.selectedObjectIds.length !== 1) {
+        this.setError('Select 1 object to animate');
+        return null;
+      }
+      const sourceId = this.selectedObjectIds[0];
+      const src = this.objectById(sourceId);
+      const startTime = src ? (src.enterTime || 0) : 0;
+
+      let trackIndex = 0;
+      for (let i = 0; i < this.project.tracks.length; i++) {
+        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        trackIndex = i + 1;
+      }
+      trackIndex = Math.min(trackIndex, 4);
+
+      const clip = this.addClip(trackIndex, {
+        type, startTime, duration: 1.0, easing: 'ease_in_out', sourceId, params
+      });
+      this.selectedClipId = clip.id;
+      return clip;
+    },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Alignment (3x3 grid)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    alignObject(objId, anchor) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj) return;
+      const stage = this.project.stage;
+      const pad = 50;
+
+      const positions = {
+        'TOP_LEFT':     { x: pad + obj.width / 2, y: pad + obj.height / 2 },
+        'TOP':          { x: stage.width / 2, y: pad + obj.height / 2 },
+        'TOP_RIGHT':    { x: stage.width - pad - obj.width / 2, y: pad + obj.height / 2 },
+        'LEFT':         { x: pad + obj.width / 2, y: stage.height / 2 },
+        'CENTER':       { x: stage.width / 2, y: stage.height / 2 },
+        'RIGHT':        { x: stage.width - pad - obj.width / 2, y: stage.height / 2 },
+        'BOTTOM_LEFT':  { x: pad + obj.width / 2, y: stage.height - pad - obj.height / 2 },
+        'BOTTOM':       { x: stage.width / 2, y: stage.height - pad - obj.height / 2 },
+        'BOTTOM_RIGHT': { x: stage.width - pad - obj.width / 2, y: stage.height - pad - obj.height / 2 }
+      };
+
+      const pos = positions[anchor];
+      if (pos) {
+        this.updateObject(objId, { x: Math.round(pos.x), y: Math.round(pos.y) });
+      }
+    },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Playback
+    // ══════════════════════════════════════════════════════════════════════════
+
+    setPlaybackTime(t) { this.playbackTime = t; },
+    setPlaybackPlaying(p) { this.playbackPlaying = p; },
+    setFrameState(s) { this.frameState = s; },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Stage
+    // ══════════════════════════════════════════════════════════════════════════
+
+    updateStage(u) { for (const k of Object.keys(u)) this.project.stage[k] = u[k]; this.isDirty = true; },
+    toggleGrid() { this.project.stage.gridVisible = !this.project.stage.gridVisible; },
+    toggleSnap() { this.project.stage.snapEnabled = !this.project.stage.snapEnabled; },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Local Project I/O  (file-based, existing behaviour)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    exportJSON() { return JSON.stringify(JSON.parse(JSON.stringify(this.project)), null, 2); },
+
+    importJSON(jsonStr) {
+      try {
+        const data = JSON.parse(jsonStr);
+        if (!data.stage || !Array.isArray(data.objects)) throw new Error('Invalid project');
+        if (!data.tracks) data.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
+        if (!data.assets) data.assets = [];
+        if (!data.groups) data.groups = [];
+        if (!data.editorMode) data.editorMode = 'visual';
+        if (data.codeSource === undefined) data.codeSource = '';
+        if (!('cameraType' in data)) data.cameraType = 'static';
+        if (!Array.isArray(data.cameraTrack)) data.cameraTrack = [];
+        this.project = data;
+        this.selectedObjectIds = [];
+        this.selectedClipId = null;
+        this.isDirty = false;
+        this.error = null;
+        this.history.past = [];
+        this.history.future = [];
+        this.commitState();
+        return true;
+      } catch (err) {
+        this.error = `Could not open project: ${err.message}`;
+        return false;
+      }
+    },
+
+    saveToFile() {
+      const json = this.exportJSON();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${this.project.name || 'project'}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.isDirty = false;
+    },
+
+    loadFromFile() {
+      return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) { resolve(false); return; }
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(this.importJSON(ev.target.result));
+          reader.onerror = () => { this.error = 'Failed to read file'; resolve(false); };
+          reader.readAsText(file);
+        };
+        input.click();
+      });
+    },
+
+    newProject(name = 'My Animation', editorMode = 'visual') {
+      this.project = createDefaultProject(editorMode);
+      this.project.name = name;
+      this.selectedObjectIds = [];
+      this.selectedClipId = null;
+      this.isDirty = false;
+      this.error = null;
+      this.playbackTime = 0;
+      this.playbackPlaying = false;
+      this.frameState = { objectOverrides: {}, morphShapes: [], hiddenIds: new Set() };
+      this.renderJobId = null;
+      this.renderStatus = null;
+      this.renderError = null;
+      this.renderVideoUrl = null;
+      this.renderLog = '';
+      this.history.past = [];
+      this.history.future = [];
+      this.clipboard = [];
+      _objectAddCount = 0;
+    },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Server Project I/O  (Docker / API)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /** Check if the API server is reachable */
+    async checkApi() {
+      try {
+        const ok = await api.checkHealth();
+        this.apiAvailable = ok;
+        return ok;
+      } catch {
+        this.apiAvailable = false;
+        return false;
+      }
+    },
+
+    /**
+     * Save the current project to the server (explicit action).
+     * Creates the project on the server if it has no ID.
+     * Uploads any assets that haven't been synced yet.
+     */
+    async saveToServer() {
+      this.savingToServer = true;
+      this.loading = true;
+      try {
+        // 1. Create on server if no project ID
+        if (!this.project.id) {
+          const created = await api.projects.create(this.project.name, this.project.editorMode);
+          this.project.id = created.id;
+        }
+
+        const projectId = this.project.id;
+
+        // 2. Upload any assets that need syncing
+        for (const asset of this.project.assets) {
+          if (asset.dataUrl && !asset.serverFilename) {
+            try {
+              const result = await api.assets.uploadBase64(projectId, {
+                name: asset.filename || asset.name || 'asset',
+                type: asset.type,
+                data: asset.dataUrl
+              });
+              asset.serverFilename = result.filename;
+            } catch (err) {
+              console.warn('[saveToServer] Asset upload failed:', asset.name, err);
+            }
           }
         }
-      }
 
-      // 3. Prepare server-safe project JSON
-      const serverProject = JSON.parse(JSON.stringify(store.project));
+        // 3. Prepare server-safe project JSON
+        const serverProject = JSON.parse(JSON.stringify(this.project));
 
-      // Map serverFilename → filename, remove dataUrl
-      for (const a of serverProject.assets) {
-        if (a.serverFilename) a.filename = a.serverFilename;
-        delete a.dataUrl;
-        delete a.serverFilename;
-      }
-
-      // 4. Save to server
-      await api.projects.update(projectId, serverProject);
-      store.isDirty = false;
-
-      return projectId;
-    } catch (err) {
-      store.error = `Save to server failed: ${err.message}`;
-      throw err;
-    } finally {
-      store.loading = false;
-      store.savingToServer = false;
-    }
-  },
-
-  /**
-   * Load a project from the server by ID.
-   */
-  async loadFromServer(id) {
-    store.loading = true;
-    try {
-      const project = await api.projects.get(id);
-
-      // For each asset, create a displayable URL
-      for (const asset of project.assets || []) {
-        if (asset.filename && !asset.dataUrl) {
-          asset.dataUrl = api.assets.getUrl(id, asset.filename);
-          asset.serverFilename = asset.filename;
+        // Map serverFilename → filename, remove dataUrl
+        for (const a of serverProject.assets) {
+          if (a.serverFilename) a.filename = a.serverFilename;
+          delete a.dataUrl;
+          delete a.serverFilename;
         }
+
+        // 4. Save to server
+        await api.projects.update(projectId, serverProject);
+        this.isDirty = false;
+
+        return projectId;
+      } catch (err) {
+        this.error = `Save to server failed: ${err.message}`;
+        throw err;
+      } finally {
+        this.loading = false;
+        this.savingToServer = false;
       }
+    },
 
-      // Ensure groups array exists
-      if (!project.groups) project.groups = [];
-      if (!project.editorMode) project.editorMode = 'visual';
-      if (project.codeSource === undefined) project.codeSource = '';
-      if (!('cameraType' in project)) project.cameraType = 'static';
-      if (!Array.isArray(project.cameraTrack)) project.cameraTrack = [];
+    /**
+     * Load a project from the server by ID.
+     */
+    async loadFromServer(id) {
+      this.loading = true;
+      try {
+        const project = await api.projects.get(id);
 
-      store.project = project;
-      store.selectedObjectIds = [];
-      store.selectedClipId = null;
-      store.isDirty = false;
-      store.error = null;
-      store.renderJobId = null;
-      store.renderStatus = null;
-      store.renderError = null;
-      store.renderVideoUrl = null;
-      return true;
-    } catch (err) {
-      store.error = `Load from server failed: ${err.message}`;
-      return false;
-    } finally {
-      store.loading = false;
-    }
-  },
+        // For each asset, create a displayable URL
+        for (const asset of project.assets || []) {
+          if (asset.filename && !asset.dataUrl) {
+            asset.dataUrl = api.assets.getUrl(id, asset.filename);
+            asset.serverFilename = asset.filename;
+          }
+        }
 
-  /**
-   * Fetch list of projects on the server.
-   */
-  async listServerProjects() {
-    try {
-      const list = await api.projects.list();
-      store.serverProjects = list || [];
-      return list;
-    } catch (err) {
-      store.error = `Could not list projects: ${err.message}`;
-      store.serverProjects = [];
-      return [];
-    }
-  },
+        // Ensure groups array exists
+        if (!project.groups) project.groups = [];
+        if (!project.editorMode) project.editorMode = 'visual';
+        if (project.codeSource === undefined) project.codeSource = '';
+        if (!('cameraType' in project)) project.cameraType = 'static';
+        if (!Array.isArray(project.cameraTrack)) project.cameraTrack = [];
 
-  /**
-   * Delete a project from the server (project + assets + renders).
-   */
-  async deleteServerProject(id) {
-    await api.projects.delete(id);
-    store.serverProjects = store.serverProjects.filter(p => p.id !== id);
-    if (store.project.id === id) {
-      store.project.id = null;
-    }
-  },
-
-  /**
-   * Full server render pipeline:
-   *  1. Save project + assets to server
-   *  2. Trigger render
-   *  3. Start polling for status
-   */
-  async renderOnServer(quality = 'high') {
-    store.showRenderDialog = true;
-    store.renderStatus = 'uploading';
-    store.renderError = null;
-    store.renderVideoUrl = null;
-    store.renderLog = '';
-    store.renderQuality = quality;
-
-    try {
-      // 1. Save to server
-      store.renderStatus = 'saving';
-      const projectId = await actions.saveToServer();
-
-      // 2. Trigger render (code mode sends raw source; visual mode uses compiled pipeline)
-      store.renderStatus = 'queued';
-      let result;
-      if (store.project.editorMode === 'code') {
-        result = await api.projects.renderCode(projectId, {
-          quality,
-          codeSource: store.project.codeSource,
-          sceneName: 'MainScene'
-        });
-      } else {
-        result = await api.projects.render(projectId, quality);
+        this.project = project;
+        this.selectedObjectIds = [];
+        this.selectedClipId = null;
+        this.isDirty = false;
+        this.error = null;
+        this.renderJobId = null;
+        this.renderStatus = null;
+        this.renderError = null;
+        this.renderVideoUrl = null;
+        return true;
+      } catch (err) {
+        this.error = `Load from server failed: ${err.message}`;
+        return false;
+      } finally {
+        this.loading = false;
       }
-      store.renderJobId = result.jobId;
+    },
 
-      // 3. Start polling
-      actions._startPollRender(result.jobId, projectId);
-
-    } catch (err) {
-      store.renderStatus = 'failed';
-      store.renderError = err.message;
-    }
-  },
-
-  /** @private Start WebSocket subscription for a render job */
-  _startPollRender(jobId, projectId) {
-    actions._stopPollRender();
-
-    _pollDisconnect = connectJobWebSocket(jobId, (msg) => {
-      if (msg.status === 'running') {
-        store.renderStatus = 'running';
-        if (msg.stdout) store.renderLog = msg.stdout;
-      } else if (msg.status === 'completed') {
-        store.renderStatus = 'completed';
-        store.renderVideoUrl = api.renders.getLatestUrl(projectId);
-        store.renderLog = msg.stdout || '';
-        actions._stopPollRender();
-      } else if (msg.status === 'failed') {
-        store.renderStatus = 'failed';
-        store.renderError = msg.error || msg.stderr || 'Render failed';
-        store.renderLog = (msg.stdout || '') + '\n' + (msg.stderr || '');
-        actions._stopPollRender();
+    /**
+     * Fetch list of projects on the server.
+     */
+    async listServerProjects() {
+      try {
+        const list = await api.projects.list();
+        this.serverProjects = list || [];
+        return list;
+      } catch (err) {
+        this.error = `Could not list projects: ${err.message}`;
+        this.serverProjects = [];
+        return [];
       }
-    });
-  },
+    },
 
-  /** @private Stop WebSocket subscription */
-  _stopPollRender() {
-    if (_pollDisconnect) {
-      _pollDisconnect();
-      _pollDisconnect = null;
-    }
-  },
+    /**
+     * Delete a project from the server (project + assets + renders).
+     */
+    async deleteServerProject(id) {
+      await api.projects.delete(id);
+      this.serverProjects = this.serverProjects.filter(p => p.id !== id);
+      if (this.project.id === id) {
+        this.project.id = null;
+      }
+    },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // History (Undo / Redo)
-  // ══════════════════════════════════════════════════════════════════════════
+    /**
+     * Full server render pipeline:
+     *  1. Save project + assets to server
+     *  2. Trigger render
+     *  3. Start polling for status
+     */
+    async renderOnServer(quality = 'high') {
+      this.showRenderDialog = true;
+      this.renderStatus = 'uploading';
+      this.renderError = null;
+      this.renderVideoUrl = null;
+      this.renderLog = '';
+      this.renderQuality = quality;
 
-  _snapshotState() {
-    return JSON.stringify({
-      objects: store.project.objects,
-      groups: store.project.groups,
-      tracks: store.project.tracks
-    });
-  },
+      try {
+        // 1. Save to server
+        this.renderStatus = 'saving';
+        const projectId = await this.saveToServer();
 
-  commitState() {
-    const snapshot = actions._snapshotState();
-    store.history.past.push(snapshot);
-    if (store.history.past.length > MAX_HISTORY) store.history.past.shift();
-    store.history.future = [];
-  },
+        // 2. Trigger render (code mode sends raw source; visual mode uses compiled pipeline)
+        this.renderStatus = 'queued';
+        let result;
+        if (this.project.editorMode === 'code') {
+          result = await api.projects.renderCode(projectId, {
+            quality,
+            codeSource: this.project.codeSource,
+            sceneName: 'MainScene'
+          });
+        } else {
+          result = await api.projects.render(projectId, quality);
+        }
+        this.renderJobId = result.jobId;
 
-  _debouncedCommit: (() => {
-    let timer = null;
-    return () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => actions.commitState(), 400);
-    };
-  })(),
+        // 3. Start polling
+        this._startPollRender(result.jobId, projectId);
 
-  undo() {
-    if (store.history.past.length <= 1) return;
-    const current = store.history.past.pop();
-    store.history.future.push(current);
-    const prev = store.history.past[store.history.past.length - 1];
-    const data = JSON.parse(prev);
-    store.project.objects = data.objects;
-    store.project.groups = data.groups || [];
-    store.project.tracks = data.tracks;
-    store.selectedObjectIds = [];
-    store.selectedClipId = null;
-    store.isDirty = true;
-  },
+      } catch (err) {
+        this.renderStatus = 'failed';
+        this.renderError = err.message;
+      }
+    },
 
-  redo() {
-    if (store.history.future.length === 0) return;
-    const next = store.history.future.pop();
-    store.history.past.push(next);
-    const data = JSON.parse(next);
-    store.project.objects = data.objects;
-    store.project.groups = data.groups || [];
-    store.project.tracks = data.tracks;
-    store.selectedObjectIds = [];
-    store.selectedClipId = null;
-    store.isDirty = true;
-  },
+    /** @private Start WebSocket subscription for a render job */
+    _startPollRender(jobId, projectId) {
+      this._stopPollRender();
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Clipboard (Copy / Paste)
-  // ══════════════════════════════════════════════════════════════════════════
+      _pollDisconnect = connectJobWebSocket(jobId, (msg) => {
+        if (msg.status === 'running') {
+          this.renderStatus = 'running';
+          if (msg.stdout) this.renderLog = msg.stdout;
+        } else if (msg.status === 'completed') {
+          this.renderStatus = 'completed';
+          this.renderVideoUrl = api.renders.getLatestUrl(projectId);
+          this.renderLog = msg.stdout || '';
+          this._stopPollRender();
+        } else if (msg.status === 'failed') {
+          this.renderStatus = 'failed';
+          this.renderError = msg.error || msg.stderr || 'Render failed';
+          this.renderLog = (msg.stdout || '') + '\n' + (msg.stderr || '');
+          this._stopPollRender();
+        }
+      });
+    },
 
-  copySelection() {
-    const selected = store.selectedObjectIds
-      .map(id => store.project.objects.find(o => o.id === id))
-      .filter(Boolean);
-    if (selected.length === 0) return;
-    store.clipboard = JSON.parse(JSON.stringify(selected));
-  },
+    /** @private Stop WebSocket subscription */
+    _stopPollRender() {
+      if (_pollDisconnect) {
+        _pollDisconnect();
+        _pollDisconnect = null;
+      }
+    },
 
-  pasteSelection() {
-    if (store.clipboard.length === 0) return;
-    const newIds = [];
-    for (const original of store.clipboard) {
-      const clone = JSON.parse(JSON.stringify(original));
-      clone.id = uid('obj');
-      clone.x = (clone.x || 0) + 20;
-      clone.y = (clone.y || 0) + 20;
-      clone.name = clone.name + ' copy';
-      clone.zOrder = store.project.objects.length;
-      store.project.objects.push(clone);
-      newIds.push(clone.id);
-    }
-    store.selectedObjectIds = newIds;
-    store.selectedClipId = null;
-    store.isDirty = true;
-    actions.commitState();
-  },
+    // ══════════════════════════════════════════════════════════════════════════
+    // History (Undo / Redo)
+    // ══════════════════════════════════════════════════════════════════════════
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // UI helpers
-  // ══════════════════════════════════════════════════════════════════════════
+    _snapshotState() {
+      return JSON.stringify({
+        objects: this.project.objects,
+        groups: this.project.groups,
+        tracks: this.project.tracks
+      });
+    },
 
-  clearError() { store.error = null; },
-  setError(msg) {
-    store.error = msg;
-    setTimeout(() => { if (store.error === msg) store.error = null; }, 4000);
-  },
+    commitState() {
+      const snapshot = this._snapshotState();
+      this.history.past.push(snapshot);
+      if (this.history.past.length > MAX_HISTORY) this.history.past.shift();
+      this.history.future = [];
+    },
 
-  setTheme(id) {
-    store.theme = id;
-    document.documentElement.setAttribute('data-theme', id);
-    try { localStorage.setItem('manim-motion-theme', id); } catch {}
-  },
+    _debouncedCommit: (() => {
+      let timer = null;
+      return function() {
+        clearTimeout(timer);
+        timer = setTimeout(() => this.commitState(), 400);
+      };
+    })(),
 
-  addPathMoveClip(sourceId, pathPoints) {
-    if (!sourceId || !pathPoints || pathPoints.length < 2) return null;
-    // Find first empty track
-    let trackIndex = 0;
-    for (let i = 0; i < store.project.tracks.length; i++) {
-      if (store.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
-      trackIndex = i + 1;
-    }
-    trackIndex = Math.min(trackIndex, 4);
-    const clip = actions.addClip(trackIndex, {
-      type: 'path_move',
-      sourceId,
-      startTime: store.playbackTime || 0,
-      duration: 2.0,
-      easing: 'ease_in_out',
-      path: pathPoints,   // [{x, y}, ...]
-      params: {},
-    });
-    return clip;
-  },
+    undo() {
+      if (this.history.past.length <= 1) return;
+      const current = this.history.past.pop();
+      this.history.future.push(current);
+      const prev = this.history.past[this.history.past.length - 1];
+      const data = JSON.parse(prev);
+      this.project.objects = data.objects;
+      this.project.groups = data.groups || [];
+      this.project.tracks = data.tracks;
+      this.selectedObjectIds = [];
+      this.selectedClipId = null;
+      this.isDirty = true;
+    },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Camera
-  // ══════════════════════════════════════════════════════════════════════════
+    redo() {
+      if (this.history.future.length === 0) return;
+      const next = this.history.future.pop();
+      this.history.past.push(next);
+      const data = JSON.parse(next);
+      this.project.objects = data.objects;
+      this.project.groups = data.groups || [];
+      this.project.tracks = data.tracks;
+      this.selectedObjectIds = [];
+      this.selectedClipId = null;
+      this.isDirty = true;
+    },
 
-  setCameraType(type) {
-    Vue.set(store.project, 'cameraType', type);
-    if (!store.project.cameraTrack) Vue.set(store.project, 'cameraTrack', []);
-    store.isDirty = true;
-    actions.commitState();
-  },
+    // ══════════════════════════════════════════════════════════════════════════
+    // Clipboard (Copy / Paste)
+    // ══════════════════════════════════════════════════════════════════════════
 
-  addCameraMoveClip(params = {}) {
-    if (!store.project.cameraTrack) Vue.set(store.project, 'cameraTrack', []);
-    const clip = {
-      id: uid('cam'),
-      type: 'camera_move',
-      startTime: params.startTime ?? (store.playbackTime || 0),
-      duration: params.duration || 2.0,
-      easing: params.easing || 'ease_in_out',
-      params: {
-        targetX: params.targetX || 0,
-        targetY: params.targetY || 0,
-        zoom: params.zoom || 1.0,
-      },
-    };
-    store.project.cameraTrack.push(clip);
-    store.isDirty = true;
-    actions.commitState();
-    return clip;
-  },
+    copySelection() {
+      const selected = this.selectedObjectIds
+        .map(id => this.project.objects.find(o => o.id === id))
+        .filter(Boolean);
+      if (selected.length === 0) return;
+      this.clipboard = JSON.parse(JSON.stringify(selected));
+    },
 
-  updateCameraClip(clipId, updates) {
-    const clip = store.project.cameraTrack?.find(c => c.id === clipId);
-    if (!clip) return;
-    if (updates.params) {
-      for (const k of Object.keys(updates.params)) Vue.set(clip.params, k, updates.params[k]);
-    }
-    const topLevel = Object.keys(updates).filter(k => k !== 'params');
-    for (const k of topLevel) Vue.set(clip, k, updates[k]);
-    store.isDirty = true;
-    actions.commitState();
-  },
+    pasteSelection() {
+      if (this.clipboard.length === 0) return;
+      const newIds = [];
+      for (const original of this.clipboard) {
+        const clone = JSON.parse(JSON.stringify(original));
+        clone.id = uid('obj');
+        clone.x = (clone.x || 0) + 20;
+        clone.y = (clone.y || 0) + 20;
+        clone.name = clone.name + ' copy';
+        clone.zOrder = this.project.objects.length;
+        this.project.objects.push(clone);
+        newIds.push(clone.id);
+      }
+      this.selectedObjectIds = newIds;
+      this.selectedClipId = null;
+      this.isDirty = true;
+      this.commitState();
+    },
 
-  deleteCameraClip(clipId) {
-    if (!store.project.cameraTrack) return;
-    const idx = store.project.cameraTrack.findIndex(c => c.id === clipId);
-    if (idx !== -1) {
-      store.project.cameraTrack.splice(idx, 1);
-      store.isDirty = true;
-      actions.commitState();
-    }
-  },
+    // ══════════════════════════════════════════════════════════════════════════
+    // UI helpers
+    // ══════════════════════════════════════════════════════════════════════════
+
+    clearError() { this.error = null; },
+    setError(msg) {
+      this.error = msg;
+      setTimeout(() => { if (this.error === msg) this.error = null; }, 4000);
+    },
+
+    setTheme(id) {
+      this.theme = id;
+      document.documentElement.setAttribute('data-theme', id);
+      try { localStorage.setItem('manim-motion-theme', id); } catch {}
+    },
+
+    addPathMoveClip(sourceId, pathPoints) {
+      if (!sourceId || !pathPoints || pathPoints.length < 2) return null;
+      // Find first empty track
+      let trackIndex = 0;
+      for (let i = 0; i < this.project.tracks.length; i++) {
+        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        trackIndex = i + 1;
+      }
+      trackIndex = Math.min(trackIndex, 4);
+      const clip = this.addClip(trackIndex, {
+        type: 'path_move',
+        sourceId,
+        startTime: this.playbackTime || 0,
+        duration: 2.0,
+        easing: 'ease_in_out',
+        path: pathPoints,   // [{x, y}, ...]
+        params: {},
+      });
+      return clip;
+    },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Camera
+    // ══════════════════════════════════════════════════════════════════════════
+
+    setCameraType(type) {
+      this.project.cameraType = type;
+      if (!this.project.cameraTrack) this.project.cameraTrack = [];
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addCameraMoveClip(params = {}) {
+      if (!this.project.cameraTrack) this.project.cameraTrack = [];
+      const clip = {
+        id: uid('cam'),
+        type: 'camera_move',
+        startTime: params.startTime ?? (this.playbackTime || 0),
+        duration: params.duration || 2.0,
+        easing: params.easing || 'ease_in_out',
+        params: {
+          targetX: params.targetX || 0,
+          targetY: params.targetY || 0,
+          zoom: params.zoom || 1.0,
+        },
+      };
+      this.project.cameraTrack.push(clip);
+      this.isDirty = true;
+      this.commitState();
+      return clip;
+    },
+
+    updateCameraClip(clipId, updates) {
+      const clip = this.project.cameraTrack?.find(c => c.id === clipId);
+      if (!clip) return;
+      if (updates.params) {
+        for (const k of Object.keys(updates.params)) clip.params[k] = updates.params[k];
+      }
+      const topLevel = Object.keys(updates).filter(k => k !== 'params');
+      for (const k of topLevel) clip[k] = updates[k];
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    deleteCameraClip(clipId) {
+      if (!this.project.cameraTrack) return;
+      const idx = this.project.cameraTrack.findIndex(c => c.id === clipId);
+      if (idx !== -1) {
+        this.project.cameraTrack.splice(idx, 1);
+        this.isDirty = true;
+        this.commitState();
+      }
+    },
+  }
+});
+
+export { useProjectStore };
+
+// Module-level singleton for backward compat (removed in Task 12)
+const store = useProjectStore();
+export { store };
+export { store as actions };
+
+// Pinia getters are properties, not functions. Wrap them for callers that still use getters.xxx()
+export const getters = {
+  selectedObjects: () => store.selectedObjects,
+  selectedObject: () => store.selectedObject,
+  selectedClip: () => store.selectedClip,
+  computedDuration: () => store.computedDuration,
+  visibleTracks: () => store.visibleTracks,
+  hasPendingAudio: () => store.hasPendingAudio,
+  objectById: (id) => store.objectById(id),
+  assetById: (id) => store.assetById(id),
+  groupById: (id) => store.groupById(id),
+  objectGroup: (objId) => store.objectGroup(objId),
+  objectsAtTime: (time) => store.objectsAtTime(time),
 };
 
-export default { store, getters, actions, SHAPE_DEFAULTS, SHAPE_COLORS };
+export default { store, getters, actions: store, SHAPE_DEFAULTS, SHAPE_COLORS };
