@@ -341,6 +341,12 @@ function _kfPropSet(n, prop, value, sw, sh) {
     case 'rotation': return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)})`;
     case 'scaleX': return `${n}.animate.stretch_to_fit_width(${value.toFixed(4)})`;
     case 'scaleY': return `${n}.animate.stretch_to_fit_height(${value.toFixed(4)})`;
+    case 'x3d': return `${n}.animate.move_to([${value.toFixed(3)}, 0.000, 0.000])`;
+    case 'y3d': return `${n}.animate.move_to([0.000, ${value.toFixed(3)}, 0.000])`;
+    case 'z3d': return `${n}.animate.move_to([0.000, 0.000, ${value.toFixed(3)}])`;
+    case 'rx':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=RIGHT)`;
+    case 'ry':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=UP)`;
+    case 'rz':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=OUT)`;
     default: return null;
   }
 }
