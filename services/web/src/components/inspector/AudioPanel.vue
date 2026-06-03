@@ -127,6 +127,7 @@ export default {
       localSyncMode: this.clip.audio?.syncMode || 'auto',
       localOffset: this.clip.audio?.offset || 0,
       ttsLoading: false,
+      wsDisconnect: null,
       sourceOptions: [
         { value: 'file', label: 'File' },
         { value: 'gtts', label: 'gTTS' },
@@ -196,7 +197,7 @@ export default {
           this.clip.id, this.localType, this.localText, this.localLang
         );
 
-        connectAudioWebSocket(jobId, (data) => {
+        this.wsDisconnect = connectAudioWebSocket(jobId, (data) => {
           if (data.event === 'audio_ready') {
             actions.setClipAudio(this.clip.id, {
               type: this.localType,
@@ -214,6 +215,7 @@ export default {
               status: 'error'
             });
           }
+          this.wsDisconnect = null;
           this.ttsLoading = false;
         });
       } catch (err) {
@@ -237,6 +239,13 @@ export default {
       this.localType = 'file';
       this.localText = '';
       this.ttsLoading = false;
+    }
+  },
+
+  beforeDestroy() {
+    if (this.wsDisconnect) {
+      this.wsDisconnect();
+      this.wsDisconnect = null;
     }
   }
 };
