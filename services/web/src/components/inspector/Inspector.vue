@@ -66,6 +66,23 @@
         @update="updateElement"
       />
 
+      <!-- Rotate Axis Selector (shown when a rotate clip is selected in 3D mode) -->
+      <div
+        v-if="selectedClip?.type === 'rotate' && store.project.sceneType === '3d'"
+        class="px-4 py-3 border-b border-studio-border"
+      >
+        <label class="block text-xs text-studio-text-muted mb-1">Rotation Axis</label>
+        <select
+          :value="selectedClip.axis ?? 'Z'"
+          @change="store.updateClip(selectedClip.id, { axis: $event.target.value })"
+          class="select text-sm w-full"
+        >
+          <option value="X">X (RIGHT)</option>
+          <option value="Y">Y (UP)</option>
+          <option value="Z">Z (OUT)</option>
+        </select>
+      </div>
+
       <!-- Audio Panel (shown when a clip is selected) -->
       <AudioPanel
         v-if="selectedClip"

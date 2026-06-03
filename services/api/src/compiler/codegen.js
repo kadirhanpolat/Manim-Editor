@@ -642,7 +642,8 @@ export function generatePythonCode(project, assetsPath) {
   for (const cg of clipGroups) {
     if (cg.type === 'single') {
       const c = cg.clip;
-      const sn = vn(c.sourceId);
+      const objId = c.sourceId ?? c.objectId;
+      const sn = vn(objId);
       const dur = c.duration;
       const rtStr = rtOpt(dur);
       const rfStr = rfOpt(c.easing);
@@ -672,8 +673,16 @@ export function generatePythonCode(project, assetsPath) {
           break;
         }
         case 'rotate': {
-          const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
-          code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+          const obj = oMap[objId];
+          if (is3D && obj && obj3DTypes.includes(obj.type)) {
+            const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+            const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
+            const angleRad = ((c.angle ?? 90) * Math.PI / 180).toFixed(4);
+            code = `self.play(Rotate(${sn}, angle=${angleRad}, axis=${axis})${rtStr}${rfStr})`;
+          } else {
+            const ang = ((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI / 180;
+            code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+          }
           break;
         }
         case 'path_move': {
@@ -698,7 +707,8 @@ export function generatePythonCode(project, assetsPath) {
       // Degenerate case: only one clip marked parallel, treat as sequential
       if (cg.clips.length === 1) {
         const c = cg.clips[0];
-        const sn = vn(c.sourceId);
+        const objId = c.sourceId ?? c.objectId;
+        const sn = vn(objId);
         const dur = c.duration;
         const rtStr = rtOpt(dur);
         const rfStr = rfOpt(c.easing);
@@ -728,8 +738,16 @@ export function generatePythonCode(project, assetsPath) {
             break;
           }
           case 'rotate': {
-            const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
-            code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+            const obj = oMap[objId];
+            if (is3D && obj && obj3DTypes.includes(obj.type)) {
+              const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+              const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
+              const angleRad = ((c.angle ?? 90) * Math.PI / 180).toFixed(4);
+              code = `self.play(Rotate(${sn}, angle=${angleRad}, axis=${axis})${rtStr}${rfStr})`;
+            } else {
+              const ang = ((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI / 180;
+              code = `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`;
+            }
             break;
           }
           case 'path_move': {
@@ -758,7 +776,8 @@ export function generatePythonCode(project, assetsPath) {
       const maxLag = Math.max(...groupClips.map(c => c.lag_ratio || 0));
 
       const animExprs = groupClips.map(c => {
-        const sn = vn(c.sourceId);
+        const objId = c.sourceId ?? c.objectId;
+        const sn = vn(objId);
         switch (c.type) {
           case 'move': {
             const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
@@ -771,7 +790,14 @@ export function generatePythonCode(project, assetsPath) {
             return op < 0.01 ? `FadeOut(${sn})` : `${sn}.animate.set_opacity(${op.toFixed(2)})`;
           }
           case 'rotate': {
-            const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+            const obj = oMap[objId];
+            if (is3D && obj && obj3DTypes.includes(obj.type)) {
+              const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+              const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
+              const angleRad = ((c.angle ?? 90) * Math.PI / 180).toFixed(4);
+              return `Rotate(${sn}, angle=${angleRad}, axis=${axis})`;
+            }
+            const ang = ((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI / 180;
             return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
           }
           case 'transform': {
@@ -802,22 +828,36 @@ export function generatePythonCode(project, assetsPath) {
   generateKeyframeSteps(project, steps, sw, sh);
 
   // Camera clips
-  if (project.cameraType === 'moving' && project.cameraTrack?.length > 0) {
+  if (Array.isArray(project.cameraTrack) && project.cameraTrack.length > 0) {
     for (const camClip of project.cameraTrack) {
-      const dur = camClip.duration;
+      if (camClip.type !== 'camera_move') continue;
+      const dur = camClip.duration ?? 1;
       const rtStr = rtOpt(dur);
       const rfStr = rfOpt(camClip.easing);
-      const mp = stageToManim(
-        camClip.params?.targetX || 0,
-        camClip.params?.targetY || 0,
-        sw, sh
-      );
-      // camera frame animate: set_width gives absolute zoom (14/zoom units wide)
-      // .scale() is relative/cumulative; set_width is absolute and idempotent
-      const sceneWidth = 14;
-      const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
-      const frameWidth = (sceneWidth / zoom).toFixed(3);
-      const code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
+
+      let code;
+      if (is3D) {
+        const p = camClip.params || {};
+        const phi = p.phi ?? project.camera3d?.phi ?? 75;
+        const theta = p.theta ?? project.camera3d?.theta ?? -45;
+        const zoom = p.zoom ?? 1.0;
+        code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${zoom.toFixed(2)}, run_time=${dur})`;
+      } else if (project.cameraType === 'moving') {
+        const mp = stageToManim(
+          camClip.params?.targetX || 0,
+          camClip.params?.targetY || 0,
+          sw, sh
+        );
+        // camera frame animate: set_width gives absolute zoom (14/zoom units wide)
+        // .scale() is relative/cumulative; set_width is absolute and idempotent
+        const sceneWidth = 14;
+        const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
+        const frameWidth = (sceneWidth / zoom).toFixed(3);
+        code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
+      } else {
+        continue;
+      }
+
       steps.push({ time: camClip.startTime, order: 1, code, dur });
     }
   }

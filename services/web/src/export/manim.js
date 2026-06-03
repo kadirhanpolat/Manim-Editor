@@ -490,7 +490,7 @@ export function generateManimScript(project) {
   }
   L.push('');
 
-  if (project.objects.length === 0) {
+  if (project.objects.length === 0 && !(Array.isArray(project.cameraTrack) && project.cameraTrack.length > 0)) {
     L.push('        self.wait(1)');
     return L.join('\n');
   }
@@ -625,7 +625,8 @@ export function generateManimScript(project) {
 
   // ── Build clip animation steps ──
   function singleClipCode(c) {
-    const sn = v(c.sourceId);
+    const objId = c.sourceId ?? c.objectId;
+    const sn = v(objId);
     const dur = c.duration;
     const rtStr = rtOpt(dur);
     const rfStr = rfOpt(c.easing);
@@ -648,7 +649,14 @@ export function generateManimScript(project) {
         return { code: op < 0.01 ? `self.play(FadeOut(${sn})${rtStr}${rfStr})` : `self.play(${sn}.animate.set_opacity(${op.toFixed(2)})${rtStr}${rfStr})`, dur };
       }
       case 'rotate': {
-        const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+        const obj = oMap[objId];
+        if (is3D && obj && obj3DTypes.includes(obj.type)) {
+          const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+          const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
+          const angleRad = ((c.angle ?? 90) * Math.PI / 180).toFixed(4);
+          return { code: `self.play(Rotate(${sn}, angle=${angleRad}, axis=${axis})${rtStr}${rfStr})`, dur };
+        }
+        const ang = ((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI / 180;
         return { code: `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`, dur };
       }
       case 'path_move': {
@@ -671,7 +679,8 @@ export function generateManimScript(project) {
   }
 
   function animExpr(c) {
-    const sn = v(c.sourceId);
+    const objId = c.sourceId ?? c.objectId;
+    const sn = v(objId);
     switch (c.type) {
       case 'move': {
         const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
@@ -684,7 +693,14 @@ export function generateManimScript(project) {
         return op < 0.01 ? `FadeOut(${sn})` : `${sn}.animate.set_opacity(${op.toFixed(2)})`;
       }
       case 'rotate': {
-        const ang = ((c.params?.targetRotation || 360) - (oMap[c.sourceId]?.rotation || 0)) * Math.PI / 180;
+        const obj = oMap[objId];
+        if (is3D && obj && obj3DTypes.includes(obj.type)) {
+          const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+          const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
+          const angleRad = ((c.angle ?? 90) * Math.PI / 180).toFixed(4);
+          return `Rotate(${sn}, angle=${angleRad}, axis=${axis})`;
+        }
+        const ang = ((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI / 180;
         return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
       }
       case 'transform': {
@@ -723,22 +739,37 @@ export function generateManimScript(project) {
   generateKeyframeSteps(project, steps, sw, sh);
 
   // ── Camera clips ──
-  if (project.cameraType === 'moving' && Array.isArray(project.cameraTrack) && project.cameraTrack.length > 0) {
+  if (Array.isArray(project.cameraTrack) && project.cameraTrack.length > 0) {
     for (const camClip of project.cameraTrack) {
-      const dur = camClip.duration;
+      if (camClip.type !== 'camera_move') continue;
+      const dur = camClip.duration ?? 1;
       const rtStr = rtOpt(dur);
       const rfStr = rfOpt(camClip.easing);
-      const mp = stageToManim(
-        camClip.params?.targetX || 0,
-        camClip.params?.targetY || 0,
-        sw, sh
-      );
-      const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
-      const frameWidth = (14 / zoom).toFixed(3);
+
+      let code;
+      if (is3D) {
+        const p = camClip.params || {};
+        const phi = p.phi ?? project.camera3d?.phi ?? 75;
+        const theta = p.theta ?? project.camera3d?.theta ?? -45;
+        const zoom = p.zoom ?? 1.0;
+        code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${zoom.toFixed(2)}, run_time=${dur})`;
+      } else if (project.cameraType === 'moving') {
+        const mp = stageToManim(
+          camClip.params?.targetX || 0,
+          camClip.params?.targetY || 0,
+          sw, sh
+        );
+        const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
+        const frameWidth = (14 / zoom).toFixed(3);
+        code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
+      } else {
+        continue;
+      }
+
       steps.push({
         time: camClip.startTime,
         order: 1,
-        code: `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`,
+        code,
         dur,
       });
     }
