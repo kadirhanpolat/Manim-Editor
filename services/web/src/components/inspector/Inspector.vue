@@ -35,8 +35,15 @@
         ></textarea>
       </div>
       
+      <!-- 3D Position Panel -->
+      <Position3DPanel
+        v-if="is3DObject"
+        :element="selectedElement"
+        @update="updateElement"
+      />
+
       <!-- Layout Panel -->
-      <LayoutPanel 
+      <LayoutPanel
         :element="selectedElement"
         @update="updateElement"
       />
@@ -100,11 +107,16 @@ import TimingPanel from './TimingPanel.vue'
 import AnimationPanel from './AnimationPanel.vue'
 import AudioPanel from './AudioPanel.vue'
 import KeyframePanel from './KeyframePanel.vue'
+import Position3DPanel from './Position3DPanel.vue'
 
 const store = useProjectStore()
 
 const selectedElement = computed(() => store.selectedObject)
 const selectedClip = computed(() => store.selectedClip)
+
+const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d']
+const is3DObject = computed(() => OBJ_3D_TYPES.includes(selectedElement.value?.type))
+
 const typeBadgeClass = computed(() => {
   if (!selectedElement.value) return ''
   const classes = {

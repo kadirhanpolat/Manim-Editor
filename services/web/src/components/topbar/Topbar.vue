@@ -159,6 +159,13 @@
       <!-- Right: secondary controls + render button -->
       <div class="menubar-right">
         <div class="tb-divider"></div>
+        <button
+          v-if="project && project.editorMode === 'visual'"
+          class="tb-toggle tb-scene-type"
+          :class="{ on: project.sceneType === '3d' }"
+          @click="store.setSceneType(project.sceneType === '3d' ? '2d' : '3d')"
+          title="Toggle 2D/3D scene mode"
+        >{{ project.sceneType === '3d' ? '3D' : '2D' }}</button>
         <button class="tb-toggle" :class="{ on: project.cameraType === 'moving' }" @click="toggleCamera" title="Toggle Moving Camera (MovingCameraScene)">🎥</button>
         <button class="tb-toggle" :class="{ on: gridVisible }" @click="toggleGrid" title="Grid">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
@@ -780,6 +787,7 @@ function showAbout() {
 .tb-toggle.on { background: var(--studio-accent-subtle); color: var(--studio-accent); }
 
 .tb-dim { font-size: 9px; color: var(--studio-text-muted); font-family: var(--font-mono, monospace); }
+.tb-scene-type { width: auto; padding: 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
 .tb-divider { width: 1px; height: 14px; background: var(--studio-border); }
 
 .tb-render-btn {

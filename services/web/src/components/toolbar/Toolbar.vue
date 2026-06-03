@@ -28,6 +28,20 @@
       </button>
     </div>
 
+    <!-- 3D Shapes Section (shown in 3D mode) -->
+    <div v-if="is3DMode" class="flex flex-col items-center gap-1 pt-2 border-t border-studio-border w-full px-1">
+      <span class="text-[9px] text-studio-text-muted uppercase tracking-widest mb-1">3D</span>
+      <button
+        v-for="shape in shapes3D"
+        :key="shape.type"
+        class="tool-btn shape-btn"
+        :data-tooltip="shape.label"
+        @click="addShape(shape.type)"
+      >
+        <span v-html="shape.icon" class="text-base"></span>
+      </button>
+    </div>
+
     <!-- Spacer -->
     <div class="flex-1"></div>
 
@@ -57,6 +71,8 @@ import { useProjectStore } from '../../store/project.js';
 
 const store = useProjectStore();
 
+const is3DMode = computed(() => store.project?.sceneType === '3d');
+
 const tools = [
   { id: 'select', label: 'Select', shortcut: 'V', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>' },
   { id: 'hand', label: 'Hand / Pan', shortcut: 'H', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 00-4 0v5M14 10V4a2 2 0 00-4 0v6M10 10.5V5a2 2 0 00-4 0v9"/><path d="M18 11a2 2 0 014 0v3a8 8 0 01-8 8h-2c-2.5 0-4-1-5.5-2.5L3 16"/></svg>' },
@@ -70,6 +86,15 @@ const shapes = [
   { type: 'circle', label: 'Circle', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>' },
   { type: 'dot', label: 'Dot', icon: '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>' },
   { type: 'dot_grid', label: 'Dot Grid', icon: '<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="4" cy="4" r="1.5" fill="currentColor"/><circle cx="12" cy="4" r="1.5" fill="currentColor"/><circle cx="20" cy="4" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="20" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="20" r="1.5" fill="currentColor"/><circle cx="12" cy="20" r="1.5" fill="currentColor"/><circle cx="20" cy="20" r="1.5" fill="currentColor"/></svg>' }
+];
+
+const shapes3D = [
+  { type: 'sphere',   label: 'Sphere',   icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="4"/><line x1="3" y1="12" x2="21" y2="12"/></svg>' },
+  { type: 'cube',     label: 'Cube',     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>' },
+  { type: 'cone',     label: 'Cone',     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 20h18L12 2z"/><ellipse cx="12" cy="20" rx="9" ry="2"/></svg>' },
+  { type: 'cylinder', label: 'Cylinder', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/></svg>' },
+  { type: 'torus',    label: 'Torus',    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="3" ry="1.5"/></svg>' },
+  { type: 'axes3d',   label: 'Axes 3D',  icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/><line x1="12" y1="12" x2="4" y2="16"/></svg>' },
 ];
 
 const activeTool = computed(() => store.activeTool);
