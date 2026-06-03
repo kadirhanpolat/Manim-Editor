@@ -75,7 +75,7 @@ const modeColor = computed(() =>
 );
 
 function updateValue(val) {
-  if (!kf.value) return;
+  if (!kf.value || !Number.isFinite(val)) return;
   store.updateKeyframeValue(kf.value.objId, kf.value.prop, kf.value.time, val);
 }
 
