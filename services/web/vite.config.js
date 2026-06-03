@@ -4,18 +4,7 @@ import vue from '@vitejs/plugin-vue';
 const apiTarget = process.env.VITE_API_TARGET || 'http://localhost:3000';
 
 export default defineConfig({
-  plugins: [vue({
-    template: {
-      compilerOptions: {
-        compatConfig: { MODE: 2 }
-      }
-    }
-  })],
-  resolve: {
-    alias: {
-      'vue': '@vue/compat'
-    }
-  },
+  plugins: [vue()],
   server: {
     port: 5173,
     proxy: {

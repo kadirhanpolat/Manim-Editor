@@ -1154,24 +1154,3 @@ const useProjectStore = defineStore('project', {
 
 export { useProjectStore };
 
-// Module-level singleton for backward compat (removed in Task 12)
-const store = useProjectStore();
-export { store };
-export { store as actions };
-
-// Pinia getters are properties, not functions. Wrap them for callers that still use getters.xxx()
-export const getters = {
-  selectedObjects: () => store.selectedObjects,
-  selectedObject: () => store.selectedObject,
-  selectedClip: () => store.selectedClip,
-  computedDuration: () => store.computedDuration,
-  visibleTracks: () => store.visibleTracks,
-  hasPendingAudio: () => store.hasPendingAudio,
-  objectById: (id) => store.objectById(id),
-  assetById: (id) => store.assetById(id),
-  groupById: (id) => store.groupById(id),
-  objectGroup: (objId) => store.objectGroup(objId),
-  objectsAtTime: (time) => store.objectsAtTime(time),
-};
-
-export default { store, getters, actions: store, SHAPE_DEFAULTS, SHAPE_COLORS };
