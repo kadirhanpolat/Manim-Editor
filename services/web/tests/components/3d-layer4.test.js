@@ -45,6 +45,44 @@ describe('keyframe x3d codegen (animate mode)', () => {
   });
 });
 
+describe('simultaneous x3d + y3d keyframes', () => {
+  it('combines x3d and y3d into a single move_to call', () => {
+    const sphere = {
+      id: 'sp1', type: 'sphere',
+      x3d: 0, y3d: 0, z3d: 0, radius: 0.5, resolution: 20,
+      fill: '#e67700', opacity: 1,
+      enterTime: 0, exitTime: 5,
+      anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+      keyframes: {
+        x3d: [
+          { time: 0, value: 0, easing: { type: 'linear' } },
+          { time: 2, value: 2, easing: { type: 'linear' } },
+        ],
+        y3d: [
+          { time: 0, value: 0, easing: { type: 'linear' } },
+          { time: 2, value: 3, easing: { type: 'linear' } },
+        ],
+      },
+      keyframeMode: { x3d: 'override', y3d: 'override' },
+      keyframeCodegen: { x3d: 'animate', y3d: 'animate' },
+    };
+    const project = makeProject3DKeyframe([sphere]);
+    const code = generateCode(project, '/data/assets');
+    // Must produce exactly one move_to call (not two separate ones)
+    const moveToCalls = code.match(/\.animate\.move_to\(\[/g);
+    expect(moveToCalls?.length).toBe(1);
+    // That single call must contain both x3d=2 and y3d=3 (z3d defaults to 0)
+    expect(code).toContain('move_to([2.000, 3.000, 0.000])');
+  });
+
+  it('single-axis x3d only still generates move_to with other axes at default 0', () => {
+    const sphere = makeSphere(true); // only x3d keyframe
+    const project = makeProject3DKeyframe([sphere]);
+    const code = generateCode(project, '/data/assets');
+    expect(code).toContain('move_to([2.000, 0.000, 0.000])');
+  });
+});
+
 describe('voiceover + ThreeDScene mixin', () => {
   it('uses ThreeDScene, VoiceoverScene when 3D and audio', () => {
     const sphere = makeSphere();

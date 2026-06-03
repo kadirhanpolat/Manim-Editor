@@ -364,7 +364,66 @@ function generateKeyframeSteps(project, steps, sw, sh) {
     const n = v(obj.id);
     const defaults = project.keyframeDefaults || {};
 
+    // ── Combine simultaneous x3d/y3d/z3d keyframes into single move_to ──
+    const pos3DProps = ['x3d', 'y3d', 'z3d'];
+    const hasPos3D = pos3DProps.some(p => {
+      const kfs = obj.keyframes?.[p];
+      if (!kfs || kfs.length < 2) return false;
+      const mode = (obj.keyframeCodegen && obj.keyframeCodegen[p]) ||
+        defaults.codegenMode || 'UpdateFromAlphaFunc';
+      return mode === 'animate';
+    });
+
+    if (hasPos3D) {
+      const pos3DKeyframes = {};
+      for (const p of pos3DProps) {
+        const kfs = obj.keyframes?.[p];
+        if (!kfs || kfs.length < 2) continue;
+        const mode = (obj.keyframeCodegen && obj.keyframeCodegen[p]) ||
+          defaults.codegenMode || 'UpdateFromAlphaFunc';
+        if (mode === 'animate') {
+          pos3DKeyframes[p] = [...kfs].sort((a, b) => a.time - b.time);
+        }
+      }
+
+      // Collect all unique time points across active 3D props
+      const allTimes = new Set();
+      for (const kfs of Object.values(pos3DKeyframes)) {
+        kfs.forEach(kf => allTimes.add(kf.time));
+      }
+      const sortedTimes = [...allTimes].sort((a, b) => a - b);
+
+      // "last known value at or before time t" helper
+      const getVal = (kfs, t) => {
+        if (!kfs || kfs.length === 0) return null;
+        const last = kfs.filter(k => k.time <= t).pop();
+        return last ? last.value : kfs[0].value;
+      };
+
+      // Emit one move_to per [t1, t2] segment
+      for (let i = 0; i < sortedTimes.length - 1; i++) {
+        const t1 = sortedTimes[i], t2 = sortedTimes[i + 1];
+        const dur = parseFloat((t2 - t1).toFixed(2));
+        const tx = getVal(pos3DKeyframes['x3d'], t2) ?? (obj.x3d ?? 0);
+        const ty = getVal(pos3DKeyframes['y3d'], t2) ?? (obj.y3d ?? 0);
+        const tz = getVal(pos3DKeyframes['z3d'], t2) ?? (obj.z3d ?? 0);
+        const rt = rtOpt(dur);
+        steps.push({
+          time: t1,
+          order: 0.5,
+          code: `self.play(${n}.animate.move_to([${tx.toFixed(3)}, ${ty.toFixed(3)}, ${tz.toFixed(3)}])${rt})`,
+          dur,
+        });
+      }
+    }
+
     for (const [prop, keyframes] of Object.entries(obj.keyframes)) {
+      // 3D coordinate props already handled above (animate mode only)
+      if (pos3DProps.includes(prop)) {
+        const mode = (obj.keyframeCodegen && obj.keyframeCodegen[prop]) ||
+          defaults.codegenMode || 'UpdateFromAlphaFunc';
+        if (mode === 'animate') continue; // skip — merged above
+      }
       if (!keyframes || keyframes.length < 2) continue;
       const sorted = [...keyframes].sort((a, b) => a.time - b.time);
       const codegenMode = (obj.keyframeCodegen && obj.keyframeCodegen[prop]) ||
