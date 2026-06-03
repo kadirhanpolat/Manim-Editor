@@ -23,10 +23,7 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'EditorLayout'
-};
+<script setup>
 </script>
 
 <style scoped>

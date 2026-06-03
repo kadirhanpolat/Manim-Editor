@@ -299,10 +299,11 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import hljs from 'highlight.js';
 import * as api from './api.js';
-import { store, actions, getters } from './store/project.js';
+import { useProjectStore } from './store/project.js';
 import { getPlaybackEngine } from './engine/playback.js';
 import { generateManimScript, downloadManimScript, parseManimScript } from './export/manim.js';
 import Topbar from './components/topbar/Topbar.vue';
@@ -311,359 +312,355 @@ import StageCanvas from './components/stage/StageCanvas.vue';
 import PropertiesPanel from './components/inspector/PropertiesPanel.vue';
 import Timeline from './components/timeline/Timeline.vue';
 
-export default {
-  name: 'App',
-  components: { Topbar, AssetSidebar, StageCanvas, PropertiesPanel, Timeline },
+const store = useProjectStore();
 
-  data() {
-    return {
-      copied: false,
-      selectedQuality: 'high',
-      renderHistory: [],
-      qualities: [
-        { value: 'low',        label: 'Low',        desc: '480p 15fps (fastest)' },
-        { value: 'medium',     label: 'Medium',     desc: '720p 30fps' },
-        { value: 'high',       label: 'High',       desc: '1080p 60fps (recommended)' },
-        { value: 'production', label: 'Production', desc: '1440p 60fps (2K)' },
-        { value: '4k',         label: '4K',         desc: '2160p 60fps (slowest)' }
-      ],
-      // Stage view toggle
-      stageViewMode: 'canvas',  // 'canvas' or 'code'
-      stageCode: '# Add objects to see generated Manim code',
-      stageCopied: false,
-      codeEdited: false,
-      parseMessage: '',
-      parseMessageOk: false,
-      _stageCodeTimer: null,
-      _parseMessageTimer: null
-    };
-  },
+// ── Reactive state ──
+const copied = ref(false);
+const selectedQuality = ref('high');
+const renderHistory = ref([]);
+const stageViewMode = ref('canvas');
+const stageCode = ref('# Add objects to see generated Manim code');
+const stageCopied = ref(false);
+const codeEdited = ref(false);
+const parseMessage = ref('');
+const parseMessageOk = ref(false);
 
-  computed: {
-    store()              { return store; },
-    projectId()          { return store.project.id; },
-    isCodeMode()         { return store.project.editorMode === 'code'; },
-    error()              { return store.error; },
-    showExport()         { return store.showExportDialog; },
-    exportCode()         { return store.exportCode; },
-    hasImages()          { return store.project.objects.some(o => o.type === 'image' || o.type === 'svg_asset'); },
-    hasTextElements()    { return store.project.objects.some(o => o.type === 'text' || o.type === 'latex'); },
-    showRender()         { return store.showRenderDialog; },
-    hasPendingAudio()    { return getters.hasPendingAudio(); },
-    renderStatus()       { return store.renderStatus; },
-    renderError()        { return store.renderError; },
-    renderVideoUrl()     { return store.renderVideoUrl; },
-    renderLog()          { return store.renderLog; },
-    showProjectBrowser() { return store.showProjectBrowser; },
-    serverProjects()     { return store.serverProjects; },
+// Static data (never mutated, no reactivity needed)
+const qualities = [
+  { value: 'low',        label: 'Low',        desc: '480p 15fps (fastest)' },
+  { value: 'medium',     label: 'Medium',     desc: '720p 30fps' },
+  { value: 'high',       label: 'High',       desc: '1080p 60fps (recommended)' },
+  { value: 'production', label: 'Production', desc: '1440p 60fps (2K)' },
+  { value: '4k',         label: '4K',         desc: '2160p 60fps (slowest)' }
+];
 
-    renderStatusText() {
-      const map = {
-        uploading: 'Uploading assets to server...',
-        saving:    'Saving project...',
-        queued:    'In render queue, waiting for worker...',
-        running:   'Manim is rendering (this can take 30s-2min)...',
-        failed:    'Render failed'
-      };
-      return map[store.renderStatus] || 'Processing...';
-    },
+// Non-reactive timer IDs
+let _stageCodeTimer = null;
+let _parseMessageTimer = null;
 
-    renderProgress() {
-      const map = { uploading: 15, saving: 30, queued: 45, running: 70, completed: 100, failed: 100 };
-      return map[store.renderStatus] || 0;
-    },
+// Template refs
+const highlightPre = ref(null);
+const codeArea = ref(null);
 
-    highlightedCode() {
-      try {
-        return hljs.highlight(this.stageCode, { language: 'python' }).value;
-      } catch (_) {
-        return this.escapeHtml(this.stageCode);
-      }
-    }
-  },
+// ── Computed ──
+const projectId     = computed(() => store.project.id);
+const isCodeMode    = computed(() => store.project.editorMode === 'code');
+const error         = computed(() => store.error);
+const showExport    = computed(() => store.showExportDialog);
+const exportCode    = computed(() => store.exportCode);
+const hasImages     = computed(() => store.project.objects.some(o => o.type === 'image' || o.type === 'svg_asset'));
+const hasTextElements = computed(() => store.project.objects.some(o => o.type === 'text' || o.type === 'latex'));
+const showRender    = computed(() => store.showRenderDialog);
+const hasPendingAudio = computed(() => store.hasPendingAudio);
+const renderStatus  = computed(() => store.renderStatus);
+const renderError   = computed(() => store.renderError);
+const renderVideoUrl = computed(() => store.renderVideoUrl);
+const renderLog     = computed(() => store.renderLog);
+const showProjectBrowser = computed(() => store.showProjectBrowser);
+const serverProjects = computed(() => store.serverProjects);
 
-  watch: {
-    renderStatus(status) {
-      if (status === 'completed' && this.projectId) {
-        this.loadRenderHistory();
-      }
-    },
-    'store.project.objects': {
-      handler() { if (!this.isCodeMode && this.stageViewMode === 'code' && !this.codeEdited) this._debouncedUpdateCode(); },
-      deep: true
-    },
-    'store.project.tracks': {
-      handler() { if (!this.isCodeMode && this.stageViewMode === 'code' && !this.codeEdited) this._debouncedUpdateCode(); },
-      deep: true
-    },
-    'store.project.editorMode': {
-      handler(mode) {
-        if (mode === 'code') {
-          this.stageViewMode = 'code';
-          this.stageCode = store.project.codeSource || '';
-          this.codeEdited = false;
-        }
-      },
-      immediate: true
-    }
-  },
+const renderStatusText = computed(() => {
+  const map = {
+    uploading: 'Uploading assets to server...',
+    saving:    'Saving project...',
+    queued:    'In render queue, waiting for worker...',
+    running:   'Manim is rendering (this can take 30s-2min)...',
+    failed:    'Render failed'
+  };
+  return map[store.renderStatus] || 'Processing...';
+});
 
-  mounted() {
-    const engine = getPlaybackEngine();
-    engine.onTimeUpdate(t => actions.setPlaybackTime(t));
-    engine.onFrame(state => actions.setFrameState(state));
-    window.addEventListener('keydown', this.handleKeydown);
+const renderProgress = computed(() => {
+  const map = { uploading: 15, saving: 30, queued: 45, running: 70, completed: 100, failed: 100 };
+  return map[store.renderStatus] || 0;
+});
 
-    // Check API availability on startup
-    actions.checkApi();
-  },
-
-  beforeDestroy() {
-    window.removeEventListener('keydown', this.handleKeydown);
-    getPlaybackEngine().destroy();
-    actions._stopPollRender();
-  },
-
-  methods: {
-    handleKeydown(e) {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-
-      if ((e.key === 'v' || e.key === 'V') && !e.ctrlKey && !e.metaKey) { actions.setActiveTool('select'); e.preventDefault(); }
-      if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey) { actions.setActiveTool('hand'); e.preventDefault(); }
-
-      if ((e.key === 'Delete' || e.key === 'Backspace') && !e.ctrlKey) {
-        if (store.selectedClipId) {
-          // Check if it's a camera clip first (camera clips live in cameraTrack, not regular tracks)
-          const isCameraClip = store.project.cameraTrack?.some(c => c.id === store.selectedClipId);
-          if (isCameraClip) {
-            actions.deleteCameraClip(store.selectedClipId);
-          } else {
-            actions.deleteClip(store.selectedClipId);
-          }
-          store.selectedClipId = null;
-          e.preventDefault();
-        } else if (store.selectedObjectIds.length > 0) {
-          [...store.selectedObjectIds].forEach(id => actions.deleteObject(id));
-          e.preventDefault();
-        }
-      }
-
-      if (e.key === 'Escape') { actions.deselectAll(); this.closeExport(); this.closeRender(); this.closeProjectBrowser(); e.preventDefault(); }
-      if (e.key === ' ') { this.togglePlayback(); e.preventDefault(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); actions.saveToFile(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'g') { e.preventDefault(); if (store.selectedObjectIds.length >= 2) actions.groupObjects([...store.selectedObjectIds]); }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); actions.undo(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); actions.redo(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); actions.redo(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') { e.preventDefault(); actions.copySelection(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v') { e.preventDefault(); actions.pasteSelection(); }
-    },
-
-    togglePlayback() {
-      const engine = getPlaybackEngine();
-      if (store.playbackPlaying) {
-        engine.pause();
-        actions.setPlaybackPlaying(false);
-      } else {
-        engine.play(store.project.tracks, store.project.objects, getters.computedDuration(), store.project.cameraTrack || []);
-        actions.setPlaybackPlaying(true);
-      }
-    },
-
-    // ── Export dialog ──
-    closeExport() { store.showExportDialog = false; },
-    downloadPy() {
-      if (this.isCodeMode) {
-        const blob = new Blob([store.exportCode], { type: 'text/x-python' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${store.project.name || 'scene'}.py`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        downloadManimScript(store.project);
-      }
-    },
-    copyCode() {
-      navigator.clipboard.writeText(store.exportCode).then(() => {
-        this.copied = true;
-        setTimeout(() => { this.copied = false; }, 2000);
-      });
-    },
-
-    // ── Render dialog ──
-    closeRender() {
-      // Allow closing at any time; if still rendering, polling continues in bg
-      store.showRenderDialog = false;
-      // Reset status ONLY if completed or failed so user can re-open cleanly
-      if (store.renderStatus === 'completed' || store.renderStatus === 'failed') {
-        // keep it so user can reopen and see the video / error
-      }
-    },
-
-    startRender() {
-      if (this.hasPendingAudio) return;
-      actions.renderOnServer(this.selectedQuality);
-    },
-
-    retryRender() {
-      store.renderStatus = null;
-      store.renderError = null;
-    },
-
-    resetRender() {
-      store.renderStatus = null;
-      store.renderError = null;
-      store.renderVideoUrl = null;
-      store.renderLog = '';
-    },
-
-    // ── Project browser ──
-    closeProjectBrowser() { store.showProjectBrowser = false; },
-    async openServerProject(id) {
-      if (store.isDirty && !confirm('Discard unsaved changes?')) return;
-      const ok = await actions.loadFromServer(id);
-      if (ok) store.showProjectBrowser = false;
-    },
-
-    async deleteServerProject(id, name) {
-      if (!confirm(`Delete "${name}" from the server?\n\nThis will remove the project, its assets, and all renders. This cannot be undone.`)) return;
-      try {
-        await actions.deleteServerProject(id);
-      } catch (err) {
-        actions.setError('Delete failed: ' + err.message);
-      }
-    },
-
-    // ── Stage code view ──
-    switchToCode() {
-      this.stageViewMode = 'code';
-      this.codeEdited = false;
-      this.parseMessage = '';
-      if (this.isCodeMode) {
-        this.stageCode = store.project.codeSource || '';
-      } else {
-        this.updateStageCode();
-      }
-      this.$nextTick(() => this.syncCodeScroll());
-    },
-    updateStageCode() {
-      try {
-        this.stageCode = generateManimScript(store.project);
-        this.codeEdited = false;
-      } catch (err) {
-        this.stageCode = '# Error generating code: ' + err.message;
-      }
-    },
-    _debouncedUpdateCode() {
-      clearTimeout(this._stageCodeTimer);
-      this._stageCodeTimer = setTimeout(() => this.updateStageCode(), 300);
-    },
-    syncCodeScroll() {
-      const ta = this.$refs.codeArea;
-      const pre = this.$refs.highlightPre;
-      if (ta && pre) {
-        pre.scrollTop = ta.scrollTop;
-        pre.scrollLeft = ta.scrollLeft;
-      }
-    },
-    escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    },
-    onCodeInput(e) {
-      this.stageCode = e.target.value;
-      if (this.isCodeMode) {
-        store.project.codeSource = this.stageCode;
-        store.isDirty = true;
-      } else {
-        this.codeEdited = true;
-      }
-    },
-    resetCode() {
-      this.codeEdited = false;
-      this.parseMessage = '';
-      this.updateStageCode();
-    },
-    applyCodeToCanvas() {
-      try {
-        const result = parseManimScript(this.stageCode, store.project.stage.width, store.project.stage.height);
-
-        if (result.objects.length === 0) {
-          this.parseMessage = 'No objects found in code. Check your syntax.';
-          this.parseMessageOk = false;
-          this._clearParseMsg();
-          return;
-        }
-
-        // Apply parsed data to the project
-        store.project.stage.backgroundColor = result.stage.backgroundColor;
-        store.project.objects = result.objects;
-        store.project.tracks = result.tracks;
-        if (result.cameraType) actions.setCameraType(result.cameraType);
-        if (Array.isArray(result.cameraTrack) && result.cameraTrack.length > 0) {
-          store.project.cameraTrack = result.cameraTrack;
-        }
-        actions.deselectAll();
-
-        this.codeEdited = false;
-        this.parseMessage = `Applied: ${result.objects.length} objects, ${result.tracks.reduce((s, t) => s + t.clips.length, 0)} animations`;
-        this.parseMessageOk = true;
-        this._clearParseMsg();
-
-        // Switch back to canvas to see the result
-        setTimeout(() => { this.stageViewMode = 'canvas'; }, 800);
-      } catch (err) {
-        this.parseMessage = 'Parse error: ' + err.message;
-        this.parseMessageOk = false;
-        this._clearParseMsg();
-      }
-    },
-    _clearParseMsg() {
-      clearTimeout(this._parseMessageTimer);
-      this._parseMessageTimer = setTimeout(() => { this.parseMessage = ''; }, 4000);
-    },
-    copyStageCode() {
-      navigator.clipboard.writeText(this.stageCode).then(() => {
-        this.stageCopied = true;
-        setTimeout(() => { this.stageCopied = false; }, 2000);
-      });
-    },
-    downloadStageCode() {
-      if (this.isCodeMode) {
-        const blob = new Blob([this.stageCode], { type: 'text/x-python' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${store.project.name || 'scene'}.py`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        downloadManimScript(store.project);
-      }
-    },
-
-    // ── Render history ──
-    async loadRenderHistory() {
-      try {
-        const info = await api.renders.getInfo(this.projectId);
-        this.renderHistory = info.history || [];
-      } catch {}
-    },
-
-    formatRenderDate(filename) {
-      const m = filename.match(/render_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
-      if (!m) return filename;
-      return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
-    },
-
-    // ── Error ──
-    clearError() { actions.clearError(); }
+const highlightedCode = computed(() => {
+  try {
+    return hljs.highlight(stageCode.value, { language: 'python' }).value;
+  } catch (_) {
+    return escapeHtml(stageCode.value);
   }
-};
+});
+
+// ── Watchers ──
+watch(renderStatus, (status) => {
+  if (status === 'completed' && projectId.value) {
+    loadRenderHistory();
+  }
+});
+
+watch(() => store.project.objects, () => {
+  if (!isCodeMode.value && stageViewMode.value === 'code' && !codeEdited.value) _debouncedUpdateCode();
+}, { deep: true });
+
+watch(() => store.project.tracks, () => {
+  if (!isCodeMode.value && stageViewMode.value === 'code' && !codeEdited.value) _debouncedUpdateCode();
+}, { deep: true });
+
+watch(() => store.project.editorMode, (mode) => {
+  if (mode === 'code') {
+    stageViewMode.value = 'code';
+    stageCode.value = store.project.codeSource || '';
+    codeEdited.value = false;
+  }
+}, { immediate: true });
+
+// ── Lifecycle ──
+onMounted(() => {
+  const engine = getPlaybackEngine();
+  engine.onTimeUpdate(t => store.setPlaybackTime(t));
+  engine.onFrame(state => store.setFrameState(state));
+  window.addEventListener('keydown', handleKeydown);
+
+  // Check API availability on startup
+  store.checkApi();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown);
+  getPlaybackEngine().destroy();
+  store._stopPollRender();
+});
+
+// ── Methods ──
+function handleKeydown(e) {
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+  if ((e.key === 'v' || e.key === 'V') && !e.ctrlKey && !e.metaKey) { store.setActiveTool('select'); e.preventDefault(); }
+  if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey) { store.setActiveTool('hand'); e.preventDefault(); }
+
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !e.ctrlKey) {
+    if (store.selectedClipId) {
+      // Check if it's a camera clip first (camera clips live in cameraTrack, not regular tracks)
+      const isCameraClip = store.project.cameraTrack?.some(c => c.id === store.selectedClipId);
+      if (isCameraClip) {
+        store.deleteCameraClip(store.selectedClipId);
+      } else {
+        store.deleteClip(store.selectedClipId);
+      }
+      store.selectedClipId = null;
+      e.preventDefault();
+    } else if (store.selectedObjectIds.length > 0) {
+      [...store.selectedObjectIds].forEach(id => store.deleteObject(id));
+      e.preventDefault();
+    }
+  }
+
+  if (e.key === 'Escape') { store.deselectAll(); closeExport(); closeRender(); closeProjectBrowser(); e.preventDefault(); }
+  if (e.key === ' ') { togglePlayback(); e.preventDefault(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); store.saveToFile(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'g') { e.preventDefault(); if (store.selectedObjectIds.length >= 2) store.groupObjects([...store.selectedObjectIds]); }
+
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); store.undo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); store.redo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); store.redo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'c') { e.preventDefault(); store.copySelection(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'v') { e.preventDefault(); store.pasteSelection(); }
+}
+
+function togglePlayback() {
+  const engine = getPlaybackEngine();
+  if (store.playbackPlaying) {
+    engine.pause();
+    store.setPlaybackPlaying(false);
+  } else {
+    engine.play(store.project.tracks, store.project.objects, store.computedDuration, store.project.cameraTrack || []);
+    store.setPlaybackPlaying(true);
+  }
+}
+
+// ── Export dialog ──
+function closeExport() { store.showExportDialog = false; }
+function downloadPy() {
+  if (isCodeMode.value) {
+    const blob = new Blob([store.exportCode], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${store.project.name || 'scene'}.py`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    downloadManimScript(store.project);
+  }
+}
+function copyCode() {
+  navigator.clipboard.writeText(store.exportCode).then(() => {
+    copied.value = true;
+    setTimeout(() => { copied.value = false; }, 2000);
+  });
+}
+
+// ── Render dialog ──
+function closeRender() {
+  // Allow closing at any time; if still rendering, polling continues in bg
+  store.showRenderDialog = false;
+  // Reset status ONLY if completed or failed so user can re-open cleanly
+  if (store.renderStatus === 'completed' || store.renderStatus === 'failed') {
+    // keep it so user can reopen and see the video / error
+  }
+}
+
+function startRender() {
+  if (store.hasPendingAudio) return;
+  store.renderOnServer(selectedQuality.value);
+}
+
+function retryRender() {
+  store.renderStatus = null;
+  store.renderError = null;
+}
+
+function resetRender() {
+  store.renderStatus = null;
+  store.renderError = null;
+  store.renderVideoUrl = null;
+  store.renderLog = '';
+}
+
+// ── Project browser ──
+function closeProjectBrowser() { store.showProjectBrowser = false; }
+async function openServerProject(id) {
+  if (store.isDirty && !confirm('Discard unsaved changes?')) return;
+  const ok = await store.loadFromServer(id);
+  if (ok) store.showProjectBrowser = false;
+}
+
+async function deleteServerProject(id, name) {
+  if (!confirm(`Delete "${name}" from the server?\n\nThis will remove the project, its assets, and all renders. This cannot be undone.`)) return;
+  try {
+    await store.deleteServerProject(id);
+  } catch (err) {
+    store.setError('Delete failed: ' + err.message);
+  }
+}
+
+// ── Stage code view ──
+function switchToCode() {
+  stageViewMode.value = 'code';
+  codeEdited.value = false;
+  parseMessage.value = '';
+  if (isCodeMode.value) {
+    stageCode.value = store.project.codeSource || '';
+  } else {
+    updateStageCode();
+  }
+  nextTick(() => syncCodeScroll());
+}
+function updateStageCode() {
+  try {
+    stageCode.value = generateManimScript(store.project);
+    codeEdited.value = false;
+  } catch (err) {
+    stageCode.value = '# Error generating code: ' + err.message;
+  }
+}
+function _debouncedUpdateCode() {
+  clearTimeout(_stageCodeTimer);
+  _stageCodeTimer = setTimeout(() => updateStageCode(), 300);
+}
+function syncCodeScroll() {
+  const ta = codeArea.value;
+  const pre = highlightPre.value;
+  if (ta && pre) {
+    pre.scrollTop = ta.scrollTop;
+    pre.scrollLeft = ta.scrollLeft;
+  }
+}
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+function onCodeInput(e) {
+  stageCode.value = e.target.value;
+  if (isCodeMode.value) {
+    store.project.codeSource = stageCode.value;
+    store.isDirty = true;
+  } else {
+    codeEdited.value = true;
+  }
+}
+function resetCode() {
+  codeEdited.value = false;
+  parseMessage.value = '';
+  updateStageCode();
+}
+function applyCodeToCanvas() {
+  try {
+    const result = parseManimScript(stageCode.value, store.project.stage.width, store.project.stage.height);
+
+    if (result.objects.length === 0) {
+      parseMessage.value = 'No objects found in code. Check your syntax.';
+      parseMessageOk.value = false;
+      _clearParseMsg();
+      return;
+    }
+
+    // Apply parsed data to the project
+    store.project.stage.backgroundColor = result.stage.backgroundColor;
+    store.project.objects = result.objects;
+    store.project.tracks = result.tracks;
+    if (result.cameraType) store.setCameraType(result.cameraType);
+    if (Array.isArray(result.cameraTrack) && result.cameraTrack.length > 0) {
+      store.project.cameraTrack = result.cameraTrack;
+    }
+    store.deselectAll();
+
+    codeEdited.value = false;
+    parseMessage.value = `Applied: ${result.objects.length} objects, ${result.tracks.reduce((s, t) => s + t.clips.length, 0)} animations`;
+    parseMessageOk.value = true;
+    _clearParseMsg();
+
+    // Switch back to canvas to see the result
+    setTimeout(() => { stageViewMode.value = 'canvas'; }, 800);
+  } catch (err) {
+    parseMessage.value = 'Parse error: ' + err.message;
+    parseMessageOk.value = false;
+    _clearParseMsg();
+  }
+}
+function _clearParseMsg() {
+  clearTimeout(_parseMessageTimer);
+  _parseMessageTimer = setTimeout(() => { parseMessage.value = ''; }, 4000);
+}
+function copyStageCode() {
+  navigator.clipboard.writeText(stageCode.value).then(() => {
+    stageCopied.value = true;
+    setTimeout(() => { stageCopied.value = false; }, 2000);
+  });
+}
+function downloadStageCode() {
+  if (isCodeMode.value) {
+    const blob = new Blob([stageCode.value], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${store.project.name || 'scene'}.py`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    downloadManimScript(store.project);
+  }
+}
+
+// ── Render history ──
+async function loadRenderHistory() {
+  try {
+    const info = await api.renders.getInfo(projectId.value);
+    renderHistory.value = info.history || [];
+  } catch {}
+}
+
+function formatRenderDate(filename) {
+  const m = filename.match(/render_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+  if (!m) return filename;
+  return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
+}
+
+// ── Error ──
+function clearError() { store.clearError(); }
 </script>
 
 <style>
