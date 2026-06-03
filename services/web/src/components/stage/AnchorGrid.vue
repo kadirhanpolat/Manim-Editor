@@ -18,26 +18,15 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
 
-export default {
-  name: 'AnchorGrid',
-  
-  props: {
-    value: {
-      type: String,
-      default: 'CENTER'
-    }
-  },
-  
-  data() {
-    return {
-      grid: ANCHOR_GRID,
-      labels: ANCHOR_LABELS
-    };
-  }
-};
+const props = defineProps({
+  value: { type: String, default: 'CENTER' }
+});
+
+const grid = ANCHOR_GRID;
+const labels = ANCHOR_LABELS;
 </script>
 
 <style scoped>

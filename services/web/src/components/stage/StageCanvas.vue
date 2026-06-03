@@ -150,737 +150,744 @@
   </div>
 </template>
 
-<script>
-import { store, actions, getters } from '../../store/project.js';
+<script setup>
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useProjectStore } from '../../store/project.js';
 import { generateDotGridPositions } from '../../engine/geometry.js';
 import { applyOverrides } from '../../engine/blending.js';
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 
-export default {
-  name: 'StageCanvas',
+const store = useProjectStore();
 
-  data() {
-    return {
-      containerWidth: 800,
-      containerHeight: 500,
-      panOffset: { x: 0, y: 0 },
-      zoomLevel: 1,
-      imageElements: {},
-      isDraggingOver: false,
-      fontLoadKey: 0, // Used to force re-render when fonts load
-      shiftKey: false, // When true, transformer keeps aspect ratio
-      // Live transform during drag (canvas px) — avoids store updates so resize/rotate stay smooth
-      liveTransform: null,
-      pathDrawing: false,
-      pathPoints: [],
-      pathSourceId: null,
-      _pathLastClick: 0,
-    };
-  },
+// ── Reactive state ──
+const containerWidth = ref(800);
+const containerHeight = ref(500);
+const panOffset = ref({ x: 0, y: 0 });
+const zoomLevel = ref(1);
+const imageElements = reactive({});
+const isDraggingOver = ref(false);
+const fontLoadKey = ref(0);
+const shiftKey = ref(false);
+const liveTransform = ref(null);
+const pathDrawing = ref(false);
+const pathPoints = ref([]);
+const pathSourceId = ref(null);
 
-  computed: {
-    objects() { return store.project.objects; },
-    sortedObjects() { return [...this.objects].sort((a, b) => (a.zOrder || 0) - (b.zOrder || 0)); },
-    selectedObjectIds() { return store.selectedObjectIds; },
-    gridVisible() { return store.project.stage.gridVisible; },
-    stg() { return store.project.stage; },
-    frameState() { return store.frameState; },
-    morphShapes() { return this.frameState.morphShapes || []; },
+// ── Non-reactive instance vars ──
+let _pathLastClick = 0;
+let _measureCanvas = null;
+let _measureCtx = null;
+let _ro = null;
+let _onKeyDown = null;
+let _onKeyUp = null;
 
-    vs() {
-      const sx = this.containerWidth / this.stg.width;
-      const sy = this.containerHeight / this.stg.height;
-      const base = Math.min(sx, sy, 1) * 0.92 * this.zoomLevel;
-      const cs = store.frameState.cameraState;
-      return cs?.zoom ? base * cs.zoom : base;
-    },
-    ox() {
-      const cs = store.frameState.cameraState;
-      const camX = cs ? cs.x : this.stg.width / 2;
-      return this.containerWidth / 2 - camX * this.vs + this.panOffset.x;
-    },
-    oy() {
-      const cs = store.frameState.cameraState;
-      const camY = cs ? cs.y : this.stg.height / 2;
-      return this.containerHeight / 2 - camY * this.vs + this.panOffset.y;
-    },
+// ── Template refs ──
+const container = ref(null);
+const konvaStage = ref(null);
+const objectsLayer = ref(null);
+const transformer = ref(null);
 
-    stageConfig() { return { width: this.containerWidth, height: this.containerHeight }; },
-    bgConfig() {
-      return {
-        x: this.ox, y: this.oy,
-        width: this.stg.width * this.vs, height: this.stg.height * this.vs,
-        fill: this.stg.backgroundColor || '#000000',
-        opacity: this.stg.backgroundOpacity ?? 1,
-        cornerRadius: 4,
-        shadowColor: '#000', shadowBlur: 40, shadowOpacity: 0.6
-      };
-    },
+// ── Computed ──
+const objects = computed(() => store.project.objects);
+const sortedObjects = computed(() => [...objects.value].sort((a, b) => (a.zOrder || 0) - (b.zOrder || 0)));
+const selectedObjectIds = computed(() => store.selectedObjectIds);
+const gridVisible = computed(() => store.project.stage.gridVisible);
+const stg = computed(() => store.project.stage);
+const frameState = computed(() => store.frameState);
+const morphShapes = computed(() => frameState.value.morphShapes || []);
 
-    themeAccent() { return this.getCssVar('--studio-accent') || '#4CEEF9'; },
-    themeSurface() { return this.getCssVar('--studio-text') || '#E6EDF3'; },
+const vs = computed(() => {
+  const sx = containerWidth.value / stg.value.width;
+  const sy = containerHeight.value / stg.value.height;
+  const base = Math.min(sx, sy, 1) * 0.92 * zoomLevel.value;
+  const cs = store.frameState.cameraState;
+  return cs?.zoom ? base * cs.zoom : base;
+});
+const ox = computed(() => {
+  const cs = store.frameState.cameraState;
+  const camX = cs ? cs.x : stg.value.width / 2;
+  return containerWidth.value / 2 - camX * vs.value + panOffset.value.x;
+});
+const oy = computed(() => {
+  const cs = store.frameState.cameraState;
+  const camY = cs ? cs.y : stg.value.height / 2;
+  return containerHeight.value / 2 - camY * vs.value + panOffset.value.y;
+});
 
-    gridLines() {
-      const lines = [];
-      const x0 = this.ox, y0 = this.oy, w = this.stg.width * this.vs, h = this.stg.height * this.vs;
-      const gs = this.stg.gridSize || 8;
-      const gridColor = this.stg.gridColor || '#ffffff';
-      const gridOpacity = this.stg.gridOpacity ?? 0.12;
-      for (let i = 1; i < gs; i++) {
-        lines.push({ points: [x0 + w / gs * i, y0, x0 + w / gs * i, y0 + h], stroke: gridColor, strokeWidth: 0.5, opacity: gridOpacity, dash: [4, 8], listening: false });
-        lines.push({ points: [x0, y0 + h / gs * i, x0 + w, y0 + h / gs * i], stroke: gridColor, strokeWidth: 0.5, opacity: gridOpacity, dash: [4, 8], listening: false });
-      }
-      return lines;
-    },
+const stageConfig = computed(() => ({ width: containerWidth.value, height: containerHeight.value }));
+const bgConfig = computed(() => ({
+  x: ox.value, y: oy.value,
+  width: stg.value.width * vs.value, height: stg.value.height * vs.value,
+  fill: stg.value.backgroundColor || '#000000',
+  opacity: stg.value.backgroundOpacity ?? 1,
+  cornerRadius: 4,
+  shadowColor: '#000', shadowBlur: 40, shadowOpacity: 0.6
+}));
 
-    centerH() {
-      const gridOpacity = this.stg.gridOpacity ?? 0.12;
-      return { points: [this.ox, this.oy + this.stg.height * this.vs / 2, this.ox + this.stg.width * this.vs, this.oy + this.stg.height * this.vs / 2], stroke: this.themeAccent, strokeWidth: 0.5, opacity: gridOpacity + 0.06, dash: [8, 4], listening: false };
-    },
-    centerV() {
-      const gridOpacity = this.stg.gridOpacity ?? 0.12;
-      return { points: [this.ox + this.stg.width * this.vs / 2, this.oy, this.ox + this.stg.width * this.vs / 2, this.oy + this.stg.height * this.vs], stroke: this.themeAccent, strokeWidth: 0.5, opacity: gridOpacity + 0.06, dash: [8, 4], listening: false };
-    },
+const themeAccent = computed(() => getCssVar('--studio-accent') || '#4CEEF9');
+const themeSurface = computed(() => getCssVar('--studio-text') || '#E6EDF3');
 
-    trConfig() {
-      const accent = this.themeAccent;
-      return {
-        anchorSize: 8, anchorFill: accent, anchorStroke: '#fff', anchorStrokeWidth: 1.5,
-        borderStroke: accent, borderStrokeWidth: 1.5, borderDash: [6, 4],
-        rotateEnabled: true, keepRatio: this.shiftKey,
-        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-        boundBoxFunc: (o, n) => (n.width < 10 || n.height < 10) ? o : n
-      };
-    },
+const gridLines = computed(() => {
+  const lines = [];
+  const x0 = ox.value, y0 = oy.value, w = stg.value.width * vs.value, h = stg.value.height * vs.value;
+  const gs = stg.value.gridSize || 8;
+  const gridColor = stg.value.gridColor || '#ffffff';
+  const gridOpacity = stg.value.gridOpacity ?? 0.12;
+  for (let i = 1; i < gs; i++) {
+    lines.push({ points: [x0 + w / gs * i, y0, x0 + w / gs * i, y0 + h], stroke: gridColor, strokeWidth: 0.5, opacity: gridOpacity, dash: [4, 8], listening: false });
+    lines.push({ points: [x0, y0 + h / gs * i, x0 + w, y0 + h / gs * i], stroke: gridColor, strokeWidth: 0.5, opacity: gridOpacity, dash: [4, 8], listening: false });
+  }
+  return lines;
+});
 
-    pathCanvasPoints() {
-      if (!this.pathPoints.length) return [];
-      return this.pathPoints.map(p => {
-        const cp = this.s2c(p.x, p.y);
-        return { cx: cp.x, cy: cp.y };
-      });
-    },
-    pathPreviewLineCfg() {
-      const pts = this.pathCanvasPoints.flatMap(p => [p.cx, p.cy]);
-      return {
-        points: pts,
-        stroke: '#a855f7',
-        strokeWidth: 2,
-        dash: [6, 3],
-        listening: false,
-      };
-    },
+const centerH = computed(() => {
+  const gridOpacity = stg.value.gridOpacity ?? 0.12;
+  return { points: [ox.value, oy.value + stg.value.height * vs.value / 2, ox.value + stg.value.width * vs.value, oy.value + stg.value.height * vs.value / 2], stroke: themeAccent.value, strokeWidth: 0.5, opacity: gridOpacity + 0.06, dash: [8, 4], listening: false };
+});
+const centerV = computed(() => {
+  const gridOpacity = stg.value.gridOpacity ?? 0.12;
+  return { points: [ox.value + stg.value.width * vs.value / 2, oy.value, ox.value + stg.value.width * vs.value / 2, oy.value + stg.value.height * vs.value], stroke: themeAccent.value, strokeWidth: 0.5, opacity: gridOpacity + 0.06, dash: [8, 4], listening: false };
+});
 
-    // Group bounds visualization
-    groupBounds() {
-      const groups = store.project.groups || [];
-      const bounds = [];
-      for (const group of groups) {
-        if (!group.childIds || group.childIds.length === 0) continue;
-        // Check if any child is selected
-        const anySelected = group.childIds.some(cid => store.selectedObjectIds.includes(cid));
-        if (!anySelected) continue;
+const trConfig = computed(() => {
+  const accent = themeAccent.value;
+  return {
+    anchorSize: 8, anchorFill: accent, anchorStroke: '#fff', anchorStrokeWidth: 1.5,
+    borderStroke: accent, borderStrokeWidth: 1.5, borderDash: [6, 4],
+    rotateEnabled: true, keepRatio: shiftKey.value,
+    enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+    boundBoxFunc: (o, n) => (n.width < 10 || n.height < 10) ? o : n
+  };
+});
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const cid of group.childIds) {
-          const obj = store.project.objects.find(o => o.id === cid);
-          if (!obj) continue;
-          minX = Math.min(minX, obj.x - obj.width / 2);
-          minY = Math.min(minY, obj.y - obj.height / 2);
-          maxX = Math.max(maxX, obj.x + obj.width / 2);
-          maxY = Math.max(maxY, obj.y + obj.height / 2);
-        }
-        if (minX === Infinity) continue;
+const pathCanvasPoints = computed(() => {
+  if (!pathPoints.value.length) return [];
+  return pathPoints.value.map(p => {
+    const cp = s2c(p.x, p.y);
+    return { cx: cp.x, cy: cp.y };
+  });
+});
+const pathPreviewLineCfg = computed(() => {
+  const pts = pathCanvasPoints.value.flatMap(p => [p.cx, p.cy]);
+  return {
+    points: pts,
+    stroke: '#a855f7',
+    strokeWidth: 2,
+    dash: [6, 3],
+    listening: false,
+  };
+});
 
-        const margin = group.margin || 10;
-        const p1 = this.s2c(minX - margin, minY - margin);
-        const w = (maxX - minX + margin * 2) * this.vs;
-        const h = (maxY - minY + margin * 2) * this.vs;
+const groupBounds = computed(() => {
+  const groups = store.project.groups || [];
+  const bounds = [];
+  for (const group of groups) {
+    if (!group.childIds || group.childIds.length === 0) continue;
+    const anySelected = group.childIds.some(cid => store.selectedObjectIds.includes(cid));
+    if (!anySelected) continue;
 
-        bounds.push({
-          id: group.id,
-          x: p1.x, y: p1.y, width: w, height: h,
-          fill: 'transparent',
-          stroke: this.themeAccent, strokeWidth: 1.5, dash: [6, 4],
-          opacity: 0.5, cornerRadius: 6, listening: false
-        });
-      }
-      return bounds;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const cid of group.childIds) {
+      const obj = store.project.objects.find(o => o.id === cid);
+      if (!obj) continue;
+      minX = Math.min(minX, obj.x - obj.width / 2);
+      minY = Math.min(minY, obj.y - obj.height / 2);
+      maxX = Math.max(maxX, obj.x + obj.width / 2);
+      maxY = Math.max(maxY, obj.y + obj.height / 2);
     }
-  },
+    if (minX === Infinity) continue;
 
-  watch: {
-    selectedObjectIds: { handler() { this.$nextTick(() => this.updateTransformer()); }, deep: true },
-    objects: { handler() { this.$nextTick(() => this.updateTransformer()); this.loadNewImages(); this.loadNewFonts(); }, deep: true }
-  },
+    const margin = group.margin || 10;
+    const p1 = s2c(minX - margin, minY - margin);
+    const w = (maxX - minX + margin * 2) * vs.value;
+    const h = (maxY - minY + margin * 2) * vs.value;
 
-  mounted() {
-    this.updateSize();
-    this._ro = new ResizeObserver(() => this.updateSize());
-    this._ro.observe(this.$refs.container);
-    this.loadNewImages();
-    this.loadNewFonts();
-    this._onKeyDown = (e) => { if (e.key === 'Shift') this.shiftKey = true; };
-    this._onKeyUp = (e) => { if (e.key === 'Shift') this.shiftKey = false; };
-    window.addEventListener('keydown', this._onKeyDown);
-    window.addEventListener('keyup', this._onKeyUp);
-  },
-  beforeDestroy() {
-    if (this._ro) this._ro.disconnect();
-    if (this._onKeyDown) window.removeEventListener('keydown', this._onKeyDown);
-    if (this._onKeyUp) window.removeEventListener('keyup', this._onKeyUp);
-  },
+    bounds.push({
+      id: group.id,
+      x: p1.x, y: p1.y, width: w, height: h,
+      fill: 'transparent',
+      stroke: themeAccent.value, strokeWidth: 1.5, dash: [6, 4],
+      opacity: 0.5, cornerRadius: 6, listening: false
+    });
+  }
+  return bounds;
+});
 
-  methods: {
-    getCssVar(name) {
-      try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); } catch { return ''; }
-    },
-    updateSize() {
-      if (this.$refs.container) {
-        this.containerWidth = this.$refs.container.clientWidth;
-        this.containerHeight = this.$refs.container.clientHeight;
+// ── Watch ──
+watch(() => store.selectedObjectIds, () => {
+  nextTick(() => updateTransformer());
+}, { deep: true });
+
+watch(() => store.project.objects, () => {
+  nextTick(() => updateTransformer());
+  loadNewImages();
+  loadNewFonts();
+}, { deep: true });
+
+// ── Lifecycle ──
+onMounted(() => {
+  updateSize();
+  _ro = new ResizeObserver(() => updateSize());
+  _ro.observe(container.value);
+  loadNewImages();
+  loadNewFonts();
+  _onKeyDown = (e) => { if (e.key === 'Shift') shiftKey.value = true; };
+  _onKeyUp = (e) => { if (e.key === 'Shift') shiftKey.value = false; };
+  window.addEventListener('keydown', _onKeyDown);
+  window.addEventListener('keyup', _onKeyUp);
+});
+
+onBeforeUnmount(() => {
+  if (_ro) _ro.disconnect();
+  if (_onKeyDown) window.removeEventListener('keydown', _onKeyDown);
+  if (_onKeyUp) window.removeEventListener('keyup', _onKeyUp);
+});
+
+// ── Methods ──
+function getCssVar(name) {
+  try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); } catch { return ''; }
+}
+function updateSize() {
+  if (container.value) {
+    containerWidth.value = container.value.clientWidth;
+    containerHeight.value = container.value.clientHeight;
+  }
+}
+function s2c(sx, sy) { return { x: ox.value + sx * vs.value, y: oy.value + sy * vs.value }; }
+function c2s(cx, cy) { return { x: (cx - ox.value) / vs.value, y: (cy - oy.value) / vs.value }; }
+
+function eff(obj) {
+  const ov = frameState.value.objectOverrides[obj.id];
+  return ov ? applyOverrides(obj, ov) : obj;
+}
+function isVis(id) {
+  const h = frameState.value.hiddenIds;
+  if (h instanceof Set) return !h.has(id);
+  return true;
+}
+
+function loadNewImages() {
+  for (const obj of objects.value) {
+    if ((obj.type === 'image' || obj.type === 'svg_asset') && obj.assetId && !imageElements[obj.assetId]) {
+      const asset = store.assetById(obj.assetId);
+      if (asset && asset.dataUrl) {
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.src = asset.dataUrl;
+        img.onload = () => { imageElements[obj.assetId] = img; };
       }
-    },
-    s2c(sx, sy) { return { x: this.ox + sx * this.vs, y: this.oy + sy * this.vs }; },
-    c2s(cx, cy) { return { x: (cx - this.ox) / this.vs, y: (cy - this.oy) / this.vs }; },
-
-    eff(obj) {
-      const ov = this.frameState.objectOverrides[obj.id];
-      return ov ? applyOverrides(obj, ov) : obj;
-    },
-    isVis(id) {
-      const h = this.frameState.hiddenIds;
-      if (h instanceof Set) return !h.has(id);
-      return true;
-    },
-
-    loadNewImages() {
-      for (const obj of this.objects) {
-        if ((obj.type === 'image' || obj.type === 'svg_asset') && obj.assetId && !this.imageElements[obj.assetId]) {
-          const asset = getters.assetById(obj.assetId);
-          if (asset && asset.dataUrl) {
-            const img = new window.Image();
-            img.crossOrigin = 'anonymous';
-            img.src = asset.dataUrl;
-            img.onload = () => { this.imageElements[obj.assetId] = img; };
-          }
-        }
-      }
-    },
-
-    async loadNewFonts() {
-      // Load fonts for all text objects
-      for (const obj of this.objects) {
-        if (obj.type === 'text' && obj.fontFamily && !isFontLoaded(obj.fontFamily)) {
-          try {
-            await loadFont(obj.fontFamily);
-            // Force canvas to redraw after font loads
-            this.fontLoadKey++;
-            this.$nextTick(() => {
-              // Trigger a redraw of the Konva layer
-              const layer = this.$refs.objectsLayer?.getNode();
-              if (layer) {
-                layer.batchDraw();
-              }
-            });
-          } catch (e) {
-            console.warn('Failed to load font:', obj.fontFamily, e);
-          }
-        }
-      }
-    },
-
-    // ── Drag and Drop from sidebar ──
-    onDragOver(e) {
-      this.isDraggingOver = true;
-      e.dataTransfer.dropEffect = 'copy';
-    },
-    onDragLeave() {
-      this.isDraggingOver = false;
-    },
-    onDrop(e) {
-      this.isDraggingOver = false;
-      const containerRect = this.$refs.container.getBoundingClientRect();
-      const dropX = e.clientX - containerRect.left;
-      const dropY = e.clientY - containerRect.top;
-
-      // Convert screen coordinates to stage coordinates
-      const stagePos = this.c2s(dropX, dropY);
-
-      // Snap if enabled
-      let sx = stagePos.x, sy = stagePos.y;
-      if (store.project.stage.snapEnabled && store.project.stage.snapToGrid) {
-        const gsX = store.project.stage.width / store.project.stage.gridSize;
-        const gsY = store.project.stage.height / store.project.stage.gridSize;
-        sx = Math.round(sx / gsX) * gsX;
-        sy = Math.round(sy / gsY) * gsY;
-      }
-      if (store.project.stage.snapEnabled && store.project.stage.snapToCenter) {
-        const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
-        if (Math.abs(sx - cx) < 30) sx = cx;
-        if (Math.abs(sy - cy) < 30) sy = cy;
-      }
-
-      // Check what was dropped
-      const shapeType = e.dataTransfer.getData('application/x-shape-type');
-      const assetId = e.dataTransfer.getData('application/x-asset-id');
-
-      if (shapeType) {
-        const obj = actions.addObject(shapeType, Math.round(sx), Math.round(sy));
-        actions.selectObject(obj.id);
-      } else if (assetId) {
-        const obj = actions.addImageObject(assetId, Math.round(sx), Math.round(sy));
-        if (obj) actions.selectObject(obj.id);
-      }
-    },
-
-    // ── Shape configs ──
-    live(obj) {
-      return this.liveTransform && this.liveTransform.id === obj.id ? this.liveTransform : null;
-    },
-    rectCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x - e.width / 2, e.y - e.height / 2);
-      const w = L ? L.w : e.width * this.vs, h = L ? L.h : e.height * this.vs, rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, width: w, height: h, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, cornerRadius: (obj.type === 'square' ? 4 : 2) * this.vs, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-    },
-    circleCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y); const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * this.vs;
-      const rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-    },
-    ellipseCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      const rx = L ? L.w / 2 : (e.width / 2) * this.vs, ry = L ? L.h / 2 : (e.height / 2) * this.vs, rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, radiusX: rx, radiusY: ry, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-    },
-    dotCfg(obj) {
-      const e = this.eff(obj); const p = this.s2c(e.x, e.y);
-      return { x: p.x, y: p.y, radius: Math.max(4, e.width / 2 * this.vs), fill: e.fill || '#fff', opacity: e.opacity ?? 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12 };
-    },
-    heartCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y); const w = L ? L.w : e.width * this.vs; const h = L ? L.h : e.height * this.vs; const rot = L ? L.rotation : (e.rotation || 0);
-      return {
-        x: p.x, y: p.y, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2,
-        opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1,
-        draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10,
-        sceneFunc: (ctx, shape) => {
-          const hw = w / 2, hh = h / 2;
-          ctx.beginPath();
-          for (let i = 0; i <= 60; i++) {
-            const t = (i / 60) * 2 * Math.PI;
-            const px = (16 * Math.pow(Math.sin(t), 3) / 16) * hw;
-            const py = -(((13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) / 15)) * hh;
-            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-          }
-          ctx.closePath(); ctx.fillStrokeShape(shape);
-        }
-      };
-    },
-    triangleCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      const hw = L ? L.w / 2 : e.width / 2 * this.vs, hh = L ? L.h / 2 : e.height / 2 * this.vs, rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-    },
-    starCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      const outerRadius = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * this.vs;
-      const inner = (obj.innerRatio || 0.4) * outerRadius; const rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, numPoints: obj.starArms || 5, innerRadius: inner, outerRadius: outerRadius, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-    },
-    polygonCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * this.vs; const rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, sides: obj.sides || 6, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * this.vs / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-    },
-    lineCfg(obj) {
-      const e = this.eff(obj); const p = this.s2c(e.x, e.y);
-      const hw = e.width / 2 * this.vs;
-      return { x: p.x, y: p.y, points: [-hw, 0, hw, 0], stroke: e.stroke || e.fill || '#94a3b8', strokeWidth: Math.max(2, (e.strokeWidth || 3) * this.vs / 2), opacity: e.opacity ?? 1, rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, lineCap: 'round' };
-    },
-    arrowCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      const hw = L ? L.w / 2 : e.width / 2 * this.vs; const rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, points: [-hw, 0, hw, 0], fill: e.fill, stroke: e.stroke || e.fill || '#ef4444', strokeWidth: Math.max(2, (e.strokeWidth || 2) * this.vs / 2), opacity: e.opacity ?? 1, rotation: rot, pointerLength: 14 * this.vs / 2, pointerWidth: 12 * this.vs / 2, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, scaleX: 1, scaleY: 1 };
-    },
-    textCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      // Match Manim Text font_size: at 1080p, font_size N ≈ N px; scale by vs for stage→canvas
-      const manimFontScale = (e.fontSize || 48) * this.vs;
-      const fontFamily = e.fontFamily || 'Arial';
-      const fontStyle = (e.fontWeight === 'bold' ? 'bold ' : '') + (e.fontStyle === 'italic' ? 'italic ' : '');
-      const text = e.content || 'Text';
-      const align = e.textAlign || 'center';
-      const textWidth = this.measureTextWidth(text, manimFontScale, fontFamily, fontStyle);
-      let offsetX = 0;
-      if (align === 'center') offsetX = textWidth / 2;
-      else if (align === 'right') offsetX = textWidth;
-      const rot = L ? L.rotation : (e.rotation || 0);
-      return { 
-        x: p.x, y: p.y, text, fontSize: manimFontScale, fontFamily, 
-        fontStyle: fontStyle.trim(), fill: e.fill || '#ffffff', opacity: e.opacity ?? 1, 
-        rotation: rot, offsetX, offsetY: manimFontScale / 2, 
-        draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 
-      };
-    },
-    measureTextWidth(text, fontSize, fontFamily, fontStyle) {
-      // Use canvas context to measure text width
-      if (!this._measureCanvas) {
-        this._measureCanvas = document.createElement('canvas');
-        this._measureCtx = this._measureCanvas.getContext('2d');
-      }
-      this._measureCtx.font = `${fontStyle}${fontSize}px ${fontFamily}`;
-      return this._measureCtx.measureText(text).width;
-    },
-    groupCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x, e.y);
-      const rot = L ? L.rotation : (e.rotation || 0);
-      return { x: p.x, y: p.y, rotation: rot, opacity: e.opacity ?? 1, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject' };
-    },
-    dotGridDots(obj) {
-      const sp = (obj.dotSpacing || 40) * this.vs, r = Math.max(2, (obj.dotRadius || 5) * this.vs);
-      return generateDotGridPositions(obj.gridCols || 5, obj.gridRows || 5, sp).map(p => ({ x: p.x, y: p.y, radius: r, fill: obj.fill || '#fff', listening: false }));
-    },
-    imageCfg(obj) {
-      const L = this.live(obj);
-      const e = this.eff(obj); const p = L ? { x: L.x, y: L.y } : this.s2c(e.x - e.width / 2, e.y - e.height / 2);
-      const w = L ? L.w : e.width * this.vs, h = L ? L.h : e.height * this.vs, rot = L ? L.rotation : (e.rotation || 0);
-      return {
-        x: p.x, y: p.y, width: w, height: h,
-        image: this.imageElements[obj.assetId], opacity: e.opacity ?? 1,
-        rotation: rot, scaleX: 1, scaleY: 1,
-        draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject'
-      };
-    },
-    // ── LaTeX config ──
-    latexBgCfg(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs, h = L ? L.h : obj.height * this.vs;
-      return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.06)', stroke: this.themeAccent, strokeWidth: 1.5, dash: [6, 4], cornerRadius: 6, listening: false };
-    },
-    latexTextCfg(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs, h = L ? L.h : obj.height * this.vs;
-      return { x: -w / 2, y: -h / 2, width: w, height: h, text: obj.latex || 'E = mc^2', fontSize: Math.max(12, 18 * this.vs), fontFamily: 'serif', fontStyle: 'italic', fill: obj.fill || '#ffffff', align: 'center', verticalAlign: 'middle', padding: 8, listening: false };
-    },
-    latexBadgeCfg(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs, h = L ? L.h : obj.height * this.vs;
-      return { x: -w / 2 + 4, y: -h / 2 + 4, text: 'TEX', fontSize: 9, fill: this.themeAccent, fontFamily: 'monospace', fontStyle: 'bold', listening: false };
-    },
-
-    // ── Axes config ──
-    axesBgCfg(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs, h = L ? L.h : obj.height * this.vs;
-      return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(16,185,129,0.04)', stroke: 'rgba(16,185,129,0.15)', strokeWidth: 1, cornerRadius: 4, listening: false };
-    },
-    axesXLineCfg(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs, h = L ? L.h : obj.height * this.vs;
-      return { points: [-w / 2 + 10, 0, w / 2 - 10, 0], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
-    },
-    axesYLineCfg(obj) {
-      const L = this.live(obj); const h = L ? L.h : obj.height * this.vs;
-      return { points: [0, h / 2 - 10, 0, -h / 2 + 10], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
-    },
-    axesXArrowCfg(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs;
-      const tip = w / 2 - 10;
-      return { points: [tip - 8, -5, tip, 0, tip - 8, 5], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
-    },
-    axesYArrowCfg(obj) {
-      const L = this.live(obj); const h = L ? L.h : obj.height * this.vs;
-      const tip = -h / 2 + 10;
-      return { points: [-5, tip + 8, 0, tip, 5, tip + 8], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
-    },
-    axesXTicks(obj) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs;
-      const xr = obj.xRange || [-5, 5, 1];
-      const ticks = [];
-      const range = xr[1] - xr[0];
-      const step = xr[2] || 1;
-      for (let v = xr[0]; v <= xr[1]; v += step) {
-        if (Math.abs(v) < 0.001) continue;
-        const px = ((v - xr[0]) / range - 0.5) * (w - 20);
-        ticks.push({ points: [px, -4, px, 4], stroke: obj.stroke || '#ffffff', strokeWidth: 1, listening: false });
-      }
-      return ticks;
-    },
-    axesYTicks(obj) {
-      const L = this.live(obj); const h = L ? L.h : obj.height * this.vs;
-      const yr = obj.yRange || [-3, 3, 1];
-      const ticks = [];
-      const range = yr[1] - yr[0];
-      const step = yr[2] || 1;
-      for (let v = yr[0]; v <= yr[1]; v += step) {
-        if (Math.abs(v) < 0.001) continue;
-        const py = -((v - yr[0]) / range - 0.5) * (h - 20);
-        ticks.push({ points: [-4, py, 4, py], stroke: obj.stroke || '#ffffff', strokeWidth: 1, listening: false });
-      }
-      return ticks;
-    },
-    axesLabelCfg(obj, axis) {
-      const L = this.live(obj); const w = L ? L.w : obj.width * this.vs, h = L ? L.h : obj.height * this.vs;
-      if (axis === 'x') {
-        return { x: w / 2 - 20, y: 6, text: 'x', fontSize: 12, fill: obj.stroke || '#ffffff', fontFamily: 'serif', fontStyle: 'italic', listening: false };
-      }
-      return { x: 6, y: -h / 2 + 12, text: 'y', fontSize: 12, fill: obj.stroke || '#ffffff', fontFamily: 'serif', fontStyle: 'italic', listening: false };
-    },
-
-    morphCfg(m) {
-      if (!m || !m.flatPoints || m.flatPoints.length < 4) return { points: [], closed: true };
-      const p = this.s2c(m.x, m.y);
-      const sp = [];
-      for (let i = 0; i < m.flatPoints.length; i += 2) { sp.push(m.flatPoints[i] * this.vs); sp.push(m.flatPoints[i + 1] * this.vs); }
-      return { x: p.x, y: p.y, points: sp, closed: true, fill: m.fill || '#fff', stroke: m.stroke || '#fff', strokeWidth: (m.strokeWidth || 2) * this.vs / 2, opacity: m.opacity ?? 1, listening: false };
-    },
-
-    // ── Path draw ──
-    startPathDraw(sourceId) {
-      this.pathDrawing = true;
-      this.pathPoints = [];
-      this.pathSourceId = sourceId;
-    },
-
-    onStageDblClick(e) {
-      if (!this.pathDrawing) return;
-      if (this.pathPoints.length >= 2) {
-        actions.addPathMoveClip(this.pathSourceId, [...this.pathPoints]);
-      }
-      this.pathDrawing = false;
-      this.pathPoints = [];
-      this.pathSourceId = null;
-    },
-
-    // ── Events ──
-    handleStageMouseDown(e) {
-      if (this.pathDrawing) {
-        const now = Date.now();
-        if (now - this._pathLastClick < 350) return; // absorb second mousedown of dblclick
-        this._pathLastClick = now;
-        const stage = e.target.getStage();
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
-        const sp = this.c2s(pos.x, pos.y);
-        this.pathPoints.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
-        return;
-      }
-      const t = e.target; const s = this.$refs.konvaStage?.getNode();
-      if (!s) return;
-      const ev = e.evt;
-      const addToSel = ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey);
-      // Click on transformer (resize/rotate handles or border) — handle shift-click to add object underneath
-      let node = t;
-      while (node) {
-        if (node.className === 'Transformer') {
-          if (addToSel) {
-            const layer = this.$refs.objectsLayer?.getNode?.();
-            const pos = s.getPointerPosition?.();
-            if (layer && pos) {
-              const hit = layer.getIntersection?.(pos);
-              if (hit && hit.name?.() === 'stageObject' && hit.id?.()) {
-                actions.selectObject(hit.id(), true);
-                this.$nextTick(() => this.$nextTick(() => this.updateTransformer()));
-              }
-            }
-          }
-          return;
-        }
-        node = node.getParent ? node.getParent() : null;
-      }
-      if (t === s || t.name() !== 'stageObject') {
-        if (store.activeTool === 'hand') this.startPan(e);
-        else actions.deselectAll();
-      }
-    },
-    onObjDown(id, e) {
-      e.cancelBubble = true;
-      const ev = e.evt;
-      actions.selectObject(id, ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
-      this.$nextTick(() => this.$nextTick(() => this.updateTransformer()));
-    },
-    onDragEnd(id, e) {
-      const node = e.target; const obj = store.project.objects.find(o => o.id === id); if (!obj) return;
-      let newX, newY;
-      // Types that use top-left positioning (text now uses center with offsetX/offsetY)
-      const tlTypes = ['square', 'rectangle', 'image', 'svg_asset'];
-      if (tlTypes.includes(obj.type)) {
-        const sp = this.c2s(node.x(), node.y());
-        newX = sp.x + obj.width / 2; newY = sp.y + obj.height / 2;
-      } else {
-        const sp = this.c2s(node.x(), node.y());
-        newX = sp.x; newY = sp.y;
-      }
-      if (store.project.stage.snapEnabled) {
-        const gs = store.project.stage.width / store.project.stage.gridSize;
-        const gs2 = store.project.stage.height / store.project.stage.gridSize;
-        if (store.project.stage.snapToGrid) { newX = Math.round(newX / gs) * gs; newY = Math.round(newY / gs2) * gs2; }
-        if (store.project.stage.snapToCenter) {
-          const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
-          if (Math.abs(newX - cx) < 30) newX = cx;
-          if (Math.abs(newY - cy) < 30) newY = cy;
-        }
-      }
-      actions.updateObject(id, { x: Math.round(newX), y: Math.round(newY) });
-    },
-    onTransform(id, e) {
-      const node = e.target;
-      const obj = store.project.objects.find(o => o.id === id);
-      if (!obj) return;
-      const sx = node.scaleX ? node.scaleX() : 1;
-      const sy = node.scaleY ? node.scaleY() : 1;
-      let w, h;
-      if (obj.type === 'circle') {
-        const r = (node.radius ? node.radius() : 10) * sx;
-        w = h = Math.max(10, r * 2);
-      } else if (obj.type === 'ellipse') {
-        w = Math.max(10, (node.radiusX ? node.radiusX() : 20) * 2 * sx);
-        h = Math.max(10, (node.radiusY ? node.radiusY() : 20) * 2 * sy);
-      } else if (this._isGroupType(obj.type)) {
-        w = Math.max(20, (obj.width || 200) * this.vs * sx);
-        h = Math.max(20, (obj.height || 200) * this.vs * sy);
-      } else {
-        w = Math.max(10, Math.abs((node.width ? node.width() : 1) * sx));
-        h = Math.max(10, Math.abs((node.height ? node.height() : 1) * sy));
-      }
-      const rotation = node.rotation ? node.rotation() : 0;
-      this.liveTransform = { id, type: obj.type, x: node.x(), y: node.y(), w, h, rotation };
-    },
-    onTransformEnd(id, e) {
-      const node = e.target;
-      const obj = store.project.objects.find(o => o.id === id);
-      if (!obj) return;
-
-      const sx = node.scaleX ? node.scaleX() : 1;
-      const sy = node.scaleY ? node.scaleY() : 1;
-      const tlTypes = ['square', 'rectangle', 'image', 'svg_asset'];
-      let cw, ch, cx, cy;
-
-      if (obj.type === 'circle') {
-        const r = node.radius ? node.radius() : (node.width ? node.width() / 2 : 20);
-        cw = r * 2;
-        ch = r * 2;
-        cx = node.x();
-        cy = node.y();
-      } else if (obj.type === 'ellipse') {
-        cw = node.radiusX ? node.radiusX() * 2 : (node.width ? node.width() : 40);
-        ch = node.radiusY ? node.radiusY() * 2 : (node.height ? node.height() : 40);
-        cx = node.x();
-        cy = node.y();
-      } else if (this._isGroupType(obj.type)) {
-        cw = (obj.width || 200) * this.vs * sx;
-        ch = (obj.height || 200) * this.vs * sy;
-        cx = node.x();
-        cy = node.y();
-      } else {
-        cw = Math.max(10, Math.abs((node.width ? node.width() : 1) * sx));
-        ch = Math.max(10, Math.abs((node.height ? node.height() : 1) * sy));
-        if (tlTypes.includes(obj.type)) {
-          cx = node.x() + cw / 2;
-          cy = node.y() + ch / 2;
-        } else {
-          cx = node.x();
-          cy = node.y();
-        }
-      }
-
-      const stagePos = this.c2s(cx, cy);
-      const newX = Math.round(stagePos.x);
-      const newY = Math.round(stagePos.y);
-      const newW = Math.max(20, Math.round(cw / this.vs));
-      const newH = Math.max(20, Math.round(ch / this.vs));
-      let rotation = node.rotation ? node.rotation() : 0;
-      if (this.shiftKey) rotation = Math.round(rotation / 45) * 45;
-      else rotation = Math.round(rotation * 10) / 10;
-
-      node.scaleX(1);
-      node.scaleY(1);
-
-      actions.updateObject(id, { x: newX, y: newY, width: newW, height: newH, rotation });
-      this.liveTransform = null;
-    },
-    _isGroupType(type) {
-      return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'numberline';
-    },
-    axesGraphCurves(obj) {
-      if (!obj.graphs || obj.graphs.length === 0) return [];
-      const curves = [];
-      const xr = obj.xRange || [-5, 5, 1];
-      const yr = obj.yRange || [-3, 3, 1];
-      const xMin = xr[0], xMax = xr[1];
-      const yMin = yr[0], yMax = yr[1];
-      const pw = obj.width * this.vs;
-      const ph = obj.height * this.vs;
-
-      for (const graph of obj.graphs) {
-        let fn;
-        // Validate expression before eval
-        const safeExpr = (() => {
-          const e = (graph.expression || '').trim();
-          if (!e) return null;
-          if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(e)) return null;
-          if (/import|eval|exec|open|__/.test(e)) return null;
-          return e;
-        })();
-        if (!safeExpr) continue;
-        try {
-          // eslint-disable-next-line no-new-func
-          fn = new Function('x', `"use strict"; return (${safeExpr});`);
-        } catch { continue; }
-
-        const steps = 80;
-        const points = [];
-        for (let i = 0; i <= steps; i++) {
-          const x = xMin + (xMax - xMin) * (i / steps);
-          let y;
-          try { y = fn(x); } catch { continue; }
-          if (!Number.isFinite(y)) continue;
-          const cx = ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
-          const cy = -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
-          if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
-          points.push(cx, cy);
-        }
-        if (points.length >= 4) {
-          curves.push({
-            points,
-            stroke: graph.color || '#f59e0b',
-            strokeWidth: graph.strokeWidth || 3,
-            listening: false,
-            tension: 0.3,
-          });
-        }
-      }
-      return curves;
-    },
-    onTextDblClick(id) {
-      // Could implement inline editing; for now, focus the properties panel
-    },
-    updateTransformer() {
-      const tr = this.$refs.transformer; const ol = this.$refs.objectsLayer; const ks = this.$refs.konvaStage;
-      if (!tr || !ks) return;
-      const t = tr.getNode(); const stage = ks.getNode(); if (!t || !stage) return;
-      const layer = ol && ol.getNode ? ol.getNode() : null;
-      const findNode = (id) => (layer ? layer.findOne('#' + id) : null) || stage.findOne('#' + id);
-      const nodes = store.selectedObjectIds.map(findNode).filter(Boolean);
-      t.nodes(nodes);
-      t.getLayer().batchDraw();
-    },
-    startPan(e) {
-      const start = { x: e.evt.clientX - this.panOffset.x, y: e.evt.clientY - this.panOffset.y };
-      const onM = (ev) => { this.panOffset = { x: ev.clientX - start.x, y: ev.clientY - start.y }; };
-      const onU = () => { document.removeEventListener('mousemove', onM); document.removeEventListener('mouseup', onU); };
-      document.addEventListener('mousemove', onM); document.addEventListener('mouseup', onU);
-    },
-    handleWheel(e) {
-      e.evt.preventDefault();
-      const factor = e.evt.deltaY > 0 ? 0.93 : 1.07;
-      this.zoomLevel = Math.max(0.15, Math.min(5, this.zoomLevel * factor));
     }
   }
-};
+}
+
+async function loadNewFonts() {
+  for (const obj of objects.value) {
+    if (obj.type === 'text' && obj.fontFamily && !isFontLoaded(obj.fontFamily)) {
+      try {
+        await loadFont(obj.fontFamily);
+        fontLoadKey.value++;
+        nextTick(() => {
+          const layer = objectsLayer.value?.getNode();
+          if (layer) {
+            layer.batchDraw();
+          }
+        });
+      } catch (e) {
+        console.warn('Failed to load font:', obj.fontFamily, e);
+      }
+    }
+  }
+}
+
+// ── Drag and Drop from sidebar ──
+function onDragOver(e) {
+  isDraggingOver.value = true;
+  e.dataTransfer.dropEffect = 'copy';
+}
+function onDragLeave() {
+  isDraggingOver.value = false;
+}
+function onDrop(e) {
+  isDraggingOver.value = false;
+  const containerRect = container.value.getBoundingClientRect();
+  const dropX = e.clientX - containerRect.left;
+  const dropY = e.clientY - containerRect.top;
+
+  const stagePos = c2s(dropX, dropY);
+
+  let sx = stagePos.x, sy = stagePos.y;
+  if (store.project.stage.snapEnabled && store.project.stage.snapToGrid) {
+    const gsX = store.project.stage.width / store.project.stage.gridSize;
+    const gsY = store.project.stage.height / store.project.stage.gridSize;
+    sx = Math.round(sx / gsX) * gsX;
+    sy = Math.round(sy / gsY) * gsY;
+  }
+  if (store.project.stage.snapEnabled && store.project.stage.snapToCenter) {
+    const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
+    if (Math.abs(sx - cx) < 30) sx = cx;
+    if (Math.abs(sy - cy) < 30) sy = cy;
+  }
+
+  const shapeType = e.dataTransfer.getData('application/x-shape-type');
+  const assetId = e.dataTransfer.getData('application/x-asset-id');
+
+  if (shapeType) {
+    const obj = store.addObject(shapeType, Math.round(sx), Math.round(sy));
+    store.selectObject(obj.id);
+  } else if (assetId) {
+    const obj = store.addImageObject(assetId, Math.round(sx), Math.round(sy));
+    if (obj) store.selectObject(obj.id);
+  }
+}
+
+// ── Shape configs ──
+function live(obj) {
+  return liveTransform.value && liveTransform.value.id === obj.id ? liveTransform.value : null;
+}
+function rectCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x - e.width / 2, e.y - e.height / 2);
+  const w = L ? L.w : e.width * vs.value, h = L ? L.h : e.height * vs.value, rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, width: w, height: h, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, cornerRadius: (obj.type === 'square' ? 4 : 2) * vs.value, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+}
+function circleCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y); const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value;
+  const rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+}
+function ellipseCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const rx = L ? L.w / 2 : (e.width / 2) * vs.value, ry = L ? L.h / 2 : (e.height / 2) * vs.value, rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, radiusX: rx, radiusY: ry, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+}
+function dotCfg(obj) {
+  const e = eff(obj); const p = s2c(e.x, e.y);
+  return { x: p.x, y: p.y, radius: Math.max(4, e.width / 2 * vs.value), fill: e.fill || '#fff', opacity: e.opacity ?? 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12 };
+}
+function heartCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y); const w = L ? L.w : e.width * vs.value; const h = L ? L.h : e.height * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
+  return {
+    x: p.x, y: p.y, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2,
+    opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1,
+    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10,
+    sceneFunc: (ctx, shape) => {
+      const hw = w / 2, hh = h / 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const t = (i / 60) * 2 * Math.PI;
+        const px = (16 * Math.pow(Math.sin(t), 3) / 16) * hw;
+        const py = -(((13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) / 15)) * hh;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fillStrokeShape(shape);
+    }
+  };
+}
+function triangleCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const hw = L ? L.w / 2 : e.width / 2 * vs.value, hh = L ? L.h / 2 : e.height / 2 * vs.value, rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+}
+function starCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const outerRadius = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value;
+  const inner = (obj.innerRatio || 0.4) * outerRadius; const rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, numPoints: obj.starArms || 5, innerRadius: inner, outerRadius: outerRadius, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+}
+function polygonCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, sides: obj.sides || 6, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+}
+function lineCfg(obj) {
+  const e = eff(obj); const p = s2c(e.x, e.y);
+  const hw = e.width / 2 * vs.value;
+  return { x: p.x, y: p.y, points: [-hw, 0, hw, 0], stroke: e.stroke || e.fill || '#94a3b8', strokeWidth: Math.max(2, (e.strokeWidth || 3) * vs.value / 2), opacity: e.opacity ?? 1, rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, lineCap: 'round' };
+}
+function arrowCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const hw = L ? L.w / 2 : e.width / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, points: [-hw, 0, hw, 0], fill: e.fill, stroke: e.stroke || e.fill || '#ef4444', strokeWidth: Math.max(2, (e.strokeWidth || 2) * vs.value / 2), opacity: e.opacity ?? 1, rotation: rot, pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, scaleX: 1, scaleY: 1 };
+}
+function textCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  // Match Manim Text font_size: at 1080p, font_size N ≈ N px; scale by vs for stage→canvas
+  const manimFontScale = (e.fontSize || 48) * vs.value;
+  const fontFamily = e.fontFamily || 'Arial';
+  const fontStyle = (e.fontWeight === 'bold' ? 'bold ' : '') + (e.fontStyle === 'italic' ? 'italic ' : '');
+  const text = e.content || 'Text';
+  const align = e.textAlign || 'center';
+  const textWidth = measureTextWidth(text, manimFontScale, fontFamily, fontStyle);
+  let offsetX = 0;
+  if (align === 'center') offsetX = textWidth / 2;
+  else if (align === 'right') offsetX = textWidth;
+  const rot = L ? L.rotation : (e.rotation || 0);
+  return {
+    x: p.x, y: p.y, text, fontSize: manimFontScale, fontFamily,
+    fontStyle: fontStyle.trim(), fill: e.fill || '#ffffff', opacity: e.opacity ?? 1,
+    rotation: rot, offsetX, offsetY: manimFontScale / 2,
+    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10
+  };
+}
+function measureTextWidth(text, fontSize, fontFamily, fontStyle) {
+  if (!_measureCanvas) {
+    _measureCanvas = document.createElement('canvas');
+    _measureCtx = _measureCanvas.getContext('2d');
+  }
+  _measureCtx.font = `${fontStyle}${fontSize}px ${fontFamily}`;
+  return _measureCtx.measureText(text).width;
+}
+function groupCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const rot = L ? L.rotation : (e.rotation || 0);
+  return { x: p.x, y: p.y, rotation: rot, opacity: e.opacity ?? 1, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject' };
+}
+function dotGridDots(obj) {
+  const sp = (obj.dotSpacing || 40) * vs.value, r = Math.max(2, (obj.dotRadius || 5) * vs.value);
+  return generateDotGridPositions(obj.gridCols || 5, obj.gridRows || 5, sp).map(p => ({ x: p.x, y: p.y, radius: r, fill: obj.fill || '#fff', listening: false }));
+}
+function imageCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x - e.width / 2, e.y - e.height / 2);
+  const w = L ? L.w : e.width * vs.value, h = L ? L.h : e.height * vs.value, rot = L ? L.rotation : (e.rotation || 0);
+  return {
+    x: p.x, y: p.y, width: w, height: h,
+    image: imageElements[obj.assetId], opacity: e.opacity ?? 1,
+    rotation: rot, scaleX: 1, scaleY: 1,
+    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject'
+  };
+}
+
+// ── LaTeX config ──
+function latexBgCfg(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.06)', stroke: themeAccent.value, strokeWidth: 1.5, dash: [6, 4], cornerRadius: 6, listening: false };
+}
+function latexTextCfg(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, text: obj.latex || 'E = mc^2', fontSize: Math.max(12, 18 * vs.value), fontFamily: 'serif', fontStyle: 'italic', fill: obj.fill || '#ffffff', align: 'center', verticalAlign: 'middle', padding: 8, listening: false };
+}
+function latexBadgeCfg(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
+  return { x: -w / 2 + 4, y: -h / 2 + 4, text: 'TEX', fontSize: 9, fill: themeAccent.value, fontFamily: 'monospace', fontStyle: 'bold', listening: false };
+}
+
+// ── Axes config ──
+function axesBgCfg(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(16,185,129,0.04)', stroke: 'rgba(16,185,129,0.15)', strokeWidth: 1, cornerRadius: 4, listening: false };
+}
+function axesXLineCfg(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
+  return { points: [-w / 2 + 10, 0, w / 2 - 10, 0], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
+}
+function axesYLineCfg(obj) {
+  const L = live(obj); const h = L ? L.h : obj.height * vs.value;
+  return { points: [0, h / 2 - 10, 0, -h / 2 + 10], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
+}
+function axesXArrowCfg(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value;
+  const tip = w / 2 - 10;
+  return { points: [tip - 8, -5, tip, 0, tip - 8, 5], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
+}
+function axesYArrowCfg(obj) {
+  const L = live(obj); const h = L ? L.h : obj.height * vs.value;
+  const tip = -h / 2 + 10;
+  return { points: [-5, tip + 8, 0, tip, 5, tip + 8], stroke: obj.stroke || '#ffffff', strokeWidth: 1.5, listening: false };
+}
+function axesXTicks(obj) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value;
+  const xr = obj.xRange || [-5, 5, 1];
+  const ticks = [];
+  const range = xr[1] - xr[0];
+  const step = xr[2] || 1;
+  for (let v = xr[0]; v <= xr[1]; v += step) {
+    if (Math.abs(v) < 0.001) continue;
+    const px = ((v - xr[0]) / range - 0.5) * (w - 20);
+    ticks.push({ points: [px, -4, px, 4], stroke: obj.stroke || '#ffffff', strokeWidth: 1, listening: false });
+  }
+  return ticks;
+}
+function axesYTicks(obj) {
+  const L = live(obj); const h = L ? L.h : obj.height * vs.value;
+  const yr = obj.yRange || [-3, 3, 1];
+  const ticks = [];
+  const range = yr[1] - yr[0];
+  const step = yr[2] || 1;
+  for (let v = yr[0]; v <= yr[1]; v += step) {
+    if (Math.abs(v) < 0.001) continue;
+    const py = -((v - yr[0]) / range - 0.5) * (h - 20);
+    ticks.push({ points: [-4, py, 4, py], stroke: obj.stroke || '#ffffff', strokeWidth: 1, listening: false });
+  }
+  return ticks;
+}
+function axesLabelCfg(obj, axis) {
+  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
+  if (axis === 'x') {
+    return { x: w / 2 - 20, y: 6, text: 'x', fontSize: 12, fill: obj.stroke || '#ffffff', fontFamily: 'serif', fontStyle: 'italic', listening: false };
+  }
+  return { x: 6, y: -h / 2 + 12, text: 'y', fontSize: 12, fill: obj.stroke || '#ffffff', fontFamily: 'serif', fontStyle: 'italic', listening: false };
+}
+
+function morphCfg(m) {
+  if (!m || !m.flatPoints || m.flatPoints.length < 4) return { points: [], closed: true };
+  const p = s2c(m.x, m.y);
+  const sp = [];
+  for (let i = 0; i < m.flatPoints.length; i += 2) { sp.push(m.flatPoints[i] * vs.value); sp.push(m.flatPoints[i + 1] * vs.value); }
+  return { x: p.x, y: p.y, points: sp, closed: true, fill: m.fill || '#fff', stroke: m.stroke || '#fff', strokeWidth: (m.strokeWidth || 2) * vs.value / 2, opacity: m.opacity ?? 1, listening: false };
+}
+
+// ── Path draw ──
+function startPathDraw(sourceId) {
+  pathDrawing.value = true;
+  pathPoints.value = [];
+  pathSourceId.value = sourceId;
+}
+
+function onStageDblClick(e) {
+  if (!pathDrawing.value) return;
+  if (pathPoints.value.length >= 2) {
+    store.addPathMoveClip(pathSourceId.value, [...pathPoints.value]);
+  }
+  pathDrawing.value = false;
+  pathPoints.value = [];
+  pathSourceId.value = null;
+}
+
+// ── Events ──
+function handleStageMouseDown(e) {
+  if (pathDrawing.value) {
+    const now = Date.now();
+    if (now - _pathLastClick < 350) return; // absorb second mousedown of dblclick
+    _pathLastClick = now;
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    if (!pos) return;
+    const sp = c2s(pos.x, pos.y);
+    pathPoints.value.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
+    return;
+  }
+  const t = e.target; const s = konvaStage.value?.getNode();
+  if (!s) return;
+  const ev = e.evt;
+  const addToSel = ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey);
+  // Click on transformer (resize/rotate handles or border) — handle shift-click to add object underneath
+  let node = t;
+  while (node) {
+    if (node.className === 'Transformer') {
+      if (addToSel) {
+        const layer = objectsLayer.value?.getNode?.();
+        const pos = s.getPointerPosition?.();
+        if (layer && pos) {
+          const hit = layer.getIntersection?.(pos);
+          if (hit && hit.name?.() === 'stageObject' && hit.id?.()) {
+            store.selectObject(hit.id(), true);
+            nextTick(() => nextTick(() => updateTransformer()));
+          }
+        }
+      }
+      return;
+    }
+    node = node.getParent ? node.getParent() : null;
+  }
+  if (t === s || t.name() !== 'stageObject') {
+    if (store.activeTool === 'hand') startPan(e);
+    else store.deselectAll();
+  }
+}
+function onObjDown(id, e) {
+  e.cancelBubble = true;
+  const ev = e.evt;
+  store.selectObject(id, ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
+  nextTick(() => nextTick(() => updateTransformer()));
+}
+function onDragEnd(id, e) {
+  const node = e.target; const obj = store.project.objects.find(o => o.id === id); if (!obj) return;
+  let newX, newY;
+  // Types that use top-left positioning (text now uses center with offsetX/offsetY)
+  const tlTypes = ['square', 'rectangle', 'image', 'svg_asset'];
+  if (tlTypes.includes(obj.type)) {
+    const sp = c2s(node.x(), node.y());
+    newX = sp.x + obj.width / 2; newY = sp.y + obj.height / 2;
+  } else {
+    const sp = c2s(node.x(), node.y());
+    newX = sp.x; newY = sp.y;
+  }
+  if (store.project.stage.snapEnabled) {
+    const gs = store.project.stage.width / store.project.stage.gridSize;
+    const gs2 = store.project.stage.height / store.project.stage.gridSize;
+    if (store.project.stage.snapToGrid) { newX = Math.round(newX / gs) * gs; newY = Math.round(newY / gs2) * gs2; }
+    if (store.project.stage.snapToCenter) {
+      const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
+      if (Math.abs(newX - cx) < 30) newX = cx;
+      if (Math.abs(newY - cy) < 30) newY = cy;
+    }
+  }
+  store.updateObject(id, { x: Math.round(newX), y: Math.round(newY) });
+}
+function onTransform(id, e) {
+  const node = e.target;
+  const obj = store.project.objects.find(o => o.id === id);
+  if (!obj) return;
+  const sx = node.scaleX ? node.scaleX() : 1;
+  const sy = node.scaleY ? node.scaleY() : 1;
+  let w, h;
+  if (obj.type === 'circle') {
+    const r = (node.radius ? node.radius() : 10) * sx;
+    w = h = Math.max(10, r * 2);
+  } else if (obj.type === 'ellipse') {
+    w = Math.max(10, (node.radiusX ? node.radiusX() : 20) * 2 * sx);
+    h = Math.max(10, (node.radiusY ? node.radiusY() : 20) * 2 * sy);
+  } else if (_isGroupType(obj.type)) {
+    w = Math.max(20, (obj.width || 200) * vs.value * sx);
+    h = Math.max(20, (obj.height || 200) * vs.value * sy);
+  } else {
+    w = Math.max(10, Math.abs((node.width ? node.width() : 1) * sx));
+    h = Math.max(10, Math.abs((node.height ? node.height() : 1) * sy));
+  }
+  const rotation = node.rotation ? node.rotation() : 0;
+  liveTransform.value = { id, type: obj.type, x: node.x(), y: node.y(), w, h, rotation };
+}
+function onTransformEnd(id, e) {
+  const node = e.target;
+  const obj = store.project.objects.find(o => o.id === id);
+  if (!obj) return;
+
+  const sx = node.scaleX ? node.scaleX() : 1;
+  const sy = node.scaleY ? node.scaleY() : 1;
+  const tlTypes = ['square', 'rectangle', 'image', 'svg_asset'];
+  let cw, ch, cx, cy;
+
+  if (obj.type === 'circle') {
+    const r = node.radius ? node.radius() : (node.width ? node.width() / 2 : 20);
+    cw = r * 2;
+    ch = r * 2;
+    cx = node.x();
+    cy = node.y();
+  } else if (obj.type === 'ellipse') {
+    cw = node.radiusX ? node.radiusX() * 2 : (node.width ? node.width() : 40);
+    ch = node.radiusY ? node.radiusY() * 2 : (node.height ? node.height() : 40);
+    cx = node.x();
+    cy = node.y();
+  } else if (_isGroupType(obj.type)) {
+    cw = (obj.width || 200) * vs.value * sx;
+    ch = (obj.height || 200) * vs.value * sy;
+    cx = node.x();
+    cy = node.y();
+  } else {
+    cw = Math.max(10, Math.abs((node.width ? node.width() : 1) * sx));
+    ch = Math.max(10, Math.abs((node.height ? node.height() : 1) * sy));
+    if (tlTypes.includes(obj.type)) {
+      cx = node.x() + cw / 2;
+      cy = node.y() + ch / 2;
+    } else {
+      cx = node.x();
+      cy = node.y();
+    }
+  }
+
+  const stagePos = c2s(cx, cy);
+  const newX = Math.round(stagePos.x);
+  const newY = Math.round(stagePos.y);
+  const newW = Math.max(20, Math.round(cw / vs.value));
+  const newH = Math.max(20, Math.round(ch / vs.value));
+  let rotation = node.rotation ? node.rotation() : 0;
+  if (shiftKey.value) rotation = Math.round(rotation / 45) * 45;
+  else rotation = Math.round(rotation * 10) / 10;
+
+  node.scaleX(1);
+  node.scaleY(1);
+
+  store.updateObject(id, { x: newX, y: newY, width: newW, height: newH, rotation });
+  liveTransform.value = null;
+}
+function _isGroupType(type) {
+  return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'numberline';
+}
+function axesGraphCurves(obj) {
+  if (!obj.graphs || obj.graphs.length === 0) return [];
+  const curves = [];
+  const xr = obj.xRange || [-5, 5, 1];
+  const yr = obj.yRange || [-3, 3, 1];
+  const xMin = xr[0], xMax = xr[1];
+  const yMin = yr[0], yMax = yr[1];
+  const pw = obj.width * vs.value;
+  const ph = obj.height * vs.value;
+
+  for (const graph of obj.graphs) {
+    let fn;
+    // Validate expression before eval
+    const safeExpr = (() => {
+      const e = (graph.expression || '').trim();
+      if (!e) return null;
+      if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(e)) return null;
+      if (/import|eval|exec|open|__/.test(e)) return null;
+      return e;
+    })();
+    if (!safeExpr) continue;
+    try {
+      // eslint-disable-next-line no-new-func
+      fn = new Function('x', `"use strict"; return (${safeExpr});`);
+    } catch { continue; }
+
+    const steps = 80;
+    const points = [];
+    for (let i = 0; i <= steps; i++) {
+      const x = xMin + (xMax - xMin) * (i / steps);
+      let y;
+      try { y = fn(x); } catch { continue; }
+      if (!Number.isFinite(y)) continue;
+      const cx = ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
+      const cy = -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+      points.push(cx, cy);
+    }
+    if (points.length >= 4) {
+      curves.push({
+        points,
+        stroke: graph.color || '#f59e0b',
+        strokeWidth: graph.strokeWidth || 3,
+        listening: false,
+        tension: 0.3,
+      });
+    }
+  }
+  return curves;
+}
+function onTextDblClick(id) {
+  // Could implement inline editing; for now, focus the properties panel
+}
+function updateTransformer() {
+  const tr = transformer.value; const ol = objectsLayer.value; const ks = konvaStage.value;
+  if (!tr || !ks) return;
+  const t = tr.getNode(); const stage = ks.getNode(); if (!t || !stage) return;
+  const layer = ol && ol.getNode ? ol.getNode() : null;
+  const findNode = (id) => (layer ? layer.findOne('#' + id) : null) || stage.findOne('#' + id);
+  const nodes = store.selectedObjectIds.map(findNode).filter(Boolean);
+  t.nodes(nodes);
+  t.getLayer().batchDraw();
+}
+function startPan(e) {
+  const start = { x: e.evt.clientX - panOffset.value.x, y: e.evt.clientY - panOffset.value.y };
+  const onM = (ev) => { panOffset.value = { x: ev.clientX - start.x, y: ev.clientY - start.y }; };
+  const onU = () => { document.removeEventListener('mousemove', onM); document.removeEventListener('mouseup', onU); };
+  document.addEventListener('mousemove', onM); document.addEventListener('mouseup', onU);
+}
+function handleWheel(e) {
+  e.evt.preventDefault();
+  const factor = e.evt.deltaY > 0 ? 0.93 : 1.07;
+  zoomLevel.value = Math.max(0.15, Math.min(5, zoomLevel.value * factor));
+}
+
+// ── Expose for parent ref calls ──
+defineExpose({ startPathDraw });
 </script>
