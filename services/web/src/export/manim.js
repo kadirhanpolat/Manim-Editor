@@ -81,6 +81,73 @@ const FRAME_HEIGHT = 8;
 const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.11
 const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
+// ── 3D Object code ────────────────────────────────────────────────────────────
+
+function fmt3d(n) {
+  // Format a 3D numeric param: strip trailing zeros but keep at least 1 decimal place
+  return n.toFixed(3).replace(/(\.\d*[1-9])0+$/, '$1').replace(/\.0{3}$/, '.0');
+}
+
+function objectCode3d(obj) {
+  const n = v(obj.id);
+  const lines = [];
+  const fill = hex(obj.fill) || '"#FFFFFF"';
+  const opacity = safeOpacity(obj.opacity ?? 1);
+  const res = Math.max(4, Math.round(obj.resolution ?? 20));
+
+  const pos = () => `[${fmt3d(obj.x3d ?? 0)}, ${fmt3d(obj.y3d ?? 0)}, ${fmt3d(obj.z3d ?? 0)}]`;
+
+  switch (obj.type) {
+    case 'sphere':
+      lines.push(`${n} = Sphere(radius=${fmt3d(obj.radius ?? 0.5)}, resolution=(${res}, ${res}))`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
+      break;
+    case 'cube':
+      lines.push(`${n} = Cube(side_length=${fmt3d(obj.sideLength ?? 1.0)})`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
+      break;
+    case 'cone':
+      lines.push(`${n} = Cone(base_radius=${fmt3d(obj.radius ?? 0.5)}, height=${fmt3d(obj.height ?? 1.0)}, resolution=${res})`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
+      break;
+    case 'cylinder':
+      lines.push(`${n} = Cylinder(radius=${fmt3d(obj.radius ?? 0.5)}, height=${fmt3d(obj.height ?? 1.5)}, resolution=${res})`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
+      break;
+    case 'torus':
+      lines.push(`${n} = Torus(major_radius=${fmt3d(obj.majorRadius ?? 1.0)}, minor_radius=${fmt3d(obj.minorRadius ?? 0.3)}, resolution=${res})`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
+      break;
+    case 'axes3d': {
+      const xr = obj.xRange ?? [-3, 3, 1];
+      const yr = obj.yRange ?? [-3, 3, 1];
+      const zr = obj.zRange ?? [-3, 3, 1];
+      lines.push(`${n} = ThreeDAxes(`);
+      lines.push(`    x_range=[${xr[0]}, ${xr[1]}, ${xr[2]}],`);
+      lines.push(`    y_range=[${yr[0]}, ${yr[1]}, ${yr[2]}],`);
+      lines.push(`    z_range=[${zr[0]}, ${zr[1]}, ${zr[2]}]`);
+      lines.push(`)`);
+      if ((obj.x3d ?? 0) !== 0 || (obj.y3d ?? 0) !== 0 || (obj.z3d ?? 0) !== 0) {
+        lines.push(`${n}.move_to(${pos()})`);
+      }
+      break;
+    }
+    default:
+      lines.push(`# Unknown 3D type: ${obj.type}`);
+  }
+  return lines;
+}
+
 function stageToManim(x, y, w, h) {
   return { x: ((x / w) - 0.5) * FRAME_WIDTH, y: -((y / h) - 0.5) * FRAME_HEIGHT };
 }
@@ -386,11 +453,19 @@ export function generateManimScript(project) {
     L.push('from manim_voiceover.services.gtts import GTTSService');
   }
 
+  const is3D = project.sceneType === '3d';
+  if (is3D) {
+    L.push('from manim.mobject.three_d.three_dimensions import Sphere, Cube, Cone, Cylinder, Torus');
+    L.push('from manim import ThreeDAxes, ThreeDScene');
+  }
+
   L.push('');
   L.push('');
 
   let sceneBase;
-  if (project.cameraType === 'moving') {
+  if (is3D) {
+    sceneBase = hasReadyAudio ? 'ThreeDScene, VoiceoverScene' : 'ThreeDScene';
+  } else if (project.cameraType === 'moving') {
     sceneBase = 'MovingCameraScene';
   } else if (hasReadyAudio) {
     sceneBase = 'VoiceoverScene';
@@ -404,6 +479,14 @@ export function generateManimScript(project) {
   L.push(`        self.camera.background_color = ${bgColor}`);
   if (hasReadyAudio) {
     L.push('        self.set_speech_service(GTTSService())');
+  }
+  if (is3D) {
+    const cam = project.camera3d ?? { phi: 75, theta: -45, zoom: 1.0 };
+    L.push(`        self.set_camera_orientation(`);
+    L.push(`            phi=${cam.phi} * DEGREES,`);
+    L.push(`            theta=${cam.theta} * DEGREES,`);
+    L.push(`            zoom=${(cam.zoom ?? 1.0).toFixed(2)}`);
+    L.push(`        )`);
   }
   L.push('');
 
@@ -426,11 +509,16 @@ export function generateManimScript(project) {
   }
 
   // ── Object definitions ──
+  const obj3DTypes = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
   const oMap = {};
   L.push(`${indent}# Objects`);
   for (const o of project.objects) {
     oMap[o.id] = o;
-    objCode(o, sw, sh).forEach(l => L.push(indent + l));
+    if (obj3DTypes.includes(o.type)) {
+      objectCode3d(o).forEach(l => L.push(indent + l));
+    } else {
+      objCode(o, sw, sh).forEach(l => L.push(indent + l));
+    }
     L.push('');
   }
 
@@ -1267,5 +1355,8 @@ export function downloadManimScript(project) {
   return script;
 }
 
+// Alias for test compatibility and API convenience
+export const generateCode = generateManimScript;
+
 export { EASING_MAP };
-export default { generateManimScript, parseManimScript, downloadManimScript };
+export default { generateManimScript, parseManimScript, downloadManimScript, generateCode };
