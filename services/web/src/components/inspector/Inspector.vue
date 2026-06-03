@@ -88,73 +88,47 @@
   </div>
 </template>
 
-<script>
-import { store, actions, getters } from '../../store/project.js';
-import LayoutPanel from './LayoutPanel.vue';
-import StylePanel from './StylePanel.vue';
-import TimingPanel from './TimingPanel.vue';
-import AnimationPanel from './AnimationPanel.vue';
-import AudioPanel from './AudioPanel.vue';
+<script setup>
+import { computed } from 'vue'
+import { useProjectStore } from '../../store/project.js'
+import LayoutPanel from './LayoutPanel.vue'
+import StylePanel from './StylePanel.vue'
+import TimingPanel from './TimingPanel.vue'
+import AnimationPanel from './AnimationPanel.vue'
+import AudioPanel from './AudioPanel.vue'
 
-export default {
-  name: 'Inspector',
-  
-  components: {
-    LayoutPanel,
-    StylePanel,
-    TimingPanel,
-    AnimationPanel,
-    AudioPanel
-  },
-  
-  computed: {
-    selectedElement() {
-      return getters.selectedElement();
-    },
+const store = useProjectStore()
 
-    selectedClip() {
-      return getters.selectedClip();
-    },
-
-    typeBadgeClass() {
-      if (!this.selectedElement) return '';
-      const classes = {
-        'text': 'bg-indigo-600 text-white',
-        'image': 'bg-emerald-600 text-white',
-        'svg': 'bg-amber-600 text-white'
-      };
-      return classes[this.selectedElement.type] || 'bg-slate-600 text-white';
-    }
-  },
-  
-  methods: {
-    updateElement(updates) {
-      if (!this.selectedElement) return;
-      actions.updateElement(this.selectedElement.id, updates);
-    },
-    
-    updateContent(content) {
-      this.updateElement({ content });
-    },
-    
-    deleteElement() {
-      if (!this.selectedElement) return;
-      if (confirm('Delete this element?')) {
-        actions.deleteElement(this.selectedElement.id);
-      }
-    },
-    
-    addTextElement() {
-      const element = actions.addElement({
-        type: 'text',
-        content: 'New Text',
-        style: {
-          size: 48,
-          color: '#ffffff'
-        }
-      });
-      actions.selectElement(element.id);
-    }
+const selectedElement = computed(() => store.selectedObject)
+const selectedClip = computed(() => store.selectedClip)
+const typeBadgeClass = computed(() => {
+  if (!selectedElement.value) return ''
+  const classes = {
+    text: 'bg-indigo-600 text-white',
+    image: 'bg-emerald-600 text-white',
+    svg: 'bg-amber-600 text-white'
   }
-};
+  return classes[selectedElement.value.type] || 'bg-slate-600 text-white'
+})
+
+function updateElement(updates) {
+  if (!selectedElement.value) return
+  store.updateObject(selectedElement.value.id, updates)
+}
+
+function updateContent(content) {
+  updateElement({ content })
+}
+
+function deleteElement() {
+  if (!selectedElement.value) return
+  if (confirm('Delete this element?')) {
+    store.deleteObject(selectedElement.value.id)
+  }
+}
+
+function addTextElement() {
+  const element = store.addObject('text', undefined, undefined, { content: 'New Text' })
+  store.selectObject(element.id)
+}
 </script>
