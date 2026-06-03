@@ -60,66 +60,54 @@
   </div>
 </template>
 
-<script>
-import { store, actions } from '../../store/project.js';
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { useProjectStore } from '../../store/project.js';
 import api from '../../api.js';
 import AssetUploader from './AssetUploader.vue';
 
-export default {
-  name: 'AssetBrowser',
-  components: { AssetUploader },
-  
-  data() {
-    return {
-      showUploader: false,
-      serverAssets: []
-    };
-  },
-  
-  computed: {
-    projectId() { return store.project.id; },
-    assets() { return store.project.assets || []; }
-  },
-  
-  watch: {
-    projectId: { immediate: true, handler() { this.loadAssets(); } }
-  },
-  
-  methods: {
-    async loadAssets() {
-      if (!this.projectId) return;
-      try {
-        this.serverAssets = await api.assets.list(this.projectId);
-      } catch (err) {
-        console.error('Failed to load assets:', err);
-      }
-    },
-    
-    getAssetUrl(asset) {
-      return api.assets.getUrl(this.projectId, asset.filename);
-    },
-    
-    onDragStart(asset, e) {
-      e.dataTransfer.setData('application/json', JSON.stringify(asset));
-      e.dataTransfer.effectAllowed = 'copy';
-    },
-    
-    async deleteAsset(asset) {
-      if (!confirm('Delete this asset?')) return;
-      try {
-        await api.assets.delete(this.projectId, asset.filename);
-        actions.removeAsset(asset.id);
-        await this.loadAssets();
-      } catch (err) {
-        console.error('Failed to delete asset:', err);
-      }
-    },
-    
-    onAssetUploaded(asset) {
-      actions.addAsset(asset);
-      this.showUploader = false;
-      this.loadAssets();
-    }
+const store = useProjectStore();
+
+const showUploader = ref(false);
+const serverAssets = ref([]);
+
+const projectId = computed(() => store.project.id);
+const assets = computed(() => store.project.assets || []);
+
+watch(projectId, () => { loadAssets(); }, { immediate: true });
+
+async function loadAssets() {
+  if (!projectId.value) return;
+  try {
+    serverAssets.value = await api.assets.list(projectId.value);
+  } catch (err) {
+    console.error('Failed to load assets:', err);
   }
-};
+}
+
+function getAssetUrl(asset) {
+  return api.assets.getUrl(projectId.value, asset.filename);
+}
+
+function onDragStart(asset, e) {
+  e.dataTransfer.setData('application/json', JSON.stringify(asset));
+  e.dataTransfer.effectAllowed = 'copy';
+}
+
+async function deleteAsset(asset) {
+  if (!confirm('Delete this asset?')) return;
+  try {
+    await api.assets.delete(projectId.value, asset.filename);
+    store.removeAsset(asset.id);
+    await loadAssets();
+  } catch (err) {
+    console.error('Failed to delete asset:', err);
+  }
+}
+
+function onAssetUploaded(asset) {
+  store.addAsset(asset);
+  showUploader.value = false;
+  loadAssets();
+}
 </script>

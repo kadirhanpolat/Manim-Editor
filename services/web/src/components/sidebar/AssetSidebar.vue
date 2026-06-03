@@ -150,127 +150,116 @@
   </aside>
 </template>
 
-<script>
-import { store, actions } from '../../store/project.js';
+<script setup>
+import { computed } from 'vue';
+import { useProjectStore } from '../../store/project.js';
 
-export default {
-  name: 'AssetSidebar',
+const store = useProjectStore();
 
-  data() {
-    return {
-      shapes: [
-        { type: 'rectangle', label: 'Rectangle',     color: '#3b82f6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>' },
-        { type: 'square',    label: 'Square',    color: '#3b82f6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>' },
-        { type: 'circle',    label: 'Circle',    color: '#22c55e', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/></svg>' },
-        { type: 'ellipse',   label: 'Ellipse',   color: '#06b6d4', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>' },
-        { type: 'triangle',  label: 'Triangle',  color: '#f59e0b', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 3 22 20 2 20"/></svg>' },
-        { type: 'star',      label: 'Star',      color: '#eab308', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' },
-        { type: 'polygon',   label: 'Polygon',   color: '#8b5cf6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/></svg>' },
-        { type: 'arrow',     label: 'Arrow',     color: '#ef4444', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' },
-        { type: 'heart',     label: 'Heart',     color: '#ec4899', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>' },
-        { type: 'line',      label: 'Line',      color: '#94a3b8', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="4" y1="20" x2="20" y2="4"/></svg>' },
-        { type: 'dot',       label: 'Dot',       color: '#94a3b8', icon: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>' },
-        { type: 'dot_grid',  label: 'Dot Grid',  color: '#a855f7', icon: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="19" cy="5" r="2" fill="currentColor"/><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/><circle cx="5" cy="19" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/><circle cx="19" cy="19" r="2" fill="currentColor"/></svg>' },
-        { type: 'latex',     label: 'LaTeX',     color: '#a855f7', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="4" y="18" font-size="16" font-style="italic" fill="currentColor" stroke="none">fx</text></svg>' },
-        { type: 'axes',      label: 'Axes',      color: '#10b981', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="20" x2="3" y2="4"/><line x1="3" y1="20" x2="20" y2="20"/><polyline points="3 4 1 6 3 4 5 6"/><polyline points="20 20 18 18 20 20 18 22"/></svg>' },
-      ]
-    };
-  },
+const shapes = [
+  { type: 'rectangle', label: 'Rectangle',     color: '#3b82f6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>' },
+  { type: 'square',    label: 'Square',    color: '#3b82f6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>' },
+  { type: 'circle',    label: 'Circle',    color: '#22c55e', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/></svg>' },
+  { type: 'ellipse',   label: 'Ellipse',   color: '#06b6d4', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>' },
+  { type: 'triangle',  label: 'Triangle',  color: '#f59e0b', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 3 22 20 2 20"/></svg>' },
+  { type: 'star',      label: 'Star',      color: '#eab308', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' },
+  { type: 'polygon',   label: 'Polygon',   color: '#8b5cf6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/></svg>' },
+  { type: 'arrow',     label: 'Arrow',     color: '#ef4444', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' },
+  { type: 'heart',     label: 'Heart',     color: '#ec4899', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>' },
+  { type: 'line',      label: 'Line',      color: '#94a3b8', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="4" y1="20" x2="20" y2="4"/></svg>' },
+  { type: 'dot',       label: 'Dot',       color: '#94a3b8', icon: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>' },
+  { type: 'dot_grid',  label: 'Dot Grid',  color: '#a855f7', icon: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="19" cy="5" r="2" fill="currentColor"/><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/><circle cx="5" cy="19" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/><circle cx="19" cy="19" r="2" fill="currentColor"/></svg>' },
+  { type: 'latex',     label: 'LaTeX',     color: '#a855f7', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="4" y="18" font-size="16" font-style="italic" fill="currentColor" stroke="none">fx</text></svg>' },
+  { type: 'axes',      label: 'Axes',      color: '#10b981', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="20" x2="3" y2="4"/><line x1="3" y1="20" x2="20" y2="20"/><polyline points="3 4 1 6 3 4 5 6"/><polyline points="20 20 18 18 20 20 18 22"/></svg>' },
+];
 
-  computed: {
-    assets() { return store.project.assets; },
-    imageAssets() { return this.assets.filter(a => a.type === 'image'); },
-    svgAssets() { return this.assets.filter(a => a.type === 'svg'); },
-    isCodeMode() { return store.project.editorMode === 'code'; },
-    canTransform() { return store.selectedObjectIds.length === 2; }
-  },
+const assets = computed(() => store.project.assets);
+const imageAssets = computed(() => assets.value.filter(a => a.type === 'image'));
+const svgAssets = computed(() => assets.value.filter(a => a.type === 'svg'));
+const isCodeMode = computed(() => store.project.editorMode === 'code');
+const canTransform = computed(() => store.selectedObjectIds.length === 2);
 
-  methods: {
-    addShape(type) {
-      const obj = actions.addObject(type);
-      actions.selectObject(obj.id);
-    },
+function addShape(type) {
+  const obj = store.addObject(type);
+  store.selectObject(obj.id);
+}
 
-    // ── Drag and Drop ──
-    onDragStart(type, e) {
-      e.dataTransfer.setData('application/x-shape-type', type);
-      e.dataTransfer.effectAllowed = 'copy';
-      // Create a small drag preview
-      const el = document.createElement('div');
-      el.style.cssText = 'width:40px;height:40px;background:var(--studio-accent-subtle);border:2px solid var(--studio-accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--studio-text);pointer-events:none;position:fixed;top:-100px;';
-      el.textContent = type.charAt(0).toUpperCase();
-      document.body.appendChild(el);
-      e.dataTransfer.setDragImage(el, 20, 20);
-      setTimeout(() => document.body.removeChild(el), 0);
-    },
+function onDragStart(type, e) {
+  e.dataTransfer.setData('application/x-shape-type', type);
+  e.dataTransfer.effectAllowed = 'copy';
+  const el = document.createElement('div');
+  el.style.cssText = 'width:40px;height:40px;background:var(--studio-accent-subtle);border:2px solid var(--studio-accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--studio-text);pointer-events:none;position:fixed;top:-100px;';
+  el.textContent = type.charAt(0).toUpperCase();
+  document.body.appendChild(el);
+  e.dataTransfer.setDragImage(el, 20, 20);
+  setTimeout(() => document.body.removeChild(el), 0);
+}
 
-    onDragStartAsset(assetId, e) {
-      e.dataTransfer.setData('application/x-asset-id', assetId);
-      e.dataTransfer.effectAllowed = 'copy';
-    },
+function onDragStartAsset(assetId, e) {
+  e.dataTransfer.setData('application/x-asset-id', assetId);
+  e.dataTransfer.effectAllowed = 'copy';
+}
 
-    onDragEnd() {
-      // Cleanup if needed
-    },
+function onDragEnd() {
+  // Cleanup if needed
+}
 
-    async handleUploadImages(e) {
-      const files = Array.from(e.target.files || []).filter(f => !f.type.includes('svg'));
-      for (const file of files) {
-        try {
-          await actions.uploadAsset(file);
-        } catch (err) {
-          actions.setError(`Upload failed: ${err.message}`);
-        }
-      }
-      e.target.value = '';
-    },
-
-    async handleUploadSvgs(e) {
-      const files = Array.from(e.target.files || []).filter(f => f.type.includes('svg'));
-      for (const file of files) {
-        try {
-          await actions.uploadAsset(file);
-        } catch (err) {
-          actions.setError(`Upload failed: ${err.message}`);
-        }
-      }
-      e.target.value = '';
-    },
-
-    onAssetClick(asset) {
-      if (this.isCodeMode) {
-        this.copyAssetPath(asset);
-      } else {
-        this.addAssetToStage(asset.id);
-      }
-    },
-
-    copyAssetPath(asset) {
-      const filename = asset.serverFilename || asset.filename || asset.name;
-      const snippet = `"${filename}"`;
-      navigator.clipboard.writeText(snippet).then(() => {
-        actions.setError(`Copied: ${snippet} — use this path in your Manim code`);
-      });
-    },
-
-    addAssetToStage(assetId) {
-      const obj = actions.addImageObject(assetId);
-      if (obj) actions.selectObject(obj.id);
-    },
-
-    removeAsset(id) {
-      if (confirm('Remove this asset?')) {
-        actions.removeAsset(id);
-      }
-    },
-
-    createTransform() {
-      if (!this.canTransform) return;
-      const clip = actions.createTransform();
-      if (clip) actions.selectClip(clip.id);
+async function handleUploadImages(e) {
+  const files = Array.from(e.target.files || []).filter(f => !f.type.includes('svg'));
+  for (const file of files) {
+    try {
+      await store.uploadAsset(file);
+    } catch (err) {
+      store.setError(`Upload failed: ${err.message}`);
     }
   }
-};
+  e.target.value = '';
+}
+
+async function handleUploadSvgs(e) {
+  const files = Array.from(e.target.files || []).filter(f => f.type.includes('svg'));
+  for (const file of files) {
+    try {
+      await store.uploadAsset(file);
+    } catch (err) {
+      store.setError(`Upload failed: ${err.message}`);
+    }
+  }
+  e.target.value = '';
+}
+
+function onAssetClick(asset) {
+  if (isCodeMode.value) {
+    copyAssetPath(asset);
+  } else {
+    addAssetToStage(asset.id);
+  }
+}
+
+function copyAssetPath(asset) {
+  const filename = asset.serverFilename || asset.filename || asset.name;
+  const snippet = `"${filename}"`;
+  navigator.clipboard.writeText(snippet).then(() => {
+    store.setError(`Copied: ${snippet} — use this path in your Manim code`);
+  });
+}
+
+function addAssetToStage(assetId) {
+  const obj = store.addImageObject(assetId);
+  if (obj) store.selectObject(obj.id);
+}
+
+function removeAsset(id) {
+  if (confirm('Remove this asset?')) {
+    store.removeAsset(id);
+  }
+}
+
+function createTransform() {
+  if (!canTransform.value) return;
+  const clip = store.createTransform();
+  if (clip) store.selectClip(clip.id);
+}
 </script>
 
 <style scoped>

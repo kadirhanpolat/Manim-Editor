@@ -39,59 +39,47 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue';
 import api from '../../api.js';
 
-export default {
-  name: 'VideoPreview',
-  
-  props: {
-    projectId: { type: String, required: true }
-  },
-  
-  data() {
-    return {
-      loading: true,
-      error: false,
-      cacheBuster: Date.now()
-    };
-  },
-  
-  computed: {
-    videoUrl() {
-      return api.renders.getLatestUrl(this.projectId).replace(/\?t=\d+/, '') + '?t=' + this.cacheBuster;
-    }
-  },
-  
-  watch: {
-    projectId() {
-      // Refresh cache buster when project changes
-      this.cacheBuster = Date.now();
-      this.loading = true;
-      this.error = false;
-    }
-  },
-  
-  methods: {
-    onLoaded() {
-      this.loading = false;
-      this.error = false;
-    },
-    onError() {
-      this.loading = false;
-      this.error = true;
-    },
-    refresh() {
-      // Force refresh the video with a new cache buster
-      this.cacheBuster = Date.now();
-      this.loading = true;
-      this.error = false;
-    }
-  },
-  
-  mounted() {
-    // Expose refresh method to parent
-    this.$emit('ready', this.refresh);
-  }
-};
+const props = defineProps({
+  projectId: { type: String, required: true }
+});
+
+const emit = defineEmits(['ready']);
+
+const loading = ref(true);
+const error = ref(false);
+const cacheBuster = ref(Date.now());
+
+const videoUrl = computed(() => {
+  return api.renders.getLatestUrl(props.projectId).replace(/\?t=\d+/, '') + '?t=' + cacheBuster.value;
+});
+
+watch(() => props.projectId, () => {
+  cacheBuster.value = Date.now();
+  loading.value = true;
+  error.value = false;
+});
+
+function onLoaded() {
+  loading.value = false;
+  error.value = false;
+}
+
+function onError() {
+  loading.value = false;
+  error.value = true;
+}
+
+function refresh() {
+  cacheBuster.value = Date.now();
+  loading.value = true;
+  error.value = false;
+}
+
+onMounted(() => {
+  emit('ready', refresh);
+});
 </script>
