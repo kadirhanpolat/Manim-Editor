@@ -17,16 +17,34 @@
     </div>
     
     <!-- Resize Handle Left -->
-    <div 
+    <div
       class="resize-handle resize-left absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize"
+      :class="{ 'pointer-events-none opacity-0': audioAutoLocked }"
       @mousedown.stop="startResize('left', $event)"
     ></div>
     
     <!-- Resize Handle Right -->
-    <div 
+    <div
       class="resize-handle resize-right absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize"
+      :class="{ 'pointer-events-none opacity-0': audioAutoLocked }"
       @mousedown.stop="startResize('right', $event)"
     ></div>
+
+    <!-- Audio strip -->
+    <div
+      v-if="element.audio"
+      class="audio-strip absolute left-0 right-0 flex items-center px-1 gap-1 overflow-hidden"
+      style="bottom: -14px; height: 12px; font-size: 9px; pointer-events: none;"
+      :class="{
+        'text-blue-400': element.audio.status === 'ready',
+        'text-slate-400': element.audio.status === 'pending',
+        'text-red-400': element.audio.status === 'error',
+      }"
+    >
+      <span v-if="element.audio.status === 'ready'">&#9834; {{ audioDuration }}</span>
+      <span v-if="element.audio.status === 'pending'">&#8987;</span>
+      <span v-if="element.audio.status === 'error'">&#9888;</span>
+    </div>
   </div>
 </template>
 
@@ -80,11 +98,20 @@ export default {
     blockStyle() {
       const start = this.element.timing.start;
       const duration = this.element.timing.duration;
-      
+
       return {
         left: `${start * this.pixelsPerSecond}px`,
         width: `${Math.max(20, duration * this.pixelsPerSecond)}px`
       };
+    },
+
+    audioDuration() {
+      if (this.element.audio?.duration == null) return '';
+      return `${parseFloat(this.element.audio.duration).toFixed(1)}s`;
+    },
+
+    audioAutoLocked() {
+      return this.element.audio?.syncMode === 'auto' && this.element.audio?.status === 'ready';
     }
   },
   
