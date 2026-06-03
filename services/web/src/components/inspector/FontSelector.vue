@@ -83,204 +83,199 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, nextTick, onBeforeUnmount } from 'vue'
+
 const API_BASE = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
   : '';
 
-export default {
-  name: 'FontSelector',
-  props: {
-    value: {
-      type: String,
-      default: 'Roboto'
-    }
-  },
-
-  data() {
-    return {
-      isOpen: false,
-      searchQuery: '',
-      fonts: [],
-      loading: false,
-      highlightedIndex: -1,
-      selectedCategory: 'all',
-      offset: 0,
-      total: 0,
-      limit: 50,
-      categories: [
-        { id: 'all', label: 'All' },
-        { id: 'sans-serif', label: 'Sans' },
-        { id: 'serif', label: 'Serif' },
-        { id: 'display', label: 'Display' },
-        { id: 'handwriting', label: 'Script' },
-        { id: 'monospace', label: 'Mono' }
-      ],
-      debounceTimer: null,
-      previewStylesLoaded: new Set()
-    };
-  },
-
-  computed: {
-    filteredFonts() {
-      return this.fonts;
-    },
-    hasMore() {
-      return this.offset + this.fonts.length < this.total;
-    }
-  },
-
-  methods: {
-    async fetchFonts(reset = false) {
-      if (this.loading) return;
-
-      this.loading = true;
-
-      try {
-        const params = new URLSearchParams({
-          limit: this.limit,
-          offset: reset ? 0 : this.offset
-        });
-
-        if (this.searchQuery) {
-          params.set('search', this.searchQuery);
-        }
-
-        if (this.selectedCategory !== 'all') {
-          params.set('category', this.selectedCategory);
-        }
-
-        const response = await fetch(`${API_BASE}/api/fonts?${params}`);
-        const data = await response.json();
-
-        if (reset) {
-          this.fonts = data.fonts;
-          this.offset = 0;
-        } else {
-          this.fonts = [...this.fonts, ...data.fonts];
-        }
-
-        this.total = data.total;
-        this.offset = this.fonts.length;
-
-        // Load Google Fonts preview styles for visible fonts
-        this.loadPreviewStyles(data.fonts.slice(0, 20));
-      } catch (error) {
-        console.error('Error fetching fonts:', error);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    loadPreviewStyles(fonts) {
-      const fontsToLoad = fonts.filter(f => !this.previewStylesLoaded.has(f.family));
-      if (fontsToLoad.length === 0) return;
-
-      const families = fontsToLoad.map(f => f.family.replace(/ /g, '+')).join('|');
-      const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-
-      fontsToLoad.forEach(f => this.previewStylesLoaded.add(f.family));
-    },
-
-    onInput(event) {
-      this.searchQuery = event.target.value;
-      this.highlightedIndex = -1;
-
-      // Debounce search
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => {
-        this.fetchFonts(true);
-      }, 300);
-    },
-
-    onFocus() {
-      this.isOpen = true;
-      if (this.fonts.length === 0) {
-        this.fetchFonts(true);
-      }
-    },
-
-    onBlur() {
-      // Delay to allow click on dropdown
-      setTimeout(() => {
-        this.isOpen = false;
-        this.searchQuery = '';
-        this.highlightedIndex = -1;
-      }, 200);
-    },
-
-    onKeydown(event) {
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault();
-          if (this.highlightedIndex < this.filteredFonts.length - 1) {
-            this.highlightedIndex++;
-            this.scrollToHighlighted();
-          }
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          if (this.highlightedIndex > 0) {
-            this.highlightedIndex--;
-            this.scrollToHighlighted();
-          }
-          break;
-        case 'Enter':
-          event.preventDefault();
-          if (this.highlightedIndex >= 0 && this.filteredFonts[this.highlightedIndex]) {
-            this.selectFont(this.filteredFonts[this.highlightedIndex].family);
-          }
-          break;
-        case 'Escape':
-          event.preventDefault();
-          this.isOpen = false;
-          this.$refs.input.blur();
-          break;
-      }
-    },
-
-    scrollToHighlighted() {
-      this.$nextTick(() => {
-        const list = this.$refs.fontList;
-        const item = list?.children[this.highlightedIndex];
-        if (item) {
-          item.scrollIntoView({ block: 'nearest' });
-        }
-      });
-    },
-
-    selectFont(family) {
-      this.$emit('input', family);
-      this.isOpen = false;
-      this.searchQuery = '';
-      this.highlightedIndex = -1;
-    },
-
-    selectCategory(category) {
-      this.selectedCategory = category;
-      this.highlightedIndex = -1;
-      this.fetchFonts(true);
-    },
-
-    clearSearch() {
-      this.searchQuery = '';
-      this.highlightedIndex = -1;
-      this.fetchFonts(true);
-      this.$refs.input.focus();
-    },
-
-    loadMore() {
-      this.fetchFonts(false);
-    }
-  },
-
-  beforeDestroy() {
-    clearTimeout(this.debounceTimer);
+const props = defineProps({
+  value: {
+    type: String,
+    default: 'Roboto'
   }
-};
+})
+const emit = defineEmits(['input'])
+
+// Template refs
+const input = ref(null)
+const fontList = ref(null)
+
+// Reactive state
+const isOpen = ref(false)
+const searchQuery = ref('')
+const fonts = ref([])
+const loading = ref(false)
+const highlightedIndex = ref(-1)
+const selectedCategory = ref('all')
+const offset = ref(0)
+const total = ref(0)
+const limit = ref(50)
+const categories = ref([
+  { id: 'all', label: 'All' },
+  { id: 'sans-serif', label: 'Sans' },
+  { id: 'serif', label: 'Serif' },
+  { id: 'display', label: 'Display' },
+  { id: 'handwriting', label: 'Script' },
+  { id: 'monospace', label: 'Mono' }
+])
+const debounceTimer = ref(null)
+const previewStylesLoaded = ref(new Set())
+
+// Computed
+const filteredFonts = computed(() => fonts.value)
+const hasMore = computed(() => offset.value + fonts.value.length < total.value)
+
+// Methods
+async function fetchFonts(reset = false) {
+  if (loading.value) return
+
+  loading.value = true
+
+  try {
+    const params = new URLSearchParams({
+      limit: limit.value,
+      offset: reset ? 0 : offset.value
+    })
+
+    if (searchQuery.value) {
+      params.set('search', searchQuery.value)
+    }
+
+    if (selectedCategory.value !== 'all') {
+      params.set('category', selectedCategory.value)
+    }
+
+    const response = await fetch(`${API_BASE}/api/fonts?${params}`)
+    const data = await response.json()
+
+    if (reset) {
+      fonts.value = data.fonts
+      offset.value = 0
+    } else {
+      fonts.value = [...fonts.value, ...data.fonts]
+    }
+
+    total.value = data.total
+    offset.value = fonts.value.length
+
+    // Load Google Fonts preview styles for visible fonts
+    loadPreviewStyles(data.fonts.slice(0, 20))
+  } catch (error) {
+    console.error('Error fetching fonts:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+function loadPreviewStyles(fontItems) {
+  const fontsToLoad = fontItems.filter(f => !previewStylesLoaded.value.has(f.family))
+  if (fontsToLoad.length === 0) return
+
+  const families = fontsToLoad.map(f => f.family.replace(/ /g, '+')).join('|')
+  const link = document.createElement('link')
+  link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`
+  link.rel = 'stylesheet'
+  document.head.appendChild(link)
+
+  fontsToLoad.forEach(f => previewStylesLoaded.value.add(f.family))
+}
+
+function onInput(event) {
+  searchQuery.value = event.target.value
+  highlightedIndex.value = -1
+
+  // Debounce search
+  clearTimeout(debounceTimer.value)
+  debounceTimer.value = setTimeout(() => {
+    fetchFonts(true)
+  }, 300)
+}
+
+function onFocus() {
+  isOpen.value = true
+  if (fonts.value.length === 0) {
+    fetchFonts(true)
+  }
+}
+
+function onBlur() {
+  // Delay to allow click on dropdown
+  setTimeout(() => {
+    isOpen.value = false
+    searchQuery.value = ''
+    highlightedIndex.value = -1
+  }, 200)
+}
+
+function onKeydown(event) {
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      if (highlightedIndex.value < filteredFonts.value.length - 1) {
+        highlightedIndex.value++
+        scrollToHighlighted()
+      }
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      if (highlightedIndex.value > 0) {
+        highlightedIndex.value--
+        scrollToHighlighted()
+      }
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (highlightedIndex.value >= 0 && filteredFonts.value[highlightedIndex.value]) {
+        selectFont(filteredFonts.value[highlightedIndex.value].family)
+      }
+      break
+    case 'Escape':
+      event.preventDefault()
+      isOpen.value = false
+      input.value?.blur()
+      break
+  }
+}
+
+function scrollToHighlighted() {
+  nextTick(() => {
+    const list = fontList.value
+    const item = list?.children[highlightedIndex.value]
+    if (item) {
+      item.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+
+function selectFont(family) {
+  emit('input', family)
+  isOpen.value = false
+  searchQuery.value = ''
+  highlightedIndex.value = -1
+}
+
+function selectCategory(category) {
+  selectedCategory.value = category
+  highlightedIndex.value = -1
+  fetchFonts(true)
+}
+
+function clearSearch() {
+  searchQuery.value = ''
+  highlightedIndex.value = -1
+  fetchFonts(true)
+  input.value?.focus()
+}
+
+function loadMore() {
+  fetchFonts(false)
+}
+
+onBeforeUnmount(() => {
+  clearTimeout(debounceTimer.value)
+})
 </script>
 
 <style scoped>

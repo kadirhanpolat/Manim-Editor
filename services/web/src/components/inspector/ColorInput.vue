@@ -19,74 +19,68 @@
   </div>
 </template>
 
-<script>
-const HEX_REGEX = /^#[0-9A-F]{6}$/i;
+<script setup>
+import { ref, computed, watch } from 'vue'
 
-export default {
-  name: 'ColorInput',
-  props: {
-    value: { type: String, default: '#000000' }
-  },
-  data() {
-    return {
-      displayValue: this.value || '#000000',
-      isValid: true
-    };
-  },
-  computed: {
-    validatedValue() {
-      // Ensure the color picker always gets a valid 6-digit hex
-      if (HEX_REGEX.test(this.displayValue)) {
-        return this.displayValue.toLowerCase();
-      }
-      // Default fallback
-      return '#000000';
-    }
-  },
-  watch: {
-    value(newVal) {
-      if (newVal && newVal !== this.displayValue) {
-        this.displayValue = newVal;
-        this.isValid = HEX_REGEX.test(newVal);
-      }
-    }
-  },
-  methods: {
-    handleColorPicker(event) {
-      const value = event.target.value;
-      this.displayValue = value;
-      this.isValid = true;
-      this.$emit('input', value);
-      this.$emit('change', value);
-    },
-    handleTextInput(event) {
-      let value = event.target.value;
-      
-      // Auto-add # if missing and user types hex chars
-      if (value && !value.startsWith('#') && /^[0-9A-F]/i.test(value)) {
-        value = '#' + value;
-      }
-      
-      this.displayValue = value;
-      
-      // Only emit if valid
-      if (HEX_REGEX.test(value)) {
-        this.isValid = true;
-        this.$emit('input', value.toLowerCase());
-        this.$emit('change', value.toLowerCase());
-      } else {
-        this.isValid = false;
-      }
-    },
-    validateOnBlur() {
-      if (!HEX_REGEX.test(this.displayValue)) {
-        // Reset to last valid value or default
-        this.displayValue = this.value || '#000000';
-        this.isValid = true;
-      }
-    }
+const HEX_REGEX = /^#[0-9A-F]{6}$/i
+
+const props = defineProps({
+  value: { type: String, default: '#000000' }
+})
+const emit = defineEmits(['input', 'change'])
+
+const displayValue = ref(props.value || '#000000')
+const isValid = ref(true)
+
+const validatedValue = computed(() => {
+  // Ensure the color picker always gets a valid 6-digit hex
+  if (HEX_REGEX.test(displayValue.value)) return displayValue.value.toLowerCase()
+  // Default fallback
+  return '#000000'
+})
+
+watch(() => props.value, (newVal) => {
+  if (newVal && newVal !== displayValue.value) {
+    displayValue.value = newVal
+    isValid.value = HEX_REGEX.test(newVal)
   }
-};
+})
+
+function handleColorPicker(event) {
+  const value = event.target.value
+  displayValue.value = value
+  isValid.value = true
+  emit('input', value)
+  emit('change', value)
+}
+
+function handleTextInput(event) {
+  let value = event.target.value
+
+  // Auto-add # if missing and user types hex chars
+  if (value && !value.startsWith('#') && /^[0-9A-F]/i.test(value)) {
+    value = '#' + value
+  }
+
+  displayValue.value = value
+
+  // Only emit if valid
+  if (HEX_REGEX.test(value)) {
+    isValid.value = true
+    emit('input', value.toLowerCase())
+    emit('change', value.toLowerCase())
+  } else {
+    isValid.value = false
+  }
+}
+
+function validateOnBlur() {
+  if (!HEX_REGEX.test(displayValue.value)) {
+    // Reset to last valid value or default
+    displayValue.value = props.value || '#000000'
+    isValid.value = true
+  }
+}
 </script>
 
 <style scoped>
