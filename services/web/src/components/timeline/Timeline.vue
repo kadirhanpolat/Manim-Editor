@@ -107,6 +107,9 @@
       </div>
     </div>
 
+    <!-- Keyframe Easing Popup -->
+    <KeyframeEasingPopup :payload="easingPopup" @close="easingPopup = null" />
+    <div v-if="easingPopup" class="fixed inset-0 z-40" @click="easingPopup = null" />
   </div>
 </template>
 
@@ -115,6 +118,7 @@ import { ref, computed } from 'vue';
 import { useProjectStore, SHAPE_COLORS } from '../../store/project.js';
 import TimelineTrack from './TimelineTrack.vue';
 import KeyframeLanesPanel from './KeyframeLanesPanel.vue';
+import KeyframeEasingPopup from './KeyframeEasingPopup.vue';
 
 const store = useProjectStore();
 
