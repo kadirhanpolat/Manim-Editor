@@ -258,6 +258,97 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
   return lines;
 }
 
+// ── Keyframe helpers ───────────────────────────────────────────────────────
+
+function _kfPropSet(n, prop, value, sw, sh) {
+  const MANIM_W = 14, MANIM_H = 8;
+  switch (prop) {
+    case 'x': {
+      const mx = ((value / sw) - 0.5) * MANIM_W;
+      return `${n}.animate.set_x(${mx.toFixed(4)})`;
+    }
+    case 'y': {
+      const my = (0.5 - value / sh) * MANIM_H;
+      return `${n}.animate.set_y(${my.toFixed(4)})`;
+    }
+    case 'opacity': return `${n}.animate.set_opacity(${Math.max(0, Math.min(1, value)).toFixed(4)})`;
+    case 'rotation': return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)})`;
+    case 'scaleX': return `${n}.animate.stretch_to_fit_width(${value.toFixed(4)})`;
+    case 'scaleY': return `${n}.animate.stretch_to_fit_height(${value.toFixed(4)})`;
+    default: return null;
+  }
+}
+
+function _kfUpdater(prop) {
+  switch (prop) {
+    case 'x':       return 'set_x';
+    case 'y':       return 'set_y';
+    case 'opacity': return 'set_opacity';
+    default:        return null;
+  }
+}
+
+function generateKeyframeSteps(project, steps, sw, sh) {
+  if (!project.objects) return;
+  for (const obj of project.objects) {
+    if (!obj.keyframes || Object.keys(obj.keyframes).length === 0) continue;
+    const n = vn(obj.id);
+    const defaults = project.keyframeDefaults || {};
+
+    for (const [prop, keyframes] of Object.entries(obj.keyframes)) {
+      if (!keyframes || keyframes.length < 2) continue;
+      const sorted = [...keyframes].sort((a, b) => a.time - b.time);
+      const codegenMode = (obj.keyframeCodegen && obj.keyframeCodegen[prop]) ||
+        defaults.codegenMode || 'UpdateFromAlphaFunc';
+
+      if (codegenMode === 'animate') {
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const k1 = sorted[i], k2 = sorted[i + 1];
+          const dur = parseFloat((k2.time - k1.time).toFixed(2));
+          const val = _kfPropSet(n, prop, k2.value, sw, sh);
+          if (!val) continue;
+          const rt = rtOpt(dur);
+          steps.push({ time: k1.time, order: 0.5, code: `self.play(${val}${rt})`, dur });
+        }
+      } else if (codegenMode === 'ValueTracker') {
+        const safeProp = prop.replace(/[^a-zA-Z0-9_]/g, '_');
+        const trackVar = `_vt_${n}_${safeProp}`;
+        const initVal = sorted[0].value;
+        let block = `${trackVar} = ValueTracker(${initVal})\n`;
+        block += `${n}.add_updater(lambda m: m.${_kfUpdater(prop) || safeProp}(${trackVar}.get_value()))\n`;
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const k1 = sorted[i], k2 = sorted[i + 1];
+          const dur = parseFloat((k2.time - k1.time).toFixed(2));
+          const rt = rtOpt(dur);
+          block += `self.play(${trackVar}.animate.set_value(${k2.value})${rt})\n`;
+        }
+        block += `${n}.clear_updaters()`;
+        steps.push({ time: sorted[0].time, order: 0.5, code: block, dur: sorted[sorted.length - 1].time - sorted[0].time });
+      } else {
+        // UpdateFromAlphaFunc (default)
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const k1 = sorted[i], k2 = sorted[i + 1];
+          const dur = parseFloat((k2.time - k1.time).toFixed(2));
+          const safeProp = prop.replace(/[^a-zA-Z0-9_]/g, '_');
+          const kfVar = `_kf_${n}_${safeProp}_${i}`;
+          const setter = _kfUpdater(prop);
+          if (!setter) continue;
+          const rt = rtOpt(dur);
+          const v0 = k1.value.toFixed(4), v1 = k2.value.toFixed(4);
+          const t0 = k1.time.toFixed(4), t1 = k2.time.toFixed(4);
+          const block =
+            `def ${kfVar}_fn(mob, alpha):\n` +
+            `    t = ${t0} + alpha * ${dur.toFixed(4)}\n` +
+            `    v = ${v0} + (${v1} - ${v0}) * max(0, min(1, (t - ${t0}) / ${dur.toFixed(4)}))\n` +
+            `    mob.${setter}(v)\n` +
+            `self.play(UpdateFromFunc(${n}, ${kfVar}_fn, run_time=${dur.toFixed(1)}, rate_func=linear))`;
+          steps.push({ time: k1.time, order: 0.5, code: block, dur });
+        }
+      }
+    }
+  }
+}
+
 // ── Main generator ──────────────────────────────────────────────────────────
 
 export function generatePythonCode(project, assetsPath) {
@@ -617,6 +708,9 @@ export function generatePythonCode(project, assetsPath) {
       } // end multi-clip parallel group
     }
   }
+
+  // Keyframe steps
+  generateKeyframeSteps(project, steps, sw, sh);
 
   // Camera clips
   if (project.cameraType === 'moving' && project.cameraTrack?.length > 0) {
