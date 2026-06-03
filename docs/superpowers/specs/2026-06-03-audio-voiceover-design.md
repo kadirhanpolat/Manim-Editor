@@ -140,11 +140,7 @@ with self.voiceover(audio="/data/assets/audio/abc123.wav"):
     self.play(...)
 ```
 
-TTS tipler için `text=` parametresi kullanılır (manim-voiceover cache'ler):
-```python
-with self.voiceover(text="Merhaba dünya") as tracker:
-    ...
-```
+TTS tipleri için de audio servisi önceden `.wav` üretir; codegen her zaman `audio=` yolunu kullanır (`text=` parametresi kullanılmaz). Bu, manim-voiceover cache davranışını bypass eder ve codegen çıktısını deterministik tutar.
 
 ### manim.js (client-side exporter)
 
