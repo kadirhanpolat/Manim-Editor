@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-Browser-based Figma-like animation editor for Manim CE. 5 Docker services: Vue 2.7 + Konva.js frontend (Nginx :8080), Node.js/Express API (:3000), Python Manim CE renderer worker, Python audio TTS worker, Redis 7 job queue. Shared Docker volume at `/data`.
+Browser-based Figma-like animation editor for Manim CE. 5 Docker services: Vue 3 + Konva.js frontend (Nginx :8080), Node.js/Express API (:3000), Python Manim CE renderer worker, Python audio TTS worker, Redis 7 job queue. Shared Docker volume at `/data`.
 
 ## Architecture
 
 ```
-services/web/        # Vue 2.7 frontend (Vite, Vitest)
+services/web/        # Vue 3 frontend (Vite, Vitest)
 services/api/        # Node.js/Express API + Manim codegen
 services/renderer/   # Python Manim worker (polls Redis) + manim-voiceover
 services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
@@ -29,7 +29,7 @@ cd services/web && npm test
 
 | File | Purpose |
 |------|---------|
-| `services/web/src/store/project.js` | Vue.observable store — all project state, actions, getters |
+| `services/web/src/store/project.js` | Pinia store — all project state, actions, getters (`useProjectStore()`) |
 | `services/web/src/engine/playback.js` | 60fps rAF playback engine — evaluates clips, computes frame state |
 | `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON (server-side) |
 | `services/web/src/export/manim.js` | Client-side .py generator + parser (mirrors codegen.js semantics) |
@@ -50,15 +50,25 @@ cd services/web && npm test
 ## Store Patterns
 
 ```js
-// Vue 2 reactivity — always use Vue.set for new properties on existing objects
-Vue.set(obj, 'newProp', value);
+// Pinia store — import and use in components
+import { useProjectStore } from '../store/project.js';
+const store = useProjectStore();
+
+// Direct assignment (Vue 3 reactivity — no Vue.set needed)
+obj.newProp = value;
 
 // uid() is exported from store/project.js — use it everywhere
 import { uid } from '../store/project.js';
 
-// Actions commit state for undo
-actions.commitState();  // required after mutations that should be undoable
-store.isDirty = true;   // mark unsaved changes
+// Actions are methods on the store instance
+store.commitState();  // required after mutations that should be undoable
+store.isDirty = true; // mark unsaved changes
+
+// Getters are properties (no parens), factory getters are functions:
+store.computedDuration    // property — NOT store.computedDuration()
+store.hasPendingAudio     // property — NOT store.hasPendingAudio()
+store.objectById(id)      // factory getter — called as function
+store.assetById(id)       // factory getter — called as function
 ```
 
 ## Clip Types
@@ -112,15 +122,25 @@ This check exists in `codegen.js` (`safeMathExpr`), `manim.js` (`safeMathExpr`),
 - **Flow**: `AudioPanel` → `POST /api/audio/tts` → Redis `audio:queue:gtts` → `services/audio/worker.py` → WAV to `/data/assets/audio/` → `POST /api/audio/:jobId/complete` → `broadcastAudioEvent` WebSocket → `actions.setClipAudio`
 - **File upload** skips the queue: `POST /api/audio/upload` stores file directly, runs ffprobe for duration, returns `{ src, duration, status: 'ready' }`.
 - **Codegen priority**: `MovingCameraScene` > `VoiceoverScene` > `Scene`. Clips with `audio.status === 'ready'` generate `with self.voiceover(audio="...") as tracker_<clipId>:` blocks.
-- **Render lock**: `getters.hasPendingAudio()` disables render button in `App.vue`, `RenderPanel.vue`, and `Topbar.vue`.
+- **Render lock**: `store.hasPendingAudio` (Pinia property) disables render button in `App.vue`, `RenderPanel.vue`, and `Topbar.vue`.
 - **Coqui TTS** (optional): start with `docker compose --profile coqui up`; the `audio-coqui` service handles `audio:queue:coqui` jobs.
 - **Keep `manim.js` and `codegen.js` in sync** for voiceover logic, same as for all other clip/object types.
 
 ## Testing Conventions
 
 - Test files: `services/web/tests/components/*.test.js`
-- Import store: `import { store, actions, getters } from '../../src/store/project.js'`
-- Reset before each test: `actions.newProject('Test', 'visual'); actions.commitState();`
+- Import store:
+  ```js
+  import { setActivePinia, createPinia } from 'pinia';
+  import { useProjectStore } from '../../src/store/project.js';
+  let store;
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    store = useProjectStore();
+    store.newProject('Test', 'visual');
+    store.commitState();
+  });
+  ```
 - Engine tests excluded from Vitest: `tests/engine.test.mjs` runs via `npm test` (Node.js)
 
 ## Development Workflow
@@ -144,18 +164,16 @@ cd services/api && npm run dev
 
 **Keep `manim.js` and `codegen.js` semantically in sync.** When adding a new object or clip type, update both.
 
-## Upcoming: Vue 3 Migration
+## Vue 3 Migration (Completed — 2026-06-03)
 
-Design spec: `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`
+Migration is complete. Design spec: `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`
 
-Migration plan (not yet started):
-1. Install `@vue/compat` bridge → fix all compat warnings
-2. Migrate store to **Pinia** (`Vue.observable` → `defineStore`, `Vue.set` → direct assignment)
-3. Convert all components from Options API → **Composition API** (leaf → root order)
-4. Upgrade `@vue/test-utils@1` → `@vue/test-utils@2`
-5. Remove `@vue/compat`, run Vue 3 pure
-
-Store import will change from `import { store, actions, getters }` to `const store = useProjectStore()`.
+What was done:
+1. Installed `@vue/compat` bridge + fixed compat warnings
+2. Migrated store to **Pinia** (`Vue.observable` → `defineStore`, `Vue.set` → direct assignment)
+3. Converted all components from Options API → **`<script setup>` Composition API** (leaf → root order)
+4. Upgraded `@vue/test-utils@1` → `@vue/test-utils@2`
+5. Removed `@vue/compat` — now pure Vue 3
 
 ## Technical Debt (known)
 

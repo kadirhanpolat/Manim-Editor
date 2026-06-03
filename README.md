@@ -12,11 +12,11 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
-  <img src="https://img.shields.io/badge/vue-2.7-4FC08D?logo=vue.js&logoColor=white" alt="Vue">
+  <img src="https://img.shields.io/badge/vue-3-4FC08D?logo=vue.js&logoColor=white" alt="Vue">
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.0.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.1.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -117,7 +117,7 @@ Browser (localhost:8080)
   |
   |-- Nginx (serves Vue SPA, proxies /api/)
   |
-  |-- Vue 2 + Konva.js
+  |-- Vue 3 + Konva.js
   |     |-- Stage Canvas (shapes, grid, morphs, transformer)
   |     |-- Properties Panel (object/clip editing)
   |     |-- Timeline (multi-track, drag clips)
@@ -382,7 +382,7 @@ npm run test:unit # 62 unit tests (store, templates, graphs, parallel clips, pat
 
 ## Tech Stack![1775491376876](image/README/1775491376876.png)![1775491379141](image/README/1775491379141.png)![1775491380665](image/README/1775491380665.png)![1775491383028](image/README/1775491383028.png)
 
-- **Frontend**: Vue 2.7, Konva.js, Tailwind CSS (with CSS-variable theming), Vite *(Vue 3 + Pinia migration planned — see `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`)*
+- **Frontend**: Vue 3, Pinia, Konva.js, Tailwind CSS (with CSS-variable theming), Vite
 - **Backend**: Node.js 20, Express, Multer, Zod, Redis
 - **Renderer**: Python, Manim Community Edition
 - **Infrastructure**: Docker Compose, Nginx, Alpine Linux
@@ -397,13 +397,15 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.1.0 (planned — Vue 3 migration)
+### v3.1.0 (current)
 
-- **Refactor**: Vue 2.7 → Vue 3 + Pinia; `@vue/compat` bridge strategy; all components migrated to Composition API
-- **Refactor**: `Vue.observable` store → Pinia `defineStore`; `Vue.set` calls removed
-- **Refactor**: `@vue/test-utils@1` → `@vue/test-utils@2`
+- **Refactor**: Vue 2.7 → Vue 3 — pure Vue 3 with no compat shims
+- **Refactor**: `Vue.observable` store → Pinia `defineStore`; `Vue.set` → direct assignment
+- **Refactor**: All components migrated from Options API → `<script setup>` Composition API
+- **Refactor**: `@vue/test-utils@1` → `@vue/test-utils@2`; test files use Pinia setup pattern
+- **Removed**: `@vue/compat` bridge; all backward-compat store exports (`store`, `actions`, `getters`)
 
-### v3.0.0 (current)
+### v3.0.0
 
 - **Feature**: Audio / Voiceover — attach audio to any clip; supports file upload (`.mp3`/`.wav`/`.ogg`), gTTS synthesis (online), and Coqui TTS (offline, `--profile coqui`)
 - **Feature**: Per-clip audio sync — `auto` mode stretches clip duration to match audio; `manual` mode preserves clip duration with configurable offset
