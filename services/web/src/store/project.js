@@ -60,6 +60,12 @@ function createDefaultProject(editorMode = 'visual') {
       mode: 'opt-in',
       codegenMode: 'UpdateFromAlphaFunc'
     },
+    sceneType: '2d',           // '2d' | '3d'
+    camera3d: {
+      phi: 75,
+      theta: -45,
+      zoom: 1.0,
+    },
   };
 }
 
@@ -137,6 +143,12 @@ export const SHAPE_DEFAULTS = {
   axes:     { width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   numberplane:{ width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
   numberline: { width: 500, height: 60,  fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  sphere:     { width: 120, height: 120, fill: '#e67700', stroke: '#fff', strokeWidth: 2 },
+  cube:       { width: 120, height: 120, fill: '#3b5bdb', stroke: '#fff', strokeWidth: 2 },
+  cone:       { width: 100, height: 120, fill: '#2f9e44', stroke: '#fff', strokeWidth: 2 },
+  cylinder:   { width: 100, height: 120, fill: '#1098ad', stroke: '#fff', strokeWidth: 2 },
+  torus:      { width: 130, height: 130, fill: '#ae3ec9', stroke: '#fff', strokeWidth: 2 },
+  axes3d:     { width: 400, height: 400, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -146,7 +158,9 @@ export const SHAPE_COLORS = {
   heart: '#ec4899', dot: '#94a3b8', dot_grid: '#a855f7',
   text: '#f472b6', image: '#f59e0b', svg_asset: '#f59e0b',
   latex: '#a855f7', axes: '#10b981',
-  numberplane: '#334155', numberline: '#10b981'
+  numberplane: '#334155', numberline: '#10b981',
+  sphere: '#e67700', cube: '#3b5bdb', cone: '#2f9e44',
+  cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -293,6 +307,27 @@ const useProjectStore = defineStore('project', {
         ...(type === 'numberline'  ? { xRange: [-5, 5, 1] } : {}),
         ...extraProps
       };
+
+      const is3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'].includes(type);
+      if (is3D) {
+        obj.x3d = 0;
+        obj.y3d = 0;
+        obj.z3d = 0;
+        obj.rx = 0;
+        obj.ry = 0;
+        obj.rz = 0;
+        obj.resolution = 20;
+        obj.sideLength = 1.0;    // cube
+        obj.radius = 0.5;        // sphere/cone/cylinder/torus
+        obj.height = 1.5;        // cone/cylinder
+        obj.majorRadius = 1.0;   // torus
+        obj.minorRadius = 0.3;   // torus
+      }
+      if (type === 'axes3d') {
+        obj.xRange = [-3, 3, 1];
+        obj.yRange = [-3, 3, 1];
+        obj.zRange = [-3, 3, 1];
+      }
 
       this.project.objects.push(obj);
       this.isDirty = true;
@@ -1109,6 +1144,18 @@ const useProjectStore = defineStore('project', {
     setCameraType(type) {
       this.project.cameraType = type;
       if (!this.project.cameraTrack) this.project.cameraTrack = [];
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    setSceneType(type) {
+      this.project.sceneType = type;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    setCamera3d(params) {
+      Object.assign(this.project.camera3d, params);
       this.isDirty = true;
       this.commitState();
     },
