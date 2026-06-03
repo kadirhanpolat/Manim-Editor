@@ -618,7 +618,9 @@ export function generateManimScript(project) {
     if (wait > 0.05) L.push(`${indent}self.wait(${wait.toFixed(1)})`);
     const a = step.audio;
     if (a && a.status === 'ready' && a.src) {
-      const trackerId = `tracker`;
+      const trackerId = step._clipId
+        ? `tracker_${step._clipId.replace(/[^a-zA-Z0-9]/g, '_')}`
+        : `tracker_${steps.indexOf(step)}`;
       L.push(`${indent}with self.voiceover(audio="${a.src}") as ${trackerId}:`);
       if (a.syncMode === 'manual' && a.offset > 0) {
         L.push(`${indent}    self.wait(${parseFloat(a.offset).toFixed(1)})`);

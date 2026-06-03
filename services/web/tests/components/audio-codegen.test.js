@@ -62,7 +62,7 @@ describe('voiceover wrapping', () => {
   it('auto syncMode appends self.wait for remaining audio duration', () => {
     const clips = [{ id: 'c1', type: 'move', startTime: 0, duration: 2, sourceId: 'obj1', params: { targetX: SW / 2, targetY: SH / 2 }, easing: 'linear', parallel: false, lag_ratio: 0, audio: readyAudio() }];
     const script = generateManimScript(makeProject(clips));
-    expect(script).toContain('tracker.duration');
+    expect(script).toContain('.duration - ');
   });
 
   it('manual syncMode with offset prepends self.wait(offset)', () => {
