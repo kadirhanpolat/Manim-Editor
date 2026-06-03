@@ -239,6 +239,47 @@ for (const k of EXPECTED_KEYS) assert(EASING_MAP[k], `EASING_MAP missing key: ${
 
 // ─── Summary ─────────────────────────────────────────────────────────────────
 
+import { interpolateKeyframes, getKeyframeRange } from '../src/engine/keyframe.js';
+
+section('Keyframe Interpolation');
+
+assert(interpolateKeyframes([], 1.0) === null, 'empty keyframes returns null');
+assert(interpolateKeyframes(null, 1.0) === null, 'null keyframes returns null');
+
+assertApprox(interpolateKeyframes([{ time: 1, value: 42 }], 0.5), 42, 0.001, 'single keyframe returns its value before time');
+assertApprox(interpolateKeyframes([{ time: 1, value: 42 }], 1.0), 42, 0.001, 'single keyframe returns its value at time');
+assertApprox(interpolateKeyframes([{ time: 1, value: 42 }], 2.0), 42, 0.001, 'single keyframe returns its value after time');
+
+const kfs = [
+  { time: 0, value: 0, easing: { type: 'linear' } },
+  { time: 2, value: 100 }
+];
+assertApprox(interpolateKeyframes(kfs, 0), 0, 0.001, 'linear: at t=0 returns 0');
+assertApprox(interpolateKeyframes(kfs, 1), 50, 0.001, 'linear: at t=1 returns 50 (midpoint)');
+assertApprox(interpolateKeyframes(kfs, 2), 100, 0.001, 'linear: at t=2 returns 100');
+assertApprox(interpolateKeyframes(kfs, -1), 0, 0.001, 'before range: clamps to first value');
+assertApprox(interpolateKeyframes(kfs, 5), 100, 0.001, 'after range: clamps to last value');
+
+const kfsBez = [
+  { time: 0, value: 0, easing: { type: 'bezier', handles: [0, 0, 1, 1] } },
+  { time: 1, value: 100 }
+];
+assertApprox(interpolateKeyframes(kfsBez, 0.5), 50, 0.5, 'bezier [0,0,1,1] at midpoint approx 50');
+
+const kfsThree = [
+  { time: 0, value: 0, easing: { type: 'linear' } },
+  { time: 1, value: 100, easing: { type: 'linear' } },
+  { time: 2, value: 0 }
+];
+assertApprox(interpolateKeyframes(kfsThree, 0.5), 50, 0.001, 'three kf: first segment at t=0.5');
+assertApprox(interpolateKeyframes(kfsThree, 1.5), 50, 0.001, 'three kf: second segment at t=1.5');
+
+section('getKeyframeRange');
+assert(getKeyframeRange([]) === null, 'empty returns null');
+const r = getKeyframeRange([{ time: 2 }, { time: 0.5 }, { time: 3 }]);
+assertApprox(r.start, 0.5, 0.001, 'range.start is min time');
+assertApprox(r.end, 3, 0.001, 'range.end is max time');
+
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);
 console.log(`${'='.repeat(50)}`);
