@@ -11,9 +11,6 @@
     "test:unit:watch": "vitest"
   },
   "dependencies": {
-    "@vitejs/plugin-vue": "^6.0.7",
-    "@vue/compat": "^3.5.35",
-    "@vue/test-utils": "^2.4.10",
     "highlight.js": "^11.11.1",
     "konva": "^9.3.0",
     "pinia": "^3.0.4",
@@ -21,6 +18,9 @@
     "vue-konva": "^3.4.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/compat": "^3.5.35",
+    "@vue/test-utils": "^2.4.10",
     "autoprefixer": "^10.4.17",
     "jsdom": "^26.0.0",
     "postcss": "^8.4.35",
