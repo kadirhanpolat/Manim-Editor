@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import api from '../../api.js';
 import AssetUploader from './AssetUploader.vue';
@@ -69,21 +69,9 @@ import AssetUploader from './AssetUploader.vue';
 const store = useProjectStore();
 
 const showUploader = ref(false);
-const serverAssets = ref([]);
 
 const projectId = computed(() => store.project.id);
 const assets = computed(() => store.project.assets || []);
-
-watch(projectId, () => { loadAssets(); }, { immediate: true });
-
-async function loadAssets() {
-  if (!projectId.value) return;
-  try {
-    serverAssets.value = await api.assets.list(projectId.value);
-  } catch (err) {
-    console.error('Failed to load assets:', err);
-  }
-}
 
 function getAssetUrl(asset) {
   return api.assets.getUrl(projectId.value, asset.filename);
@@ -99,7 +87,6 @@ async function deleteAsset(asset) {
   try {
     await api.assets.delete(projectId.value, asset.filename);
     store.removeAsset(asset.id);
-    await loadAssets();
   } catch (err) {
     console.error('Failed to delete asset:', err);
   }
@@ -108,6 +95,5 @@ async function deleteAsset(asset) {
 function onAssetUploaded(asset) {
   store.addAsset(asset);
   showUploader.value = false;
-  loadAssets();
 }
 </script>
