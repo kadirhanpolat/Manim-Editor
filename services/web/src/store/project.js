@@ -601,10 +601,11 @@ export const actions = {
       const clip = track.clips.find(c => c.id === clipId);
       if (clip) {
         Vue.set(clip, 'audio', { ...audioData });
-        if (audioData.syncMode === 'auto' && audioData.status === 'ready' && audioData.duration) {
+        if (audioData.syncMode === 'auto' && audioData.status === 'ready' && audioData.duration != null) {
           Vue.set(clip, 'duration', audioData.duration);
         }
         store.isDirty = true;
+        actions.commitState();
         return;
       }
     }
@@ -616,6 +617,7 @@ export const actions = {
       if (clip && clip.audio) {
         Vue.delete(clip, 'audio');
         store.isDirty = true;
+        actions.commitState();
         return;
       }
     }
