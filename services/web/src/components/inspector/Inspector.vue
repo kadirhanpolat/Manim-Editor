@@ -54,11 +54,17 @@
       />
       
       <!-- Animation Panel -->
-      <AnimationPanel 
+      <AnimationPanel
         :element="selectedElement"
         @update="updateElement"
       />
-      
+
+      <!-- Audio Panel (shown when a clip is selected) -->
+      <AudioPanel
+        v-if="selectedClip"
+        :clip="selectedClip"
+      />
+
       <!-- Delete Button -->
       <div class="px-4 py-4 border-t border-studio-border mt-auto">
         <button 
@@ -88,6 +94,7 @@ import LayoutPanel from './LayoutPanel.vue';
 import StylePanel from './StylePanel.vue';
 import TimingPanel from './TimingPanel.vue';
 import AnimationPanel from './AnimationPanel.vue';
+import AudioPanel from './AudioPanel.vue';
 
 export default {
   name: 'Inspector',
@@ -96,14 +103,19 @@ export default {
     LayoutPanel,
     StylePanel,
     TimingPanel,
-    AnimationPanel
+    AnimationPanel,
+    AudioPanel
   },
   
   computed: {
     selectedElement() {
       return getters.selectedElement();
     },
-    
+
+    selectedClip() {
+      return getters.selectedClip();
+    },
+
     typeBadgeClass() {
       if (!this.selectedElement) return '';
       const classes = {
