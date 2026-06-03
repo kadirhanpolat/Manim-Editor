@@ -71,6 +71,14 @@
           :labelW="labelW"
         />
 
+        <!-- Keyframe Lanes -->
+        <KeyframeLanesPanel
+          :pps="pps"
+          :labelW="labelW"
+          :totalW="totalW"
+          @openEasingPopup="onOpenEasingPopup"
+        />
+
         <!-- Camera Track -->
         <div v-if="project.cameraType === 'moving'" class="timeline-row camera-track-row border-b border-studio-border/30 flex flex-shrink-0" style="height: 40px;">
           <div class="flex-shrink-0 flex items-center px-2 bg-studio-bg/30 border-r border-studio-border/50 text-[10px] text-violet-300 font-medium gap-1" :style="{ width: labelW + 'px' }">
@@ -106,6 +114,7 @@
 import { ref, computed } from 'vue';
 import { useProjectStore, SHAPE_COLORS } from '../../store/project.js';
 import TimelineTrack from './TimelineTrack.vue';
+import KeyframeLanesPanel from './KeyframeLanesPanel.vue';
 
 const store = useProjectStore();
 
@@ -122,6 +131,11 @@ const totalW = computed(() => totalDuration.value * pps.value + 50);
 const project = computed(() => store.project);
 const cameraClips = computed(() => store.project.cameraTrack || []);
 const selectedClipId = computed(() => store.selectedClipId);
+const easingPopup = ref(null);
+
+function onOpenEasingPopup(payload) {
+  easingPopup.value = payload;
+}
 const ticks = computed(() => {
   const t = []; const iv = pps.value >= 100 ? 0.5 : 1; const miv = pps.value >= 100 ? 1 : 5;
   for (let s = 0; s <= totalDuration.value; s += iv) {
