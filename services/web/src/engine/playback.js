@@ -237,8 +237,10 @@ export class PlaybackEngine {
    * Respects mode (opt-in vs additive) and keyframeDefaults.
    */
   _applyKeyframeOverrides(frame, time, objects) {
+    if (!frame.objectOverrides) frame.objectOverrides = {};
+
     for (const obj of objects) {
-      if (!obj.keyframes || Object.keys(obj.keyframes).length === 0) continue;
+      if (!obj.keyframes) continue;
 
       for (const [prop, keyframes] of Object.entries(obj.keyframes)) {
         if (!keyframes || keyframes.length === 0) continue;
