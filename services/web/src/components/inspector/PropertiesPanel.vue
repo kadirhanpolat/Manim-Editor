@@ -512,8 +512,10 @@
   </aside>
 </template>
 
-<script>
-import { store, actions, getters, ENTER_ANIMS, EXIT_ANIMS } from '../../store/project.js';
+<script setup>
+import { computed } from 'vue';
+import { useProjectStore } from '../../store/project.js';
+import { ENTER_ANIMS, EXIT_ANIMS } from '../../store/project.js';
 import { EASING_LIST } from '../../engine/easing.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
 import FontSelector from './FontSelector.vue';
@@ -533,128 +535,116 @@ const ColorRow = {
   template: `<div class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">{{ label }}</span><input type="color" class="color-input" :value="value || '#ffffff'" @input="$emit('input', $event.target.value)" /><input class="input input-sm flex-1" :value="value" @change="$emit('input', $event.target.value)" /></div>`
 };
 
-export default {
-  name: 'PropertiesPanel',
-  components: { Section, Num, ColorRow, FontSelector },
+const store = useProjectStore();
 
-  data() {
-    return {
-      anchorGrid: ANCHOR_GRID,
-      anchorLabels: ANCHOR_LABELS
-    };
-  },
+const anchorGrid = ANCHOR_GRID;
+const anchorLabels = ANCHOR_LABELS;
+const easings = EASING_LIST;
+const enterAnims = ENTER_ANIMS;
+const exitAnims = EXIT_ANIMS;
 
-  computed: {
-    obj() { return getters.selectedObject(); },
-    clip() { return getters.selectedClip(); },
-    cameraClip() {
-      if (!store.selectedClipId) return null;
-      return store.project.cameraTrack?.find(c => c.id === store.selectedClipId) || null;
-    },
-    objs() { return store.project.objects; },
-    stg() { return store.project.stage; },
-    groups() { return store.project.groups || []; },
-    easings() { return EASING_LIST; },
-    enterAnims() { return ENTER_ANIMS; },
-    exitAnims() { return EXIT_ANIMS; },
-    enterAnimDesc() {
-      if (!this.obj) return '';
-      const a = ENTER_ANIMS.find(a => a.value === (this.obj.enterAnim || 'fade_in'));
-      return a ? a.desc : '';
-    },
-    exitAnimDesc() {
-      if (!this.obj) return '';
-      const a = EXIT_ANIMS.find(a => a.value === (this.obj.exitAnim || 'fade_out'));
-      return a ? a.desc : '';
-    },
-    objGroup() {
-      if (!this.obj) return null;
-      return getters.objectGroup(this.obj.id);
-    },
-    typeLabel() {
-      if (!this.obj) return '';
-      const m = { dot_grid: 'Dot Grid', svg_asset: 'SVG', rectangle: 'Rectangle', latex: 'LaTeX', axes: 'Axes', polygon: 'Polygon' };
-      return m[this.obj.type] || this.obj.type;
-    },
-    typeBadge() {
-      const m = {
-        heart:'bg-pink-600 text-white', square:'bg-blue-600 text-white', rectangle:'bg-blue-600 text-white',
-        circle:'bg-green-600 text-white', ellipse:'bg-cyan-600 text-white',
-        triangle:'bg-amber-600 text-white', star:'bg-yellow-600 text-white', polygon:'bg-purple-600 text-white',
-        line:'bg-gray-600 text-white', arrow:'bg-red-600 text-white',
-        dot:'bg-gray-600 text-white', dot_grid:'bg-purple-600 text-white',
-        text:'bg-pink-500 text-white', image:'bg-amber-600 text-white', svg_asset:'bg-amber-600 text-white',
-        latex:'bg-purple-600 text-white', axes:'bg-emerald-600 text-white'
-      };
-      return m[this.obj?.type] || 'bg-gray-600 text-white';
-    },
-    clipBadge() {
-      const m = { transform:'bg-purple-600 text-white', move:'bg-blue-600 text-white', scale:'bg-green-600 text-white', fade:'bg-orange-600 text-white', rotate:'bg-pink-600 text-white' };
-      return m[this.clip?.type] || 'bg-gray-600 text-white';
-    },
-    /** Effective size for circle/star/polygon/dot (preview uses min(w,h)) */
-    effectiveSize() {
-      if (!this.obj) return 0;
-      return Math.min(this.obj.width || 0, this.obj.height || 0) || 1;
-    }
-  },
+const obj = computed(() => store.selectedObject);
+const clip = computed(() => store.selectedClip);
+const cameraClip = computed(() => {
+  if (!store.selectedClipId) return null;
+  return store.project.cameraTrack?.find(c => c.id === store.selectedClipId) || null;
+});
+const objs = computed(() => store.project.objects);
+const stg = computed(() => store.project.stage);
+const groups = computed(() => store.project.groups || []);
 
-  methods: {
-    updateCameraClip(param, value) {
-      if (!this.cameraClip) return;
-      actions.updateCameraClip(this.cameraClip.id, { params: { [param]: value } });
-    },
-    uca(key, value) {
-      if (!this.cameraClip) return;
-      actions.updateCameraClip(this.cameraClip.id, { [key]: value });
-    },
-    delCameraClip() {
-      if (!this.cameraClip) return;
-      actions.deleteCameraClip(this.cameraClip.id);
-      store.selectedClipId = null;
-    },
-    u(k, v) { if (this.obj) actions.updateObject(this.obj.id, { [k]: v }); },
-    /** Update both width and height for symmetric shapes */
-    uSize(v) { if (this.obj) actions.updateObject(this.obj.id, { width: v, height: v }); },
-    uRange(prop, idx, val) {
-      if (!this.obj) return;
-      const arr = [...(this.obj[prop] || (prop === 'xRange' ? [-5,5,1] : [-3,3,1]))];
-      arr[idx] = val;
-      actions.updateObject(this.obj.id, { [prop]: arr });
-    },
-    uc(k, v) { if (this.clip) actions.updateClip(this.clip.id, { [k]: v }); },
-    up(k, v) { if (this.clip) actions.updateClip(this.clip.id, { params: { ...(this.clip.params||{}), [k]: v } }); },
-    uStage(k, v) { actions.updateStage({ [k]: v }); },
-    del() { if (this.obj) actions.deleteObject(this.obj.id); },
-    delClip() { if (this.clip) actions.deleteClip(this.clip.id); },
-    oName(id) { const o = getters.objectById(id); return o ? o.name : '(deleted)'; },
-    isSel(id) { return store.selectedObjectIds.includes(id); },
-    selObj(id, e) { actions.selectObject(id, e.shiftKey || e.ctrlKey); },
-    align(anchor) { if (this.obj) actions.alignObject(this.obj.id, anchor); },
-    ungroup(groupId) { actions.ungroupObjects(groupId); },
-    anim(type) {
-      if (!this.obj) return;
-      const p = {};
-      if (type === 'move') { p.targetX = this.obj.x + 200; p.targetY = this.obj.y; }
-      if (type === 'scale') { p.targetScaleX = 2; p.targetScaleY = 2; }
-      if (type === 'fade') { p.targetOpacity = 0; }
-      if (type === 'rotate') { p.targetRotation = (this.obj.rotation || 0) + 360; }
-      actions.createAnimation(type, p);
-    },
-    addGraph() {
-      if (!this.obj || this.obj.type !== 'axes') return;
-      actions.addGraph(this.obj.id);
-    },
-    removeGraph(graphId) {
-      if (!this.obj) return;
-      actions.removeGraph(this.obj.id, graphId);
-    },
-    updateGraph(graphId, key, value) {
-      if (!this.obj) return;
-      actions.updateGraph(this.obj.id, graphId, { [key]: value });
-    }
-  }
-};
+const enterAnimDesc = computed(() => {
+  if (!obj.value) return '';
+  const a = ENTER_ANIMS.find(a => a.value === (obj.value.enterAnim || 'fade_in'));
+  return a ? a.desc : '';
+});
+const exitAnimDesc = computed(() => {
+  if (!obj.value) return '';
+  const a = EXIT_ANIMS.find(a => a.value === (obj.value.exitAnim || 'fade_out'));
+  return a ? a.desc : '';
+});
+const objGroup = computed(() => {
+  if (!obj.value) return null;
+  return store.objectGroup(obj.value.id);
+});
+const typeLabel = computed(() => {
+  if (!obj.value) return '';
+  const m = { dot_grid: 'Dot Grid', svg_asset: 'SVG', rectangle: 'Rectangle', latex: 'LaTeX', axes: 'Axes', polygon: 'Polygon' };
+  return m[obj.value.type] || obj.value.type;
+});
+const typeBadge = computed(() => {
+  const m = {
+    heart:'bg-pink-600 text-white', square:'bg-blue-600 text-white', rectangle:'bg-blue-600 text-white',
+    circle:'bg-green-600 text-white', ellipse:'bg-cyan-600 text-white',
+    triangle:'bg-amber-600 text-white', star:'bg-yellow-600 text-white', polygon:'bg-purple-600 text-white',
+    line:'bg-gray-600 text-white', arrow:'bg-red-600 text-white',
+    dot:'bg-gray-600 text-white', dot_grid:'bg-purple-600 text-white',
+    text:'bg-pink-500 text-white', image:'bg-amber-600 text-white', svg_asset:'bg-amber-600 text-white',
+    latex:'bg-purple-600 text-white', axes:'bg-emerald-600 text-white'
+  };
+  return m[obj.value?.type] || 'bg-gray-600 text-white';
+});
+const clipBadge = computed(() => {
+  const m = { transform:'bg-purple-600 text-white', move:'bg-blue-600 text-white', scale:'bg-green-600 text-white', fade:'bg-orange-600 text-white', rotate:'bg-pink-600 text-white' };
+  return m[clip.value?.type] || 'bg-gray-600 text-white';
+});
+const effectiveSize = computed(() => {
+  if (!obj.value) return 0;
+  return Math.min(obj.value.width || 0, obj.value.height || 0) || 1;
+});
+
+function updateCameraClip(param, value) {
+  if (!cameraClip.value) return;
+  store.updateCameraClip(cameraClip.value.id, { params: { [param]: value } });
+}
+function uca(key, value) {
+  if (!cameraClip.value) return;
+  store.updateCameraClip(cameraClip.value.id, { [key]: value });
+}
+function delCameraClip() {
+  if (!cameraClip.value) return;
+  store.deleteCameraClip(cameraClip.value.id);
+  store.selectedClipId = null;
+}
+function u(k, v) { if (obj.value) store.updateObject(obj.value.id, { [k]: v }); }
+function uSize(v) { if (obj.value) store.updateObject(obj.value.id, { width: v, height: v }); }
+function uRange(prop, idx, val) {
+  if (!obj.value) return;
+  const arr = [...(obj.value[prop] || (prop === 'xRange' ? [-5,5,1] : [-3,3,1]))];
+  arr[idx] = val;
+  store.updateObject(obj.value.id, { [prop]: arr });
+}
+function uc(k, v) { if (clip.value) store.updateClip(clip.value.id, { [k]: v }); }
+function up(k, v) { if (clip.value) store.updateClip(clip.value.id, { params: { ...(clip.value.params||{}), [k]: v } }); }
+function uStage(k, v) { store.updateStage({ [k]: v }); }
+function del() { if (obj.value) store.deleteObject(obj.value.id); }
+function delClip() { if (clip.value) store.deleteClip(clip.value.id); }
+function oName(id) { const o = store.objectById(id); return o ? o.name : '(deleted)'; }
+function isSel(id) { return store.selectedObjectIds.includes(id); }
+function selObj(id, e) { store.selectObject(id, e.shiftKey || e.ctrlKey); }
+function align(anchor) { if (obj.value) store.alignObject(obj.value.id, anchor); }
+function ungroup(groupId) { store.ungroupObjects(groupId); }
+function anim(type) {
+  if (!obj.value) return;
+  const p = {};
+  if (type === 'move') { p.targetX = obj.value.x + 200; p.targetY = obj.value.y; }
+  if (type === 'scale') { p.targetScaleX = 2; p.targetScaleY = 2; }
+  if (type === 'fade') { p.targetOpacity = 0; }
+  if (type === 'rotate') { p.targetRotation = (obj.value.rotation || 0) + 360; }
+  store.createAnimation(type, p);
+}
+function addGraph() {
+  if (!obj.value || obj.value.type !== 'axes') return;
+  store.addGraph(obj.value.id);
+}
+function removeGraph(graphId) {
+  if (!obj.value) return;
+  store.removeGraph(obj.value.id, graphId);
+}
+function updateGraph(graphId, key, value) {
+  if (!obj.value) return;
+  store.updateGraph(obj.value.id, graphId, { [key]: value });
+}
 </script>
 
 <style scoped>

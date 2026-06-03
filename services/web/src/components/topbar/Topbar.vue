@@ -14,7 +14,7 @@
           v-for="(menu, mi) in menus"
           :key="menu.id"
           class="menu-anchor"
-          :ref="'anchor-' + menu.id"
+          :ref="(el) => setAnchorRef(menu.id, el)"
         >
           <button
             class="menu-label"
@@ -68,7 +68,7 @@
                       role="menuitemradio"
                       :aria-checked="sub.active ? sub.active() : undefined"
                     >
-                      <span class="mi-radio">{{ sub.active && sub.active() ? '\u25C9' : '\u25CB' }}</span>
+                      <span class="mi-radio">{{ sub.active && sub.active() ? '◉' : '○' }}</span>
                       <span class="mi-label">{{ sub.label }}</span>
                     </button>
                   </div>
@@ -85,7 +85,7 @@
                   role="menuitemcheckbox"
                   :aria-checked="item.checked ? item.checked() : false"
                 >
-                  <span class="mi-check">{{ item.checked && item.checked() ? '\u2713' : '' }}</span>
+                  <span class="mi-check">{{ item.checked && item.checked() ? '✓' : '' }}</span>
                   <span class="mi-label">{{ item.label }}</span>
                   <span v-if="item.shortcut" class="mi-shortcut">{{ item.shortcut }}</span>
                 </button>
@@ -130,7 +130,7 @@
                   @click="executeItem(item)"
                   role="menuitem"
                 >
-                  <span v-if="item.type === 'toggle'" class="mi-check">{{ item.checked && item.checked() ? '\u2713' : '' }}</span>
+                  <span v-if="item.type === 'toggle'" class="mi-check">{{ item.checked && item.checked() ? '✓' : '' }}</span>
                   <span class="mi-label">{{ item.label }}</span>
                   <span v-if="item.shortcut" class="mi-shortcut">{{ item.shortcut }}</span>
                 </button>
@@ -251,351 +251,357 @@
   </div>
 </template>
 
-<script>
-import { store, actions, getters } from '../../store/project.js';
+<script setup>
+import { ref, computed, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useProjectStore } from '../../store/project.js';
 import { generateManimScript } from '../../export/manim.js';
 import TEMPLATES from '../../templates/index.js';
 
+const store = useProjectStore();
+
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
-const mod = isMac ? '\u2318' : 'Ctrl+';
+const mod = isMac ? '⌘' : 'Ctrl+';
 
-export default {
-  name: 'Topbar',
+// Reactive state
+const openMenuId = ref(null);
+const focusIdx = ref(-1);
+const hoveredSub = ref(null);
+const collapsed = ref(false);
+const showNewProjectDialog = ref(false);
+const newProjectName = ref('My Animation');
+const newProjectMode = ref('visual');
+const newProjectTemplate = ref(null);
 
-  data() {
-    return {
-      openMenuId: null,
-      focusIdx: -1,
-      hoveredSub: null,
-      collapsed: false,
-      _resizeObs: null,
-      showNewProjectDialog: false,
-      newProjectName: 'My Animation',
-      newProjectMode: 'visual',
-      newProjectTemplate: null,
-    };
+// Non-reactive instance vars
+let _resizeObs = null;
+let _hoverSwitchedAt = null;
+
+// Static constants
+const templates = TEMPLATES;
+
+// Template refs
+const root = ref(null);
+const npNameInput = ref(null);
+
+// Dynamic anchor refs
+const anchorRefs = reactive({});
+function setAnchorRef(id, el) {
+  if (el) anchorRefs[id] = el;
+  else delete anchorRefs[id];
+}
+
+// Computed store properties
+const project = computed(() => store.project);
+const projectName = computed(() => store.project.name);
+const projectId = computed(() => store.project.id);
+const isDirty = computed(() => store.isDirty);
+const gridVisible = computed(() => store.project.stage.gridVisible);
+const snapEnabled = computed(() => store.project.stage.snapEnabled);
+const stageW = computed(() => store.project.stage.width);
+const stageH = computed(() => store.project.stage.height);
+const isSaving = computed(() => store.savingToServer);
+const canGroup = computed(() => store.selectedObjectIds.length >= 2);
+const currentTheme = computed(() => store.theme);
+
+const isRendering = computed(() => {
+  const s = store.renderStatus;
+  return s === 'uploading' || s === 'saving' || s === 'queued' || s === 'running';
+});
+
+const menus = computed(() => [
+  {
+    id: 'file', label: 'File',
+    items: [
+      { id: 'f-new',    label: 'New Project',           action: () => newProject() },
+      { id: 'f-open',   label: 'Open…',            action: () => loadProject(),     shortcut: `${mod}O` },
+      { type: 'separator' },
+      { id: 'f-save',   label: 'Save',                  action: () => saveProject(),     shortcut: `${mod}S` },
+      { id: 'f-sync',   label: 'Save to Server',        action: () => saveToServer(),    disabled: () => isSaving.value },
+      { id: 'f-browse', label: 'Server Projects…', action: () => browseServer() },
+      { type: 'separator' },
+      { id: 'f-export', label: 'Export .py',             action: () => openExport() },
+    ]
   },
-
-  computed: {
-    templates() { return TEMPLATES; },
-    project()    { return store.project; },
-    projectName() { return store.project.name; },
-    projectId()   { return store.project.id; },
-    isDirty()     { return store.isDirty; },
-    gridVisible() { return store.project.stage.gridVisible; },
-    snapEnabled() { return store.project.stage.snapEnabled; },
-    stageW()      { return store.project.stage.width; },
-    stageH()      { return store.project.stage.height; },
-    isSaving()    { return store.savingToServer; },
-    canGroup()    { return store.selectedObjectIds.length >= 2; },
-    currentTheme(){ return store.theme; },
-
-    isRendering() {
-      const s = store.renderStatus;
-      return s === 'uploading' || s === 'saving' || s === 'queued' || s === 'running';
-    },
-
-    menus() {
-      return [
-        {
-          id: 'file', label: 'File',
-          items: [
-            { id: 'f-new',    label: 'New Project',           action: () => this.newProject() },
-            { id: 'f-open',   label: 'Open\u2026',            action: () => this.loadProject(),     shortcut: `${mod}O` },
-            { type: 'separator' },
-            { id: 'f-save',   label: 'Save',                  action: () => this.saveProject(),     shortcut: `${mod}S` },
-            { id: 'f-sync',   label: 'Save to Server',        action: () => this.saveToServer(),    disabled: () => this.isSaving },
-            { id: 'f-browse', label: 'Server Projects\u2026', action: () => this.browseServer() },
-            { type: 'separator' },
-            { id: 'f-export', label: 'Export .py',             action: () => this.openExport() },
-          ]
-        },
-        {
-          id: 'edit', label: 'Edit',
-          items: [
-            { id: 'e-undo',  label: 'Undo',            action: () => actions.undo(),           shortcut: `${mod}Z` },
-            { id: 'e-redo',  label: 'Redo',            action: () => actions.redo(),           shortcut: isMac ? '\u21E7\u2318Z' : 'Ctrl+Y' },
-            { type: 'separator' },
-            { id: 'e-copy',  label: 'Copy',            action: () => actions.copySelection(),  shortcut: `${mod}C` },
-            { id: 'e-paste', label: 'Paste',           action: () => actions.pasteSelection(), shortcut: `${mod}V` },
-            { type: 'separator' },
-            { id: 'e-group', label: 'Group Selection',  action: () => this.groupSelected(),    shortcut: `${mod}G`, disabled: () => !this.canGroup },
-          ]
-        },
-        {
-          id: 'view', label: 'View',
-          items: [
-            { id: 'v-grid', label: 'Grid',  type: 'toggle', action: () => this.toggleGrid(), checked: () => this.gridVisible },
-            { id: 'v-snap', label: 'Snap',  type: 'toggle', action: () => this.toggleSnap(), checked: () => this.snapEnabled },
-            { type: 'separator' },
-            {
-              id: 'v-theme', label: 'Theme', type: 'submenu',
-              children: [
-                { id: 'v-t-light', label: 'Light', action: () => actions.setTheme('light'), active: () => this.currentTheme === 'light' },
-                { id: 'v-t-dark',  label: 'Dark',  action: () => actions.setTheme('dark'),  active: () => this.currentTheme === 'dark' },
-              ]
-            },
-          ]
-        },
-        {
-          id: 'tools', label: 'Tools',
-          items: [
-            { id: 't-render', label: 'Render HQ\u2026', action: () => this.openRender() },
-          ]
-        },
-        {
-          id: 'help', label: 'Help',
-          items: [
-            { id: 'h-keys',  label: 'Keyboard Shortcuts', action: () => this.showShortcuts() },
-            { type: 'separator' },
-            { id: 'h-about', label: 'About Manim Motion',  action: () => this.showAbout() },
-          ]
-        }
-      ];
-    }
+  {
+    id: 'edit', label: 'Edit',
+    items: [
+      { id: 'e-undo',  label: 'Undo',            action: () => store.undo(),           shortcut: `${mod}Z` },
+      { id: 'e-redo',  label: 'Redo',            action: () => store.redo(),           shortcut: isMac ? '⇧⌘Z' : 'Ctrl+Y' },
+      { type: 'separator' },
+      { id: 'e-copy',  label: 'Copy',            action: () => store.copySelection(),  shortcut: `${mod}C` },
+      { id: 'e-paste', label: 'Paste',           action: () => store.pasteSelection(), shortcut: `${mod}V` },
+      { type: 'separator' },
+      { id: 'e-group', label: 'Group Selection',  action: () => groupSelected(),    shortcut: `${mod}G`, disabled: () => !canGroup.value },
+    ]
   },
-
-  mounted() {
-    this.checkCollapse();
-    this._resizeObs = new ResizeObserver(() => this.checkCollapse());
-    if (this.$refs.root) this._resizeObs.observe(this.$refs.root);
-    document.addEventListener('keydown', this._globalKey);
-    actions.setTheme(store.theme);
+  {
+    id: 'view', label: 'View',
+    items: [
+      { id: 'v-grid', label: 'Grid',  type: 'toggle', action: () => toggleGrid(), checked: () => gridVisible.value },
+      { id: 'v-snap', label: 'Snap',  type: 'toggle', action: () => toggleSnap(), checked: () => snapEnabled.value },
+      { type: 'separator' },
+      {
+        id: 'v-theme', label: 'Theme', type: 'submenu',
+        children: [
+          { id: 'v-t-light', label: 'Light', action: () => store.setTheme('light'), active: () => currentTheme.value === 'light' },
+          { id: 'v-t-dark',  label: 'Dark',  action: () => store.setTheme('dark'),  active: () => currentTheme.value === 'dark' },
+        ]
+      },
+    ]
   },
-
-  beforeDestroy() {
-    if (this._resizeObs) this._resizeObs.disconnect();
-    document.removeEventListener('keydown', this._globalKey);
+  {
+    id: 'tools', label: 'Tools',
+    items: [
+      { id: 't-render', label: 'Render HQ…', action: () => openRender() },
+    ]
   },
-
-  methods: {
-    checkCollapse() {
-      const w = this.$refs.root ? this.$refs.root.clientWidth : window.innerWidth;
-      this.collapsed = w < 640;
-    },
-
-    // ── Menu interaction ──
-    toggleMenu(id) {
-      if (this._hoverSwitchedAt && Date.now() - this._hoverSwitchedAt < 300) return;
-      if (this.openMenuId === id) { this.closeMenu(); return; }
-      this.openMenuId = id;
-      this.focusIdx = -1;
-      this.hoveredSub = null;
-    },
-    hoverMenu(id) {
-      if (this.openMenuId && this.openMenuId !== id) {
-        this.openMenuId = id;
-        this.focusIdx = -1;
-        this.hoveredSub = null;
-        this._hoverSwitchedAt = Date.now();
-      }
-    },
-    closeMenu() {
-      this.openMenuId = null;
-      this.focusIdx = -1;
-      this.hoveredSub = null;
-    },
-    executeItem(item) {
-      if (item.disabled && item.disabled()) return;
-      if (item.action) item.action();
-      if (item.type !== 'toggle' && item.type !== 'submenu') this.closeMenu();
-    },
-
-    // ── Keyboard: label navigation ──
-    onLabelKey(e, menuIndex) {
-      const ids = this.menus.map(m => m.id);
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        const next = (menuIndex + 1) % ids.length;
-        this.focusLabel(next);
-        if (this.openMenuId) this.openMenuId = ids[next];
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        const prev = (menuIndex - 1 + ids.length) % ids.length;
-        this.focusLabel(prev);
-        if (this.openMenuId) this.openMenuId = ids[prev];
-      } else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        this.toggleMenu(ids[menuIndex]);
-      } else if (e.key === 'ArrowDown' && this.openMenuId) {
-        e.preventDefault();
-        this.focusIdx = this.nextFocusable(-1, 1);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        this.closeMenu();
-      }
-    },
-    focusLabel(index) {
-      const id = this.menus[index]?.id;
-      if (!id) return;
-      this.$nextTick(() => {
-        const refs = this.$refs['anchor-' + id];
-        const el = refs && (Array.isArray(refs) ? refs[0] : refs);
-        const btn = el?.querySelector('button');
-        if (btn) btn.focus();
-      });
-    },
-
-    // ── Keyboard: dropdown navigation ──
-    onDropdownKey(e, menuIndex) {
-      const menu = this.menus[menuIndex];
-      if (!menu) return;
-      const items = menu.items;
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        this.focusIdx = this.nextFocusable(this.focusIdx, 1, items);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        this.focusIdx = this.nextFocusable(this.focusIdx, -1, items);
-      } else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        if (this.focusIdx >= 0 && items[this.focusIdx]) this.executeItem(items[this.focusIdx]);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        this.closeMenu();
-        this.focusLabel(menuIndex);
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        const next = (menuIndex + 1) % this.menus.length;
-        this.openMenuId = this.menus[next].id;
-        this.focusIdx = -1;
-        this.focusLabel(next);
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        const prev = (menuIndex - 1 + this.menus.length) % this.menus.length;
-        this.openMenuId = this.menus[prev].id;
-        this.focusIdx = -1;
-        this.focusLabel(prev);
-      }
-    },
-    nextFocusable(current, dir, items) {
-      const menu = items || (this.menus.find(m => m.id === this.openMenuId)?.items) || [];
-      let i = current + dir;
-      while (i >= 0 && i < menu.length) {
-        if (menu[i].type !== 'separator') return i;
-        i += dir;
-      }
-      return current;
-    },
-
-    _globalKey(e) {
-      if (this.openMenuId && e.key === 'Escape') {
-        this.closeMenu();
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    },
-
-    // ── Actions (ported from old Topbar) ──
-    updateName(name) { store.project.name = name.trim() || 'My Animation'; store.isDirty = true; },
-    toggleGrid()     { actions.toggleGrid(); },
-    toggleSnap()     { actions.toggleSnap(); },
-    toggleCamera() {
-      const next = store.project.cameraType === 'moving' ? 'static' : 'moving';
-      actions.setCameraType(next);
-    },
-
-    groupSelected() {
-      if (!this.canGroup) return;
-      actions.groupObjects([...store.selectedObjectIds]);
-    },
-
-    newProject() {
-      if (store.isDirty && !confirm('Discard unsaved changes?')) return;
-      this.newProjectName = 'My Animation';
-      this.newProjectMode = 'visual';
-      this.showNewProjectDialog = true;
-    },
-    confirmNewProject() {
-      const name = this.newProjectName.trim() || 'My Animation';
-      const tpl  = this.newProjectTemplate;
-
-      if (tpl && tpl.project) {
-        const projectData = tpl.project();
-        projectData.name = name;
-        projectData.id   = null;
-        // Render ve playback state'ini temizle (importJSON bunları sıfırlamaz)
-        actions._stopPollRender();
-        store.playbackTime    = 0;
-        store.playbackPlaying = false;
-        store.frameState      = { objectOverrides: {}, morphShapes: [], hiddenIds: new Set() };
-        store.renderStatus    = null;
-        store.renderJobId     = null;
-        store.renderVideoUrl  = null;
-        store.renderLog       = '';
-        store.renderError     = null;
-        actions.importJSON(JSON.stringify(projectData));
-      } else {
-        actions.newProject(name, this.newProjectMode);
-      }
-      this.showNewProjectDialog = false;
-      this.newProjectName       = 'My Animation';
-      this.newProjectTemplate   = null;
-    },
-    cancelNewProject() {
-      this.showNewProjectDialog = false;
-      this.newProjectName       = 'My Animation';
-      this.newProjectTemplate   = null;
-    },
-    async loadProject() {
-      if (store.isDirty && !confirm('Discard unsaved changes?')) return;
-      await actions.loadFromFile();
-    },
-    saveProject() { actions.saveToFile(); },
-
-    async saveToServer() {
-      try {
-        const ok = await actions.checkApi();
-        if (!ok) { actions.setError('Server not available. Make sure Docker is running.'); return; }
-        await actions.saveToServer();
-      } catch {}
-    },
-    browseServer() {
-      store.showProjectBrowser = true;
-      actions.listServerProjects();
-    },
-    openExport() {
-      if (store.project.editorMode === 'code') {
-        if (!store.project.codeSource || store.project.codeSource.trim().length === 0) {
-          actions.setError('Write some Manim code first!'); return;
-        }
-        store.exportCode = store.project.codeSource;
-      } else {
-        if (store.project.objects.length === 0) { actions.setError('Add some objects to the stage first!'); return; }
-        store.exportCode = generateManimScript(store.project);
-      }
-      store.showExportDialog = true;
-    },
-    openRender() {
-      if (getters.hasPendingAudio()) {
-        actions.setError('Audio generation is still in progress. Please wait before rendering.'); return;
-      }
-      if (store.project.editorMode === 'code') {
-        if (!store.project.codeSource || store.project.codeSource.trim().length === 0) {
-          actions.setError('Write some Manim code first!'); return;
-        }
-      } else {
-        if (store.project.objects.length === 0) { actions.setError('Add some objects to the stage first!'); return; }
-      }
-      store.showRenderDialog = true;
-    },
-
-    showShortcuts() {
-      actions.setError(
-        'Shortcuts: V=Select, H=Hand, Space=Play, Del=Delete, ' +
-        (isMac ? '⌘' : 'Ctrl+') + 'Z=Undo, ' +
-        (isMac ? '⇧⌘Z' : 'Ctrl+Y') + '=Redo, ' +
-        (isMac ? '⌘' : 'Ctrl+') + 'C/V=Copy/Paste, ' +
-        (isMac ? '⌘' : 'Ctrl+') + 'G=Group, ' +
-        (isMac ? '⌘' : 'Ctrl+') + 'S=Save'
-      );
-    },
-    showAbout() {
-      actions.setError('Manim Motion — Visual animation editor powered by Manim');
-    }
+  {
+    id: 'help', label: 'Help',
+    items: [
+      { id: 'h-keys',  label: 'Keyboard Shortcuts', action: () => showShortcuts() },
+      { type: 'separator' },
+      { id: 'h-about', label: 'About Manim Motion',  action: () => showAbout() },
+    ]
   }
-};
+]);
+
+onMounted(() => {
+  checkCollapse();
+  _resizeObs = new ResizeObserver(() => checkCollapse());
+  if (root.value) _resizeObs.observe(root.value);
+  document.addEventListener('keydown', _globalKey);
+  store.setTheme(store.theme);
+});
+
+onBeforeUnmount(() => {
+  if (_resizeObs) _resizeObs.disconnect();
+  document.removeEventListener('keydown', _globalKey);
+});
+
+function checkCollapse() {
+  const w = root.value ? root.value.clientWidth : window.innerWidth;
+  collapsed.value = w < 640;
+}
+
+// ── Menu interaction ──
+function toggleMenu(id) {
+  if (_hoverSwitchedAt && Date.now() - _hoverSwitchedAt < 300) return;
+  if (openMenuId.value === id) { closeMenu(); return; }
+  openMenuId.value = id;
+  focusIdx.value = -1;
+  hoveredSub.value = null;
+}
+function hoverMenu(id) {
+  if (openMenuId.value && openMenuId.value !== id) {
+    openMenuId.value = id;
+    focusIdx.value = -1;
+    hoveredSub.value = null;
+    _hoverSwitchedAt = Date.now();
+  }
+}
+function closeMenu() {
+  openMenuId.value = null;
+  focusIdx.value = -1;
+  hoveredSub.value = null;
+}
+function executeItem(item) {
+  if (item.disabled && item.disabled()) return;
+  if (item.action) item.action();
+  if (item.type !== 'toggle' && item.type !== 'submenu') closeMenu();
+}
+
+// ── Keyboard: label navigation ──
+function onLabelKey(e, menuIndex) {
+  const ids = menus.value.map(m => m.id);
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    const next = (menuIndex + 1) % ids.length;
+    focusLabel(next);
+    if (openMenuId.value) openMenuId.value = ids[next];
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const prev = (menuIndex - 1 + ids.length) % ids.length;
+    focusLabel(prev);
+    if (openMenuId.value) openMenuId.value = ids[prev];
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    toggleMenu(ids[menuIndex]);
+  } else if (e.key === 'ArrowDown' && openMenuId.value) {
+    e.preventDefault();
+    focusIdx.value = nextFocusable(-1, 1);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeMenu();
+  }
+}
+function focusLabel(index) {
+  const id = menus.value[index]?.id;
+  if (!id) return;
+  nextTick(() => {
+    const el = anchorRefs[id];
+    const btn = el?.querySelector('button');
+    if (btn) btn.focus();
+  });
+}
+
+// ── Keyboard: dropdown navigation ──
+function onDropdownKey(e, menuIndex) {
+  const menu = menus.value[menuIndex];
+  if (!menu) return;
+  const items = menu.items;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    focusIdx.value = nextFocusable(focusIdx.value, 1, items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    focusIdx.value = nextFocusable(focusIdx.value, -1, items);
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (focusIdx.value >= 0 && items[focusIdx.value]) executeItem(items[focusIdx.value]);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeMenu();
+    focusLabel(menuIndex);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    const next = (menuIndex + 1) % menus.value.length;
+    openMenuId.value = menus.value[next].id;
+    focusIdx.value = -1;
+    focusLabel(next);
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const prev = (menuIndex - 1 + menus.value.length) % menus.value.length;
+    openMenuId.value = menus.value[prev].id;
+    focusIdx.value = -1;
+    focusLabel(prev);
+  }
+}
+function nextFocusable(current, dir, items) {
+  const menu = items || (menus.value.find(m => m.id === openMenuId.value)?.items) || [];
+  let i = current + dir;
+  while (i >= 0 && i < menu.length) {
+    if (menu[i].type !== 'separator') return i;
+    i += dir;
+  }
+  return current;
+}
+
+function _globalKey(e) {
+  if (openMenuId.value && e.key === 'Escape') {
+    closeMenu();
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
+
+// ── Actions ──
+function updateName(name) { store.project.name = name.trim() || 'My Animation'; store.isDirty = true; }
+function toggleGrid()     { store.toggleGrid(); }
+function toggleSnap()     { store.toggleSnap(); }
+function toggleCamera() {
+  const next = store.project.cameraType === 'moving' ? 'static' : 'moving';
+  store.setCameraType(next);
+}
+
+function groupSelected() {
+  if (!canGroup.value) return;
+  store.groupObjects([...store.selectedObjectIds]);
+}
+
+function newProject() {
+  if (store.isDirty && !confirm('Discard unsaved changes?')) return;
+  newProjectName.value = 'My Animation';
+  newProjectMode.value = 'visual';
+  showNewProjectDialog.value = true;
+}
+function confirmNewProject() {
+  const name = newProjectName.value.trim() || 'My Animation';
+  const tpl  = newProjectTemplate.value;
+
+  if (tpl && tpl.project) {
+    const projectData = tpl.project();
+    projectData.name = name;
+    projectData.id   = null;
+    // Render ve playback state'ini temizle (importJSON bunları sıfırlamaz)
+    store._stopPollRender();
+    store.playbackTime    = 0;
+    store.playbackPlaying = false;
+    store.frameState      = { objectOverrides: {}, morphShapes: [], hiddenIds: new Set() };
+    store.renderStatus    = null;
+    store.renderJobId     = null;
+    store.renderVideoUrl  = null;
+    store.renderLog       = '';
+    store.renderError     = null;
+    store.importJSON(JSON.stringify(projectData));
+  } else {
+    store.newProject(name, newProjectMode.value);
+  }
+  showNewProjectDialog.value = false;
+  newProjectName.value       = 'My Animation';
+  newProjectTemplate.value   = null;
+}
+function cancelNewProject() {
+  showNewProjectDialog.value = false;
+  newProjectName.value       = 'My Animation';
+  newProjectTemplate.value   = null;
+}
+async function loadProject() {
+  if (store.isDirty && !confirm('Discard unsaved changes?')) return;
+  await store.loadFromFile();
+}
+function saveProject() { store.saveToFile(); }
+
+async function saveToServer() {
+  try {
+    const ok = await store.checkApi();
+    if (!ok) { store.setError('Server not available. Make sure Docker is running.'); return; }
+    await store.saveToServer();
+  } catch {}
+}
+function browseServer() {
+  store.showProjectBrowser = true;
+  store.listServerProjects();
+}
+function openExport() {
+  if (store.project.editorMode === 'code') {
+    if (!store.project.codeSource || store.project.codeSource.trim().length === 0) {
+      store.setError('Write some Manim code first!'); return;
+    }
+    store.exportCode = store.project.codeSource;
+  } else {
+    if (store.project.objects.length === 0) { store.setError('Add some objects to the stage first!'); return; }
+    store.exportCode = generateManimScript(store.project);
+  }
+  store.showExportDialog = true;
+}
+function openRender() {
+  if (store.hasPendingAudio) {
+    store.setError('Audio generation is still in progress. Please wait before rendering.'); return;
+  }
+  if (store.project.editorMode === 'code') {
+    if (!store.project.codeSource || store.project.codeSource.trim().length === 0) {
+      store.setError('Write some Manim code first!'); return;
+    }
+  } else {
+    if (store.project.objects.length === 0) { store.setError('Add some objects to the stage first!'); return; }
+  }
+  store.showRenderDialog = true;
+}
+
+function showShortcuts() {
+  store.setError(
+    'Shortcuts: V=Select, H=Hand, Space=Play, Del=Delete, ' +
+    (isMac ? '⌘' : 'Ctrl+') + 'Z=Undo, ' +
+    (isMac ? '⇧⌘Z' : 'Ctrl+Y') + '=Redo, ' +
+    (isMac ? '⌘' : 'Ctrl+') + 'C/V=Copy/Paste, ' +
+    (isMac ? '⌘' : 'Ctrl+') + 'G=Group, ' +
+    (isMac ? '⌘' : 'Ctrl+') + 'S=Save'
+  );
+}
+function showAbout() {
+  store.setError('Manim Motion — Visual animation editor powered by Manim');
+}
 </script>
 
 <style scoped>

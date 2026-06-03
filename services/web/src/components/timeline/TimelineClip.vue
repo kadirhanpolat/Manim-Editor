@@ -16,8 +16,13 @@
   </div>
 </template>
 
-<script>
-import { store, actions, getters } from '../../store/project.js';
+<script setup>
+import { computed } from 'vue';
+import { useProjectStore } from '../../store/project.js';
+
+const props = defineProps({ clip: Object, pps: Number });
+
+const store = useProjectStore();
 
 const ICONS = {
   transform: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/></svg>',
@@ -27,56 +32,46 @@ const ICONS = {
   rotate: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1014.85-3.36L23 8"/></svg>'
 };
 
-export default {
-  name: 'TimelineClip',
-  props: { clip: Object, pps: Number },
+const isSelected = computed(() => store.selectedClipId === props.clip.id);
+const label = computed(() => {
+  const src = store.objectById(props.clip.sourceId);
+  const tgt = store.objectById(props.clip.targetId);
+  if (props.clip.type === 'transform' && src && tgt) return `${src.name} → ${tgt.name}`;
+  const labels = { transform: 'Transform', move: 'Move', scale: 'Scale', fade: 'Fade', rotate: 'Rotate' };
+  let l = labels[props.clip.type] || props.clip.type;
+  if (src) l += ` · ${src.name}`;
+  return l;
+});
+const typeIcon = computed(() => ICONS[props.clip.type] || '');
+const typeClass = computed(() => ({
+  transform: 'clip-transform', move: 'clip-move', scale: 'clip-scale', fade: 'clip-fade', rotate: 'clip-rotate'
+}[props.clip.type] || 'clip-default'));
+const clipStyle = computed(() => ({
+  left: `${props.clip.startTime * props.pps}px`,
+  width: `${Math.max(28, props.clip.duration * props.pps)}px`
+}));
 
-  computed: {
-    isSelected() { return store.selectedClipId === this.clip.id; },
-    label() {
-      const src = getters.objectById(this.clip.sourceId);
-      const tgt = getters.objectById(this.clip.targetId);
-      if (this.clip.type === 'transform' && src && tgt) return `${src.name} → ${tgt.name}`;
-      const labels = { transform: 'Transform', move: 'Move', scale: 'Scale', fade: 'Fade', rotate: 'Rotate' };
-      let l = labels[this.clip.type] || this.clip.type;
-      if (src) l += ` · ${src.name}`;
-      return l;
-    },
-    typeIcon() { return ICONS[this.clip.type] || ''; },
-    typeClass() {
-      return {
-        transform: 'clip-transform', move: 'clip-move', scale: 'clip-scale', fade: 'clip-fade', rotate: 'clip-rotate'
-      }[this.clip.type] || 'clip-default';
-    },
-    clipStyle() {
-      return { left: `${this.clip.startTime * this.pps}px`, width: `${Math.max(28, this.clip.duration * this.pps)}px` };
+function select() { store.selectClip(props.clip.id); }
+function onDown(e) {
+  select();
+  const sx = e.clientX, st = props.clip.startTime;
+  const move = (ev) => { const dt = (ev.clientX - sx) / props.pps; store.updateClip(props.clip.id, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10) }); };
+  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+}
+function resize(dir, e) {
+  const sx = e.clientX, st = props.clip.startTime, sd = props.clip.duration;
+  const move = (ev) => {
+    const dt = (ev.clientX - sx) / props.pps;
+    if (dir === 'left') {
+      store.updateClip(props.clip.id, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10), duration: Math.max(0.1, Math.round((sd - dt) * 10) / 10) });
+    } else {
+      store.updateClip(props.clip.id, { duration: Math.max(0.1, Math.round((sd + dt) * 10) / 10) });
     }
-  },
-
-  methods: {
-    select() { actions.selectClip(this.clip.id); },
-    onDown(e) {
-      this.select();
-      const sx = e.clientX, st = this.clip.startTime;
-      const move = (ev) => { const dt = (ev.clientX - sx) / this.pps; actions.updateClip(this.clip.id, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10) }); };
-      const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
-      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
-    },
-    resize(dir, e) {
-      const sx = e.clientX, st = this.clip.startTime, sd = this.clip.duration;
-      const move = (ev) => {
-        const dt = (ev.clientX - sx) / this.pps;
-        if (dir === 'left') {
-          actions.updateClip(this.clip.id, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10), duration: Math.max(0.1, Math.round((sd - dt) * 10) / 10) });
-        } else {
-          actions.updateClip(this.clip.id, { duration: Math.max(0.1, Math.round((sd + dt) * 10) / 10) });
-        }
-      };
-      const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
-      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
-    }
-  }
-};
+  };
+  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+}
 </script>
 
 <style scoped>

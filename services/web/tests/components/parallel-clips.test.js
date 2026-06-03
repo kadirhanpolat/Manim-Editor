@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { store, actions } from '../../src/store/project.js';
+import { setActivePinia, createPinia } from 'pinia';
+import { useProjectStore } from '../../src/store/project.js';
 import { generateManimScript } from '../../src/export/manim.js';
 
 // NOTE: The client-side manim.js (services/web/src/export/manim.js) does NOT
@@ -19,15 +20,18 @@ function makeProject(objects, clips) {
   };
 }
 
+let store;
 beforeEach(() => {
-  actions.newProject('Test', 'visual');
-  actions.commitState();
+  setActivePinia(createPinia());
+  store = useProjectStore();
+  store.newProject('Test', 'visual');
+  store.commitState();
 });
 
 describe('parallel clip defaults', () => {
   it('new clips have parallel=false and lag_ratio=0', () => {
-    const obj = actions.addObject('circle', 960, 540);
-    const clip = actions.addClip(0, {
+    const obj = store.addObject('circle', 960, 540);
+    const clip = store.addClip(0, {
       type: 'move', sourceId: obj.id, startTime: 0, duration: 1,
       params: { targetX: 100, targetY: 100 }
     });
@@ -36,8 +40,8 @@ describe('parallel clip defaults', () => {
   });
 
   it('clip can be set to parallel', () => {
-    const obj = actions.addObject('circle', 960, 540);
-    const clip = actions.addClip(0, {
+    const obj = store.addObject('circle', 960, 540);
+    const clip = store.addClip(0, {
       type: 'move', sourceId: obj.id, startTime: 0, duration: 1,
       params: { targetX: 100, targetY: 100 }, parallel: true, lag_ratio: 0.2
     });

@@ -68,110 +68,92 @@
   </div>
 </template>
 
-<script>
-import { store, actions, getters } from '../../store/project.js';
+<script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useProjectStore } from '../../store/project.js';
 import { QUALITY_PRESETS } from '../../constants/animations.js';
 import { renders } from '../../api.js';
 import VideoPreview from './VideoPreview.vue';
 
-export default {
-  name: 'RenderPanel',
-  components: { VideoPreview },
-  
-  data() {
-    return {
-      quality: 'high',
-      qualityOptions: QUALITY_PRESETS,
-      showLogs: false,
-      pollInterval: null,
-      jobData: null,
-      hasRender: false,
-      renderKey: 0
-    };
-  },
-  
-  computed: {
-    projectId() { return store.project.id; },
-    hasElements() { return store.project.objects.length > 0; },
-    renderStatus() { return store.renderStatus; },
-    isRendering() { return ['queued', 'running'].includes(this.renderStatus); },
-    hasPendingAudio() { return getters.hasPendingAudio(); },
-    
-    statusClass() {
-      const classes = {
-        queued: 'bg-studio-warning/20 text-studio-warning',
-        running: 'bg-studio-accent/20 text-studio-accent',
-        completed: 'bg-studio-success/20 text-studio-success',
-        failed: 'bg-studio-error/20 text-studio-error'
-      };
-      return classes[this.renderStatus] || 'bg-studio-border';
-    },
-    
-    statusIcon() {
-      const icons = { queued: '⏳', running: '🔄', completed: '✅', failed: '❌' };
-      return icons[this.renderStatus] || '•';
-    },
-    
-    hasLogs() { return this.jobData?.stdout || this.jobData?.stderr; },
-    jobLogs() { return this.jobData?.stderr || this.jobData?.stdout || ''; }
-  },
-  
-  watch: {
-    renderStatus(status) {
-      if (status === 'completed') {
-        this.hasRender = true;
-        this.renderKey++;
-      }
-    }
-  },
-  
-  mounted() {
-    this.checkExistingRender();
-  },
-  
-  beforeDestroy() {
-    this.stopPolling();
-  },
-  
-  methods: {
-    async checkExistingRender() {
-      if (!this.projectId) return;
-      try {
-        const info = await renders.getInfo(this.projectId);
-        this.hasRender = info.hasLatest;
-      } catch { /* ignore */ }
-    },
-    
-    async startRender() {
-      if (this.isRendering || !this.hasElements || this.hasPendingAudio) return;
-      
-      try {
-        await actions.triggerRender(this.quality);
-        this.startPolling();
-      } catch (err) {
-        console.error('Render failed:', err);
-      }
-    },
-    
-    startPolling() {
-      this.stopPolling();
-      this.pollInterval = setInterval(async () => {
-        const status = await actions.pollRenderStatus();
-        if (status) {
-          this.jobData = status;
-          if (['completed', 'failed'].includes(status.status)) {
-            this.stopPolling();
-          }
-        }
-      }, 1500);
-    },
-    
-    stopPolling() {
-      if (this.pollInterval) {
-        clearInterval(this.pollInterval);
-        this.pollInterval = null;
-      }
-    }
+const store = useProjectStore();
+
+const quality = ref('high');
+const qualityOptions = QUALITY_PRESETS;
+const showLogs = ref(false);
+let pollInterval = null;
+const jobData = ref(null);
+const hasRender = ref(false);
+const renderKey = ref(0);
+
+const projectId = computed(() => store.project.id);
+const hasElements = computed(() => store.project.objects.length > 0);
+const renderStatus = computed(() => store.renderStatus);
+const isRendering = computed(() => ['queued', 'running'].includes(renderStatus.value));
+const hasPendingAudio = computed(() => store.hasPendingAudio);
+
+const statusClass = computed(() => {
+  const classes = {
+    queued: 'bg-studio-warning/20 text-studio-warning',
+    running: 'bg-studio-accent/20 text-studio-accent',
+    completed: 'bg-studio-success/20 text-studio-success',
+    failed: 'bg-studio-error/20 text-studio-error'
+  };
+  return classes[renderStatus.value] || 'bg-studio-border';
+});
+
+const statusIcon = computed(() => {
+  const icons = { queued: '⏳', running: '🔄', completed: '✅', failed: '❌' };
+  return icons[renderStatus.value] || '•';
+});
+
+const hasLogs = computed(() => jobData.value?.stdout || jobData.value?.stderr);
+const jobLogs = computed(() => jobData.value?.stderr || jobData.value?.stdout || '');
+
+watch(renderStatus, (status) => {
+  if (status === 'completed') {
+    hasRender.value = true;
+    renderKey.value++;
   }
-};
+});
+
+onMounted(() => { checkExistingRender(); });
+onBeforeUnmount(() => { stopPolling(); });
+
+async function checkExistingRender() {
+  if (!projectId.value) return;
+  try {
+    const info = await renders.getInfo(projectId.value);
+    hasRender.value = info.hasLatest;
+  } catch { /* ignore */ }
+}
+
+async function startRender() {
+  if (isRendering.value || !hasElements.value || hasPendingAudio.value) return;
+  try {
+    await store.triggerRender(quality.value);
+    startPolling();
+  } catch (err) {
+    console.error('Render failed:', err);
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(async () => {
+    const status = await store.pollRenderStatus();
+    if (status) {
+      jobData.value = status;
+      if (['completed', 'failed'].includes(status.status)) {
+        stopPolling();
+      }
+    }
+  }, 1500);
+}
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
 </script>
