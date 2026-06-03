@@ -1,10 +1,10 @@
-import Vue from 'vue';
+import { createApp, configureCompat } from 'vue';
 import VueKonva from 'vue-konva';
 import App from './App.vue';
 import './styles/main.css';
 
-Vue.use(VueKonva);
+configureCompat({ MODE: 2 });
 
-new Vue({
-  render: h => h(App)
-}).$mount('#app');
+const app = createApp(App);
+app.use(VueKonva);
+app.mount('#app');
