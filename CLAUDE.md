@@ -144,6 +144,19 @@ cd services/api && npm run dev
 
 **Keep `manim.js` and `codegen.js` semantically in sync.** When adding a new object or clip type, update both.
 
+## Upcoming: Vue 3 Migration
+
+Design spec: `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`
+
+Migration plan (not yet started):
+1. Install `@vue/compat` bridge → fix all compat warnings
+2. Migrate store to **Pinia** (`Vue.observable` → `defineStore`, `Vue.set` → direct assignment)
+3. Convert all components from Options API → **Composition API** (leaf → root order)
+4. Upgrade `@vue/test-utils@1` → `@vue/test-utils@2`
+5. Remove `@vue/compat`, run Vue 3 pure
+
+Store import will change from `import { store, actions, getters }` to `const store = useProjectStore()`.
+
 ## Technical Debt (known)
 
 - `FRAME_WIDTH = 14 + 2/9` used in `manim.js` vs `14` in `codegen.js` — ~0.065 Manim unit divergence at stage edges

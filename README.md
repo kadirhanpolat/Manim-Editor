@@ -382,7 +382,7 @@ npm run test:unit # 62 unit tests (store, templates, graphs, parallel clips, pat
 
 ## Tech Stack![1775491376876](image/README/1775491376876.png)![1775491379141](image/README/1775491379141.png)![1775491380665](image/README/1775491380665.png)![1775491383028](image/README/1775491383028.png)
 
-- **Frontend**: Vue 2.7, Konva.js, Tailwind CSS (with CSS-variable theming), Vite
+- **Frontend**: Vue 2.7, Konva.js, Tailwind CSS (with CSS-variable theming), Vite *(Vue 3 + Pinia migration planned — see `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`)*
 - **Backend**: Node.js 20, Express, Multer, Zod, Redis
 - **Renderer**: Python, Manim Community Edition
 - **Infrastructure**: Docker Compose, Nginx, Alpine Linux
@@ -396,6 +396,12 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 ---
 
 ## Changelog
+
+### v3.1.0 (planned — Vue 3 migration)
+
+- **Refactor**: Vue 2.7 → Vue 3 + Pinia; `@vue/compat` bridge strategy; all components migrated to Composition API
+- **Refactor**: `Vue.observable` store → Pinia `defineStore`; `Vue.set` calls removed
+- **Refactor**: `@vue/test-utils@1` → `@vue/test-utils@2`
 
 ### v3.0.0 (current)
 

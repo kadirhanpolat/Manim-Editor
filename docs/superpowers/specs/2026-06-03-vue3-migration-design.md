@@ -103,7 +103,7 @@ Her bileşen çevrildiğinde ilgili test dosyası aynı anda güncellenir.
 - `trigger` artık Promise döner → `await trigger(...)`
 - `wrapper.find` davranışı aynı
 
-**Başarı kriteri:** 47 unit testi geçiyor.
+**Başarı kriteri:** 62 unit testi geçiyor.
 
 ### Adım 5 — @vue/compat Temizliği
 
@@ -119,7 +119,7 @@ Her bileşen çevrildiğinde ilgili test dosyası aynı anda güncellenir.
 ## 4. Test Stratejisi
 
 - **89 engine testi** (`tests/engine.test.mjs`): Vue'dan bağımsız, hiçbir adımda değişmez
-- **47 unit testi** (`tests/components/`): Her adım sonunda yeşil olmak zorunda
+- **62 unit testi** (`tests/components/`): Her adım sonunda yeşil olmak zorunda
 - Hiçbir commit kırık test bırakmaz
 
 ---
@@ -131,7 +131,7 @@ Her bileşen çevrildiğinde ilgili test dosyası aynı anda güncellenir.
 | 1 — compat | Uygulama açılıyor, console'da sıfır compat uyarısı |
 | 2 — Pinia | Store API çalışıyor, tüm testler geçiyor |
 | 3 — Bileşenler | Her bileşen çevrildiğinde testler yeşil |
-| 4 — Test Utils | 47 unit testi v2 ile geçiyor |
+| 4 — Test Utils | 62 unit testi v2 ile geçiyor |
 | 5 — Temizlik | Vue 3 pure, sıfır uyarı, 47+89 test geçiyor |
 
 ---
