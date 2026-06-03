@@ -112,6 +112,38 @@ export const renders = {
   getInfo:      (projectId) => request(`/renders/${projectId}`),
 };
 
+// ─── Audio ────────────────────────────────────────────────────────────────────
+
+export const audio = {
+  /** Upload an audio file. Returns { audioId, src, duration, status }. */
+  upload: async (file, clipId) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (clipId) formData.append('clipId', clipId);
+
+    const response = await fetch(`${API_BASE}/audio/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(err.error || 'Audio upload failed');
+    }
+    return response.json();
+  },
+
+  /** Create a TTS job. Returns { jobId, status }. */
+  tts: (clipId, type, text, lang = 'tr') =>
+    request('/audio/tts', {
+      method: 'POST',
+      body: JSON.stringify({ clipId, type, text, lang })
+    }),
+
+  /** Delete an audio file. */
+  delete: (audioId) =>
+    request(`/audio/${audioId}`, { method: 'DELETE' }),
+};
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 export async function checkHealth() {
@@ -147,4 +179,29 @@ export function connectJobWebSocket(jobId, onUpdate) {
   return () => ws.close();
 }
 
-export default { projects, assets, jobs, renders, checkHealth, connectJobWebSocket };
+/**
+ * Subscribe to audio job updates via WebSocket.
+ * @param {string} jobId
+ * @param {function({event, clipId, duration?, src?, error?}): void} onUpdate
+ * @returns {function(): void} disconnect function
+ */
+export function connectAudioWebSocket(jobId, onUpdate) {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe_audio', jobId }));
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.event === 'audio_ready' || data.event === 'audio_error') {
+        onUpdate(data);
+        ws.close();
+      }
+    } catch { /* ignore */ }
+  };
+  ws.onerror = () => onUpdate({ event: 'audio_error', error: 'WebSocket error' });
+
+  return () => ws.close();
+}
+
+export default { projects, assets, jobs, renders, audio, checkHealth, connectJobWebSocket, connectAudioWebSocket };
