@@ -3,7 +3,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import { enqueueAudioJob, updateAudioJobStatus } from '../queue.js';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { enqueueAudioJob, getAudioJobStatus, updateAudioJobStatus } from '../queue.js';
+
+const execFileAsync = promisify(execFile);
 
 const router = Router();
 
@@ -18,8 +22,12 @@ const ALLOWED_AUDIO = {
 const audioStorage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const dir = path.join(req.dataDir, 'assets', 'audio');
-    await fs.mkdir(dir, { recursive: true, mode: 0o777 });
-    cb(null, dir);
+    try {
+      await fs.mkdir(dir, { recursive: true, mode: 0o777 });
+      cb(null, dir);
+    } catch (err) {
+      cb(err);
+    }
   },
   filename: (req, file, cb) => {
     const ext = ALLOWED_AUDIO[file.mimetype] || 'wav';
@@ -49,9 +57,6 @@ router.post('/upload', audioUpload.single('file'), async (req, res, next) => {
     let duration = 0;
 
     try {
-      const { execFile } = await import('child_process');
-      const { promisify } = await import('util');
-      const execFileAsync = promisify(execFile);
       const { stdout } = await execFileAsync('ffprobe', [
         '-v', 'quiet', '-print_format', 'json', '-show_streams', filePath
       ]);
@@ -141,7 +146,6 @@ router.post('/:jobId/complete', async (req, res, next) => {
  */
 router.get('/:jobId/status', async (req, res, next) => {
   try {
-    const { getAudioJobStatus } = await import('../queue.js');
     const job = await getAudioJobStatus(req.params.jobId);
     if (!job) return res.status(404).json({ error: 'Job not found' });
     res.json(job);
@@ -158,7 +162,12 @@ router.delete('/:audioId', async (req, res, next) => {
   try {
     const audioId = req.params.audioId.replace(/[^a-zA-Z0-9._-]/g, '');
     const filePath = path.join(req.dataDir, 'assets', 'audio', audioId);
-    await fs.unlink(filePath).catch(() => {});
+    try {
+      await fs.unlink(filePath);
+    } catch (err) {
+      if (err.code === 'ENOENT') return res.status(404).json({ error: 'Audio file not found' });
+      throw err;
+    }
     res.status(204).send();
   } catch (err) {
     next(err);
