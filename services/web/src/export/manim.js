@@ -228,6 +228,7 @@ function objCode(obj, sw, sh) {
           const xMin = Number.isFinite(g.xMin) ? g.xMin : xr[0];
           const xMax = Number.isFinite(g.xMax) ? g.xMax : xr[1];
           lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
+          lines.push(`${n}.add(${gn})`);
         }
       }
       break;

@@ -62,6 +62,7 @@ describe('generator — axes graphs', () => {
     expect(script).toContain('ax1.plot(lambda x: x**2');
     expect(script).toContain('x_range=[-3, 3]');
     expect(script).toContain('"#F59E0B"');
+    expect(script).toContain('ax1.add(ax1_graph_');
   });
 
   it('sanitises dangerous expressions', () => {
