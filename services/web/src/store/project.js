@@ -258,7 +258,12 @@ export const getters = {
       const exit = enter + (o.duration || 999);
       return time >= enter && time < exit;
     });
-  }
+  },
+  hasPendingAudio() {
+    return store.project.tracks.some(t =>
+      t.clips.some(c => c.audio && c.audio.status === 'pending')
+    );
+  },
 };
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -586,6 +591,31 @@ export const actions = {
         if (store.selectedClipId === clipId) store.selectedClipId = null;
         store.isDirty = true;
         actions.commitState();
+        return;
+      }
+    }
+  },
+
+  setClipAudio(clipId, audioData) {
+    for (const track of store.project.tracks) {
+      const clip = track.clips.find(c => c.id === clipId);
+      if (clip) {
+        Vue.set(clip, 'audio', { ...audioData });
+        if (audioData.syncMode === 'auto' && audioData.status === 'ready' && audioData.duration) {
+          Vue.set(clip, 'duration', audioData.duration);
+        }
+        store.isDirty = true;
+        return;
+      }
+    }
+  },
+
+  removeClipAudio(clipId) {
+    for (const track of store.project.tracks) {
+      const clip = track.clips.find(c => c.id === clipId);
+      if (clip && clip.audio) {
+        Vue.delete(clip, 'audio');
+        store.isDirty = true;
         return;
       }
     }
