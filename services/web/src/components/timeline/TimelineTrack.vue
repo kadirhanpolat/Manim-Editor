@@ -12,25 +12,22 @@
   </div>
 </template>
 
-<script>
-import { actions, getters } from '../../store/project.js';
+<script setup>
+import { computed } from 'vue';
+import { useProjectStore } from '../../store/project.js';
 import TimelineClip from './TimelineClip.vue';
 
-export default {
-  name: 'TimelineTrack',
-  components: { TimelineClip },
-  props: {
-    track: { type: Object, required: true },
-    pps: { type: Number, required: true },
-    labelW: { type: Number, required: true }
-  },
-  computed: {
-    totalW() { return getters.computedDuration() * this.pps + 50; }
-  },
-  methods: {
-    deselect() { actions.deselectAll(); }
-  }
-};
+const props = defineProps({
+  track: { type: Object, required: true },
+  pps: { type: Number, required: true },
+  labelW: { type: Number, required: true }
+});
+
+const store = useProjectStore();
+
+const totalW = computed(() => store.computedDuration * props.pps + 50);
+
+function deselect() { store.deselectAll(); }
 </script>
 
 <style scoped>

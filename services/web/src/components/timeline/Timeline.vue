@@ -102,119 +102,109 @@
   </div>
 </template>
 
-<script>
-import { store, actions, getters, SHAPE_COLORS } from '../../store/project.js';
+<script setup>
+import { ref, computed } from 'vue';
+import { useProjectStore, SHAPE_COLORS } from '../../store/project.js';
 import TimelineTrack from './TimelineTrack.vue';
 
-export default {
-  name: 'Timeline',
-  components: { TimelineTrack },
+const store = useProjectStore();
 
-  data() {
-    return {
-      pps: 80,
-      labelW: 90,
-      draggingObjId: null
-    };
-  },
+const pps = ref(80);
+const labelW = ref(90);
+const draggingObjId = ref(null);
 
-  computed: {
-    totalDuration() { return getters.computedDuration(); },
-    objects() { return store.project.objects; },
-    visibleTracks() { return getters.visibleTracks(); },
-    canTransform() { return store.selectedObjectIds.length === 2; },
-    totalClipCount() { let c = 0; for (const t of store.project.tracks) c += t.clips.length; return c; },
-    totalW() { return this.totalDuration * this.pps + 50; },
-    project() { return store.project; },
-    cameraClips() { return store.project.cameraTrack || []; },
-    selectedClipId() { return store.selectedClipId; },
-    ticks() {
-      const t = []; const iv = this.pps >= 100 ? 0.5 : 1; const miv = this.pps >= 100 ? 1 : 5;
-      for (let s = 0; s <= this.totalDuration; s += iv) {
-        t.push({ t: s, x: s * this.pps, major: Math.abs(s % miv) < 0.01 || Math.abs(s % miv - miv) < 0.01, label: this.fmt(s) });
-      }
-      return t;
-    }
-  },
-
-  methods: {
-    fmt(s) { const m = Math.floor(s / 60); const sec = s % 60; return m > 0 ? `${m}:${sec.toFixed(1).padStart(4, '0')}` : `${sec.toFixed(1)}s`; },
-
-    zoomIn() { this.pps = Math.min(300, this.pps * 1.4); },
-    zoomOut() { this.pps = Math.max(20, this.pps / 1.4); },
-
-    objBarStyle(obj) {
-      const enter = obj.enterTime || 0;
-      const dur = obj.duration || 3;
-      return { left: `${enter * this.pps}px`, width: `${Math.max(20, dur * this.pps)}px`, background: this.objColor(obj) + '20', borderColor: this.objColor(obj) + '60' };
-    },
-    objColor(obj) { return SHAPE_COLORS[obj.type] || '#94a3b8'; },
-    isObjSelected(id) { return store.selectedObjectIds.includes(id); },
-    selectObj(id, e) { actions.selectObject(id, e.shiftKey || e.ctrlKey); },
-
-    startObjDrag(obj, e) {
-      this.selectObj(obj.id, e);
-      this.draggingObjId = obj.id;
-      const startX = e.clientX;
-      const startEnter = obj.enterTime || 0;
-
-      const move = (ev) => {
-        const dx = (ev.clientX - startX) / this.pps;
-        const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
-        actions.updateObject(obj.id, { enterTime: newEnter });
-      };
-      const up = () => {
-        this.draggingObjId = null;
-        document.removeEventListener('mousemove', move);
-        document.removeEventListener('mouseup', up);
-      };
-      document.addEventListener('mousemove', move);
-      document.addEventListener('mouseup', up);
-    },
-
-    startObjResize(obj, dir, e) {
-      e.preventDefault();
-      this.selectObj(obj.id, e);
-      this.draggingObjId = obj.id;
-      const startX = e.clientX;
-      const startEnter = obj.enterTime || 0;
-      const startDur = obj.duration || 3;
-
-      const move = (ev) => {
-        const dx = (ev.clientX - startX) / this.pps;
-        if (dir === 'left') {
-          const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
-          const newDur = Math.max(0.1, Math.round((startDur - dx) * 10) / 10);
-          actions.updateObject(obj.id, { enterTime: newEnter, duration: newDur });
-        } else {
-          const newDur = Math.max(0.1, Math.round((startDur + dx) * 10) / 10);
-          actions.updateObject(obj.id, { duration: newDur });
-        }
-      };
-      const up = () => {
-        this.draggingObjId = null;
-        document.removeEventListener('mousemove', move);
-        document.removeEventListener('mouseup', up);
-      };
-      document.addEventListener('mousemove', move);
-      document.addEventListener('mouseup', up);
-    },
-
-    createTransform() {
-      const clip = actions.createTransform();
-      if (clip) actions.selectClip(clip.id);
-    },
-
-    addCameraClip() {
-      actions.addCameraMoveClip({});
-      store.selectedClipId = store.project.cameraTrack[store.project.cameraTrack.length - 1]?.id || null;
-    },
-    selectCameraClip(clipId) {
-      store.selectedClipId = clipId;
-      store.selectedObjectIds = [];
-    },
+const totalDuration = computed(() => store.computedDuration);
+const objects = computed(() => store.project.objects);
+const visibleTracks = computed(() => store.visibleTracks);
+const canTransform = computed(() => store.selectedObjectIds.length === 2);
+const totalClipCount = computed(() => { let c = 0; for (const t of store.project.tracks) c += t.clips.length; return c; });
+const totalW = computed(() => totalDuration.value * pps.value + 50);
+const project = computed(() => store.project);
+const cameraClips = computed(() => store.project.cameraTrack || []);
+const selectedClipId = computed(() => store.selectedClipId);
+const ticks = computed(() => {
+  const t = []; const iv = pps.value >= 100 ? 0.5 : 1; const miv = pps.value >= 100 ? 1 : 5;
+  for (let s = 0; s <= totalDuration.value; s += iv) {
+    t.push({ t: s, x: s * pps.value, major: Math.abs(s % miv) < 0.01 || Math.abs(s % miv - miv) < 0.01, label: fmt(s) });
   }
-};
+  return t;
+});
+
+function fmt(s) { const m = Math.floor(s / 60); const sec = s % 60; return m > 0 ? `${m}:${sec.toFixed(1).padStart(4, '0')}` : `${sec.toFixed(1)}s`; }
+
+function zoomIn() { pps.value = Math.min(300, pps.value * 1.4); }
+function zoomOut() { pps.value = Math.max(20, pps.value / 1.4); }
+
+function objBarStyle(obj) {
+  const enter = obj.enterTime || 0;
+  const dur = obj.duration || 3;
+  return { left: `${enter * pps.value}px`, width: `${Math.max(20, dur * pps.value)}px`, background: objColor(obj) + '20', borderColor: objColor(obj) + '60' };
+}
+function objColor(obj) { return SHAPE_COLORS[obj.type] || '#94a3b8'; }
+function isObjSelected(id) { return store.selectedObjectIds.includes(id); }
+function selectObj(id, e) { store.selectObject(id, e.shiftKey || e.ctrlKey); }
+
+function startObjDrag(obj, e) {
+  selectObj(obj.id, e);
+  draggingObjId.value = obj.id;
+  const startX = e.clientX;
+  const startEnter = obj.enterTime || 0;
+
+  const move = (ev) => {
+    const dx = (ev.clientX - startX) / pps.value;
+    const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
+    store.updateObject(obj.id, { enterTime: newEnter });
+  };
+  const up = () => {
+    draggingObjId.value = null;
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+  };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
+function startObjResize(obj, dir, e) {
+  e.preventDefault();
+  selectObj(obj.id, e);
+  draggingObjId.value = obj.id;
+  const startX = e.clientX;
+  const startEnter = obj.enterTime || 0;
+  const startDur = obj.duration || 3;
+
+  const move = (ev) => {
+    const dx = (ev.clientX - startX) / pps.value;
+    if (dir === 'left') {
+      const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
+      const newDur = Math.max(0.1, Math.round((startDur - dx) * 10) / 10);
+      store.updateObject(obj.id, { enterTime: newEnter, duration: newDur });
+    } else {
+      const newDur = Math.max(0.1, Math.round((startDur + dx) * 10) / 10);
+      store.updateObject(obj.id, { duration: newDur });
+    }
+  };
+  const up = () => {
+    draggingObjId.value = null;
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+  };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
+function createTransform() {
+  const clip = store.createTransform();
+  if (clip) store.selectClip(clip.id);
+}
+
+function addCameraClip() {
+  store.addCameraMoveClip({});
+  store.selectedClipId = store.project.cameraTrack[store.project.cameraTrack.length - 1]?.id || null;
+}
+function selectCameraClip(clipId) {
+  store.selectedClipId = clipId;
+  store.selectedObjectIds = [];
+}
 </script>
 
 <style scoped>
