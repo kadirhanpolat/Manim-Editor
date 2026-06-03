@@ -15,7 +15,7 @@ services/renderer/   # Python Manim worker (polls Redis)
 ## Running Tests
 
 ```bash
-# Unit tests (store, components) — 29 tests
+# Unit tests (store, components, export) — 47 tests
 cd services/web && npm run test:unit
 
 # Engine tests (easing, geometry, transform) — 89 tests
@@ -30,8 +30,9 @@ cd services/web && npm test
 |------|---------|
 | `services/web/src/store/project.js` | Vue.observable store — all project state, actions, getters |
 | `services/web/src/engine/playback.js` | 60fps rAF playback engine — evaluates clips, computes frame state |
-| `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON |
-| `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types |
+| `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON (server-side) |
+| `services/web/src/export/manim.js` | Client-side .py generator + parser (mirrors codegen.js semantics) |
+| `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; camera preview via vs/ox/oy |
 | `services/web/src/components/inspector/PropertiesPanel.vue` | Object + clip property editor |
 | `services/web/src/components/timeline/Timeline.vue` | Multi-track timeline + camera track |
 
@@ -76,7 +77,7 @@ Graph expressions (`graph.expression`) must pass the whitelist before use in cod
 if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(expr)) return 'x**2';
 if (/import|eval|exec|open|__/.test(expr)) return 'x**2';
 ```
-This check exists in both `codegen.js` (`safeMathExpr`) and `StageCanvas.vue` (`axesGraphCurves`).
+This check exists in `codegen.js` (`safeMathExpr`), `manim.js` (`safeMathExpr`), and `StageCanvas.vue` (`axesGraphCurves`). Keep all three in sync.
 
 ## Camera Animations
 
@@ -105,7 +106,14 @@ cd services/web && npm run dev   # http://localhost:5173
 cd services/api && npm run dev
 ```
 
+## Client-Side Exporter (`manim.js`)
+
+`services/web/src/export/manim.js` supports the same Phase 2 features as `codegen.js`:
+- Generator: `numberplane`, `numberline`, `axes` + `graphs[]`, `AnimationGroup`/`LaggedStart`, `path_move`, `camera_move`, `MovingCameraScene`
+- Parser: all of the above in reverse (`.py` → project JSON); returns `cameraType` and `cameraTrack`
+
+**Keep `manim.js` and `codegen.js` semantically in sync.** When adding a new object or clip type, update both.
+
 ## Technical Debt (known)
 
-- `services/web/src/export/manim.js` (client-side exporter) does not yet support `AnimationGroup`, `path_move`, or `camera_move` — only the server-side `codegen.js` does
-- Camera preview in StageCanvas.vue applies a CSS transform approximation; not pixel-perfect vs. Manim output
+- `FRAME_WIDTH = 14 + 2/9` used in `manim.js` vs `14` in `codegen.js` — ~0.065 Manim unit divergence at stage edges

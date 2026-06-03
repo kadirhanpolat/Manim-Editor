@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-2.0.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.1.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -334,7 +334,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 89 engine tests (easing, geometry, transform, blending)
-npm run test:unit # 29 unit tests (store, templates, graphs, parallel clips, path, camera)
+npm run test:unit # 47 unit tests (store, templates, graphs, parallel clips, path, camera, manim export)
 ```
 
 ---
@@ -367,7 +367,15 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v2.0.0 (current)
+### v2.1.0 (current)
+
+- **Fix**: Client-side exporter (`manim.js`) now supports all Phase 2 features — `NumberPlane`, `NumberLine`, `axes` function graphs, `AnimationGroup`/`LaggedStart` parallel grouping, `path_move` (VMobject + MoveAlongPath), `camera_move` + `MovingCameraScene`; output is semantically equivalent to server-side `codegen.js`
+- **Feature**: `manim.js` parser updated — all Phase 2 Python constructs now round-trip back to project JSON; returns `cameraType` and `cameraTrack`; stateful VMobject→MoveAlongPath parsing; bracket-depth AnimationGroup/LaggedStart parsing
+- **Fix**: Camera preview in StageCanvas.vue — replaced CSS transform approximation with Konva-level `vs`/`ox`/`oy` pipeline; camera zoom and pan now correctly integrated into the Konva coordinate system
+- **Fix**: `applyCodeToCanvas()` in App.vue — applies `cameraType` and `cameraTrack` from parser result when loading Code-Only mode scenes
+- **Tests**: 18 new generator + parser tests; total 47 unit tests
+
+### v2.0.0
 
 - **Feature**: Function graphs on Axes — add `f(x) = x**2`, `sin(x)` etc. from the Inspector; canvas shows live curve preview; generates `axes.plot(lambda x: ...)` in Manim
 - **Feature**: NumberPlane and NumberLine — new shape types with full codegen support
