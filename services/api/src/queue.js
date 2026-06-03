@@ -51,10 +51,68 @@ export async function enqueueRenderJob(job) {
 export async function getJobStatus(jobId) {
   const redis = await getRedisClient();
   const job = await redis.hGetAll(`render:job:${jobId}`);
-  
+
   if (!job || Object.keys(job).length === 0) {
     return null;
   }
-  
+
   return job;
+}
+
+/**
+ * Enqueue an audio TTS job.
+ * @param {Object} job - { jobId, clipId, type: 'gtts'|'coqui', text, lang }
+ * @returns {string} The job ID
+ */
+export async function enqueueAudioJob(job) {
+  const redis = await getRedisClient();
+
+  // Create job record
+  await redis.hSet(`audio:job:${job.jobId}`, {
+    status: 'pending',
+    clipId: job.clipId,
+    type: job.type,
+    text: job.text || '',
+    lang: job.lang || 'tr',
+    createdAt: new Date().toISOString()
+  });
+
+  // Add to appropriate queue based on type
+  const queueKey = job.type === 'coqui' ? 'audio:queue:coqui' : 'audio:queue:gtts';
+  await redis.rPush(queueKey, JSON.stringify(job));
+
+  return job.jobId;
+}
+
+/**
+ * Get audio job status.
+ * @param {string} jobId - The job ID
+ * @returns {Object|null} Job status or null if not found
+ */
+export async function getAudioJobStatus(jobId) {
+  const redis = await getRedisClient();
+  const job = await redis.hGetAll(`audio:job:${jobId}`);
+
+  if (!job || Object.keys(job).length === 0) {
+    return null;
+  }
+
+  return job;
+}
+
+/**
+ * Update fields on an audio job hash.
+ * @param {string} jobId - The job ID
+ * @param {Object} updates - Key-value pairs to update
+ */
+export async function updateAudioJobStatus(jobId, updates) {
+  const redis = await getRedisClient();
+
+  // Ensure all values are strings for Redis hash storage
+  const stringified = {};
+  for (const [k, v] of Object.entries(updates)) {
+    stringified[k] = String(v);
+  }
+
+  await redis.hSet(`audio:job:${jobId}`, stringified);
 }
