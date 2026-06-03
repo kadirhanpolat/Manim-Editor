@@ -284,13 +284,34 @@ export function generateManimScript(project) {
   if (fontsArray.length > 0) {
     L.push('from manim_fonts import RegisterFont');
   }
+
+  const allClips = (project.tracks || []).flatMap(t => t.clips || []);
+  const hasReadyAudio = allClips.some(c => c.audio && c.audio.status === 'ready' && c.audio.src);
+
+  if (hasReadyAudio) {
+    L.push('from manim_voiceover import VoiceoverScene');
+    L.push('from manim_voiceover.services.gtts import GTTSService');
+  }
+
   L.push('');
   L.push('');
-  const sceneBase = project.cameraType === 'moving' ? 'MovingCameraScene' : 'Scene';
+
+  let sceneBase;
+  if (project.cameraType === 'moving') {
+    sceneBase = 'MovingCameraScene';
+  } else if (hasReadyAudio) {
+    sceneBase = 'VoiceoverScene';
+  } else {
+    sceneBase = 'Scene';
+  }
+
   L.push(`class MainScene(${sceneBase}):`);
   L.push('    def construct(self):');
   const bgColor = hex(project.stage.backgroundColor) || '"#000000"';
   L.push(`        self.camera.background_color = ${bgColor}`);
+  if (hasReadyAudio) {
+    L.push('        self.set_speech_service(GTTSService())');
+  }
   L.push('');
 
   if (project.objects.length === 0) {
@@ -498,10 +519,10 @@ export function generateManimScript(project) {
   for (const cg of clipGroups) {
     if (cg.type === 'single') {
       const result = singleClipCode(cg.clip);
-      if (result) steps.push({ time: cg.clip.startTime, order: 1, ...result });
+      if (result) steps.push({ time: cg.clip.startTime, order: 1, ...result, audio: cg.clip.audio, _clipId: cg.clip.id });
     } else if (cg.clips.length === 1) {
       const result = singleClipCode(cg.clips[0]);
-      if (result) steps.push({ time: cg.startTime, order: 1, ...result });
+      if (result) steps.push({ time: cg.startTime, order: 1, ...result, audio: cg.clips[0].audio, _clipId: cg.clips[0].id });
     } else {
       const groupClips = cg.clips;
       const dur = Math.max(...groupClips.map(c => c.duration));
@@ -595,7 +616,24 @@ export function generateManimScript(project) {
   for (const step of steps) {
     const wait = step.time - t;
     if (wait > 0.05) L.push(`${indent}self.wait(${wait.toFixed(1)})`);
-    L.push(`${indent}${step.code}`);
+    const a = step.audio;
+    if (a && a.status === 'ready' && a.src) {
+      const trackerId = `tracker`;
+      L.push(`${indent}with self.voiceover(audio="${a.src}") as ${trackerId}:`);
+      if (a.syncMode === 'manual' && a.offset > 0) {
+        L.push(`${indent}    self.wait(${parseFloat(a.offset).toFixed(1)})`);
+      }
+      const innerLines = step.code.split('\n');
+      for (const line of innerLines) {
+        L.push(`${indent}    ${line.trim()}`);
+      }
+      if (a.syncMode === 'auto') {
+        const dur = parseFloat(step.dur || 1).toFixed(1);
+        L.push(`${indent}    self.wait(max(0, ${trackerId}.duration - ${dur}))`);
+      }
+    } else {
+      L.push(`${indent}${step.code}`);
+    }
     t = step.time + (step.dur || 0.5);
   }
 

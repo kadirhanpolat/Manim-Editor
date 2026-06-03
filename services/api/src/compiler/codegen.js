@@ -290,13 +290,34 @@ export function generatePythonCode(project, assetsPath) {
   if (fontsArray.length > 0) {
     L.push('from manim_fonts import RegisterFont');
   }
+
+  const allClips = (project.tracks || []).flatMap(t => t.clips || []);
+  const hasReadyAudio = allClips.some(c => c.audio && c.audio.status === 'ready' && c.audio.src);
+
+  if (hasReadyAudio) {
+    L.push('from manim_voiceover import VoiceoverScene');
+    L.push('from manim_voiceover.services.gtts import GTTSService');
+  }
+
   L.push('');
   L.push('');
-  const sceneBase = project.cameraType === 'moving' ? 'MovingCameraScene' : 'Scene';
+
+  let sceneBase;
+  if (project.cameraType === 'moving') {
+    sceneBase = 'MovingCameraScene';
+  } else if (hasReadyAudio) {
+    sceneBase = 'VoiceoverScene';
+  } else {
+    sceneBase = 'Scene';
+  }
+
   L.push(`class MainScene(${sceneBase}):`);
   L.push('    def construct(self):');
   const bgColor = hex(project.stage.backgroundColor) || '"#000000"';
   L.push(`        self.camera.background_color = ${bgColor}`);
+  if (hasReadyAudio) {
+    L.push('        self.set_speech_service(GTTSService())');
+  }
   L.push('');
 
   if (!project.objects || project.objects.length === 0) {
@@ -492,7 +513,7 @@ export function generatePythonCode(project, assetsPath) {
           break;
         }
       }
-      if (code) steps.push({ time: c.startTime, order: 1, code, dur });
+      if (code) steps.push({ time: c.startTime, order: 1, code, dur, audio: c.audio, _clipId: c.id });
     } else {
       // Degenerate case: only one clip marked parallel, treat as sequential
       if (cg.clips.length === 1) {
@@ -548,7 +569,7 @@ export function generatePythonCode(project, assetsPath) {
             break;
           }
         }
-        if (code) steps.push({ time: c.startTime, order: 1, code, dur });
+        if (code) steps.push({ time: c.startTime, order: 1, code, dur, audio: c.audio, _clipId: c.id });
       } else {
       // Multi-clip parallel group: AnimationGroup or LaggedStart
       const groupClips = cg.clips;
@@ -674,7 +695,24 @@ export function generatePythonCode(project, assetsPath) {
   for (const step of steps) {
     const wait = step.time - t;
     if (wait > 0.05) L.push(`${indent}self.wait(${wait.toFixed(1)})`);
-    L.push(`${indent}${step.code}`);
+    const a = step.audio;
+    if (a && a.status === 'ready' && a.src) {
+      const trackerId = `tracker`;
+      L.push(`${indent}with self.voiceover(audio="${a.src}") as ${trackerId}:`);
+      if (a.syncMode === 'manual' && a.offset > 0) {
+        L.push(`${indent}    self.wait(${parseFloat(a.offset).toFixed(1)})`);
+      }
+      const innerLines = step.code.split('\n');
+      for (const line of innerLines) {
+        L.push(`${indent}    ${line.trim()}`);
+      }
+      if (a.syncMode === 'auto') {
+        const dur = parseFloat(step.dur || 1).toFixed(1);
+        L.push(`${indent}    self.wait(max(0, ${trackerId}.duration - ${dur}))`);
+      }
+    } else {
+      L.push(`${indent}${step.code}`);
+    }
     t = step.time + (step.dur || 0.5);
   }
 
