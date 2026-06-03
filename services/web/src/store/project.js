@@ -56,6 +56,10 @@ function createDefaultProject(editorMode = 'visual') {
     sceneDuration: 10,
     cameraType: 'static',   // 'static' | 'moving'
     cameraTrack: [],         // camera_move clips
+    keyframeDefaults: {
+      mode: 'opt-in',
+      codegenMode: 'UpdateFromAlphaFunc'
+    },
   };
 }
 
@@ -155,6 +159,7 @@ const useProjectStore = defineStore('project', {
     project: createDefaultProject(),
     selectedObjectIds: [],
     selectedClipId: null,
+    selectedKeyframeId: null,
     activeTool: 'select',
     playbackTime: 0,
     playbackPlaying: false,
@@ -1148,6 +1153,78 @@ const useProjectStore = defineStore('project', {
         this.isDirty = true;
         this.commitState();
       }
+    },
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Keyframes
+    // ══════════════════════════════════════════════════════════════════════════
+
+    addKeyframe(objId, prop, time, value) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj) return;
+      if (!obj.keyframes) obj.keyframes = {};
+      if (!obj.keyframes[prop]) obj.keyframes[prop] = [];
+      const existing = obj.keyframes[prop].findIndex(k => Math.abs(k.time - time) < 0.01);
+      if (existing >= 0) {
+        obj.keyframes[prop][existing].value = value;
+      } else {
+        obj.keyframes[prop].push({ time, value, easing: { type: 'linear' } });
+        obj.keyframes[prop].sort((a, b) => a.time - b.time);
+      }
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeKeyframe(objId, prop, time) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj?.keyframes?.[prop]) return;
+      obj.keyframes[prop] = obj.keyframes[prop].filter(k => Math.abs(k.time - time) >= 0.01);
+      if (obj.keyframes[prop].length === 0) delete obj.keyframes[prop];
+      if (obj.keyframes && Object.keys(obj.keyframes).length === 0) delete obj.keyframes;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    updateKeyframeValue(objId, prop, time, value) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      const kf = obj?.keyframes?.[prop]?.find(k => Math.abs(k.time - time) < 0.01);
+      if (!kf) return;
+      kf.value = value;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    updateKeyframeEasing(objId, prop, time, easing) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      const kf = obj?.keyframes?.[prop]?.find(k => Math.abs(k.time - time) < 0.01);
+      if (!kf) return;
+      kf.easing = easing;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    setKeyframeMode(objId, prop, mode) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj) return;
+      if (!obj.keyframeMode) obj.keyframeMode = {};
+      obj.keyframeMode[prop] = mode;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    setKeyframeCodegen(objId, prop, codegenMode) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj) return;
+      if (!obj.keyframeCodegen) obj.keyframeCodegen = {};
+      obj.keyframeCodegen[prop] = codegenMode;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    selectKeyframe(objId, prop, time) {
+      this.selectedKeyframeId = (objId && prop != null && time != null)
+        ? { objId, prop, time }
+        : null;
     },
   }
 });

@@ -1,0 +1,124 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { setActivePinia, createPinia } from 'pinia';
+import { useProjectStore } from '../../src/store/project.js';
+
+let store;
+beforeEach(() => {
+  setActivePinia(createPinia());
+  store = useProjectStore();
+  store.newProject('Test', 'visual');
+  store.commitState();
+});
+
+describe('keyframeDefaults', () => {
+  it('project has keyframeDefaults with mode opt-in', () => {
+    expect(store.project.keyframeDefaults).toBeDefined();
+    expect(store.project.keyframeDefaults.mode).toBe('opt-in');
+    expect(store.project.keyframeDefaults.codegenMode).toBe('UpdateFromAlphaFunc');
+  });
+});
+
+describe('addKeyframe', () => {
+  it('adds a keyframe to an object property', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    const updated = store.objectById(obj.id);
+    expect(updated.keyframes).toBeDefined();
+    expect(updated.keyframes.x).toHaveLength(1);
+    expect(updated.keyframes.x[0].time).toBe(1.0);
+    expect(updated.keyframes.x[0].value).toBe(500);
+    expect(updated.keyframes.x[0].easing).toEqual({ type: 'linear' });
+  });
+
+  it('updates existing keyframe at same time', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    store.addKeyframe(obj.id, 'x', 1.0, 700);
+    expect(store.objectById(obj.id).keyframes.x).toHaveLength(1);
+    expect(store.objectById(obj.id).keyframes.x[0].value).toBe(700);
+  });
+
+  it('keeps keyframes sorted by time', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 2.0, 800);
+    store.addKeyframe(obj.id, 'x', 0.5, 100);
+    const kfs = store.objectById(obj.id).keyframes.x;
+    expect(kfs[0].time).toBe(0.5);
+    expect(kfs[1].time).toBe(2.0);
+  });
+});
+
+describe('removeKeyframe', () => {
+  it('removes a keyframe', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    store.removeKeyframe(obj.id, 'x', 1.0);
+    expect(store.objectById(obj.id).keyframes).toBeUndefined();
+  });
+
+  it('cleans up empty prop arrays', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    store.addKeyframe(obj.id, 'y', 1.0, 300);
+    store.removeKeyframe(obj.id, 'x', 1.0);
+    expect(store.objectById(obj.id).keyframes.x).toBeUndefined();
+    expect(store.objectById(obj.id).keyframes.y).toHaveLength(1);
+  });
+});
+
+describe('updateKeyframeValue', () => {
+  it('updates only the value', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    store.updateKeyframeValue(obj.id, 'x', 1.0, 999);
+    expect(store.objectById(obj.id).keyframes.x[0].value).toBe(999);
+    expect(store.objectById(obj.id).keyframes.x[0].easing).toEqual({ type: 'linear' });
+  });
+});
+
+describe('updateKeyframeEasing', () => {
+  it('updates the easing of a keyframe', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    store.updateKeyframeEasing(obj.id, 'x', 1.0, { type: 'ease_in_out' });
+    expect(store.objectById(obj.id).keyframes.x[0].easing).toEqual({ type: 'ease_in_out' });
+  });
+});
+
+describe('setKeyframeMode', () => {
+  it('sets per-property keyframe mode', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.setKeyframeMode(obj.id, 'x', 'override');
+    expect(store.objectById(obj.id).keyframeMode.x).toBe('override');
+  });
+});
+
+describe('setKeyframeCodegen', () => {
+  it('sets per-property codegen mode', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.setKeyframeCodegen(obj.id, 'x', 'ValueTracker');
+    expect(store.objectById(obj.id).keyframeCodegen.x).toBe('ValueTracker');
+  });
+});
+
+describe('selectKeyframe', () => {
+  it('sets selectedKeyframeId', () => {
+    store.selectKeyframe('obj_1', 'x', 1.5);
+    expect(store.selectedKeyframeId).toEqual({ objId: 'obj_1', prop: 'x', time: 1.5 });
+  });
+
+  it('clears selectedKeyframeId with null args', () => {
+    store.selectKeyframe('obj_1', 'x', 1.5);
+    store.selectKeyframe(null, null, null);
+    expect(store.selectedKeyframeId).toBeNull();
+  });
+});
+
+describe('undo/redo with keyframes', () => {
+  it('undoes addKeyframe', () => {
+    const obj = store.addObject('circle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 500);
+    store.undo();
+    expect(store.objectById(obj.id).keyframes).toBeUndefined();
+  });
+});
