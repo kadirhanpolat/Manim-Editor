@@ -957,7 +957,7 @@ function axesGraphCurves(obj) {
 function sphere3dCfg(obj) {
   const p = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
-  const isSelected = store.selectedObjectId === obj.id;
+  const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px, y: p.py, radius: r,
     fill: obj.fill ?? '#e67700', opacity: obj.opacity ?? 1,
@@ -974,7 +974,7 @@ function cube3dCfg(obj) {
   const tr = iso(cx + hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
   const br = iso(cx + hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
   const bl = iso(cx - hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
-  const isSelected = store.selectedObjectId === obj.id;
+  const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     points: [tl.px, tl.py, tr.px, tr.py, br.px, br.py, bl.px, bl.py],
     fill: obj.fill ?? '#3b5bdb', closed: true, opacity: obj.opacity ?? 1,
@@ -986,7 +986,7 @@ function cube3dCfg(obj) {
 function generic3dCfg(obj) {
   const p = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
-  const isSelected = store.selectedObjectId === obj.id;
+  const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px, y: p.py,
     radiusX: r, radiusY: r * 0.5,
@@ -1011,7 +1011,7 @@ function axes3dLines(obj) {
 function sphere3dTopCfg(obj) {
   const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
-  const isSelected = store.selectedObjectId === obj.id;
+  const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px, y: p.py, radius: r,
     fill: (obj.fill ?? '#e67700') + '80',
@@ -1023,7 +1023,7 @@ function sphere3dTopCfg(obj) {
 function cube3dTopCfg(obj) {
   const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
   const s = Math.max(8, (obj.sideLength ?? 1.0) * proj3DScale.value);
-  const isSelected = store.selectedObjectId === obj.id;
+  const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px - s / 2, y: p.py - s / 2, width: s, height: s,
     fill: (obj.fill ?? '#3b5bdb') + '80',
@@ -1035,7 +1035,7 @@ function cube3dTopCfg(obj) {
 function generic3dTopCfg(obj) {
   const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
-  const isSelected = store.selectedObjectId === obj.id;
+  const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px, y: p.py, radius: r,
     fill: (obj.fill ?? '#888888') + '80',
