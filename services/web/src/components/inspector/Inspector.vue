@@ -65,6 +65,9 @@
         :clip="selectedClip"
       />
 
+      <!-- Keyframe panel (shown when a keyframe is selected) -->
+      <KeyframePanel />
+
       <!-- Delete Button -->
       <div class="px-4 py-4 border-t border-studio-border mt-auto">
         <button 
@@ -96,6 +99,7 @@ import StylePanel from './StylePanel.vue'
 import TimingPanel from './TimingPanel.vue'
 import AnimationPanel from './AnimationPanel.vue'
 import AudioPanel from './AudioPanel.vue'
+import KeyframePanel from './KeyframePanel.vue'
 
 const store = useProjectStore()
 
