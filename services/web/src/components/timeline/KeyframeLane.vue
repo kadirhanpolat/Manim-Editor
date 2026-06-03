@@ -96,15 +96,35 @@ function onDblClick(e) {
 
 function startDrag(kf, e) {
   selectKf(kf);
-  const startX = e.clientX, origTime = kf.time, origValue = kf.value;
+  const startX = e.clientX;
+  const origTime = kf.time;
+  const origValue = kf.value;
+  let currentTime = origTime;
+
   const move = (ev) => {
     const dt = (ev.clientX - startX) / props.pps;
     const newTime = Math.max(0, Math.round((origTime + dt) * 100) / 100);
-    store.removeKeyframe(props.objId, props.prop, origTime);
-    store.addKeyframe(props.objId, props.prop, newTime, origValue);
+    if (newTime === currentTime) return;
+    // Mutate store state directly without committing (avoid undo history on every pixel)
+    const obj = store.project.objects.find(o => o.id === props.objId);
+    if (!obj?.keyframes?.[props.prop]) return;
+    const kfArr = obj.keyframes[props.prop];
+    const idx = kfArr.findIndex(k => Math.abs(k.time - currentTime) < 0.01);
+    if (idx >= 0) {
+      kfArr[idx] = { ...kfArr[idx], time: newTime };
+      kfArr.sort((a, b) => a.time - b.time);
+    }
     store.selectKeyframe(props.objId, props.prop, newTime);
+    currentTime = newTime;
   };
-  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+
+  const up = () => {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    store.isDirty = true;
+    store.commitState();
+  };
+
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', up);
 }
