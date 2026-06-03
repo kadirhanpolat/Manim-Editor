@@ -83,6 +83,9 @@ def render_job(payload: dict) -> dict:
         except Exception as e:
             print(f"[render] Warning: Could not clean old renders: {e}")
     
+    # Ensure audio assets directory is accessible for manim-voiceover
+    os.makedirs(os.path.join(DATA_DIR, "assets", "audio"), exist_ok=True)
+
     # Build manim command
     quality_flag = QUALITY_FLAGS.get(quality, "-qm")
     cmd = [
@@ -170,6 +173,7 @@ def main():
     os.makedirs(os.path.join(DATA_DIR, "projects"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, "assets"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, "renders"), exist_ok=True)
+    os.makedirs(os.path.join(DATA_DIR, "assets", "audio"), exist_ok=True)
     
     print("[renderer] Waiting for jobs on render:queue...")
     

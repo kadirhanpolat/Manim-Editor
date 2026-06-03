@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install into image venv as root (base image runs as non-root and cannot write to /opt/venv)
 USER root
-RUN pip install --no-cache-dir redis==5.0.8 manim-fonts==0.5.0
+RUN pip install --no-cache-dir redis==5.0.8 manim-fonts==0.5.0 "manim-voiceover[gtts]>=0.3.4"
 
 # Create fonts cache directory (use $HOME since container may not run as root)
 RUN mkdir -p $HOME/.cache/manim-fonts
