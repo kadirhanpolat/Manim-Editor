@@ -51,17 +51,13 @@
   </div>
 </template>
 
-<script>
-import ColorInput from './ColorInput.vue';
+<script setup>
+import ColorInput from './ColorInput.vue'
 
-export default {
-  name: 'StylePanel',
-  components: { ColorInput },
-  props: { element: { type: Object, required: true } },
-  methods: {
-    updateStyle(key, value) {
-      this.$emit('update', { style: { ...this.element.style, [key]: value } });
-    }
-  }
-};
+const props = defineProps({ element: { type: Object, required: true } })
+const emit = defineEmits(['update'])
+
+function updateStyle(key, value) {
+  emit('update', { style: { ...props.element.style, [key]: value } })
+}
 </script>

@@ -64,59 +64,25 @@
   </div>
 </template>
 
-<script>
-import AnchorGrid from '../stage/AnchorGrid.vue';
+<script setup>
+import AnchorGrid from '../stage/AnchorGrid.vue'
 
-export default {
-  name: 'LayoutPanel',
-  
-  components: {
-    AnchorGrid
-  },
-  
-  props: {
-    element: {
-      type: Object,
-      required: true
-    }
-  },
-  
-  methods: {
-    updateAnchor(anchor) {
-      this.$emit('update', {
-        layout: {
-          ...this.element.layout,
-          anchor
-        }
-      });
-    },
-    
-    updateOffsetX(value) {
-      this.$emit('update', {
-        layout: {
-          ...this.element.layout,
-          offset: [parseFloat(value) || 0, this.element.layout.offset[1]]
-        }
-      });
-    },
-    
-    updateOffsetY(value) {
-      this.$emit('update', {
-        layout: {
-          ...this.element.layout,
-          offset: [this.element.layout.offset[0], parseFloat(value) || 0]
-        }
-      });
-    },
-    
-    updateScale(value) {
-      this.$emit('update', {
-        layout: {
-          ...this.element.layout,
-          scale: Math.max(0.1, parseFloat(value) || 1)
-        }
-      });
-    }
-  }
-};
+const props = defineProps({ element: { type: Object, required: true } })
+const emit = defineEmits(['update'])
+
+function updateAnchor(anchor) {
+  emit('update', { layout: { ...props.element.layout, anchor } })
+}
+
+function updateOffsetX(value) {
+  emit('update', { layout: { ...props.element.layout, offset: [parseFloat(value) || 0, props.element.layout.offset[1]] } })
+}
+
+function updateOffsetY(value) {
+  emit('update', { layout: { ...props.element.layout, offset: [props.element.layout.offset[0], parseFloat(value) || 0] } })
+}
+
+function updateScale(value) {
+  emit('update', { layout: { ...props.element.layout, scale: Math.max(0.1, parseFloat(value) || 1) } })
+}
 </script>

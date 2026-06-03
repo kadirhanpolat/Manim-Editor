@@ -108,145 +108,135 @@
   </div>
 </template>
 
-<script>
-import { actions } from '../../store/project.js';
-import api, { connectAudioWebSocket } from '../../api.js';
+<script setup>
+import { ref, computed, onBeforeUnmount } from 'vue'
+import { useProjectStore } from '../../store/project.js'
+import api, { connectAudioWebSocket } from '../../api.js'
 
-export default {
-  name: 'AudioPanel',
+const props = defineProps({ clip: { type: Object, required: true } })
 
-  props: {
-    clip: { type: Object, required: true }
-  },
+const store = useProjectStore()
 
-  data() {
-    return {
-      localType: this.clip.audio?.type || 'file',
-      localText: this.clip.audio?.text || '',
-      localLang: this.clip.audio?.lang || 'tr',
-      localSyncMode: this.clip.audio?.syncMode || 'auto',
-      localOffset: this.clip.audio?.offset || 0,
-      ttsLoading: false,
-      wsDisconnect: null,
-      sourceOptions: [
-        { value: 'file', label: 'File' },
-        { value: 'gtts', label: 'gTTS' },
-        { value: 'coqui', label: 'Coqui' },
-      ],
-      syncOptions: [
-        { value: 'auto', label: 'Auto' },
-        { value: 'manual', label: 'Manual' },
-      ],
-      langs: [
-        { code: 'tr', label: 'Turkish' },
-        { code: 'en', label: 'English' },
-        { code: 'de', label: 'German' },
-        { code: 'fr', label: 'French' },
-        { code: 'es', label: 'Spanish' },
-        { code: 'ja', label: 'Japanese' },
-      ],
-    };
-  },
+const localType = ref(props.clip.audio?.type || 'file')
+const localText = ref(props.clip.audio?.text || '')
+const localLang = ref(props.clip.audio?.lang || 'tr')
+const localSyncMode = ref(props.clip.audio?.syncMode || 'auto')
+const localOffset = ref(props.clip.audio?.offset || 0)
+const ttsLoading = ref(false)
+const wsDisconnect = ref(null)
 
-  computed: {
-    audio() { return this.clip.audio; },
-    hasAudio() { return !!this.clip.audio; },
-    audioFilename() {
-      if (!this.audio?.src) return '';
-      return this.audio.src.split('/').pop();
-    },
-    formattedDuration() {
-      if (this.audio?.duration == null) return '';
-      return `${parseFloat(this.audio.duration).toFixed(1)}s`;
-    }
-  },
+const sourceOptions = [
+  { value: 'file', label: 'File' },
+  { value: 'gtts', label: 'gTTS' },
+  { value: 'coqui', label: 'Coqui' },
+]
+const syncOptions = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'manual', label: 'Manual' },
+]
+const langs = [
+  { code: 'tr', label: 'Turkish' },
+  { code: 'en', label: 'English' },
+  { code: 'de', label: 'German' },
+  { code: 'fr', label: 'French' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'ja', label: 'Japanese' },
+]
 
-  methods: {
-    async onFileChange(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const result = await api.audio.upload(file, this.clip.id);
-        actions.setClipAudio(this.clip.id, {
-          type: 'file',
-          src: result.src,
-          duration: result.duration,
-          syncMode: this.localSyncMode,
-          offset: this.localOffset,
-          status: 'ready'
-        });
-      } catch (err) {
-        console.error('[AudioPanel] Upload failed:', err);
-      }
-    },
+const audio = computed(() => props.clip.audio)
+const hasAudio = computed(() => !!props.clip.audio)
+const audioFilename = computed(() => {
+  if (!audio.value?.src) return ''
+  return audio.value.src.split('/').pop()
+})
+const formattedDuration = computed(() => {
+  if (audio.value?.duration == null) return ''
+  return `${parseFloat(audio.value.duration).toFixed(1)}s`
+})
 
-    async generateTTS() {
-      if (!this.localText.trim() || this.ttsLoading) return;
-      this.ttsLoading = true;
-      try {
-        actions.setClipAudio(this.clip.id, {
-          type: this.localType,
-          text: this.localText,
-          lang: this.localLang,
-          syncMode: this.localSyncMode,
-          offset: this.localOffset,
-          status: 'pending'
-        });
-
-        const { jobId } = await api.audio.tts(
-          this.clip.id, this.localType, this.localText, this.localLang
-        );
-
-        this.wsDisconnect = connectAudioWebSocket(jobId, (data) => {
-          if (data.event === 'audio_ready') {
-            actions.setClipAudio(this.clip.id, {
-              type: this.localType,
-              text: this.localText,
-              lang: this.localLang,
-              syncMode: this.localSyncMode,
-              offset: this.localOffset,
-              src: data.src,
-              duration: data.duration,
-              status: 'ready'
-            });
-          } else {
-            actions.setClipAudio(this.clip.id, {
-              ...(this.clip.audio || {}),
-              status: 'error'
-            });
-          }
-          this.wsDisconnect = null;
-          this.ttsLoading = false;
-        });
-      } catch (err) {
-        actions.setClipAudio(this.clip.id, { ...(this.clip.audio || {}), status: 'error' });
-        this.ttsLoading = false;
-      }
-    },
-
-    onSyncModeChange() {
-      if (!this.hasAudio) return;
-      actions.setClipAudio(this.clip.id, { ...this.clip.audio, syncMode: this.localSyncMode });
-    },
-
-    onOffsetChange() {
-      if (!this.hasAudio) return;
-      actions.setClipAudio(this.clip.id, { ...this.clip.audio, offset: this.localOffset });
-    },
-
-    removeAudio() {
-      actions.removeClipAudio(this.clip.id);
-      this.localType = 'file';
-      this.localText = '';
-      this.ttsLoading = false;
-    }
-  },
-
-  beforeDestroy() {
-    if (this.wsDisconnect) {
-      this.wsDisconnect();
-      this.wsDisconnect = null;
-    }
+async function onFileChange(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  try {
+    const result = await api.audio.upload(file, props.clip.id)
+    store.setClipAudio(props.clip.id, {
+      type: 'file',
+      src: result.src,
+      duration: result.duration,
+      syncMode: localSyncMode.value,
+      offset: localOffset.value,
+      status: 'ready'
+    })
+  } catch (err) {
+    console.error('[AudioPanel] Upload failed:', err)
   }
-};
+}
+
+async function generateTTS() {
+  if (!localText.value.trim() || ttsLoading.value) return
+  ttsLoading.value = true
+  try {
+    store.setClipAudio(props.clip.id, {
+      type: localType.value,
+      text: localText.value,
+      lang: localLang.value,
+      syncMode: localSyncMode.value,
+      offset: localOffset.value,
+      status: 'pending'
+    })
+
+    const { jobId } = await api.audio.tts(
+      props.clip.id, localType.value, localText.value, localLang.value
+    )
+
+    wsDisconnect.value = connectAudioWebSocket(jobId, (data) => {
+      if (data.event === 'audio_ready') {
+        store.setClipAudio(props.clip.id, {
+          type: localType.value,
+          text: localText.value,
+          lang: localLang.value,
+          syncMode: localSyncMode.value,
+          offset: localOffset.value,
+          src: data.src,
+          duration: data.duration,
+          status: 'ready'
+        })
+      } else {
+        store.setClipAudio(props.clip.id, {
+          ...(props.clip.audio || {}),
+          status: 'error'
+        })
+      }
+      wsDisconnect.value = null
+      ttsLoading.value = false
+    })
+  } catch (err) {
+    store.setClipAudio(props.clip.id, { ...(props.clip.audio || {}), status: 'error' })
+    ttsLoading.value = false
+  }
+}
+
+function onSyncModeChange() {
+  if (!hasAudio.value) return
+  store.setClipAudio(props.clip.id, { ...props.clip.audio, syncMode: localSyncMode.value })
+}
+
+function onOffsetChange() {
+  if (!hasAudio.value) return
+  store.setClipAudio(props.clip.id, { ...props.clip.audio, offset: localOffset.value })
+}
+
+function removeAudio() {
+  store.removeClipAudio(props.clip.id)
+  localType.value = 'file'
+  localText.value = ''
+  ttsLoading.value = false
+}
+
+onBeforeUnmount(() => {
+  if (wsDisconnect.value) {
+    wsDisconnect.value()
+    wsDisconnect.value = null
+  }
+})
 </script>

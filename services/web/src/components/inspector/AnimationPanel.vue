@@ -30,25 +30,22 @@
   </div>
 </template>
 
-<script>
-import { getEntranceAnimationsForType, getExitAnimationsForType } from '../../constants/animations.js';
+<script setup>
+import { computed } from 'vue'
+import { getEntranceAnimationsForType, getExitAnimationsForType } from '../../constants/animations.js'
 
-export default {
-  name: 'AnimationPanel',
-  props: { element: { type: Object, required: true } },
-  computed: {
-    entranceAnims() { return getEntranceAnimationsForType(this.element.type); },
-    exitAnims() { return getExitAnimationsForType(this.element.type); },
-    inType() { return this.element.anim?.in?.type || 'FADE_IN'; },
-    inDur() { return this.element.anim?.in?.duration || 0.5; },
-    outType() { return this.element.anim?.out?.type || 'FADE_OUT'; },
-    outDur() { return this.element.anim?.out?.duration || 0.5; }
-  },
-  methods: {
-    updateAnim(dir, key, val) {
-      const curr = this.element.anim?.[dir] || {};
-      this.$emit('update', { anim: { ...this.element.anim, [dir]: { ...curr, [key]: val } } });
-    }
-  }
-};
+const props = defineProps({ element: { type: Object, required: true } })
+const emit = defineEmits(['update'])
+
+const entranceAnims = computed(() => getEntranceAnimationsForType(props.element.type))
+const exitAnims = computed(() => getExitAnimationsForType(props.element.type))
+const inType = computed(() => props.element.anim?.in?.type || 'FADE_IN')
+const inDur = computed(() => props.element.anim?.in?.duration || 0.5)
+const outType = computed(() => props.element.anim?.out?.type || 'FADE_OUT')
+const outDur = computed(() => props.element.anim?.out?.duration || 0.5)
+
+function updateAnim(dir, key, val) {
+  const curr = props.element.anim?.[dir] || {}
+  emit('update', { anim: { ...props.element.anim, [dir]: { ...curr, [key]: val } } })
+}
 </script>

@@ -27,27 +27,26 @@
   </div>
 </template>
 
-<script>
-import { getters } from '../../store/project.js';
+<script setup>
+import { computed } from 'vue'
+import { useProjectStore } from '../../store/project.js'
 
-export default {
-  name: 'TimingPanel',
-  props: { element: { type: Object, required: true } },
-  computed: {
-    endTime() { return this.element.timing.start + this.element.timing.duration; },
-    totalDuration() { return getters.totalDuration(); },
-    previewStyle() {
-      const start = (this.element.timing.start / this.totalDuration) * 100;
-      const width = (this.element.timing.duration / this.totalDuration) * 100;
-      return { marginLeft: start + '%', width: width + '%' };
-    }
-  },
-  methods: {
-    updateTiming(key, value) {
-      this.$emit('update', {
-        timing: { ...this.element.timing, [key]: Math.max(key === 'duration' ? 0.1 : 0, value || 0) }
-      });
-    }
-  }
-};
+const props = defineProps({ element: { type: Object, required: true } })
+const emit = defineEmits(['update'])
+
+const store = useProjectStore()
+
+const endTime = computed(() => props.element.timing.start + props.element.timing.duration)
+const totalDuration = computed(() => store.computedDuration)
+const previewStyle = computed(() => {
+  const start = (props.element.timing.start / totalDuration.value) * 100
+  const width = (props.element.timing.duration / totalDuration.value) * 100
+  return { marginLeft: start + '%', width: width + '%' }
+})
+
+function updateTiming(key, value) {
+  emit('update', {
+    timing: { ...props.element.timing, [key]: Math.max(key === 'duration' ? 0.1 : 0, value || 0) }
+  })
+}
 </script>
