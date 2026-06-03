@@ -198,12 +198,11 @@ function createTransform() {
 }
 
 function addCameraClip() {
-  store.addCameraMoveClip({});
-  store.selectedClipId = store.project.cameraTrack[store.project.cameraTrack.length - 1]?.id || null;
+  const clip = store.addCameraMoveClip({});
+  store.selectClip(clip.id);
 }
 function selectCameraClip(clipId) {
-  store.selectedClipId = clipId;
-  store.selectedObjectIds = [];
+  store.selectClip(clipId);
 }
 </script>
 
