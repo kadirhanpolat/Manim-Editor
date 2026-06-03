@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-2.1.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.0.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -62,7 +62,8 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **AnimationGroup / LaggedStart** -- Mark clips as parallel (`∥`) to run simultaneously; set `lag_ratio` for staggered starts; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)` in Manim
 - **Path animation (MoveAlongPath)** -- Draw a Bezier path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation
 - **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim
-- **Timeline scrubbing** -- Arrange and trim clips; render to video via Docker
+- **Audio / Voiceover** -- Attach audio to any clip: upload `.mp3`/`.wav`/`.ogg`, synthesize with **gTTS** (online) or **Coqui TTS** (offline); auto-sync stretches clip duration to match audio; manual mode lets you set offset; generates `VoiceoverScene` + `with self.voiceover(audio=...)` in Manim
+- **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
 - **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
 
 ### Code-Only Editor
@@ -127,21 +128,29 @@ Browser (localhost:8080)
   |-- /api/ --> Node.js + Express (port 3000)
   |     |-- Project CRUD (JSON on shared volume)
   |     |-- Asset upload (multipart + base64)
+  |     |-- Audio upload + TTS job dispatch
   |     |-- Compiler: validate -> normalize -> codegen (scene.py)
   |     |-- Render trigger -> Redis queue
+  |     |-- WebSocket push (render + audio events)
   |
   |-- Redis (job queue)
   |
-  |-- Manim Renderer (Python worker)
-        |-- Polls Redis for jobs
-        |-- Runs: manim -qh scene.py MainScene
-        |-- Outputs MP4 to shared volume
-        |-- Updates job status in Redis
+  |-- Manim Renderer (Python worker, manim-voiceover)
+  |     |-- Polls Redis for render jobs
+  |     |-- Runs: manim -qh scene.py MainScene
+  |     |-- Outputs MP4 to shared volume; uses VoiceoverScene for audio clips
+  |     |-- Updates job status in Redis
+  |
+  |-- Audio Worker (Python, gTTS / Coqui TTS)
+        |-- Polls Redis audio:queue:gtts (or audio:queue:coqui with --profile coqui)
+        |-- Generates WAV → /data/assets/audio/
+        |-- POSTs completion to API → WebSocket push to browser
 ```
 
 **Shared Docker volume** (`manim_motion_data` at `/data`):
 - `projects/` -- Project JSON + generated `scene.py`
 - `assets/` -- Uploaded images/SVGs per project
+- `assets/audio/` -- Generated and uploaded audio files (`.wav`)
 - `renders/` -- Output MP4 files per project
 
 ---
@@ -214,7 +223,9 @@ Project
  +-- tracks[]: { id, name, clips[] }
  |    +-- clip: { id, type, startTime, duration, easing,
  |                sourceId, targetId?, params, overshoot, morphQuality,
- |                parallel, lag_ratio, path? }
+ |                parallel, lag_ratio, path?,
+ |                audio?: { type, src, text?, lang, syncMode, offset,
+ |                          status, duration? } }
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
@@ -241,9 +252,14 @@ Project
 | `POST` | `/api/assets/:projectId` | Upload file (multipart) |
 | `POST` | `/api/assets/:projectId/base64` | Upload base64 data URL |
 | `GET` | `/api/assets/:projectId/:filename` | Serve asset file |
+| `POST` | `/api/audio/upload` | Upload audio file; returns `{ src, duration, status }` |
+| `POST` | `/api/audio/tts` | Create TTS job; body: `{ clipId, type, text, lang }` |
+| `GET` | `/api/audio/:jobId/status` | Poll TTS job status |
+| `DELETE` | `/api/audio/:audioId` | Delete audio file |
 | `GET` | `/api/jobs/:jobId` | Poll render job status |
 | `GET` | `/api/renders/:projectId/latest.mp4` | Stream latest render |
 | `GET` | `/health` | Health check |
+| `WS` | `/ws` | Job events: subscribe render (`subscribe`) + audio (`subscribe_audio`) |
 
 ---
 
@@ -286,9 +302,16 @@ Manim-docker/
     |   |       +-- codegen.js        # Python code generation
     |   +-- Dockerfile
     |
-    +-- renderer/                     # Manim worker
-        +-- worker.py                 # Redis consumer + manim exec
-        +-- Dockerfile
+    +-- renderer/                     # Manim worker (manim-voiceover)
+    |   +-- worker.py                 # Redis consumer + manim exec
+    |   +-- Dockerfile
+    |
+    +-- audio/                        # TTS audio worker
+        +-- worker.py                 # gTTS / Coqui Redis consumer
+        +-- Dockerfile                # gTTS image (default)
+        +-- Dockerfile.coqui          # Coqui TTS image (--profile coqui)
+        +-- requirements.txt
+        +-- requirements.coqui.txt
 ```
 
 ---
@@ -299,9 +322,16 @@ Manim-docker/
 |---------|-------|------|---------|
 | **web** | nginx:alpine | 8080 | Vue SPA + API proxy |
 | **api** | node:20-alpine | 3000 | REST API, compiler |
-| **renderer** | manimcommunity/manim | -- | Render worker |
+| **renderer** | manimcommunity/manim | -- | Render worker + manim-voiceover |
+| **audio** | python:3.11-slim | -- | gTTS worker (always on) |
+| **audio-coqui** | python:3.11-slim | -- | Coqui TTS worker (`--profile coqui`) |
 | **redis** | redis:7-alpine | 6379 | Job queue |
 | **init** | alpine:3.19 | -- | Creates /data dirs |
+
+Start with Coqui TTS enabled (~1.5 GB model download on first run):
+```bash
+docker compose --profile coqui up --build
+```
 
 ### Security
 
@@ -334,7 +364,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 89 engine tests (easing, geometry, transform, blending)
-npm run test:unit # 47 unit tests (store, templates, graphs, parallel clips, path, camera, manim export)
+npm run test:unit # 62 unit tests (store, templates, graphs, parallel clips, path, camera, audio, manim export)
 ```
 
 ---
@@ -367,7 +397,22 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v2.1.0 (current)
+### v3.0.0 (current)
+
+- **Feature**: Audio / Voiceover — attach audio to any clip; supports file upload (`.mp3`/`.wav`/`.ogg`), gTTS synthesis (online), and Coqui TTS (offline, `--profile coqui`)
+- **Feature**: Per-clip audio sync — `auto` mode stretches clip duration to match audio; `manual` mode preserves clip duration with configurable offset
+- **Feature**: `AudioPanel` Inspector tab — source selector, TTS text/language input, Generate button with live status (`pending` → `ready`/`error`), sync controls
+- **Feature**: Timeline audio strip — status-colored badge below each clip; resize handles locked while auto-sync is active
+- **Feature**: `VoiceoverScene` codegen — both `codegen.js` and `manim.js` detect audio clips and emit `VoiceoverScene` + `GTTSService` + per-clip `with self.voiceover(audio=...)` blocks
+- **Feature**: Render lock — render button disabled (with tooltip) while any audio job is `pending`
+- **Service**: New `audio` Docker service — Python + ffmpeg + gTTS; polls `audio:queue:gtts` Redis queue
+- **Service**: New `audio-coqui` Docker service — optional Coqui TTS via `--profile coqui`; polls `audio:queue:coqui`
+- **API**: New `/api/audio` endpoints — upload, TTS job creation, worker callback, delete
+- **WebSocket**: `subscribe_audio` message type + `broadcastAudioEvent` for real-time audio job updates
+- **Renderer**: `manim-voiceover[gtts]` added to renderer image
+- **Tests**: 15 new unit tests (8 store audio actions + 7 codegen VoiceoverScene); total 62 unit + 89 engine
+
+### v2.1.0
 
 - **Fix**: Client-side exporter (`manim.js`) now supports all Phase 2 features — `NumberPlane`, `NumberLine`, `axes` function graphs, `AnimationGroup`/`LaggedStart` parallel grouping, `path_move` (VMobject + MoveAlongPath), `camera_move` + `MovingCameraScene`; output is semantically equivalent to server-side `codegen.js`
 - **Feature**: `manim.js` parser updated — all Phase 2 Python constructs now round-trip back to project JSON; returns `cameraType` and `cameraTrack`; stateful VMobject→MoveAlongPath parsing; bracket-depth AnimationGroup/LaggedStart parsing

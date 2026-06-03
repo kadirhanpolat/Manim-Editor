@@ -2,20 +2,21 @@
 
 ## Project Overview
 
-Browser-based Figma-like animation editor for Manim CE. 4 Docker services: Vue 2.7 + Konva.js frontend (Nginx :8080), Node.js/Express API (:3000), Python Manim CE renderer worker, Redis 7 job queue. Shared Docker volume at `/data`.
+Browser-based Figma-like animation editor for Manim CE. 5 Docker services: Vue 2.7 + Konva.js frontend (Nginx :8080), Node.js/Express API (:3000), Python Manim CE renderer worker, Python audio TTS worker, Redis 7 job queue. Shared Docker volume at `/data`.
 
 ## Architecture
 
 ```
 services/web/        # Vue 2.7 frontend (Vite, Vitest)
 services/api/        # Node.js/Express API + Manim codegen
-services/renderer/   # Python Manim worker (polls Redis)
+services/renderer/   # Python Manim worker (polls Redis) + manim-voiceover
+services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 ```
 
 ## Running Tests
 
 ```bash
-# Unit tests (store, components, export) — 47 tests
+# Unit tests (store, components, export) — 62 tests
 cd services/web && npm run test:unit
 
 # Engine tests (easing, geometry, transform) — 89 tests
@@ -33,8 +34,12 @@ cd services/web && npm test
 | `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON (server-side) |
 | `services/web/src/export/manim.js` | Client-side .py generator + parser (mirrors codegen.js semantics) |
 | `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; camera preview via vs/ox/oy |
-| `services/web/src/components/inspector/PropertiesPanel.vue` | Object + clip property editor |
+| `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio panels) |
+| `services/web/src/components/inspector/AudioPanel.vue` | Per-clip audio: file upload, gTTS/Coqui TTS, sync mode |
 | `services/web/src/components/timeline/Timeline.vue` | Multi-track timeline + camera track |
+| `services/api/src/routes/audio.js` | Audio upload, TTS job, worker callback, delete endpoints |
+| `services/api/src/ws.js` | WebSocket push for render and audio job events |
+| `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
 
 ## Coordinate Systems
 
@@ -64,6 +69,22 @@ All clips have: `id, type, startTime, duration, easing, parallel, lag_ratio`
 
 `parallel: true` clips at the same `startTime` → `AnimationGroup` / `LaggedStart` in codegen.
 
+Clips may carry an optional `audio` field:
+```js
+clip.audio = {
+  type: 'file' | 'gtts' | 'coqui',
+  src: '/data/assets/audio/<id>.wav',   // absolute path on shared volume
+  text: 'spoken text',                   // TTS only
+  lang: 'tr',                            // BCP-47, default 'tr'
+  syncMode: 'auto' | 'manual',
+  offset: 0,                             // manual: audio start delay (s)
+  status: 'pending' | 'ready' | 'error',
+  duration: 2.5                          // filled when status = 'ready'
+}
+```
+`syncMode: 'auto'` → when status becomes `ready`, `clip.duration` is set to `audio.duration`.
+Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker:` blocks in codegen.
+
 ## Object Types
 
 `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
@@ -85,6 +106,15 @@ This check exists in `codegen.js` (`safeMathExpr`), `manim.js` (`safeMathExpr`),
 - `camera_move` clips live in `cameraTrack`, not in regular `tracks[]`
 - Codegen: `MovingCameraScene` base class + `self.camera.frame.animate.move_to().set_width(14/zoom)`
 - Delete key and inspector work for camera clips (handled separately from regular clips in App.vue)
+
+## Audio / Voiceover
+
+- **Flow**: `AudioPanel` → `POST /api/audio/tts` → Redis `audio:queue:gtts` → `services/audio/worker.py` → WAV to `/data/assets/audio/` → `POST /api/audio/:jobId/complete` → `broadcastAudioEvent` WebSocket → `actions.setClipAudio`
+- **File upload** skips the queue: `POST /api/audio/upload` stores file directly, runs ffprobe for duration, returns `{ src, duration, status: 'ready' }`.
+- **Codegen priority**: `MovingCameraScene` > `VoiceoverScene` > `Scene`. Clips with `audio.status === 'ready'` generate `with self.voiceover(audio="...") as tracker_<clipId>:` blocks.
+- **Render lock**: `getters.hasPendingAudio()` disables render button in `App.vue`, `RenderPanel.vue`, and `Topbar.vue`.
+- **Coqui TTS** (optional): start with `docker compose --profile coqui up`; the `audio-coqui` service handles `audio:queue:coqui` jobs.
+- **Keep `manim.js` and `codegen.js` in sync** for voiceover logic, same as for all other clip/object types.
 
 ## Testing Conventions
 
@@ -108,8 +138,8 @@ cd services/api && npm run dev
 
 ## Client-Side Exporter (`manim.js`)
 
-`services/web/src/export/manim.js` supports the same Phase 2 features as `codegen.js`:
-- Generator: `numberplane`, `numberline`, `axes` + `graphs[]`, `AnimationGroup`/`LaggedStart`, `path_move`, `camera_move`, `MovingCameraScene`
+`services/web/src/export/manim.js` supports the same features as `codegen.js`:
+- Generator: `numberplane`, `numberline`, `axes` + `graphs[]`, `AnimationGroup`/`LaggedStart`, `path_move`, `camera_move`, `MovingCameraScene`, `VoiceoverScene` + per-clip `with self.voiceover(...)` blocks
 - Parser: all of the above in reverse (`.py` → project JSON); returns `cameraType` and `cameraTrack`
 
 **Keep `manim.js` and `codegen.js` semantically in sync.** When adding a new object or clip type, update both.
