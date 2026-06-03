@@ -6,7 +6,7 @@
     @dragleave.prevent="onDragLeave"
     @drop.prevent="onDrop"
   >
-    <div ref="container" class="flex-1 rounded-xl overflow-hidden relative" style="min-height: 0; background: var(--studio-surface2);" :style="cameraStyle">
+    <div ref="container" class="flex-1 rounded-xl overflow-hidden relative" style="min-height: 0; background: var(--studio-surface2);">
       <v-stage ref="konvaStage" :config="stageConfig" @mousedown="handleStageMouseDown" @dblclick="onStageDblClick" @wheel="handleWheel">
         <!-- Background layer -->
         <v-layer>
@@ -187,31 +187,23 @@ export default {
     frameState() { return store.frameState; },
     morphShapes() { return this.frameState.morphShapes || []; },
 
-    // Camera preview offset: shifts the stage view when a cameraState is active during playback.
-    // Note: this is a viewport preview only. The actual Manim animation is driven by codegen (see codegen.js).
-    cameraStyle() {
-      const cs = store.frameState.cameraState;
-      if (!cs || (cs.x === 0 && cs.y === 0 && (cs.zoom === 1 || cs.zoom === undefined))) return {};
-      const cw = this.containerWidth || 1;
-      const ch = this.containerHeight || 1;
-      // Convert Manim units to canvas pixels: stageToManim uses x_manim = ((px/sw)-0.5)*14
-      // So pixel offset = (x_manim / 14) * cw
-      const px = (cs.x / 14) * cw;
-      const py = (-cs.y / 8) * ch; // y-axis is inverted in Manim
-      const zoom = cs.zoom || 1;
-      return {
-        transform: `translate(${-px}px, ${-py}px) scale(${zoom})`,
-        transformOrigin: 'center center',
-        transition: 'none',
-      };
-    },
     vs() {
       const sx = this.containerWidth / this.stg.width;
       const sy = this.containerHeight / this.stg.height;
-      return Math.min(sx, sy, 1) * 0.92 * this.zoomLevel;
+      const base = Math.min(sx, sy, 1) * 0.92 * this.zoomLevel;
+      const cs = store.frameState.cameraState;
+      return cs?.zoom ? base * cs.zoom : base;
     },
-    ox() { return (this.containerWidth - this.stg.width * this.vs) / 2 + this.panOffset.x; },
-    oy() { return (this.containerHeight - this.stg.height * this.vs) / 2 + this.panOffset.y; },
+    ox() {
+      const cs = store.frameState.cameraState;
+      const camX = cs ? cs.x : this.stg.width / 2;
+      return this.containerWidth / 2 - camX * this.vs + this.panOffset.x;
+    },
+    oy() {
+      const cs = store.frameState.cameraState;
+      const camY = cs ? cs.y : this.stg.height / 2;
+      return this.containerHeight / 2 - camY * this.vs + this.panOffset.y;
+    },
 
     stageConfig() { return { width: this.containerWidth, height: this.containerHeight }; },
     bgConfig() {
