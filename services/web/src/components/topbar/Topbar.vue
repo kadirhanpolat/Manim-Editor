@@ -34,7 +34,6 @@
               v-if="openMenuId === menu.id"
               class="menu-dropdown"
               role="menu"
-              :ref="'dropdown-' + menu.id"
               @keydown="onDropdownKey($event, mi)"
             >
               <template v-for="(item, idx) in menu.items">
