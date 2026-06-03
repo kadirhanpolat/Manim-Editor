@@ -252,7 +252,7 @@
 </template>
 
 <script>
-import { store, actions } from '../../store/project.js';
+import { store, actions, getters } from '../../store/project.js';
 import { generateManimScript } from '../../export/manim.js';
 import TEMPLATES from '../../templates/index.js';
 
@@ -568,6 +568,9 @@ export default {
       store.showExportDialog = true;
     },
     openRender() {
+      if (getters.hasPendingAudio()) {
+        actions.setError('Audio generation is still in progress. Please wait before rendering.'); return;
+      }
       if (store.project.editorMode === 'code') {
         if (!store.project.codeSource || store.project.codeSource.trim().length === 0) {
           actions.setError('Write some Manim code first!'); return;

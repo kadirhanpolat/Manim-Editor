@@ -168,9 +168,15 @@
                   <strong>Note:</strong> Text size on the canvas preview may differ from the final rendered output.
                 </p>
               </div>
-              <button @click="startRender" class="mt-4 w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+              <button
+                @click="startRender"
+                :disabled="hasPendingAudio"
+                :title="hasPendingAudio ? 'Waiting for audio generation...' : ''"
+                class="mt-4 w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                :class="{ 'opacity-50 cursor-not-allowed': hasPendingAudio }"
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Start Render
+                {{ hasPendingAudio ? 'Waiting for audio...' : 'Start Render' }}
               </button>
             </div>
 
@@ -343,6 +349,7 @@ export default {
     hasImages()          { return store.project.objects.some(o => o.type === 'image' || o.type === 'svg_asset'); },
     hasTextElements()    { return store.project.objects.some(o => o.type === 'text' || o.type === 'latex'); },
     showRender()         { return store.showRenderDialog; },
+    hasPendingAudio()    { return getters.hasPendingAudio(); },
     renderStatus()       { return store.renderStatus; },
     renderError()        { return store.renderError; },
     renderVideoUrl()     { return store.renderVideoUrl; },
@@ -497,6 +504,7 @@ export default {
     },
 
     startRender() {
+      if (this.hasPendingAudio) return;
       actions.renderOnServer(this.selectedQuality);
     },
 

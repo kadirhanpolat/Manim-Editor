@@ -17,9 +17,10 @@
     <!-- Render Button -->
     <button
       @click="startRender"
-      :disabled="isRendering || !hasElements"
+      :disabled="isRendering || !hasElements || hasPendingAudio"
       class="w-full btn btn-primary mb-3"
-      :class="{ 'opacity-50 cursor-not-allowed': isRendering || !hasElements }"
+      :class="{ 'opacity-50 cursor-not-allowed': isRendering || !hasElements || hasPendingAudio }"
+      :title="hasPendingAudio ? 'Waiting for audio generation...' : ''"
     >
       <span v-if="isRendering" class="flex items-center justify-center gap-2">
         <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" stroke-dasharray="45 20"/></svg>
@@ -68,7 +69,7 @@
 </template>
 
 <script>
-import { store, actions } from '../../store/project.js';
+import { store, actions, getters } from '../../store/project.js';
 import { QUALITY_PRESETS } from '../../constants/animations.js';
 import { renders } from '../../api.js';
 import VideoPreview from './VideoPreview.vue';
@@ -94,6 +95,7 @@ export default {
     hasElements() { return store.project.objects.length > 0; },
     renderStatus() { return store.renderStatus; },
     isRendering() { return ['queued', 'running'].includes(this.renderStatus); },
+    hasPendingAudio() { return getters.hasPendingAudio(); },
     
     statusClass() {
       const classes = {
@@ -141,7 +143,7 @@ export default {
     },
     
     async startRender() {
-      if (this.isRendering || !this.hasElements) return;
+      if (this.isRendering || !this.hasElements || this.hasPendingAudio) return;
       
       try {
         await actions.triggerRender(this.quality);
