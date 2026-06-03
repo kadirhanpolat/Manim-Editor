@@ -44,6 +44,8 @@ def get_duration(path):
         ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", path],
         capture_output=True, text=True, timeout=30
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"ffprobe failed for {path}: {result.stderr[:200]}")
     data = json.loads(result.stdout)
     for stream in data.get("streams", []):
         if stream.get("codec_type") == "audio":
@@ -58,8 +60,11 @@ def process_gtts(job):
     wav = os.path.join(d, f"{job['jobId']}.wav")
     tts = gTTS(text=job["text"], lang=job.get("lang", "tr"))
     tts.save(mp3)
-    mp3_to_wav(mp3, wav)
-    os.remove(mp3)
+    try:
+        mp3_to_wav(mp3, wav)
+    finally:
+        if os.path.exists(mp3):
+            os.remove(mp3)
     return wav
 
 
