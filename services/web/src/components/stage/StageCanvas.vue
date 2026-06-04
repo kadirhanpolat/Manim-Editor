@@ -113,14 +113,18 @@
               <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
             </template>
 
-            <!-- 3D: Cube -->
+            <!-- 3D: Cube (real box — depth-sorted shaded faces) -->
             <template v-if="obj.type === 'cube' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-line :config="cube3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
+              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+                <v-line v-for="(f, fi) in cube3dFaces(obj)" :key="'cf' + fi" :config="f" />
+              </v-group>
             </template>
 
-            <!-- 3D: Cone/Cylinder/Torus -->
+            <!-- 3D: Cone/Cylinder/Torus (real silhouettes) -->
             <template v-if="['cone', 'cylinder', 'torus'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-ellipse :config="generic3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
+              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+                <v-line v-for="(pt, pi) in round3dParts(obj)" :key="'rp' + pi" :config="pt" />
+              </v-group>
             </template>
 
             <!-- 3D: Axes3D -->
@@ -1113,50 +1117,138 @@ function axesGraphCurves(obj) {
   }
   return curves;
 }
+// ── 3D shape rendering helpers ────────────────────────────────────────────
+const _DEG = Math.PI / 180;
+function _basis3d(phi, theta) {
+  const ph = phi * _DEG, th = theta * _DEG;
+  return { sp: Math.sin(ph), cp: Math.cos(ph), st: Math.sin(th), ct: Math.cos(th) };
+}
+function shade(hex, f) {
+  let h = (hex || '#888888').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16); if (Number.isNaN(n)) return hex || '#888888';
+  const cl = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = cl(((n >> 16) & 255) * f), g = cl(((n >> 8) & 255) * f), b = cl((n & 255) * f);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+// Project world point (object-relative offset dx,dy,dz) to screen, minus the
+// object's projected centre `c` — i.e. coordinates inside a Konva group placed at c.
+function _rel(e3, dx, dy, dz, c) {
+  const q = iso(e3.x3d + dx, e3.y3d + dy, e3.z3d + dz, projCx.value, projCy.value, proj3DScale.value);
+  return [q.px - c.px, q.py - c.py];
+}
+// Project a circle of radius R (in the plane perpendicular to `axis`, offset
+// `off` along it) → array of [x,y] points relative to centre c.
+function _circlePts(e3, R, axis, off, c, N = 28) {
+  const out = [];
+  for (let i = 0; i < N; i++) {
+    const a = i / N * 2 * Math.PI, u = R * Math.cos(a), v = R * Math.sin(a);
+    out.push(axis === 'z' ? _rel(e3, u, v, off, c) : axis === 'y' ? _rel(e3, u, off, v, c) : _rel(e3, off, u, v, c));
+  }
+  return out;
+}
+const _flat = (pairs) => pairs.flatMap(p => p);
+// Convex hull (monotone chain) of [x,y] points — used for body silhouettes.
+function _hull(pts) {
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (p.length < 3) return p;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = []; for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  const up = []; for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  lo.pop(); up.pop(); return lo.concat(up);
+}
+
 // ── 3D shape configs ──────────────────────────────────────────────────────
+// Sphere: a shaded ball via radial gradient (highlight offset top-left).
 function sphere3dCfg(obj) {
   const e3 = eff3d(obj);
   const p = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value * cam3d.value.zoom * perspectiveScale(e3, cam3d.value));
   const isSelected = store.selectedObjectIds.includes(obj.id);
+  const fill = obj.fill ?? '#e67700';
   return {
     x: p.px, y: p.py, radius: r,
-    fill: obj.fill ?? '#e67700', opacity: obj.opacity ?? 1,
-    stroke: isSelected ? '#60a5fa' : 'transparent', strokeWidth: isSelected ? 2 : 0,
+    fillRadialGradientStartPoint: { x: -r * 0.35, y: -r * 0.35 },
+    fillRadialGradientStartRadius: r * 0.05,
+    fillRadialGradientEndPoint: { x: 0, y: 0 },
+    fillRadialGradientEndRadius: r * 1.15,
+    fillRadialGradientColorStops: [0, shade(fill, 1.55), 0.55, fill, 1, shade(fill, 0.45)],
+    opacity: obj.opacity ?? 1,
+    stroke: isSelected ? '#60a5fa' : shade(fill, 0.4), strokeWidth: isSelected ? 2 : 1,
     draggable: true,
   };
 }
 
-function cube3dCfg(obj) {
+// Cube: a real box — 6 faces, painter-sorted (far→near), shaded by how much
+// each face normal points toward the camera. Returned relative to the centre.
+function cube3dFaces(obj) {
   const e3 = eff3d(obj);
-  const s = (obj.sideLength ?? 1.0) * proj3DScale.value;
-  const hs = s / 2 / proj3DScale.value;
-  const cx = e3.x3d, cy = e3.y3d, cz = e3.z3d;
-  const tl = iso(cx - hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
-  const tr = iso(cx + hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
-  const br = iso(cx + hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
-  const bl = iso(cx - hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
-  const isSelected = store.selectedObjectIds.includes(obj.id);
-  return {
-    points: [tl.px, tl.py, tr.px, tr.py, br.px, br.py, bl.px, bl.py],
-    fill: obj.fill ?? '#3b5bdb', closed: true, opacity: obj.opacity ?? 1,
-    stroke: isSelected ? '#60a5fa' : (obj.stroke ?? '#ffffff'), strokeWidth: isSelected ? 2 : 1,
-    draggable: true,
-  };
+  const c = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const h = (obj.sideLength ?? 1.0) / 2;
+  const fill = obj.fill ?? '#3b5bdb', op = obj.opacity ?? 1;
+  const sel = store.selectedObjectIds.includes(obj.id);
+  const b = _basis3d(cam3d.value.phi, cam3d.value.theta);
+  const n = { x: b.sp * b.ct, y: b.sp * b.st, z: b.cp }; // direction origin→camera
+  const S = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
+  const corners = S.map(s => _rel(e3, s[0] * h, s[1] * h, s[2] * h, c));
+  const faces = [
+    { idx: [0, 1, 2, 3], nrm: [0, 0, -1] }, { idx: [4, 5, 6, 7], nrm: [0, 0, 1] },
+    { idx: [0, 1, 5, 4], nrm: [0, -1, 0] }, { idx: [3, 2, 6, 7], nrm: [0, 1, 0] },
+    { idx: [1, 2, 6, 5], nrm: [1, 0, 0] }, { idx: [0, 3, 7, 4], nrm: [-1, 0, 0] },
+  ];
+  const arr = faces.map(f => {
+    const pts = []; let sx = 0, sy = 0, sz = 0;
+    for (const i of f.idx) { pts.push(corners[i][0], corners[i][1]); sx += S[i][0]; sy += S[i][1]; sz += S[i][2]; }
+    const depth = (e3.x3d + sx / 4 * h) * n.x + (e3.y3d + sy / 4 * h) * n.y + (e3.z3d + sz / 4 * h) * n.z;
+    const nd = f.nrm[0] * n.x + f.nrm[1] * n.y + f.nrm[2] * n.z;
+    return { points: pts, closed: true, opacity: op, depth,
+      fill: shade(fill, 0.5 + 0.55 * Math.max(0, nd)),
+      stroke: sel ? '#60a5fa' : shade(fill, 0.35), strokeWidth: sel ? 1.5 : 1 };
+  });
+  arr.sort((a, b) => a.depth - b.depth);
+  return arr;
 }
 
-function generic3dCfg(obj) {
+// Projected centre of a 3D object — used to position a Konva group whose
+// children (e.g. cube faces) are drawn relative to it (so drag works).
+function obj3dCenter(obj) {
   const e3 = eff3d(obj);
   const p = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
-  const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value * cam3d.value.zoom * perspectiveScale(e3, cam3d.value));
-  const isSelected = store.selectedObjectIds.includes(obj.id);
-  return {
-    x: p.px, y: p.py,
-    radiusX: r, radiusY: r * 0.5,
-    fill: obj.fill ?? '#888888', opacity: obj.opacity ?? 1,
-    stroke: isSelected ? '#60a5fa' : 'transparent', strokeWidth: isSelected ? 2 : 0,
-    draggable: true,
-  };
+  return { x: p.px, y: p.py, draggable: true };
+}
+
+// Cone / Cylinder / Torus: real silhouettes (relative to the object centre).
+// Cylinder: body convex-hull + lighter top cap. Cone: base + apex hull.
+// Torus: outer ring ellipse + darker inner ellipse (hole).
+function round3dParts(obj) {
+  const e3 = eff3d(obj);
+  const c = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const fill = obj.fill ?? '#888888', op = obj.opacity ?? 1;
+  const sel = store.selectedObjectIds.includes(obj.id);
+  const edge = sel ? '#60a5fa' : shade(fill, 0.4);
+  if (obj.type === 'cylinder') {
+    const R = obj.radius ?? 0.5, hh = (obj.height ?? 1.5) / 2;
+    const bottom = _circlePts(e3, R, 'z', -hh, c), top = _circlePts(e3, R, 'z', hh, c);
+    return [
+      { points: _flat(_hull(bottom.concat(top))), closed: true, fill: shade(fill, 0.72), stroke: edge, strokeWidth: 1, opacity: op },
+      { points: _flat(top), closed: true, fill: shade(fill, 1.18), stroke: edge, strokeWidth: 1, opacity: op },
+    ];
+  }
+  if (obj.type === 'cone') {
+    const R = obj.radius ?? 0.5, hh = (obj.height ?? 1.0) / 2;
+    const base = _circlePts(e3, R, 'z', -hh, c), apex = _rel(e3, 0, 0, hh, c);
+    return [
+      { points: _flat(base), closed: true, fill: shade(fill, 0.6), stroke: edge, strokeWidth: 1, opacity: op },
+      { points: _flat(_hull(base.concat([apex]))), closed: true, fill: shade(fill, 1.0), stroke: edge, strokeWidth: 1, opacity: op },
+    ];
+  }
+  // torus — flat ring lying in the XY plane
+  const Rmaj = obj.majorRadius ?? 1.0, Rmin = obj.minorRadius ?? 0.3;
+  const outer = _circlePts(e3, Rmaj + Rmin, 'z', 0, c), inner = _circlePts(e3, Rmaj - Rmin, 'z', 0, c);
+  return [
+    { points: _flat(outer), closed: true, fill: shade(fill, 0.95), stroke: edge, strokeWidth: 1, opacity: op },
+    { points: _flat(inner), closed: true, fill: shade(fill, 0.4), stroke: edge, strokeWidth: 1, opacity: op },
+  ];
 }
 
 function axes3dLines(obj) {
