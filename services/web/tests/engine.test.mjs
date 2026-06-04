@@ -306,6 +306,9 @@ section('interpolatePath 2D + 3D');
   assert('x' in mid2d && !('x3d' in mid2d), 'returns 2D point for 2D path');
   assert(Math.abs(mid2d.x - 5) < 1e-6, 'x midpoint = 5');
 
+  assert(interpolatePath([], 0.5).x === 0, 'empty path safe');
+  assert(interpolatePath(null, 0.5).x === 0, 'null path safe');
+
   console.log('  ✓ interpolatePath 2D + 3D');
 }
 

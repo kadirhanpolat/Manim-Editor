@@ -23,6 +23,7 @@ import { interpolateKeyframes, getKeyframeRange } from './keyframe.js';
 // path_move için yay-uzunluğuna göre interpolasyon. 3D nokta (x3d alanı) ya da
 // 2D nokta ({x,y}) kabul eder; aynı şekildeki noktayı döndürür.
 export function interpolatePath(path, t) {
+  if (!path || path.length === 0) return { x: 0, y: 0 };
   const is3d = !!(path[0] && 'x3d' in path[0]);
   const clampedT = Math.max(0, Math.min(1, t));
   const segLens = [];

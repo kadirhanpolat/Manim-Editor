@@ -436,6 +436,7 @@ function eff(obj) {
 }
 
 // 3D nesnenin geçerli (override dahil) konumu — playback path_move/move override'larını yansıtır
+// Returns only positional 3D coords (x3d/y3d/z3d) merged with overrides — read other props from obj directly.
 function eff3d(obj) {
   const ov = frameState.value.objectOverrides[obj.id] || {};
   return {
@@ -444,6 +445,7 @@ function eff3d(obj) {
     z3d: ov.z3d ?? obj.z3d ?? 0,
   };
 }
+
 function isVis(id) {
   const h = frameState.value.hiddenIds;
   if (h instanceof Set) return !h.has(id);
