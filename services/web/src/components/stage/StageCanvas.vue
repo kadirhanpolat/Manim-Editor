@@ -21,6 +21,12 @@
 
         <!-- Objects layer -->
         <v-layer ref="objectsLayer">
+          <!-- 3D reference axes (faint, behind objects) — orient the iso + top panels -->
+          <template v-if="is3D">
+            <v-line v-for="(ax, axi) in refAxes3d" :key="'refax' + axi" :config="ax" />
+            <v-text v-for="(lb, lbi) in refAxisLabels3d" :key="'reflb' + lbi" :config="lb" />
+          </template>
+
           <template v-for="obj in sortedObjects" :key="obj.id + (obj.type === 'text' ? '-' + fontLoadKey : '')">
             <!-- Rectangle / Square -->
             <v-rect v-if="(obj.type === 'square' || obj.type === 'rectangle') && isVis(obj.id)" :config="rectCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
@@ -296,6 +302,39 @@ const projCx = computed(() => leftPanelWidth.value / 2);
 const projCy = computed(() => (stageConfig.value?.height ?? 1080) / 2);
 const projCx2 = computed(() => splitX.value + rightPanelWidth.value / 2);
 const projCy2 = computed(() => (stageConfig.value?.height ?? 1080) / 2);
+
+// Faint reference XYZ axes so the perspective (iso) panel is orientable.
+// iso() respects cam3d (phi/theta/projection), so the gizmo rotates with the camera.
+const REF_AXIS_LEN = 4;
+const AXIS_COLORS = { x: '#f87171', y: '#4ade80', z: '#60a5fa' };
+const refAxes3d = computed(() => {
+  if (!is3D.value) return [];
+  const L = REF_AXIS_LEN, s = proj3DScale.value;
+  const cx = projCx.value, cy = projCy.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const ln = (a, b, stroke) => ({ points: [a.px, a.py, b.px, b.py], stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false });
+  return [
+    // iso (perspective) panel — full XYZ
+    ln(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x),
+    ln(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y),
+    ln(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z),
+    // top (XZ) panel — X horizontal, Z vertical
+    ln(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x),
+    ln(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.z),
+  ];
+});
+const refAxisLabels3d = computed(() => {
+  if (!is3D.value) return [];
+  const L = REF_AXIS_LEN, s = proj3DScale.value;
+  const cx = projCx.value, cy = projCy.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const tx = (p, text, fill) => ({ x: p.px + 4, y: p.py - 7, text, fontSize: 12, fontStyle: 'bold', fill, opacity: 0.5, listening: false });
+  return [
+    tx(iso(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x),
+    tx(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y),
+    tx(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z),
+    tx(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x),
+    tx(top(0, L, cx2, cy2, s), 'Z', AXIS_COLORS.z),
+  ];
+});
 const bgConfig = computed(() => ({
   x: ox.value, y: oy.value,
   width: stg.value.width * vs.value, height: stg.value.height * vs.value,
