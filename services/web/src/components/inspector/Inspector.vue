@@ -103,6 +103,9 @@
       </div>
     </div>
     
+    <!-- 3D Camera Preview Panel (when nothing selected and scene is 3D) -->
+    <Scene3DPanel v-if="!selectedElement && store.project.sceneType === '3d'" />
+
     <!-- Add Element Buttons (when nothing selected) -->
     <div v-if="!selectedElement" class="p-4 border-t border-studio-border">
       <p class="text-xs text-studio-text-muted mb-3">Quick Add</p>
@@ -125,6 +128,7 @@ import AnimationPanel from './AnimationPanel.vue'
 import AudioPanel from './AudioPanel.vue'
 import KeyframePanel from './KeyframePanel.vue'
 import Position3DPanel from './Position3DPanel.vue'
+import Scene3DPanel from './Scene3DPanel.vue'
 
 const store = useProjectStore()
 
