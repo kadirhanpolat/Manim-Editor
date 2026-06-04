@@ -91,4 +91,22 @@ describe('keyframe codegen — UpdateFromAlphaFunc mode', () => {
     expect(code).toMatch(/\n {8}self\.play\(UpdateFromAlphaFunc\(/);
     expect(code).not.toMatch(/\nself\.play\(UpdateFromAlphaFunc\(/); // no column-0 line
   });
+
+  it('converts x/y keyframe values to Manim units (not raw stage pixels)', () => {
+    const proj = makeProject({
+      stage: { width: 1920, height: 1080, backgroundColor: '#000' },
+      objects: [{
+        id: 'obj_1', type: 'rectangle', name: 'R', x: 960, y: 540, width: 200, height: 120,
+        fill: '#3b82f6', stroke: 'transparent', strokeWidth: 2, opacity: 1,
+        enterTime: 0, duration: 5, enterAnim: 'none', exitAnim: 'none', rotation: 0,
+        keyframes: { x: [{ time: 0.5, value: 500, easing: { type: 'linear' } }, { time: 3.0, value: 1500 }] },
+        keyframeCodegen: { x: 'UpdateFromAlphaFunc' },
+      }],
+    });
+    const code = generateManimScript(proj);
+    // 1500px → ((1500/1920)-0.5)*14.222 ≈ 4.0 ; 500px → ≈ -3.407 (on-screen, |v|<8)
+    expect(code).toContain('4.0000');
+    expect(code).toContain('-3.4074');
+    expect(code).not.toMatch(/set_x\(1500|1500\.0000|500\.0000/); // raw pixel value gone
+  });
 });

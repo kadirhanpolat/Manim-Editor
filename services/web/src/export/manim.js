@@ -366,6 +366,17 @@ function _kfUpdater(prop) {
   }
 }
 
+// Convert a raw keyframe value (stage pixels for x/y) into the Manim-space value
+// the setter expects. UpdateFromAlphaFunc/ValueTracker feed the setter directly.
+function _kfValue(prop, value, sw, sh) {
+  switch (prop) {
+    case 'x':       return ((value / sw) - 0.5) * FRAME_WIDTH;
+    case 'y':       return (0.5 - value / sh) * FRAME_HEIGHT;
+    case 'opacity': return Math.max(0, Math.min(1, value));
+    default:        return value;
+  }
+}
+
 function generateKeyframeSteps(project, steps, sw, sh) {
   if (!project.objects) return;
   for (const obj of project.objects) {
@@ -444,14 +455,14 @@ function generateKeyframeSteps(project, steps, sw, sh) {
         const vtSetter = _kfUpdater(prop);
         if (!vtSetter) continue;
         const trackVar = `_vt_${n}_${safeProp}`;
-        const initVal = sorted[0].value;
-        let block = `${trackVar} = ValueTracker(${initVal})\n`;
+        const initVal = _kfValue(prop, sorted[0].value, sw, sh);
+        let block = `${trackVar} = ValueTracker(${(+initVal).toFixed(4)})\n`;
         block += `${n}.add_updater(lambda m: m.${vtSetter}(${trackVar}.get_value()))\n`;
         for (let i = 0; i < sorted.length - 1; i++) {
           const k1 = sorted[i], k2 = sorted[i + 1];
           const dur = parseFloat((k2.time - k1.time).toFixed(2));
           const rt = rtOpt(dur);
-          block += `self.play(${trackVar}.animate.set_value(${k2.value})${rt})\n`;
+          block += `self.play(${trackVar}.animate.set_value(${_kfValue(prop, k2.value, sw, sh).toFixed(4)})${rt})\n`;
         }
         block += `${n}.clear_updaters()`;
         steps.push({ time: sorted[0].time, order: 0.5, code: block, dur: sorted[sorted.length - 1].time - sorted[0].time });
@@ -465,7 +476,7 @@ function generateKeyframeSteps(project, steps, sw, sh) {
           const setter = _kfUpdater(prop);
           if (!setter) continue;
           const rt = rtOpt(dur);
-          const v0 = k1.value.toFixed(4), v1 = k2.value.toFixed(4);
+          const v0 = _kfValue(prop, k1.value, sw, sh).toFixed(4), v1 = _kfValue(prop, k2.value, sw, sh).toFixed(4);
           const t0 = k1.time.toFixed(4);
           const block =
             `def ${kfVar}_fn(mob, alpha):\n` +
