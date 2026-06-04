@@ -1173,15 +1173,17 @@ function generic3dCfg(obj) {
 
 function axes3dLines(obj) {
   const e3 = eff3d(obj);
-  const origin = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
-  const xEnd = iso(e3.x3d + 3, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
-  const yEnd = iso(e3.x3d, e3.y3d + 3, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
-  const zEnd = iso(e3.x3d, e3.y3d, e3.z3d + 3, projCx.value, projCy.value, proj3DScale.value);
-  return [
-    { points: [origin.px, origin.py, xEnd.px, xEnd.py], stroke: '#ff6b6b', strokeWidth: 2 },
-    { points: [origin.px, origin.py, yEnd.px, yEnd.py], stroke: '#69db7c', strokeWidth: 2 },
-    { points: [origin.px, origin.py, zEnd.px, zEnd.py], stroke: '#74c0fc', strokeWidth: 2 },
+  const s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
+  const o = iso(e3.x3d, e3.y3d, e3.z3d, cx, cy, s);
+  const ends = [
+    [iso(e3.x3d + 3, e3.y3d, e3.z3d, cx, cy, s), '#ff6b6b'],
+    [iso(e3.x3d, e3.y3d + 3, e3.z3d, cx, cy, s), '#69db7c'],
+    [iso(e3.x3d, e3.y3d, e3.z3d + 3, cx, cy, s), '#74c0fc'],
   ];
+  return ends.map(([end, stroke]) => {
+    const c = _clipSeg(o.px, o.py, end.px, end.py, r[0], r[1], r[2], r[3]);
+    return c ? { points: c, stroke, strokeWidth: 2, listening: false } : null;
+  }).filter(Boolean);
 }
 
 function sphere3dTopCfg(obj) {
