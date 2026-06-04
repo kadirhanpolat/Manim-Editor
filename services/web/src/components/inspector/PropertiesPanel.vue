@@ -535,11 +535,13 @@ const Section = {
 
 const Num = {
   props: { label: String, value: [Number, String], min: { type: Number, default: undefined }, max: { type: Number, default: undefined }, step: { type: Number, default: 1 } },
+  emits: ['input'],
   template: '<div><span class="text-[9px] text-studio-text-muted/50">{{ label }}</span><input class="input input-sm" type="number" :value="value" :min="min" :max="max" :step="step" @change="$emit(\'input\', Number($event.target.value))" /></div>'
 };
 
 const ColorRow = {
   props: ['label', 'value'],
+  emits: ['input'],
   template: `<div class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">{{ label }}</span><input type="color" class="color-input" :value="value || '#ffffff'" @input="$emit('input', $event.target.value)" /><input class="input input-sm flex-1" :value="value" @change="$emit('input', $event.target.value)" /></div>`
 };
 
