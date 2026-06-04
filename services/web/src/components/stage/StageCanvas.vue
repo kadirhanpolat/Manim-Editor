@@ -131,6 +131,7 @@
             <template v-if="obj.type === 'torus' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
                 <v-circle v-for="(seg, si) in torus3dTube(obj)" :key="'tt' + si" :config="seg" />
+                <v-line v-for="(ln, li) in torusOutline(obj)" :key="'tol' + li" :config="ln" />
               </v-group>
             </template>
 
@@ -1270,9 +1271,24 @@ function torus3dTube(obj) {
   segs.sort((p, q) => p.depth - q.depth); // far → near
   return segs.map(s => {
     const t = Math.max(0, Math.min(1, (s.depth / (Rmaj || 1) + 1) / 2)); // 0 far, 1 near
-    return { x: s.x, y: s.y, radius: tubeR, opacity: op, listening: false,
-      fill: shade(fill, 0.5 + 0.75 * t), stroke: sel ? '#60a5fa' : '', strokeWidth: 0 };
+    return { x: s.x, y: s.y, radius: tubeR, opacity: op, fill: shade(fill, 0.5 + 0.75 * t) };
   });
+}
+
+// Torus silhouette outline (outer + inner ring) — gives a clean edge and the
+// blue selection indicator, consistent with the other shapes.
+function torusOutline(obj) {
+  const e3 = eff3d(obj);
+  const c = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const Rmaj = obj.majorRadius ?? 1.0, Rmin = obj.minorRadius ?? 0.3;
+  const fill = obj.fill ?? '#9c36b5';
+  const sel = store.selectedObjectIds.includes(obj.id);
+  const stroke = sel ? '#60a5fa' : shade(fill, 0.45);
+  const sw = sel ? 2 : 1;
+  return [
+    { points: _flat(_circlePts(e3, Rmaj + Rmin, 'z', 0, c)), closed: true, stroke, strokeWidth: sw, listening: false },
+    { points: _flat(_circlePts(e3, Rmaj - Rmin, 'z', 0, c)), closed: true, stroke, strokeWidth: sw, listening: false },
+  ];
 }
 
 function axes3dLines(obj) {
