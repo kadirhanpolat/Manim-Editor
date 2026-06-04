@@ -333,6 +333,11 @@ const trConfig = computed(() => {
 const pathCanvasPoints = computed(() => {
   if (!pathPoints.value.length) return [];
   return pathPoints.value.map(p => {
+    if ('x3d' in p) {
+      const t = top(p.x3d, p.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+      const cp = s2c(t.px, t.py);
+      return { cx: cp.x, cy: cp.y };
+    }
     const cp = s2c(p.x, p.y);
     return { cx: cp.x, cy: cp.y };
   });
@@ -743,7 +748,17 @@ function handleStageMouseDown(e) {
     const pos = stage.getPointerPosition();
     if (!pos) return;
     const sp = c2s(pos.x, pos.y);
-    pathPoints.value.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
+    if (is3D.value) {
+      // 3D mode: only accept clicks in the top/XZ (right) panel
+      if (sp.x < splitX.value) return;
+      const x3d = parseFloat(((sp.x - projCx2.value) / proj3DScale.value).toFixed(3));
+      const z3d = parseFloat(((sp.y - projCy2.value) / proj3DScale.value).toFixed(3));
+      const srcObj = store.objectById(pathSourceId.value);
+      const y3d = srcObj?.y3d ?? 0;   // Y held constant at object's current y3d
+      pathPoints.value.push({ x3d, y3d, z3d });
+    } else {
+      pathPoints.value.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
+    }
     return;
   }
   const t = e.target; const s = konvaStage.value?.getNode();
