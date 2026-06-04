@@ -14,19 +14,24 @@ beforeEach(() => {
 });
 
 describe('Scene3DPanel', () => {
-  it('changing projection select updates store', async () => {
+  it('zoom slider updates store', async () => {
     const wrapper = mount(Scene3DPanel);
-    const select = wrapper.get('[data-testid="projection-mode"]');
-    await select.setValue('perspective');
-    expect(store.project.camera3d.projection).toBe('perspective');
+    const zoom = wrapper.get('[data-testid="cam-zoom"]');
+    await zoom.setValue('2');
+    expect(store.project.camera3d.zoom).toBeCloseTo(2);
   });
 
-  it('focal distance input visible only in perspective mode', async () => {
-    store.setCamera3d({ projection: 'orthographic' });
+  it('orbit (phi) + focal distance show in perspective, hide in axis views', async () => {
+    store.setCamera3d({ view: 'perspective' });
     const wrapper = mount(Scene3DPanel);
-    expect(wrapper.find('[data-testid="focal-distance"]').exists()).toBe(false);
-    store.setCamera3d({ projection: 'perspective' });
-    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-testid="cam-phi"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="focal-distance"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="cam-zoom"]').exists()).toBe(true);
+
+    store.setCamera3d({ view: 'top' });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-testid="cam-phi"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="focal-distance"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="cam-zoom"]').exists()).toBe(true); // zoom always shown
   });
 });

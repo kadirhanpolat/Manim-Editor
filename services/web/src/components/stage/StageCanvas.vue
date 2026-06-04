@@ -22,14 +22,11 @@
         <!-- Objects layer -->
         <v-layer ref="objectsLayer">
           <!-- 3D reference grid + axes (faint, behind objects); segments are
-               geometrically clipped to each panel so zoom can't overflow -->
+               geometrically clipped to the viewport so zoom can't overflow -->
           <template v-if="is3D">
             <v-line v-for="(gl, gli) in floorGridIso" :key="'flgi' + gli" :config="gl" />
-            <v-line v-for="(gl, gli) in floorGridTop" :key="'flgt' + gli" :config="gl" />
             <v-line v-for="(ax, axi) in refAxesIso" :key="'rai' + axi" :config="ax" />
-            <v-line v-for="(ax, axi) in refAxesTop" :key="'rat' + axi" :config="ax" />
             <v-text v-for="(lb, lbi) in refLabelsIso" :key="'rli' + lbi" :config="lb" />
-            <v-text v-for="(lb, lbi) in refLabelsTop" :key="'rlt' + lbi" :config="lb" />
           </template>
 
           <template v-for="obj in sortedObjects" :key="obj.id + (obj.type === 'text' ? '-' + fontLoadKey : '')">
@@ -111,54 +108,33 @@
               <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
             </v-group>
 
-            <!-- 3D: Sphere iso -->
+            <!-- 3D: Sphere -->
             <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'iso')" />
+              <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
             </template>
 
-            <!-- 3D: Cube iso -->
+            <!-- 3D: Cube -->
             <template v-if="obj.type === 'cube' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-line :config="cube3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'iso')" />
+              <v-line :config="cube3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
             </template>
 
-            <!-- 3D: Cone/Cylinder/Torus iso -->
+            <!-- 3D: Cone/Cylinder/Torus -->
             <template v-if="['cone', 'cylinder', 'torus'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-ellipse :config="generic3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'iso')" />
+              <v-ellipse :config="generic3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
             </template>
 
-            <!-- 3D: Axes3D iso -->
+            <!-- 3D: Axes3D -->
             <template v-if="obj.type === 'axes3d' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-group :config="{ x: 0, y: 0 }" @mousedown="onObjDown(obj.id, $event)">
                 <v-line v-for="(axLine, axIdx) in axes3dLines(obj)" :key="'ax3d' + axIdx" :config="axLine" />
               </v-group>
             </template>
-
-            <!-- 3D Top View: Sphere -->
-            <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d-top'">
-              <v-circle :config="sphere3dTopCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'top')" />
-            </template>
-
-            <!-- 3D Top View: Cube -->
-            <template v-if="obj.type === 'cube' && is3D && isVis(obj.id)" :key="obj.id + '-3d-top'">
-              <v-rect :config="cube3dTopCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'top')" />
-            </template>
-
-            <!-- 3D Top View: Cone/Cylinder/Torus -->
-            <template v-if="['cone', 'cylinder', 'torus'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d-top'">
-              <v-circle :config="generic3dTopCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event, 'top')" />
-            </template>
           </template>
 
-          <!-- 3D committed path polylines (iso + top) -->
+          <!-- 3D committed path polylines -->
           <template v-for="pl in path3dPolylines" :key="pl.id">
             <v-line :config="pl" />
           </template>
-
-          <!-- 3D Split Divider -->
-          <v-line
-            v-if="is3D"
-            :config="{ points: [splitX, 0, splitX, stageConfig.height], stroke: '#475569', strokeWidth: 2, dash: [6, 3] }"
-          />
         </v-layer>
 
         <!-- Morph preview layer -->
@@ -182,6 +158,24 @@
           <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
         </v-layer>
       </v-stage>
+
+      <!-- 3D view selector (overlay, top-left) -->
+      <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay);">
+        <select
+          :value="store.project.camera3d?.view ?? 'perspective'"
+          @change="store.setCamera3d({ view: $event.target.value })"
+          class="text-xs bg-studio-surface border border-studio-border rounded px-2 py-1 text-studio-text shadow cursor-pointer"
+          title="3D view"
+        >
+          <option value="perspective">Perspective</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="front">Front</option>
+          <option value="back">Back</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
 
       <!-- Drop zone indicator -->
       <div v-if="isDraggingOver" class="absolute inset-0 pointer-events-none border-2 border-dashed border-studio-accent/50 rounded-xl bg-studio-accent/5 flex items-center justify-center" style="z-index: var(--z-overlay);">
@@ -229,12 +223,6 @@ function iso(x3d, y3d, z3d, cx, cy, scale) {
 function isoRef(x3d, y3d, z3d, cx, cy, scale) {
   const c = cam3d.value;
   return project3D({ x3d, y3d, z3d }, { phi: c.phi, theta: c.theta, zoom: c.zoom, mode: 'orthographic' }, cx, cy, scale);
-}
-
-// Bird's-eye top view: looks straight down the +Z (up) axis onto the XY ground.
-// X → right, Y → up on screen (py inverted so +Y is up).
-function top(x3d, y3d, cx2, cy2, scale) {
-  return { px: cx2 + x3d * scale, py: cy2 - y3d * scale };
 }
 
 // ── Reactive state ──
@@ -295,27 +283,35 @@ const oy = computed(() => {
 const stageConfig = computed(() => ({ width: containerWidth.value, height: containerHeight.value }));
 
 const is3D = computed(() => store.project?.sceneType === '3d');
+// Fixed orthographic angles for the named axis views (Z-up convention).
+const VIEW_ANGLES = {
+  top:    { phi: 0,   theta: -90 },  // look down +Z onto XY (X right, Y up)
+  bottom: { phi: 180, theta: -90 },  // look up
+  front:  { phi: 90,  theta: -90 },  // XZ plane (X right, Z up)
+  back:   { phi: 90,  theta: 90 },
+  right:  { phi: 90,  theta: 0 },    // YZ plane (Y right, Z up)
+  left:   { phi: 90,  theta: 180 },
+};
 const cam3d = computed(() => {
-  const cs = store.frameState.cameraState;
   const base = store.project?.camera3d ?? {};
+  const zoom = base.zoom ?? 1, fd = base.focalDistance ?? 8;
+  const cs = store.frameState.cameraState;
+  // Playback camera_move (3D) drives an animated perspective camera.
   if (cs && cs.is3d) {
-    return { phi: cs.phi, theta: cs.theta, zoom: cs.zoom,
-             mode: base.projection ?? 'orthographic', focalDistance: base.focalDistance ?? 8 };
+    return { phi: cs.phi, theta: cs.theta, zoom: cs.zoom ?? zoom, mode: 'perspective', focalDistance: fd };
   }
-  return { phi: base.phi ?? 75, theta: base.theta ?? -45, zoom: base.zoom ?? 1,
-           mode: base.projection ?? 'orthographic', focalDistance: base.focalDistance ?? 8 };
+  const view = base.view ?? 'perspective';
+  if (view === 'perspective') {
+    return { phi: base.phi ?? 75, theta: base.theta ?? -45, zoom, mode: 'perspective', focalDistance: fd };
+  }
+  const a = VIEW_ANGLES[view] || VIEW_ANGLES.top;
+  return { phi: a.phi, theta: a.theta, zoom, mode: 'orthographic', focalDistance: fd };
 });
-const splitRatio = ref(0.5);
 
-const leftPanelWidth = computed(() => Math.floor((stageConfig.value?.width ?? 1920) * splitRatio.value));
-const rightPanelWidth = computed(() => (stageConfig.value?.width ?? 1920) - leftPanelWidth.value);
-const splitX = computed(() => leftPanelWidth.value);
-
-const proj3DScale = computed(() => leftPanelWidth.value / 16);
-const projCx = computed(() => leftPanelWidth.value / 2);
-const projCy = computed(() => (stageConfig.value?.height ?? 1080) / 2);
-const projCx2 = computed(() => splitX.value + rightPanelWidth.value / 2);
-const projCy2 = computed(() => (stageConfig.value?.height ?? 1080) / 2);
+// Single-canvas 3D viewport — centered on the visible black backdrop (ox/oy/vs).
+const proj3DScale = computed(() => Math.min(stg.value.width, stg.value.height) * vs.value / 12);
+const projCx = computed(() => ox.value + stg.value.width * vs.value / 2);
+const projCy = computed(() => oy.value + stg.value.height * vs.value / 2);
 
 // Faint reference XYZ axes + XY floor grid. Each segment is geometrically
 // clipped (Liang–Barsky) to its panel rectangle so camera zoom (cam3d.zoom)
@@ -341,16 +337,12 @@ function _clipSeg(x0, y0, x1, y1, rx0, ry0, rx1, ry1) {
   }
   return [x0 + t0 * dx, y0 + t0 * dy, x0 + t1 * dx, y0 + t1 * dy];
 }
-// Clip rects are the VISIBLE black viewport (bgConfig rect), not the full
-// Konva stage — the backdrop is scaled by vs and offset by ox/oy, so clipping
-// to [0,stageW] would let the gizmo spill into the inset margin around it.
+// Clip rect = the VISIBLE black viewport (bgConfig rect), not the full Konva
+// stage — the backdrop is scaled by vs and offset by ox/oy, so clipping to the
+// full stage would let the gizmo spill into the inset margin around it.
 const isoRect = computed(() => {
-  const h = stg.value.height * vs.value;
-  return [ox.value, oy.value, splitX.value, oy.value + h];
-});
-const topRect = computed(() => {
   const w = stg.value.width * vs.value, h = stg.value.height * vs.value;
-  return [splitX.value, oy.value, ox.value + w, oy.value + h];
+  return [ox.value, oy.value, ox.value + w, oy.value + h];
 });
 function _axCfg(a, b, stroke, r) {
   const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
@@ -374,14 +366,6 @@ const refAxesIso = computed(() => {
     _axCfg(isoRef(0, 0, -L, cx, cy, s), isoRef(0, 0, L, cx, cy, s), AXIS_COLORS.z, r),
   ].filter(Boolean);
 });
-const refAxesTop = computed(() => {
-  if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value, r = topRect.value;
-  return [
-    _axCfg(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x, r),
-    _axCfg(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.y, r),
-  ].filter(Boolean);
-});
 const refLabelsIso = computed(() => {
   if (!is3D.value) return [];
   const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
@@ -389,14 +373,6 @@ const refLabelsIso = computed(() => {
     _lblCfg(isoRef(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x, r),
     _lblCfg(isoRef(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y, r),
     _lblCfg(isoRef(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z, r),
-  ].filter(Boolean);
-});
-const refLabelsTop = computed(() => {
-  if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value, r = topRect.value;
-  return [
-    _lblCfg(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x, r),
-    _lblCfg(top(0, L, cx2, cy2, s), 'Y', AXIS_COLORS.y, r),
   ].filter(Boolean);
 });
 const floorGridIso = computed(() => {
@@ -407,17 +383,6 @@ const floorGridIso = computed(() => {
     if (i === 0) continue;
     const a = _gridCfg(isoRef(-G, i, 0, cx, cy, s), isoRef(G, i, 0, cx, cy, s), r); if (a) out.push(a);
     const b = _gridCfg(isoRef(i, -G, 0, cx, cy, s), isoRef(i, G, 0, cx, cy, s), r); if (b) out.push(b);
-  }
-  return out;
-});
-const floorGridTop = computed(() => {
-  if (!is3D.value) return [];
-  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value, r = topRect.value;
-  const out = [];
-  for (let i = -G; i <= G; i++) {
-    if (i === 0) continue;
-    const a = _gridCfg(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s), r); if (a) out.push(a);
-    const b = _gridCfg(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s), r); if (b) out.push(b);
   }
   return out;
 });
@@ -470,8 +435,8 @@ const pathCanvasPoints = computed(() => {
   if (!pathPoints.value.length) return [];
   return pathPoints.value.map(p => {
     if ('x3d' in p) {
-      const t = top(p.x3d, p.y3d, projCx2.value, projCy2.value, proj3DScale.value);
-      return { cx: t.px, cy: t.py };   // top() is already canvas px — no s2c
+      const t = iso(p.x3d, p.y3d ?? 0, p.z3d, projCx.value, projCy.value, proj3DScale.value);
+      return { cx: t.px, cy: t.py };   // iso() returns canvas px — no s2c
     }
     const cp = s2c(p.x, p.y);
     return { cx: cp.x, cy: cp.y };
@@ -582,7 +547,7 @@ function eff3d(obj) {
   };
 }
 
-// Commit edilmiş 3D path_move yollarını iso + top panelde polyline olarak çiz (salt-görsel)
+// Draw committed 3D path_move paths as a polyline in the single 3D view (visual only).
 const path3dPolylines = computed(() => {
   if (!is3D.value) return [];
   const out = [];
@@ -590,17 +555,12 @@ const path3dPolylines = computed(() => {
     for (const clip of track.clips || []) {
       if (clip.type !== 'path_move' || !Array.isArray(clip.path)) continue;
       if (!(clip.path[0] && 'x3d' in clip.path[0])) continue;
-      const isoPts = [];
-      const topPts = [];
+      const pts = [];
       for (const pt of clip.path) {
         const i = iso(pt.x3d, pt.y3d ?? 0, pt.z3d, projCx.value, projCy.value, proj3DScale.value);
-        isoPts.push(i.px, i.py);
-        const t = top(pt.x3d, pt.y3d, projCx2.value, projCy2.value, proj3DScale.value);
-        topPts.push(t.px, t.py);
+        pts.push(i.px, i.py);
       }
-      const base = { stroke: '#a855f7', strokeWidth: 1.5, dash: [4, 4], listening: false, opacity: 0.7 };
-      out.push({ ...base, points: isoPts, id: clip.id + '-isopath' });
-      out.push({ ...base, points: topPts, id: clip.id + '-toppath' });
+      out.push({ stroke: '#a855f7', strokeWidth: 1.5, dash: [4, 4], listening: false, opacity: 0.7, points: pts, id: clip.id + '-path3d' });
     }
   }
   return out;
@@ -919,13 +879,13 @@ function handleStageMouseDown(e) {
     const pos = stage.getPointerPosition();
     if (!pos) return;
     if (is3D.value) {
-      // 3D: clicks valid only in the top (bird's-eye XY) right panel; all coords are canvas px
-      if (pos.x < splitX.value) return;
-      const x3d = parseFloat(((pos.x - projCx2.value) / proj3DScale.value).toFixed(3));
-      const y3d = parseFloat(((projCy2.value - pos.y) / proj3DScale.value).toFixed(3)); // Y up
-      const srcObj = store.objectById(pathSourceId.value);
-      const z3d = srcObj?.z3d ?? 0;   // Z (depth) held constant — path drawn on the XY ground
-      pathPoints.value.push({ x3d, y3d, z3d });
+      // 3D: drop a point in the current view's plane; the depth axis is held at
+      // the source object's current value.
+      const srcObj = store.objectById(pathSourceId.value) || {};
+      const patch = unprojectView(pos.x, pos.y, srcObj);
+      pathPoints.value.push({
+        x3d: srcObj.x3d ?? 0, y3d: srcObj.y3d ?? 0, z3d: srcObj.z3d ?? 0, ...patch,
+      });
       return;
     }
     const sp = c2s(pos.x, pos.y);
@@ -990,25 +950,37 @@ function onDragEnd(id, e) {
   }
   store.updateObject(id, { x: Math.round(newX), y: Math.round(newY) });
 }
-function onDrag3DEnd(objId, e, panel) {
-  const node = e.target;
-  const canvasX = node.x();
-  const canvasY = node.y();
-  const scale = proj3DScale.value;
-
-  if (panel === 'iso') {
-    const objY = store.project.objects.find(o => o.id === objId)?.y3d ?? 0;
-    const r = unprojectIso(canvasX, canvasY, cam3d.value, projCx.value, projCy.value, scale, objY);
+// Map a canvas point back to 3D for the current view. Axis views update the two
+// in-plane axes (depth axis held); perspective holds y3d and solves x3d/z3d.
+const _r3 = (v) => parseFloat(v.toFixed(3));
+function unprojectView(px, py, obj) {
+  const c = cam3d.value;
+  const view = store.project.camera3d?.view ?? 'perspective';
+  if (view === 'perspective' || (store.frameState.cameraState && store.frameState.cameraState.is3d)) {
+    const r = unprojectIso(px, py, c, projCx.value, projCy.value, proj3DScale.value, obj?.y3d ?? 0);
     const patch = {};
-    if (r.x3d !== null) patch.x3d = parseFloat(r.x3d.toFixed(3));
-    if (r.z3d !== null) patch.z3d = parseFloat(r.z3d.toFixed(3));
-    store.updateObject(objId, patch);
-  } else {
-    // top (bird's-eye XY): X right, Y up (py inverted)
-    const x3d = (canvasX - projCx2.value) / scale;
-    const y3d = (projCy2.value - canvasY) / scale;
-    store.updateObject(objId, { x3d: parseFloat(x3d.toFixed(3)), y3d: parseFloat(y3d.toFixed(3)) });
+    if (r.x3d !== null) patch.x3d = _r3(r.x3d);
+    if (r.z3d !== null) patch.z3d = _r3(r.z3d);
+    return patch;
   }
+  const s = proj3DScale.value * (c.zoom || 1);
+  const sx = (px - projCx.value) / s;
+  const sy = (projCy.value - py) / s; // +screen up
+  switch (view) {
+    case 'top':    return { x3d: _r3(sx),  y3d: _r3(sy) };
+    case 'bottom': return { x3d: _r3(sx),  y3d: _r3(-sy) };
+    case 'front':  return { x3d: _r3(sx),  z3d: _r3(sy) };
+    case 'back':   return { x3d: _r3(-sx), z3d: _r3(sy) };
+    case 'right':  return { y3d: _r3(sx),  z3d: _r3(sy) };
+    case 'left':   return { y3d: _r3(-sx), z3d: _r3(sy) };
+    default:       return { x3d: _r3(sx),  y3d: _r3(sy) };
+  }
+}
+function onDrag3DEnd(objId, e) {
+  const node = e.target;
+  const obj = store.project.objects.find(o => o.id === objId);
+  const patch = unprojectView(node.x(), node.y(), obj);
+  if (patch) store.updateObject(objId, patch);
   store.commitState();
   node.position({ x: 0, y: 0 });
 }
@@ -1200,45 +1172,6 @@ function axes3dLines(obj) {
     const c = _clipSeg(o.px, o.py, end.px, end.py, r[0], r[1], r[2], r[3]);
     return c ? { points: c, stroke, strokeWidth: 2, listening: false } : null;
   }).filter(Boolean);
-}
-
-function sphere3dTopCfg(obj) {
-  const e3 = eff3d(obj);
-  const p = top(e3.x3d, e3.y3d, projCx2.value, projCy2.value, proj3DScale.value);
-  const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
-  const isSelected = store.selectedObjectIds.includes(obj.id);
-  return {
-    x: p.px, y: p.py, radius: r,
-    fill: (obj.fill ?? '#e67700') + '80',
-    stroke: isSelected ? '#60a5fa' : (obj.fill ?? '#e67700'), strokeWidth: 1.5,
-    draggable: true,
-  };
-}
-
-function cube3dTopCfg(obj) {
-  const e3 = eff3d(obj);
-  const p = top(e3.x3d, e3.y3d, projCx2.value, projCy2.value, proj3DScale.value);
-  const s = Math.max(8, (obj.sideLength ?? 1.0) * proj3DScale.value);
-  const isSelected = store.selectedObjectIds.includes(obj.id);
-  return {
-    x: p.px - s / 2, y: p.py - s / 2, width: s, height: s,
-    fill: (obj.fill ?? '#3b5bdb') + '80',
-    stroke: isSelected ? '#60a5fa' : (obj.fill ?? '#3b5bdb'), strokeWidth: 1.5,
-    draggable: true,
-  };
-}
-
-function generic3dTopCfg(obj) {
-  const e3 = eff3d(obj);
-  const p = top(e3.x3d, e3.y3d, projCx2.value, projCy2.value, proj3DScale.value);
-  const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
-  const isSelected = store.selectedObjectIds.includes(obj.id);
-  return {
-    x: p.px, y: p.py, radius: r,
-    fill: (obj.fill ?? '#888888') + '80',
-    stroke: isSelected ? '#60a5fa' : (obj.fill ?? '#888888'), strokeWidth: 1.5,
-    draggable: true,
-  };
 }
 
 function onTextDblClick(id) {
