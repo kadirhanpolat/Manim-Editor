@@ -153,21 +153,23 @@ function handleStageMouseDown(e) {
   }
 ```
 
-Bu bloğun içindeki `const sp = c2s(...)` satırından `return;`'e kadarki kısmı şununla değiştir:
+**KOORDİNAT UYARISI:** `stageConfig.width === containerWidth` olduğu için `splitX`, `projCx2`, `projCy2`, `proj3DScale` ve `top()`/`iso()` **canvas-piksel** uzayında çalışır. `getPointerPosition()` da canvas-pikseli döner. `c2s()` canvas→stage(proje) dönüşümü yapar — 3D projeksiyon için YANLIŞ uzay. Bu yüzden 3D dalında `c2s` KULLANMA; ham `pos.x/pos.y` ile çalış. `c2s` yalnızca 2D dalında çağrılır.
+
+Bloğun `const sp = c2s(...)` + push + `return;` kısmını şununla değiştir:
 
 ```js
-    const sp = c2s(pos.x, pos.y);
     if (is3D.value) {
-      // 3D modda yalnızca top/XZ (sağ) panelde çizim kabul edilir
-      if (sp.x < splitX.value) return;
-      const x3d = parseFloat(((sp.x - projCx2.value) / proj3DScale.value).toFixed(3));
-      const z3d = parseFloat(((sp.y - projCy2.value) / proj3DScale.value).toFixed(3));
+      // 3D: tıklama yalnızca top/XZ (sağ) panelde geçerli; tüm koordinatlar canvas-px
+      if (pos.x < splitX.value) return;
+      const x3d = parseFloat(((pos.x - projCx2.value) / proj3DScale.value).toFixed(3));
+      const z3d = parseFloat(((pos.y - projCy2.value) / proj3DScale.value).toFixed(3));
       const srcObj = store.objectById(pathSourceId.value);
       const y3d = srcObj?.y3d ?? 0;   // Y sabit: nesnenin mevcut y3d değeri
       pathPoints.value.push({ x3d, y3d, z3d });
-    } else {
-      pathPoints.value.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
+      return;
     }
+    const sp = c2s(pos.x, pos.y);
+    pathPoints.value.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
     return;
 ```
 
@@ -183,8 +185,7 @@ const pathCanvasPoints = computed(() => {
   return pathPoints.value.map(p => {
     if ('x3d' in p) {
       const t = top(p.x3d, p.z3d, projCx2.value, projCy2.value, proj3DScale.value);
-      const cp = s2c(t.px, t.py);
-      return { cx: cp.x, cy: cp.y };
+      return { cx: t.px, cy: t.py };   // top() zaten canvas-px döner — s2c YOK
     }
     const cp = s2c(p.x, p.y);
     return { cx: cp.x, cy: cp.y };
@@ -192,7 +193,7 @@ const pathCanvasPoints = computed(() => {
 });
 ```
 
-`top()` projeksiyon fonksiyonu ve `s2c` zaten tanımlı. (`pathPreviewLineCfg` bu computed'a dayanır — değişiklik gerekmez.)
+`top()` zaten canvas-px döndürür (`projCx2` vb. canvas uzayında); 3D noktada `s2c` UYGULAMA (çift dönüşüm olur). 2D noktada `s2c` korunur. (`pathPreviewLineCfg` bu computed'a dayanır — değişiklik gerekmez.)
 
 - [ ] **Step 3: Build'in kırılmadığını doğrula**
 
