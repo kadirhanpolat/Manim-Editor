@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { project3D, unprojectIso } from '../../src/engine/projection3d.js';
+import { project3D, unprojectIso, perspectiveScale } from '../../src/engine/projection3d.js';
+
+describe('perspectiveScale', () => {
+  it('is 1 in orthographic mode', () => {
+    expect(perspectiveScale({ x3d: 4, y3d: 0, z3d: 0 }, { phi: 90, theta: 0, mode: 'orthographic', focalDistance: 8 })).toBe(1);
+  });
+  it('magnifies nearer the camera and shrinks farther (phi=90,theta=0 -> n=+X)', () => {
+    const cam = { phi: 90, theta: 0, mode: 'perspective', focalDistance: 8 };
+    expect(perspectiveScale({ x3d: 4, y3d: 0, z3d: 0 }, cam)).toBeCloseTo(2, 3);       // d=4 -> 8/(8-4)
+    expect(perspectiveScale({ x3d: -4, y3d: 0, z3d: 0 }, cam)).toBeCloseTo(8 / 12, 3); // d=-4 -> 8/12
+    expect(perspectiveScale({ x3d: 0, y3d: 0, z3d: 0 }, cam)).toBe(1);                 // origin unchanged
+  });
+});
 
 describe('project3D', () => {
   const cx = 100, cy = 100, scale = 10;

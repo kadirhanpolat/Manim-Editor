@@ -35,6 +35,22 @@ export function project3D(p, cam, cx, cy, scale) {
 }
 
 /**
+ * Perspective size factor for an object at point p (same f project3D applies to
+ * position). 1 in orthographic mode. >1 nearer the camera, <1 farther — use it
+ * to scale rendered object sizes so they grow/shrink with depth.
+ * @returns {number}
+ */
+export function perspectiveScale(p, cam) {
+  const { phi = 75, theta = -45, mode = 'orthographic', focalDistance = 8 } = cam || {};
+  if (mode !== 'perspective') return 1;
+  const { sp, cp, st, ct } = basis(phi, theta);
+  const x = p.x3d ?? 0, y = p.y3d ?? 0, z = p.z3d ?? 0;
+  const d = x * sp * ct + y * sp * st + z * cp; // P·n
+  const denom = focalDistance - d;
+  return denom > 1e-6 ? focalDistance / denom : 1e6;
+}
+
+/**
  * Inverse of project3D for iso drag, holding y3d fixed. Orthographic only.
  * Returns { x3d, z3d }; either may be null when ill-conditioned (st≈0 or sp≈0).
  */
