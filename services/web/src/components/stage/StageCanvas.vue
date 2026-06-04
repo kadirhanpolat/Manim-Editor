@@ -223,6 +223,13 @@ const store = useProjectStore();
 function iso(x3d, y3d, z3d, cx, cy, scale) {
   return project3D({ x3d, y3d, z3d }, cam3d.value, cx, cy, scale);
 }
+// Orthographic-forced projection (same phi/theta/zoom) for the faint reference
+// gizmo — keeps the axes a clean symmetric cross instead of the lopsided arms
+// perspective foreshortening produces. Perspective still applies to objects.
+function isoRef(x3d, y3d, z3d, cx, cy, scale) {
+  const c = cam3d.value;
+  return project3D({ x3d, y3d, z3d }, { phi: c.phi, theta: c.theta, zoom: c.zoom, mode: 'orthographic' }, cx, cy, scale);
+}
 
 // Bird's-eye top view: looks straight down the +Z (up) axis onto the XY ground.
 // X → right, Y → up on screen (py inverted so +Y is up).
@@ -362,9 +369,9 @@ const refAxesIso = computed(() => {
   if (!is3D.value) return [];
   const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
   return [
-    _axCfg(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x, r),
-    _axCfg(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y, r),
-    _axCfg(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z, r),
+    _axCfg(isoRef(-L, 0, 0, cx, cy, s), isoRef(L, 0, 0, cx, cy, s), AXIS_COLORS.x, r),
+    _axCfg(isoRef(0, -L, 0, cx, cy, s), isoRef(0, L, 0, cx, cy, s), AXIS_COLORS.y, r),
+    _axCfg(isoRef(0, 0, -L, cx, cy, s), isoRef(0, 0, L, cx, cy, s), AXIS_COLORS.z, r),
   ].filter(Boolean);
 });
 const refAxesTop = computed(() => {
@@ -379,9 +386,9 @@ const refLabelsIso = computed(() => {
   if (!is3D.value) return [];
   const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
   return [
-    _lblCfg(iso(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x, r),
-    _lblCfg(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y, r),
-    _lblCfg(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z, r),
+    _lblCfg(isoRef(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x, r),
+    _lblCfg(isoRef(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y, r),
+    _lblCfg(isoRef(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z, r),
   ].filter(Boolean);
 });
 const refLabelsTop = computed(() => {
@@ -398,8 +405,8 @@ const floorGridIso = computed(() => {
   const out = [];
   for (let i = -G; i <= G; i++) {
     if (i === 0) continue;
-    const a = _gridCfg(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s), r); if (a) out.push(a);
-    const b = _gridCfg(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s), r); if (b) out.push(b);
+    const a = _gridCfg(isoRef(-G, i, 0, cx, cy, s), isoRef(G, i, 0, cx, cy, s), r); if (a) out.push(a);
+    const b = _gridCfg(isoRef(i, -G, 0, cx, cy, s), isoRef(i, G, 0, cx, cy, s), r); if (b) out.push(b);
   }
   return out;
 });
