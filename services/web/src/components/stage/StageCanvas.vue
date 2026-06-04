@@ -120,10 +120,17 @@
               </v-group>
             </template>
 
-            <!-- 3D: Cone/Cylinder/Torus (real silhouettes) -->
-            <template v-if="['cone', 'cylinder', 'torus'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+            <!-- 3D: Cone/Cylinder (real silhouettes) -->
+            <template v-if="['cone', 'cylinder'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
                 <v-line v-for="(pt, pi) in round3dParts(obj)" :key="'rp' + pi" :config="pt" />
+              </v-group>
+            </template>
+
+            <!-- 3D: Torus (donut tube) -->
+            <template v-if="obj.type === 'torus' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+                <v-circle v-for="(seg, si) in torus3dTube(obj)" :key="'tt' + si" :config="seg" />
               </v-group>
             </template>
 
@@ -1217,9 +1224,8 @@ function obj3dCenter(obj) {
   return { x: p.px, y: p.py, draggable: true };
 }
 
-// Cone / Cylinder / Torus: real silhouettes (relative to the object centre).
+// Cone / Cylinder: real silhouettes (relative to the object centre).
 // Cylinder: body convex-hull + lighter top cap. Cone: base + apex hull.
-// Torus: outer ring ellipse + darker inner ellipse (hole).
 function round3dParts(obj) {
   const e3 = eff3d(obj);
   const c = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
@@ -1234,21 +1240,39 @@ function round3dParts(obj) {
       { points: _flat(top), closed: true, fill: shade(fill, 1.18), stroke: edge, strokeWidth: 1, opacity: op },
     ];
   }
-  if (obj.type === 'cone') {
-    const R = obj.radius ?? 0.5, hh = (obj.height ?? 1.0) / 2;
-    const base = _circlePts(e3, R, 'z', -hh, c), apex = _rel(e3, 0, 0, hh, c);
-    return [
-      { points: _flat(base), closed: true, fill: shade(fill, 0.6), stroke: edge, strokeWidth: 1, opacity: op },
-      { points: _flat(_hull(base.concat([apex]))), closed: true, fill: shade(fill, 1.0), stroke: edge, strokeWidth: 1, opacity: op },
-    ];
-  }
-  // torus — flat ring lying in the XY plane
-  const Rmaj = obj.majorRadius ?? 1.0, Rmin = obj.minorRadius ?? 0.3;
-  const outer = _circlePts(e3, Rmaj + Rmin, 'z', 0, c), inner = _circlePts(e3, Rmaj - Rmin, 'z', 0, c);
+  // cone
+  const R = obj.radius ?? 0.5, hh = (obj.height ?? 1.0) / 2;
+  const base = _circlePts(e3, R, 'z', -hh, c), apex = _rel(e3, 0, 0, hh, c);
   return [
-    { points: _flat(outer), closed: true, fill: shade(fill, 0.95), stroke: edge, strokeWidth: 1, opacity: op },
-    { points: _flat(inner), closed: true, fill: shade(fill, 0.4), stroke: edge, strokeWidth: 1, opacity: op },
+    { points: _flat(base), closed: true, fill: shade(fill, 0.6), stroke: edge, strokeWidth: 1, opacity: op },
+    { points: _flat(_hull(base.concat([apex]))), closed: true, fill: shade(fill, 1.0), stroke: edge, strokeWidth: 1, opacity: op },
   ];
+}
+
+// Torus: a donut — overlapping shaded "tube" discs sampled around the major
+// ring, painter-sorted (near discs cover far ones → the hole appears naturally).
+function torus3dTube(obj) {
+  const e3 = eff3d(obj);
+  const c = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const Rmaj = obj.majorRadius ?? 1.0, Rmin = obj.minorRadius ?? 0.3;
+  const fill = obj.fill ?? '#9c36b5', op = obj.opacity ?? 1;
+  const sel = store.selectedObjectIds.includes(obj.id);
+  const b = _basis3d(cam3d.value.phi, cam3d.value.theta);
+  const n = { x: b.sp * b.ct, y: b.sp * b.st, z: b.cp };
+  const tubeR = Math.max(2, Rmin * proj3DScale.value * cam3d.value.zoom);
+  const N = 56;
+  const segs = [];
+  for (let i = 0; i < N; i++) {
+    const a = i / N * 2 * Math.PI, wx = Rmaj * Math.cos(a), wy = Rmaj * Math.sin(a);
+    const r = _rel(e3, wx, wy, 0, c);
+    segs.push({ x: r[0], y: r[1], depth: (e3.x3d + wx) * n.x + (e3.y3d + wy) * n.y + e3.z3d * n.z });
+  }
+  segs.sort((p, q) => p.depth - q.depth); // far → near
+  return segs.map(s => {
+    const t = Math.max(0, Math.min(1, (s.depth / (Rmaj || 1) + 1) / 2)); // 0 far, 1 near
+    return { x: s.x, y: s.y, radius: tubeR, opacity: op, listening: false,
+      fill: shade(fill, 0.5 + 0.75 * t), stroke: sel ? '#60a5fa' : '', strokeWidth: 0 };
+  });
 }
 
 function axes3dLines(obj) {
