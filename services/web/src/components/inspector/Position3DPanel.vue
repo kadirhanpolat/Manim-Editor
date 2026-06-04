@@ -36,9 +36,21 @@
     <div class="mt-2" v-if="element.type === 'axes3d'">
       <label class="block text-xs text-studio-text-muted mb-1">X Range</label>
       <div class="flex gap-1 items-center text-xs text-studio-text-muted">
-        <input type="number" :value="element.xRange?.[0] ?? -3" @input="updateRange('xRange', 0, $event)" step="1" class="input text-sm w-16" />
+        <input type="number" data-testid="xRange-min" :value="element.xRange?.[0] ?? -3" @input="updateRange('xRange', 0, $event)" step="1" class="input text-sm w-16" />
         <span>–</span>
-        <input type="number" :value="element.xRange?.[1] ?? 3" @input="updateRange('xRange', 1, $event)" step="1" class="input text-sm w-16" />
+        <input type="number" data-testid="xRange-max" :value="element.xRange?.[1] ?? 3" @input="updateRange('xRange', 1, $event)" step="1" class="input text-sm w-16" />
+      </div>
+      <label class="block text-xs text-studio-text-muted mb-1 mt-2">Y Range</label>
+      <div class="flex gap-1 items-center text-xs text-studio-text-muted">
+        <input type="number" data-testid="yRange-min" :value="element.yRange?.[0] ?? -3" @input="updateRange('yRange', 0, $event)" step="1" class="input text-sm w-16" />
+        <span>–</span>
+        <input type="number" data-testid="yRange-max" :value="element.yRange?.[1] ?? 3" @input="updateRange('yRange', 1, $event)" step="1" class="input text-sm w-16" />
+      </div>
+      <label class="block text-xs text-studio-text-muted mb-1 mt-2">Z Range</label>
+      <div class="flex gap-1 items-center text-xs text-studio-text-muted">
+        <input type="number" data-testid="zRange-min" :value="element.zRange?.[0] ?? -3" @input="updateRange('zRange', 0, $event)" step="1" class="input text-sm w-16" />
+        <span>–</span>
+        <input type="number" data-testid="zRange-max" :value="element.zRange?.[1] ?? 3" @input="updateRange('zRange', 1, $event)" step="1" class="input text-sm w-16" />
       </div>
     </div>
   </div>
