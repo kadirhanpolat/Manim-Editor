@@ -1,5 +1,5 @@
 <template>
-  <div class="timeline-panel bg-studio-surface border-t border-studio-border flex flex-col flex-shrink-0" style="height: 230px;">
+  <div class="timeline-panel bg-studio-surface border-t border-studio-border flex flex-col flex-shrink-0 overflow-hidden" style="height: 280px;">
     <!-- Header bar with tabs -->
     <div class="h-10 flex items-center px-3 border-b border-studio-border flex-shrink-0 gap-2">
       <!-- Time display -->
@@ -107,8 +107,9 @@
         </div>
       </div>
 
-      <!-- Keyframe Lanes — pinned at the bottom, outside the scrolling list -->
-      <div class="flex-shrink-0 border-t border-studio-border">
+      <!-- Keyframe Lanes — pinned at the bottom, outside the scrolling list; caps its
+           own height and scrolls internally so many lanes never overflow off-screen -->
+      <div class="flex-shrink-0 border-t border-studio-border max-h-32 overflow-y-auto">
         <KeyframeLanesPanel
           :pps="pps"
           :labelW="labelW"
