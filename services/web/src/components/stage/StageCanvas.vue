@@ -1145,7 +1145,7 @@ function axesGraphCurves(obj) {
 function sphere3dCfg(obj) {
   const e3 = eff3d(obj);
   const p = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
-  const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value * perspectiveScale(e3, cam3d.value));
+  const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value * cam3d.value.zoom * perspectiveScale(e3, cam3d.value));
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px, y: p.py, radius: r,
@@ -1176,7 +1176,7 @@ function cube3dCfg(obj) {
 function generic3dCfg(obj) {
   const e3 = eff3d(obj);
   const p = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
-  const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value * perspectiveScale(e3, cam3d.value));
+  const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value * cam3d.value.zoom * perspectiveScale(e3, cam3d.value));
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
     x: p.px, y: p.py,
