@@ -39,18 +39,19 @@
           v-for="kf in sortedKeyframes"
           :key="kf.time"
           class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer transition-transform hover:scale-125"
+          :class="{ 'scale-150': isSelected(kf) }"
           :style="{ left: kf.time * pps + 'px' }"
-          :title="`t=${kf.time.toFixed(2)}s  v=${kf.value}`"
-          @click.stop="selectKf(kf)"
+          :title="`t=${kf.time.toFixed(2)}s  v=${kf.value}` + (isSelected(kf) ? ' (selected)' : '')"
+          @click.stop="toggleKf(kf)"
           @contextmenu.prevent="rightClickKf(kf)"
           @mousedown.stop="startDrag(kf, $event)"
         >
           <svg width="10" height="10" viewBox="-5 -5 10 10">
             <polygon
               points="0,-4 4,0 0,4 -4,0"
-              :fill="modeColor"
-              stroke="white"
-              stroke-width="0.8"
+              :fill="isSelected(kf) ? '#ffffff' : modeColor"
+              :stroke="isSelected(kf) ? modeColor : 'white'"
+              :stroke-width="isSelected(kf) ? 1.4 : 0.8"
             />
           </svg>
         </div>
@@ -80,8 +81,19 @@ const sortedKeyframes = computed(() => [...keyframes.value].sort((a, b) => a.tim
 const mode = computed(() => obj.value?.keyframeMode?.[props.prop] || store.project.keyframeDefaults?.mode || 'opt-in');
 const modeColor = computed(() => ({ override: '#ffd700', additive: '#ff9d42', 'opt-in': '#60a5fa' }[mode.value] || '#60a5fa'));
 
+function isSelected(kf) {
+  const s = store.selectedKeyframeId;
+  return !!s && s.objId === props.objId && s.prop === props.prop && Math.abs(s.time - kf.time) < 0.01;
+}
 function selectKf(kf) {
   store.selectKeyframe(props.objId, props.prop, kf.time);
+}
+// Click toggles selection: select if not selected, clear if already selected.
+// Suppressed right after a drag (the trailing click shouldn't toggle).
+function toggleKf(kf) {
+  if (_dragMoved) { _dragMoved = false; return; }
+  if (isSelected(kf)) store.selectKeyframe(null, null, null);
+  else store.selectKeyframe(props.objId, props.prop, kf.time);
 }
 
 function rightClickKf(kf) {
@@ -95,17 +107,20 @@ function onDblClick(e) {
   store.addKeyframe(props.objId, props.prop, t, currentVal);
 }
 
+let _dragMoved = false;
 function startDrag(kf, e) {
-  selectKf(kf);
+  _dragMoved = false;
+  // Don't select on mousedown — let the click handler toggle pure clicks.
+  // A real drag selects via the move handler below.
   const startX = e.clientX;
   const origTime = kf.time;
-  const origValue = kf.value;
   let currentTime = origTime;
 
   const move = (ev) => {
     const dt = (ev.clientX - startX) / props.pps;
     const newTime = Math.max(0, Math.round((origTime + dt) * 100) / 100);
     if (newTime === currentTime) return;
+    _dragMoved = true;
     // Mutate store state directly without committing (avoid undo history on every pixel)
     const obj = store.project.objects.find(o => o.id === props.objId);
     if (!obj?.keyframes?.[props.prop]) return;

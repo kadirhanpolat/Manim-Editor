@@ -1,5 +1,8 @@
 <template>
   <aside class="w-72 bg-studio-surface border-l border-studio-border flex flex-col flex-shrink-0 overflow-y-auto">
+    <!-- Selected keyframe editor (self-gates on a selected keyframe) -->
+    <KeyframePanel />
+
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <!-- Object Properties -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -527,6 +530,7 @@ import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
 import FontSelector from './FontSelector.vue';
 import Position3DPanel from './Position3DPanel.vue';
 import Scene3DPanel from './Scene3DPanel.vue';
+import KeyframePanel from './KeyframePanel.vue';
 
 const Section = {
   props: ['label'],
