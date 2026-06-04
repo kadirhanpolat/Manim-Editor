@@ -7,6 +7,7 @@
       ↳ {{ prop }}
     </div>
     <div
+      ref="laneArea"
       class="relative flex-1 overflow-hidden cursor-crosshair"
       :style="{ width: totalW + 'px' }"
       @dblclick="onDblClick"
@@ -25,12 +26,14 @@
               :x1="kf.time * pps" y1="10" :x2="sortedKeyframes[i + 1].time * pps" y2="10"
               :stroke="modeColor" stroke-width="2" stroke-opacity="0.45" style="pointer-events: none"
             />
-            <!-- wide transparent hit area so the segment is easy to click -->
+            <!-- wide transparent hit area: single click → easing popup (debounced
+                 so a double-click adds a keyframe on the segment instead) -->
             <line
               :x1="kf.time * pps" y1="10" :x2="sortedKeyframes[i + 1].time * pps" y2="10"
               stroke="transparent" stroke-width="16"
               style="pointer-events: all; cursor: pointer"
-              @click.stop="openEasingPopup(kf, sortedKeyframes[i + 1], $event)"
+              @click.stop="onSegClick(kf, sortedKeyframes[i + 1], $event)"
+              @dblclick.stop="onSegDblClick($event)"
             />
           </template>
         </svg>
@@ -61,7 +64,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 
 const props = defineProps({
@@ -105,12 +108,31 @@ function rightClickKf(kf) {
   store.removeKeyframe(props.objId, props.prop, kf.time);
 }
 
-function onDblClick(e) {
-  const rect = e.currentTarget.getBoundingClientRect();
-  const raw = Math.round(((e.clientX - rect.left) / props.pps) * 100) / 100;
-  const t = Math.round(clampToObj(raw) * 100) / 100;
-  const currentVal = obj.value?.[props.prop] ?? 0;
-  store.addKeyframe(props.objId, props.prop, t, currentVal);
+const laneArea = ref(null);
+function addKfAt(clientX) {
+  const el = laneArea.value;
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const t = Math.round(clampToObj((clientX - rect.left) / props.pps) * 100) / 100;
+  store.addKeyframe(props.objId, props.prop, t, obj.value?.[props.prop] ?? 0);
+}
+function onDblClick(e) { addKfAt(e.clientX); }
+
+// Segment click is debounced: a lone click opens the easing popup after a short
+// delay; a double-click within that delay cancels it and adds a keyframe on the
+// segment instead (so single = edit easing, double = insert key).
+let _segClickTimer = null;
+function onSegClick(k1, k2, e) {
+  if (_segClickTimer) return;
+  const ev = { clientX: e.clientX, clientY: e.clientY };
+  _segClickTimer = setTimeout(() => {
+    _segClickTimer = null;
+    emit('openEasingPopup', { objId: props.objId, prop: props.prop, k1, k2, event: ev });
+  }, 220);
+}
+function onSegDblClick(e) {
+  if (_segClickTimer) { clearTimeout(_segClickTimer); _segClickTimer = null; }
+  addKfAt(e.clientX);
 }
 
 let _dragMoved = false;
@@ -149,9 +171,5 @@ function startDrag(kf, e) {
 
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', up);
-}
-
-function openEasingPopup(k1, k2, e) {
-  emit('openEasingPopup', { objId: props.objId, prop: props.prop, k1, k2, event: e });
 }
 </script>
