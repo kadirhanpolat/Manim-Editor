@@ -1234,6 +1234,32 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
+    // Clamp every keyframe of an object into its visible interval
+    // [enterTime, enterTime+duration] (called after the object bar is resized/moved).
+    clampKeyframesToRange(objId) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj?.keyframes) return;
+      const start = obj.enterTime || 0;
+      const end = start + (obj.duration ?? 3);
+      let changed = false;
+      for (const prop of Object.keys(obj.keyframes)) {
+        const seen = [];
+        const next = [...obj.keyframes[prop]]
+          .map(kf => {
+            const t = Math.round(Math.max(start, Math.min(end, kf.time)) * 100) / 100;
+            if (t !== kf.time) changed = true;
+            return { ...kf, time: t };
+          })
+          .sort((a, b) => a.time - b.time)
+          .filter(kf => {
+            if (seen.some(t => Math.abs(t - kf.time) < 0.01)) { changed = true; return false; }
+            seen.push(kf.time); return true;
+          });
+        obj.keyframes[prop] = next;
+      }
+      if (changed) { this.isDirty = true; this.commitState(); }
+    },
+
     updateKeyframeValue(objId, prop, time, value) {
       const obj = this.project.objects.find(o => o.id === objId);
       const kf = obj?.keyframes?.[prop]?.find(k => Math.abs(k.time - time) < 0.01);

@@ -81,6 +81,11 @@ const sortedKeyframes = computed(() => [...keyframes.value].sort((a, b) => a.tim
 const mode = computed(() => obj.value?.keyframeMode?.[props.prop] || store.project.keyframeDefaults?.mode || 'opt-in');
 const modeColor = computed(() => ({ override: '#ffd700', additive: '#ff9d42', 'opt-in': '#60a5fa' }[mode.value] || '#60a5fa'));
 
+// Keyframes must stay within the object's visible interval [enter, enter+duration].
+const objStart = computed(() => obj.value?.enterTime || 0);
+const objEnd = computed(() => objStart.value + (obj.value?.duration ?? 3));
+function clampToObj(t) { return Math.max(objStart.value, Math.min(objEnd.value, t)); }
+
 function isSelected(kf) {
   const s = store.selectedKeyframeId;
   return !!s && s.objId === props.objId && s.prop === props.prop && Math.abs(s.time - kf.time) < 0.01;
@@ -102,7 +107,8 @@ function rightClickKf(kf) {
 
 function onDblClick(e) {
   const rect = e.currentTarget.getBoundingClientRect();
-  const t = Math.round(((e.clientX - rect.left) / props.pps) * 100) / 100;
+  const raw = Math.round(((e.clientX - rect.left) / props.pps) * 100) / 100;
+  const t = Math.round(clampToObj(raw) * 100) / 100;
   const currentVal = obj.value?.[props.prop] ?? 0;
   store.addKeyframe(props.objId, props.prop, t, currentVal);
 }
@@ -118,7 +124,7 @@ function startDrag(kf, e) {
 
   const move = (ev) => {
     const dt = (ev.clientX - startX) / props.pps;
-    const newTime = Math.max(0, Math.round((origTime + dt) * 100) / 100);
+    const newTime = Math.round(clampToObj(origTime + dt) * 100) / 100;
     if (newTime === currentTime) return;
     _dragMoved = true;
     // Mutate store state directly without committing (avoid undo history on every pixel)

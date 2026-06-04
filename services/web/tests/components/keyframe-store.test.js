@@ -18,6 +18,21 @@ describe('keyframeDefaults', () => {
   });
 });
 
+describe('clampKeyframesToRange', () => {
+  it('clamps keyframes outside [enterTime, enterTime+duration] to the boundary', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 1, duration: 3 }); // visible interval [1, 4]
+    store.addKeyframe(obj.id, 'x', 0.2, 100);  // before start → clamps to 1
+    store.addKeyframe(obj.id, 'x', 2.5, 500);  // inside → unchanged
+    store.addKeyframe(obj.id, 'x', 9.0, 900);  // after end → clamps to 4
+    store.clampKeyframesToRange(obj.id);
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(Math.min(...times)).toBeGreaterThanOrEqual(1);
+    expect(Math.max(...times)).toBeLessThanOrEqual(4);
+    expect(times).toContain(2.5);
+  });
+});
+
 describe('addKeyframe', () => {
   it('adds a keyframe to an object property', () => {
     const obj = store.addObject('circle', 960, 540);

@@ -215,6 +215,7 @@ function startObjResize(obj, dir, e) {
   };
   const up = () => {
     draggingObjId.value = null;
+    store.clampKeyframesToRange(obj.id); // keep keyframes inside the new visible interval
     document.removeEventListener('mousemove', move);
     document.removeEventListener('mouseup', up);
   };
