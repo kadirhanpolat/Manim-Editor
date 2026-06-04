@@ -201,9 +201,9 @@ When `sceneType === '3d'`, canvas splits 50/50 into:
 
 Drag on iso panel updates `x3d/z3d` (inverse iso formula). Drag on top panel updates `x3d/z3d` directly.
 
-### Keyframe 3D (animate mode)
+### Keyframe 3D (position)
 
-Simultaneous `x3d/y3d/z3d` keyframes in the same segment are merged into **one** `move_to([x, y, z])` call. Each `[t1, t2]` segment uses "last known value" for each axis.
+Keyframed `x3d/y3d/z3d` are merged into **one** `move_to([x, y, z])` call per `[t1, t2]` segment, using "last known value" for each axis. This merge runs **regardless of each axis's `keyframeCodegen` mode** — 3D position can only be expressed via `move_to`, and `UpdateFromAlphaFunc`/`ValueTracker` have no 3D setter (`_kfPropSet`/`_kfUpdater` return null), so non-merged axes would otherwise be silently dropped. The `x3d/y3d/z3d` arms of `_kfPropSet` are therefore dead and were removed (v3.3.2).
 
 ### Store Actions
 

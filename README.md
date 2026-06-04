@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.3.1-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.3.2-6B7280" alt="Version">
 </p>
 
 ---
@@ -373,7 +373,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 105 engine tests (easing, geometry, transform, blending, keyframe interpolation)
-npm run test:unit # 109 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene)
+npm run test:unit # 111 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene)
 ```
 
 ---
@@ -406,7 +406,15 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.3.1 (current)
+### v3.3.2 (current)
+
+Bug-fix release — hardens 3D keyframe code generation:
+
+- **Fix (3D keyframes)**: simultaneous `x3d/y3d/z3d` keyframes are now folded into a single `move_to([x, y, z])` regardless of each axis's `keyframeCodegen` mode. Previously, if one axis was set to `UpdateFromAlphaFunc` or `ValueTracker` (which have no 3D setter), that axis's keyframes were silently dropped — only the `animate`-mode axes survived. Now any keyframed 3D position axis always contributes to the combined move. Applied identically to both `codegen.js` (server) and `manim.js` (client exporter).
+- **Cleanup**: removed dead `x3d/y3d/z3d` arms from `_kfPropSet` (unreachable — 3D position is only ever emitted through the combined `move_to` path) in both generators.
+- **Tests**: added two regression tests in `3d-layer4.test.js` — staggered-time per-axis carry-over, and the mixed-codegen-mode no-silent-drop guard. Unit suite is now 111 tests.
+
+### v3.3.1
 
 Bug-fix release — three latent defects that broke a clean Docker build / first render from scratch:
 

@@ -341,9 +341,9 @@ function _kfPropSet(n, prop, value, sw, sh) {
     case 'rotation': return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)})`;
     case 'scaleX': return `${n}.animate.stretch_to_fit_width(${value.toFixed(4)})`;
     case 'scaleY': return `${n}.animate.stretch_to_fit_height(${value.toFixed(4)})`;
-    case 'x3d': return `${n}.animate.move_to([${value.toFixed(3)}, 0.000, 0.000])`;
-    case 'y3d': return `${n}.animate.move_to([0.000, ${value.toFixed(3)}, 0.000])`;
-    case 'z3d': return `${n}.animate.move_to([0.000, 0.000, ${value.toFixed(3)}])`;
+    // x3d/y3d/z3d are never routed here — 3D position is always combined into a
+    // single move_to by generateKeyframeSteps (a per-axis move_to would zero the
+    // other two axes). See the "Combine simultaneous x3d/y3d/z3d" block below.
     case 'rx':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=RIGHT)`;
     case 'ry':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=UP)`;
     case 'rz':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=OUT)`;
@@ -368,13 +368,13 @@ function generateKeyframeSteps(project, steps, sw, sh) {
     const defaults = project.keyframeDefaults || {};
 
     // ── Combine simultaneous x3d/y3d/z3d keyframes into single move_to ──
+    // 3D position can only be expressed via move_to, so any keyframed x3d/y3d/z3d
+    // is folded in here regardless of its per-prop codegenMode. ValueTracker /
+    // UpdateFromAlphaFunc have no 3D setter and would otherwise drop them silently.
     const pos3DProps = ['x3d', 'y3d', 'z3d'];
     const hasPos3D = pos3DProps.some(p => {
       const kfs = obj.keyframes?.[p];
-      if (!kfs || kfs.length < 2) return false;
-      const mode = (obj.keyframeCodegen && obj.keyframeCodegen[p]) ||
-        defaults.codegenMode || 'UpdateFromAlphaFunc';
-      return mode === 'animate';
+      return kfs && kfs.length >= 2;
     });
 
     if (hasPos3D) {
@@ -382,11 +382,7 @@ function generateKeyframeSteps(project, steps, sw, sh) {
       for (const p of pos3DProps) {
         const kfs = obj.keyframes?.[p];
         if (!kfs || kfs.length < 2) continue;
-        const mode = (obj.keyframeCodegen && obj.keyframeCodegen[p]) ||
-          defaults.codegenMode || 'UpdateFromAlphaFunc';
-        if (mode === 'animate') {
-          pos3DKeyframes[p] = [...kfs].sort((a, b) => a.time - b.time);
-        }
+        pos3DKeyframes[p] = [...kfs].sort((a, b) => a.time - b.time);
       }
 
       // Collect all unique time points across active 3D props
@@ -421,12 +417,8 @@ function generateKeyframeSteps(project, steps, sw, sh) {
     }
 
     for (const [prop, keyframes] of Object.entries(obj.keyframes)) {
-      // 3D coordinate props already handled above (animate mode only)
-      if (pos3DProps.includes(prop)) {
-        const mode = (obj.keyframeCodegen && obj.keyframeCodegen[prop]) ||
-          defaults.codegenMode || 'UpdateFromAlphaFunc';
-        if (mode === 'animate') continue; // skip — merged above
-      }
+      // 3D coordinate props are always merged into a single move_to above
+      if (pos3DProps.includes(prop)) continue;
       if (!keyframes || keyframes.length < 2) continue;
       const sorted = [...keyframes].sort((a, b) => a.time - b.time);
       const codegenMode = (obj.keyframeCodegen && obj.keyframeCodegen[prop]) ||
