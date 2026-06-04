@@ -1131,7 +1131,7 @@ const useProjectStore = defineStore('project', {
         startTime: this.playbackTime || 0,
         duration: 2.0,
         easing: 'ease_in_out',
-        path: pathPoints,   // [{x, y}, ...]
+        path: pathPoints,   // [{x,y},...] (2D) or [{x3d,y3d,z3d},...] (3D)
         params: {},
       });
       return clip;

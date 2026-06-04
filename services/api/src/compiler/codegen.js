@@ -145,11 +145,7 @@ function objectCode3d(obj) {
       const xr = obj.xRange ?? [-3, 3, 1];
       const yr = obj.yRange ?? [-3, 3, 1];
       const zr = obj.zRange ?? [-3, 3, 1];
-      lines.push(`${n} = ThreeDAxes(`);
-      lines.push(`    x_range=[${xr[0]}, ${xr[1]}, ${xr[2]}],`);
-      lines.push(`    y_range=[${yr[0]}, ${yr[1]}, ${yr[2]}],`);
-      lines.push(`    z_range=[${zr[0]}, ${zr[1]}, ${zr[2]}]`);
-      lines.push(`)`);
+      lines.push(`${n} = ThreeDAxes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2]}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2]}], z_range=[${zr[0]}, ${zr[1]}, ${zr[2]}])`);
       if ((obj.x3d ?? 0) !== 0 || (obj.y3d ?? 0) !== 0 || (obj.z3d ?? 0) !== 0) {
         lines.push(`${n}.move_to(${pos()})`);
       }

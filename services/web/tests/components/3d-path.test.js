@@ -100,3 +100,23 @@ describe('axes3d range codegen (regression guard for editor)', () => {
     expect(code).toContain('z_range=[-2, 2, 1]');
   });
 });
+
+describe('axes3d range round-trip', () => {
+  it('parser reconstructs custom y/z ranges from generated code', () => {
+    const ax = {
+      id: 'ax1', type: 'axes3d', x3d: 0, y3d: 0, z3d: 0,
+      xRange: [-3, 3, 1], yRange: [-5, 5, 1], zRange: [-2, 2, 1],
+      fill: '#ffffff', opacity: 1,
+      enterTime: 0, exitTime: 5,
+      anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+    };
+    const project = makeProject3D([ax], [{ id: 't1', clips: [] }]);
+    const code = generateCode(project, '/data/assets');
+    const parsed = parseManimScript(code);
+    const pax = parsed.objects.find(o => o.type === 'axes3d');
+    expect(pax).toBeTruthy();
+    expect(pax.xRange).toEqual([-3, 3, 1]);
+    expect(pax.yRange).toEqual([-5, 5, 1]);
+    expect(pax.zRange).toEqual([-2, 2, 1]);
+  });
+});
