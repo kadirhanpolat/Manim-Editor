@@ -334,8 +334,17 @@ function _clipSeg(x0, y0, x1, y1, rx0, ry0, rx1, ry1) {
   }
   return [x0 + t0 * dx, y0 + t0 * dy, x0 + t1 * dx, y0 + t1 * dy];
 }
-const isoRect = computed(() => [0, 0, splitX.value, stageConfig.value.height]);
-const topRect = computed(() => [splitX.value, 0, stageConfig.value.width, stageConfig.value.height]);
+// Clip rects are the VISIBLE black viewport (bgConfig rect), not the full
+// Konva stage — the backdrop is scaled by vs and offset by ox/oy, so clipping
+// to [0,stageW] would let the gizmo spill into the inset margin around it.
+const isoRect = computed(() => {
+  const h = stg.value.height * vs.value;
+  return [ox.value, oy.value, splitX.value, oy.value + h];
+});
+const topRect = computed(() => {
+  const w = stg.value.width * vs.value, h = stg.value.height * vs.value;
+  return [splitX.value, oy.value, ox.value + w, oy.value + h];
+});
 function _axCfg(a, b, stroke, r) {
   const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
   return c ? { points: c, stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false } : null;
