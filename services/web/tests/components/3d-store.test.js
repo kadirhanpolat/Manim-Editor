@@ -41,6 +41,17 @@ describe('camera3d', () => {
     expect(store.project.camera3d.theta).toBe(-60);
     expect(store.project.camera3d.zoom).toBe(1.5);
   });
+
+  it('new project has 3D projection defaults', () => {
+    expect(store.project.camera3d.projection).toBe('orthographic');
+    expect(store.project.camera3d.focalDistance).toBe(8);
+  });
+
+  it('setCamera3d updates projection mode', () => {
+    store.setCamera3d({ projection: 'perspective', focalDistance: 5 });
+    expect(store.project.camera3d.projection).toBe('perspective');
+    expect(store.project.camera3d.focalDistance).toBe(5);
+  });
 });
 
 describe('3D object defaults', () => {

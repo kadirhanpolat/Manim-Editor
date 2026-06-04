@@ -65,6 +65,8 @@ function createDefaultProject(editorMode = 'visual') {
       phi: 75,
       theta: -45,
       zoom: 1.0,
+      projection: 'orthographic',  // 'orthographic' | 'perspective' — preview-only
+      focalDistance: 8,
     },
   };
 }
