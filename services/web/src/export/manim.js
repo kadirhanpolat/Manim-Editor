@@ -333,7 +333,7 @@ function objCode(obj, sw, sh) {
 // ── Keyframe helpers ───────────────────────────────────────────────────────
 
 function _kfPropSet(n, prop, value, sw, sh) {
-  const MANIM_W = 14, MANIM_H = 8;
+  const MANIM_W = FRAME_WIDTH, MANIM_H = FRAME_HEIGHT;
   switch (prop) {
     case 'x': {
       const mx = ((value / sw) - 0.5) * MANIM_W;
@@ -823,7 +823,7 @@ export function generateManimScript(project) {
           sw, sh
         );
         const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
-        const frameWidth = (14 / zoom).toFixed(3);
+        const frameWidth = (FRAME_WIDTH / zoom).toFixed(3);
         code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
       } else {
         continue;
@@ -1453,7 +1453,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, mx, my, fw, rtStr] = m;
       const dur = parseFloat(rtStr || 1);
       const sp = manimToStage(parseFloat(mx), parseFloat(my), sw, sh);
-      const zoom = parseFloat((14 / parseFloat(fw)).toFixed(4));
+      const zoom = parseFloat((FRAME_WIDTH / parseFloat(fw)).toFixed(4));
       cameraTrack.push({
         id: `cam_${clipIdx++}`,
         type: 'camera_move',

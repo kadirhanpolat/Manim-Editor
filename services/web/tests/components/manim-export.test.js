@@ -168,7 +168,7 @@ describe('generator — camera', () => {
     const script = generateManimScript(project);
     expect(script).toContain('self.camera.frame.animate');
     expect(script).toContain('.set_width(');
-    expect(script).toContain('7.000'); // 14 / 2
+    expect(script).toContain('7.111'); // 14.222 / 2
   });
 });
 
@@ -325,11 +325,49 @@ class MainScene(MovingCameraScene):
         obj_1 = Circle(radius=0.500)
         obj_1.move_to([0.000, 0.000, 0])
         self.play(FadeIn(obj_1))
-        self.play(self.camera.frame.animate.move_to([0.00, 0.00, 0]).set_width(7.000), run_time=1.0)
+        self.play(self.camera.frame.animate.move_to([0.00, 0.00, 0]).set_width(7.111), run_time=1.0)
         self.wait(1)`;
     const result = parseManimScript(py, SW, SH);
     expect(result.cameraTrack).toHaveLength(1);
     expect(result.cameraTrack[0].type).toBe('camera_move');
-    expect(result.cameraTrack[0].params.zoom).toBeCloseTo(2); // 14/7 = 2
+    expect(result.cameraTrack[0].params.zoom).toBeCloseTo(2); // 14.222/7.111 ≈ 2
+  });
+});
+
+describe('FRAME_WIDTH unification', () => {
+  const FRAME_WIDTH = 14 + 2 / 9;
+
+  it('keyframe set_x uses the same scale as static x (14.222)', () => {
+    const px = 1440, sw = 1920;
+    const expectedMx = (((px / sw) - 0.5) * FRAME_WIDTH).toFixed(4); // "3.5556"
+    const project = {
+      name: 'kf', sceneDuration: 2,
+      stage: { width: sw, height: 1080, backgroundColor: '#000' },
+      objects: [{
+        id: 'o1', type: 'circle', name: 'c', x: 960, y: 540, width: 100, height: 100,
+        fill: '#fff', stroke: 'transparent', opacity: 1, rotation: 0,
+        enterTime: 0, duration: 2, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: 0,
+        keyframes: { x: [
+          { time: 0.0, value: 960, easing: { type: 'linear' } },
+          { time: 1.0, value: px,  easing: { type: 'linear' } },
+        ] },
+        keyframeCodegen: { x: 'animate' },
+      }],
+      tracks: [], assets: [], cameraTrack: [],
+    };
+    const script = generateManimScript(project);
+    expect(script).toContain(`set_x(${expectedMx})`);
+  });
+
+  it('camera set_width uses FRAME_WIDTH (zoom=2 -> 7.111)', () => {
+    const project = {
+      name: 'cam', sceneDuration: 2, cameraType: 'moving',
+      stage: { width: 1920, height: 1080, backgroundColor: '#000' },
+      objects: [], tracks: [], assets: [],
+      cameraTrack: [{ id: 'cm', type: 'camera_move', startTime: 0, duration: 1,
+        easing: 'linear', params: { targetX: 0, targetY: 0, zoom: 2 } }],
+    };
+    const script = generateManimScript(project);
+    expect(script).toContain('.set_width(7.111)');
   });
 });
