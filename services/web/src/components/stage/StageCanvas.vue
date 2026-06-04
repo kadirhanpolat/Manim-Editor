@@ -138,6 +138,11 @@
             </template>
           </template>
 
+          <!-- 3D committed path polylines (iso + top) -->
+          <template v-for="pl in path3dPolylines" :key="pl.id">
+            <v-line :config="pl" />
+          </template>
+
           <!-- 3D Split Divider -->
           <v-line
             v-if="is3D"
@@ -445,6 +450,30 @@ function eff3d(obj) {
     z3d: ov.z3d ?? obj.z3d ?? 0,
   };
 }
+
+// Commit edilmiş 3D path_move yollarını iso + top panelde polyline olarak çiz (salt-görsel)
+const path3dPolylines = computed(() => {
+  if (!is3D.value) return [];
+  const out = [];
+  for (const track of store.project.tracks || []) {
+    for (const clip of track.clips || []) {
+      if (clip.type !== 'path_move' || !Array.isArray(clip.path)) continue;
+      if (!(clip.path[0] && 'x3d' in clip.path[0])) continue;
+      const isoPts = [];
+      const topPts = [];
+      for (const pt of clip.path) {
+        const i = iso(pt.x3d, pt.y3d ?? 0, pt.z3d, projCx.value, projCy.value, proj3DScale.value);
+        isoPts.push(i.px, i.py);
+        const t = top(pt.x3d, pt.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+        topPts.push(t.px, t.py);
+      }
+      const base = { stroke: '#a855f7', strokeWidth: 1.5, dash: [4, 4], listening: false, opacity: 0.7 };
+      out.push({ ...base, points: isoPts, id: clip.id + '-isopath' });
+      out.push({ ...base, points: topPts, id: clip.id + '-toppath' });
+    }
+  }
+  return out;
+});
 
 function isVis(id) {
   const h = frameState.value.hiddenIds;
