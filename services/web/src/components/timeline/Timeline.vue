@@ -36,26 +36,35 @@
         </div>
       </div>
 
-      <!-- Object bars -->
-      <div class="border-b border-studio-border/50 flex h-10 flex-shrink-0" v-if="objects.length > 0">
-        <div class="flex-shrink-0 flex items-center px-2 bg-studio-bg/30 border-r border-studio-border/50 text-[10px] text-studio-text-muted font-medium" :style="{ width: labelW + 'px' }">
-          Objects
-        </div>
-        <div class="flex-1 relative overflow-hidden">
-          <div :style="{ width: totalW + 'px' }" class="h-full relative">
-            <div
-              v-for="obj in objects"
-              :key="'bar-'+obj.id"
-              class="obj-bar"
-              :class="{ selected: isObjSelected(obj.id), dragging: draggingObjId === obj.id }"
-              :style="objBarStyle(obj)"
-              @mousedown.stop="startObjDrag(obj, $event)"
-              @click.stop="selectObj(obj.id, $event)"
-            >
-              <div class="resize-handle left" @mousedown.stop="startObjResize(obj, 'left', $event)"></div>
-              <span class="obj-bar-dot" :style="{ background: objColor(obj) }"></span>
-              <span class="truncate">{{ obj.name }}</span>
-              <div class="resize-handle right" @mousedown.stop="startObjResize(obj, 'right', $event)"></div>
+      <!-- Object lanes (one row per object so simultaneous objects don't overlap) -->
+      <div v-if="objects.length > 0" class="flex-shrink-0 max-h-40 overflow-y-auto">
+        <div
+          v-for="obj in objects"
+          :key="'objrow-'+obj.id"
+          class="border-b border-studio-border/50 flex h-7"
+        >
+          <div
+            class="flex-shrink-0 flex items-center gap-1.5 px-2 bg-studio-bg/30 border-r border-studio-border/50 text-[10px] font-medium cursor-pointer"
+            :class="isObjSelected(obj.id) ? 'text-studio-text' : 'text-studio-text-muted'"
+            :style="{ width: labelW + 'px' }"
+            @click.stop="selectObj(obj.id, $event)"
+          >
+            <span class="obj-bar-dot" :style="{ background: objColor(obj) }"></span>
+            <span class="truncate">{{ obj.name }}</span>
+          </div>
+          <div class="flex-1 relative overflow-hidden">
+            <div :style="{ width: totalW + 'px' }" class="h-full relative">
+              <div
+                class="obj-bar"
+                :class="{ selected: isObjSelected(obj.id), dragging: draggingObjId === obj.id }"
+                :style="objBarStyle(obj)"
+                @mousedown.stop="startObjDrag(obj, $event)"
+                @click.stop="selectObj(obj.id, $event)"
+              >
+                <div class="resize-handle left" @mousedown.stop="startObjResize(obj, 'left', $event)"></div>
+                <span class="truncate">{{ obj.name }}</span>
+                <div class="resize-handle right" @mousedown.stop="startObjResize(obj, 'right', $event)"></div>
+              </div>
             </div>
           </div>
         </div>
