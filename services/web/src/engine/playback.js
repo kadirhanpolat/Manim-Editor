@@ -20,6 +20,51 @@ import { interpolateKeyframes, getKeyframeRange } from './keyframe.js';
  * @property {Object|null} cameraState - Camera pan/zoom state {x, y, zoom} or null
  */
 
+// path_move için yay-uzunluğuna göre interpolasyon. 3D nokta (x3d alanı) ya da
+// 2D nokta ({x,y}) kabul eder; aynı şekildeki noktayı döndürür.
+export function interpolatePath(path, t) {
+  const is3d = !!(path[0] && 'x3d' in path[0]);
+  const clampedT = Math.max(0, Math.min(1, t));
+  const segLens = [];
+  let totalLen = 0;
+  for (let k = 1; k < path.length; k++) {
+    let len;
+    if (is3d) {
+      const dx = path[k].x3d - path[k - 1].x3d;
+      const dy = path[k].y3d - path[k - 1].y3d;
+      const dz = path[k].z3d - path[k - 1].z3d;
+      len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    } else {
+      const dx = path[k].x - path[k - 1].x;
+      const dy = path[k].y - path[k - 1].y;
+      len = Math.sqrt(dx * dx + dy * dy);
+    }
+    segLens.push(len);
+    totalLen += len;
+  }
+  const at = (i) => (is3d
+    ? { x3d: path[i].x3d, y3d: path[i].y3d, z3d: path[i].z3d }
+    : { x: path[i].x, y: path[i].y });
+  if (totalLen === 0) return at(0);
+  const target = clampedT * totalLen;
+  let cumLen = 0;
+  for (let k = 0; k < segLens.length; k++) {
+    if (cumLen + segLens[k] >= target) {
+      const t2 = segLens[k] === 0 ? 0 : (target - cumLen) / segLens[k];
+      if (is3d) {
+        return {
+          x3d: lerp(path[k].x3d, path[k + 1].x3d, t2),
+          y3d: lerp(path[k].y3d, path[k + 1].y3d, t2),
+          z3d: lerp(path[k].z3d, path[k + 1].z3d, t2),
+        };
+      }
+      return { x: lerp(path[k].x, path[k + 1].x, t2), y: lerp(path[k].y, path[k + 1].y, t2) };
+    }
+    cumLen += segLens[k];
+  }
+  return at(path.length - 1);
+}
+
 export class PlaybackEngine {
   constructor() {
     this.playing = false;
@@ -478,39 +523,8 @@ export class PlaybackEngine {
       }
       case 'path_move': {
         if (!clip.path || clip.path.length < 2) break;
-        const clampedT = Math.max(0, Math.min(1, easedT));
-        const pts = clip.path;
-        // Compute cumulative arc lengths
-        let totalLen = 0;
-        const segLens = [];
-        for (let k = 1; k < pts.length; k++) {
-          const dx = pts[k].x - pts[k-1].x;
-          const dy = pts[k].y - pts[k-1].y;
-          const len = Math.sqrt(dx*dx + dy*dy);
-          segLens.push(len);
-          totalLen += len;
-        }
-        if (totalLen === 0) break;
-        // Find position at clampedT along path
-        const target = clampedT * totalLen;
-        let cumLen = 0;
-        let px = pts[0].x, py = pts[0].y;
-        for (let k = 0; k < segLens.length; k++) {
-          if (cumLen + segLens[k] >= target) {
-            const t2 = (target - cumLen) / segLens[k];
-            px = lerp(pts[k].x, pts[k+1].x, t2);
-            py = lerp(pts[k].y, pts[k+1].y, t2);
-            break;
-          }
-          cumLen += segLens[k];
-        }
-        // Post-loop fallback (safety: clampedT <= 1 should always break above)
-        if (cumLen >= totalLen) {
-          px = pts[pts.length - 1].x;
-          py = pts[pts.length - 1].y;
-        }
-        overrides.x = px;
-        overrides.y = py;
+        const pos = interpolatePath(clip.path, easedT);
+        Object.assign(overrides, pos);  // 2D: {x,y} · 3D: {x3d,y3d,z3d}
         break;
       }
     }

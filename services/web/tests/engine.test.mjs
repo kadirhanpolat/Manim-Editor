@@ -14,6 +14,7 @@ import { generateShapePoints, generateHeartPoints, generateSquarePoints, generat
 import { resamplePoints, interpolatePoints, interpolateColor, lerp } from '../src/engine/transform.js';
 import { isClipActive, getClipProgress, blendClipResults } from '../src/engine/blending.js';
 import { EASING_MAP } from '../src/export/manim.js';
+import { interpolatePath } from '../src/engine/playback.js';
 
 let passed = 0;
 let failed = 0;
@@ -279,6 +280,34 @@ assert(getKeyframeRange([]) === null, 'empty returns null');
 const r = getKeyframeRange([{ time: 2 }, { time: 0.5 }, { time: 3 }]);
 assertApprox(r.start, 0.5, 0.001, 'range.start is min time');
 assertApprox(r.end, 3, 0.001, 'range.end is max time');
+
+// ─── Test: interpolatePath 2D + 3D ───────────────────────────────────────────
+
+section('interpolatePath 2D + 3D');
+
+{
+  // 3D path interpolation — midpoint of a single straight segment
+  const path3d = [
+    { x3d: 0, y3d: 0, z3d: 0 },
+    { x3d: 2, y3d: 0, z3d: 4 },
+  ];
+  const mid = interpolatePath(path3d, 0.5);
+  assert('x3d' in mid, 'returns 3D point for 3D path');
+  assert(Math.abs(mid.x3d - 1) < 1e-6, 'x3d midpoint = 1');
+  assert(Math.abs(mid.z3d - 2) < 1e-6, 'z3d midpoint = 2');
+
+  const start = interpolatePath(path3d, 0);
+  assert(Math.abs(start.x3d - 0) < 1e-6 && Math.abs(start.z3d - 0) < 1e-6, '3D path start');
+  const end = interpolatePath(path3d, 1);
+  assert(Math.abs(end.x3d - 2) < 1e-6 && Math.abs(end.z3d - 4) < 1e-6, '3D path end');
+
+  const path2d = [{ x: 0, y: 0 }, { x: 10, y: 0 }];
+  const mid2d = interpolatePath(path2d, 0.5);
+  assert('x' in mid2d && !('x3d' in mid2d), 'returns 2D point for 2D path');
+  assert(Math.abs(mid2d.x - 5) < 1e-6, 'x midpoint = 5');
+
+  console.log('  ✓ interpolatePath 2D + 3D');
+}
 
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);

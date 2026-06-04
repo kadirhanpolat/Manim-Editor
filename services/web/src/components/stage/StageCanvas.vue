@@ -434,6 +434,16 @@ function eff(obj) {
   const ov = frameState.value.objectOverrides[obj.id];
   return ov ? applyOverrides(obj, ov) : obj;
 }
+
+// 3D nesnenin geçerli (override dahil) konumu — playback path_move/move override'larını yansıtır
+function eff3d(obj) {
+  const ov = frameState.value.objectOverrides[obj.id] || {};
+  return {
+    x3d: ov.x3d ?? obj.x3d ?? 0,
+    y3d: ov.y3d ?? obj.y3d ?? 0,
+    z3d: ov.z3d ?? obj.z3d ?? 0,
+  };
+}
 function isVis(id) {
   const h = frameState.value.hiddenIds;
   if (h instanceof Set) return !h.has(id);
@@ -969,7 +979,8 @@ function axesGraphCurves(obj) {
 }
 // ── 3D shape configs ──────────────────────────────────────────────────────
 function sphere3dCfg(obj) {
-  const p = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const e3 = eff3d(obj);
+  const p = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
@@ -981,9 +992,10 @@ function sphere3dCfg(obj) {
 }
 
 function cube3dCfg(obj) {
+  const e3 = eff3d(obj);
   const s = (obj.sideLength ?? 1.0) * proj3DScale.value;
   const hs = s / 2 / proj3DScale.value;
-  const cx = obj.x3d ?? 0, cy = obj.y3d ?? 0, cz = obj.z3d ?? 0;
+  const cx = e3.x3d, cy = e3.y3d, cz = e3.z3d;
   const tl = iso(cx - hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
   const tr = iso(cx + hs, cy, cz - hs, projCx.value, projCy.value, proj3DScale.value);
   const br = iso(cx + hs, cy, cz + hs, projCx.value, projCy.value, proj3DScale.value);
@@ -998,7 +1010,8 @@ function cube3dCfg(obj) {
 }
 
 function generic3dCfg(obj) {
-  const p = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
+  const e3 = eff3d(obj);
+  const p = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
@@ -1011,10 +1024,11 @@ function generic3dCfg(obj) {
 }
 
 function axes3dLines(obj) {
-  const origin = iso(obj.x3d ?? 0, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
-  const xEnd = iso((obj.x3d ?? 0) + 3, obj.y3d ?? 0, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
-  const yEnd = iso(obj.x3d ?? 0, (obj.y3d ?? 0) + 3, obj.z3d ?? 0, projCx.value, projCy.value, proj3DScale.value);
-  const zEnd = iso(obj.x3d ?? 0, obj.y3d ?? 0, (obj.z3d ?? 0) + 3, projCx.value, projCy.value, proj3DScale.value);
+  const e3 = eff3d(obj);
+  const origin = iso(e3.x3d, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const xEnd = iso(e3.x3d + 3, e3.y3d, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const yEnd = iso(e3.x3d, e3.y3d + 3, e3.z3d, projCx.value, projCy.value, proj3DScale.value);
+  const zEnd = iso(e3.x3d, e3.y3d, e3.z3d + 3, projCx.value, projCy.value, proj3DScale.value);
   return [
     { points: [origin.px, origin.py, xEnd.px, xEnd.py], stroke: '#ff6b6b', strokeWidth: 2 },
     { points: [origin.px, origin.py, yEnd.px, yEnd.py], stroke: '#69db7c', strokeWidth: 2 },
@@ -1023,7 +1037,8 @@ function axes3dLines(obj) {
 }
 
 function sphere3dTopCfg(obj) {
-  const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
+  const e3 = eff3d(obj);
+  const p = top(e3.x3d, e3.z3d, projCx2.value, projCy2.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
@@ -1035,7 +1050,8 @@ function sphere3dTopCfg(obj) {
 }
 
 function cube3dTopCfg(obj) {
-  const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
+  const e3 = eff3d(obj);
+  const p = top(e3.x3d, e3.z3d, projCx2.value, projCy2.value, proj3DScale.value);
   const s = Math.max(8, (obj.sideLength ?? 1.0) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
@@ -1047,7 +1063,8 @@ function cube3dTopCfg(obj) {
 }
 
 function generic3dTopCfg(obj) {
-  const p = top(obj.x3d ?? 0, obj.z3d ?? 0, projCx2.value, projCy2.value, proj3DScale.value);
+  const e3 = eff3d(obj);
+  const p = top(e3.x3d, e3.z3d, projCx2.value, projCy2.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
