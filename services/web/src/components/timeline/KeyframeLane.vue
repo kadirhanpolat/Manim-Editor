@@ -12,6 +12,28 @@
       @dblclick="onDblClick"
     >
       <div :style="{ width: totalW + 'px' }" class="h-full relative">
+        <!-- Segment lines between keyframes (drawn first; diamonds sit on top) -->
+        <svg
+          v-if="sortedKeyframes.length > 1"
+          class="absolute top-0 left-0 w-full h-full pointer-events-none"
+          :width="totalW"
+          height="20"
+        >
+          <template v-for="(kf, i) in sortedKeyframes.slice(0, -1)" :key="'seg-' + kf.time">
+            <!-- visible thin line -->
+            <line
+              :x1="kf.time * pps" y1="10" :x2="sortedKeyframes[i + 1].time * pps" y2="10"
+              :stroke="modeColor" stroke-width="2" stroke-opacity="0.45" style="pointer-events: none"
+            />
+            <!-- wide transparent hit area so the segment is easy to click -->
+            <line
+              :x1="kf.time * pps" y1="10" :x2="sortedKeyframes[i + 1].time * pps" y2="10"
+              stroke="transparent" stroke-width="16"
+              style="pointer-events: all; cursor: pointer"
+              @click.stop="openEasingPopup(kf, sortedKeyframes[i + 1], $event)"
+            />
+          </template>
+        </svg>
         <!-- Keyframe diamonds -->
         <div
           v-for="kf in sortedKeyframes"
@@ -32,27 +54,6 @@
             />
           </svg>
         </div>
-        <!-- Segment lines between keyframes -->
-        <svg
-          v-if="sortedKeyframes.length > 1"
-          class="absolute top-0 left-0 w-full h-full pointer-events-none"
-          :width="totalW"
-          height="20"
-        >
-          <line
-            v-for="(kf, i) in sortedKeyframes.slice(0, -1)"
-            :key="'seg-' + kf.time"
-            :x1="kf.time * pps"
-            y1="10"
-            :x2="sortedKeyframes[i + 1].time * pps"
-            y2="10"
-            :stroke="modeColor"
-            stroke-width="1"
-            stroke-opacity="0.35"
-            style="pointer-events: all"
-            @click.stop="openEasingPopup(kf, sortedKeyframes[i + 1], $event)"
-          />
-        </svg>
       </div>
     </div>
   </div>
