@@ -950,7 +950,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${(objIdx++).toString(36)}`;
 
-  const pendingPaths = {};  // varName → [{ mx, my }]
+  const pendingPaths = {};  // varName → [{ mx, my, mz }]
 
   function parseAnimExpr(expr) {
     expr = expr.trim();
@@ -1267,7 +1267,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
-    // move_to with 3D coords (non-zero z) — update 3D object position
+    // obj.move_to([x, y, z]) — handles both 2D (z=0) and 3D objects
     m = line.match(/^(\w+)\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]\)/);
     if (m) {
       const id = varMap[m[1]];
@@ -1314,17 +1314,6 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id && objById[id]) objById[id].fill = m[2];
-      continue;
-    }
-
-    m = line.match(/^(\w+)\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)/);
-    if (m) {
-      const id = varMap[m[1]];
-      if (id && objById[id]) {
-        const sp = manimToStage(parseFloat(m[2]), parseFloat(m[3]), sw, sh);
-        objById[id].x = Math.round(sp.x);
-        objById[id].y = Math.round(sp.y);
-      }
       continue;
     }
 
