@@ -21,11 +21,19 @@
 
         <!-- Objects layer -->
         <v-layer ref="objectsLayer">
-          <!-- 3D reference axes (faint, behind objects) — orient the iso + top panels -->
+          <!-- 3D reference grid + axes (faint, behind objects), clipped per panel
+               so camera zoom doesn't push them outside the panel/canvas -->
           <template v-if="is3D">
-            <v-line v-for="(gl, gli) in floorGrid3d" :key="'flg' + gli" :config="gl" />
-            <v-line v-for="(ax, axi) in refAxes3d" :key="'refax' + axi" :config="ax" />
-            <v-text v-for="(lb, lbi) in refAxisLabels3d" :key="'reflb' + lbi" :config="lb" />
+            <v-group :config="{ clipX: 0, clipY: 0, clipWidth: splitX, clipHeight: stageConfig.height }">
+              <v-line v-for="(gl, gli) in floorGridIso" :key="'flgi' + gli" :config="gl" />
+              <v-line v-for="(ax, axi) in refAxesIso" :key="'rai' + axi" :config="ax" />
+              <v-text v-for="(lb, lbi) in refLabelsIso" :key="'rli' + lbi" :config="lb" />
+            </v-group>
+            <v-group :config="{ clipX: splitX, clipY: 0, clipWidth: rightPanelWidth, clipHeight: stageConfig.height }">
+              <v-line v-for="(gl, gli) in floorGridTop" :key="'flgt' + gli" :config="gl" />
+              <v-line v-for="(ax, axi) in refAxesTop" :key="'rat' + axi" :config="ax" />
+              <v-text v-for="(lb, lbi) in refLabelsTop" :key="'rlt' + lbi" :config="lb" />
+            </v-group>
           </template>
 
           <template v-for="obj in sortedObjects" :key="obj.id + (obj.type === 'text' ? '-' + fontLoadKey : '')">
@@ -306,58 +314,69 @@ const projCy = computed(() => (stageConfig.value?.height ?? 1080) / 2);
 const projCx2 = computed(() => splitX.value + rightPanelWidth.value / 2);
 const projCy2 = computed(() => (stageConfig.value?.height ?? 1080) / 2);
 
-// Faint reference XYZ axes so the perspective (iso) panel is orientable.
-// iso() respects cam3d (phi/theta/projection), so the gizmo rotates with the camera.
+// Faint reference XYZ axes + XY floor grid. Split per panel so each can be
+// clipped to its half of the canvas — otherwise camera zoom (cam3d.zoom)
+// scales the fixed-extent gizmo past the panel/canvas edges.
 const REF_AXIS_LEN = 4;
-const AXIS_COLORS = { x: '#f87171', y: '#4ade80', z: '#60a5fa' };
-const refAxes3d = computed(() => {
-  if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value;
-  const cx = projCx.value, cy = projCy.value, cx2 = projCx2.value, cy2 = projCy2.value;
-  const ln = (a, b, stroke) => ({ points: [a.px, a.py, b.px, b.py], stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false });
-  return [
-    // iso (perspective) panel — full XYZ
-    ln(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x),
-    ln(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y),
-    ln(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z),
-    // top (bird's-eye XY) panel — X horizontal, Y vertical
-    ln(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x),
-    ln(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.y),
-  ];
-});
-const refAxisLabels3d = computed(() => {
-  if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value;
-  const cx = projCx.value, cy = projCy.value, cx2 = projCx2.value, cy2 = projCy2.value;
-  const tx = (p, text, fill) => ({ x: p.px + 4, y: p.py - 7, text, fontSize: 12, fontStyle: 'bold', fill, opacity: 0.5, listening: false });
-  return [
-    tx(iso(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x),
-    tx(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y),
-    tx(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z),
-    tx(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x),
-    tx(top(0, L, cx2, cy2, s), 'Y', AXIS_COLORS.y),
-  ];
-});
-
-// Faint floor grid on the XY plane (z=0) — the ground in Manim's Z-up world
-// (Z points up, X/Y span the floor). Gives a "ground" reference in the iso
-// (perspective) panel; center lines (i=0) are skipped so the colored reference
-// axes act as the grid centerlines.
 const FLOOR_GRID_EXT = 5;
-const floorGrid3d = computed(() => {
+const AXIS_COLORS = { x: '#f87171', y: '#4ade80', z: '#60a5fa' };
+const _axLn = (a, b, stroke) => ({ points: [a.px, a.py, b.px, b.py], stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false });
+const _axTx = (p, text, fill) => ({ x: p.px + 4, y: p.py - 7, text, fontSize: 12, fontStyle: 'bold', fill, opacity: 0.5, listening: false });
+const _gridLn = (a, b) => ({ points: [a.px, a.py, b.px, b.py], stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false });
+
+const refAxesIso = computed(() => {
   if (!is3D.value) return [];
-  const G = FLOOR_GRID_EXT, s = proj3DScale.value;
-  const cx = projCx.value, cy = projCy.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value;
+  return [
+    _axLn(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x),
+    _axLn(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y),
+    _axLn(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z),
+  ];
+});
+const refAxesTop = computed(() => {
+  if (!is3D.value) return [];
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  return [
+    _axLn(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x),
+    _axLn(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.y),
+  ];
+});
+const refLabelsIso = computed(() => {
+  if (!is3D.value) return [];
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value;
+  return [
+    _axTx(iso(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x),
+    _axTx(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y),
+    _axTx(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z),
+  ];
+});
+const refLabelsTop = computed(() => {
+  if (!is3D.value) return [];
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  return [
+    _axTx(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x),
+    _axTx(top(0, L, cx2, cy2, s), 'Y', AXIS_COLORS.y),
+  ];
+});
+const floorGridIso = computed(() => {
+  if (!is3D.value) return [];
+  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx = projCx.value, cy = projCy.value;
   const out = [];
-  const ln = (a, b) => ({ points: [a.px, a.py, b.px, b.py], stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false });
   for (let i = -G; i <= G; i++) {
     if (i === 0) continue;
-    // iso (perspective): XY ground plane (z=0) — lines parallel to X (at y=i) and to Y (at x=i)
-    out.push(ln(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s)));
-    out.push(ln(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s)));
-    // top panel — same XY ground grid, seen bird's-eye
-    out.push(ln(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s)));
-    out.push(ln(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s)));
+    out.push(_gridLn(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s)));
+    out.push(_gridLn(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s)));
+  }
+  return out;
+});
+const floorGridTop = computed(() => {
+  if (!is3D.value) return [];
+  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const out = [];
+  for (let i = -G; i <= G; i++) {
+    if (i === 0) continue;
+    out.push(_gridLn(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s)));
+    out.push(_gridLn(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s)));
   }
   return out;
 });
