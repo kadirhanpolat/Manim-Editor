@@ -78,8 +78,13 @@ function safeText(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
 }
 
+// Manim frame dimensions (matches Manim CE default)
+const FRAME_WIDTH = 14 + 2 / 9;          // 14.222
+const FRAME_HEIGHT = 8;
+const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.111
+
 function stageToManim(x, y, sw, sh) {
-  return { x: ((x / sw) - 0.5) * 14, y: -((y / sh) - 0.5) * 8 };
+  return { x: ((x / sw) - 0.5) * FRAME_WIDTH, y: -((y / sh) - 0.5) * FRAME_HEIGHT };
 }
 
 // path_move noktalarını Python koordinat string'ine çevirir.
@@ -172,7 +177,7 @@ function isSystemFont(fontFamily) {
 
 function objectCode(obj, sw, sh, assetsPath, assetMap) {
   const n = vn(obj.id), lines = [];
-  const scale = Math.min(obj.width, obj.height) / sw * 7;
+  const scale = Math.min(obj.width, obj.height) / sw * FRAME_X_RADIUS;
   const mp = stageToManim(obj.x, obj.y, sw, sh);
 
   // Helpers for this object
@@ -185,7 +190,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
 
   switch (obj.type) {
     case 'heart': {
-      const mw = (obj.width / sw * 7).toFixed(3);
+      const mw = (obj.width / sw * FRAME_X_RADIUS).toFixed(3);
       const mh = (obj.height / sh * 4).toFixed(3);
       lines.push(`${n} = ParametricFunction(`);
       lines.push(`    lambda t: np.array([np.sin(t)**3 * ${mw}, (13*np.cos(t)-5*np.cos(2*t)-2*np.cos(3*t)-np.cos(4*t))/15 * ${mh}, 0]),`);
@@ -195,7 +200,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       break;
     }
     case 'rectangle':
-      lines.push(`${n} = Rectangle(width=${(obj.width / sw * 14).toFixed(3)}, height=${(obj.height / sh * 8).toFixed(3)})`);
+      lines.push(`${n} = Rectangle(width=${(obj.width / sw * FRAME_WIDTH).toFixed(3)}, height=${(obj.height / sh * FRAME_HEIGHT).toFixed(3)})`);
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
       if (hasStroke)
@@ -216,7 +221,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
         lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
       break;
     case 'ellipse':
-      lines.push(`${n} = Ellipse(width=${(obj.width / sw * 14).toFixed(3)}, height=${(obj.height / sh * 8).toFixed(3)})`);
+      lines.push(`${n} = Ellipse(width=${(obj.width / sw * FRAME_WIDTH).toFixed(3)}, height=${(obj.height / sh * FRAME_HEIGHT).toFixed(3)})`);
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
       if (hasStroke)
@@ -249,12 +254,12 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       break;
     }
     case 'line':
-      lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * 14).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * 14).toFixed(3)})`);
+      lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)})`);
       lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${safeNum(obj.strokeWidth, 3)})`);
       break;
     case 'arrow': {
-      const halfLen = (obj.width / 2 / sw * 14).toFixed(3);
-      const tipLen = (7 / sw * 14).toFixed(3);
+      const halfLen = (obj.width / 2 / sw * FRAME_WIDTH).toFixed(3);
+      const tipLen = (FRAME_X_RADIUS / sw * FRAME_WIDTH).toFixed(3);
       lines.push(`${n} = Arrow(start=LEFT * ${halfLen}, end=RIGHT * ${halfLen}, color=${hex(obj.fill) || '"#EF4444"'}, buff=0, tip_length=${tipLen}, stroke_width=${sw2}, max_tip_length_to_length_ratio=0.15)`);
       break;
     }
@@ -266,11 +271,11 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       break;
     }
     case 'dot':
-      lines.push(`${n} = Dot(radius=${(obj.width / 2 / sw * 7).toFixed(3)}, color=${fill})`);
+      lines.push(`${n} = Dot(radius=${(obj.width / 2 / sw * FRAME_X_RADIUS).toFixed(3)}, color=${fill})`);
       break;
     case 'dot_grid': {
       const c = safeNum(obj.gridCols, 5), r = safeNum(obj.gridRows, 5);
-      const sp = safeNum(obj.dotSpacing, 40) / sw * 7;
+      const sp = safeNum(obj.dotSpacing, 40) / sw * FRAME_X_RADIUS;
       lines.push(`${n} = VGroup(*[Dot(radius=0.06).move_to([c*${sp.toFixed(3)}-${((c - 1) * sp / 2).toFixed(3)}, r*${sp.toFixed(3)}-${((r - 1) * sp / 2).toFixed(3)}, 0]) for r in range(${r}) for c in range(${c})])`);
       if (hasFill)
         lines.push(`${n}.set_color(${fill})`);
@@ -280,14 +285,14 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       const asset = obj.assetId ? assetMap[obj.assetId] : null;
       const filename = asset?.filename || `${(obj.name || 'image').replace(/[^a-zA-Z0-9._-]/g, '_')}.png`;
       const filePath = `${assetsPath}/${filename}`;
-      lines.push(`${n} = ImageMobject("${filePath}").scale_to_fit_width(${(obj.width / sw * 14).toFixed(3)})`);
+      lines.push(`${n} = ImageMobject("${filePath}").scale_to_fit_width(${(obj.width / sw * FRAME_WIDTH).toFixed(3)})`);
       break;
     }
     case 'svg_asset': {
       const asset = obj.assetId ? assetMap[obj.assetId] : null;
       const filename = asset?.filename || `${(obj.name || 'asset').replace(/[^a-zA-Z0-9._-]/g, '_')}.svg`;
       const filePath = `${assetsPath}/${filename}`;
-      lines.push(`${n} = SVGMobject("${filePath}").scale_to_fit_width(${(obj.width / sw * 14).toFixed(3)})`);
+      lines.push(`${n} = SVGMobject("${filePath}").scale_to_fit_width(${(obj.width / sw * FRAME_WIDTH).toFixed(3)})`);
       break;
     }
     case 'latex': {
@@ -299,7 +304,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
     case 'axes': {
       const xr = obj.xRange || [-5, 5, 1];
       const yr = obj.yRange || [-3, 3, 1];
-      lines.push(`${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * 14).toFixed(1)}, y_length=${(obj.height / sh * 8).toFixed(1)}, tips=True)`);
+      lines.push(`${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)}, tips=True)`);
       if (obj.graphs && obj.graphs.length > 0) {
         for (const g of obj.graphs) {
           const gn = `${n}_graph_${g.id.replace(/[^a-zA-Z0-9_]/g, '_')}`;
@@ -316,12 +321,12 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       const yr = obj.yRange || [-3, 3, 1];
       const xs = obj.xStep || 1;
       const ys = obj.yStep || 1;
-      lines.push(`${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(obj.width / sw * 14).toFixed(1)}, y_length=${(obj.height / sh * 8).toFixed(1)})`);
+      lines.push(`${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
       break;
     }
     case 'numberline': {
       const xr = obj.xRange || [-5, 5, 1];
-      lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * 14).toFixed(1)})`);
+      lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)})`);
       break;
     }
     default:
@@ -336,7 +341,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
 // ── Keyframe helpers ───────────────────────────────────────────────────────
 
 function _kfPropSet(n, prop, value, sw, sh) {
-  const MANIM_W = 14, MANIM_H = 8;
+  const MANIM_W = FRAME_WIDTH, MANIM_H = FRAME_HEIGHT;
   switch (prop) {
     case 'x': {
       const mx = ((value / sw) - 0.5) * MANIM_W;
@@ -908,7 +913,7 @@ export function generatePythonCode(project, assetsPath) {
         );
         // camera frame animate: set_width gives absolute zoom (14/zoom units wide)
         // .scale() is relative/cumulative; set_width is absolute and idempotent
-        const sceneWidth = 14;
+        const sceneWidth = FRAME_WIDTH;
         const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
         const frameWidth = (sceneWidth / zoom).toFixed(3);
         code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
