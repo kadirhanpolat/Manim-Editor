@@ -337,9 +337,10 @@ const refAxisLabels3d = computed(() => {
   ];
 });
 
-// Faint floor grid on the XZ plane (y=0) — gives a "ground" reference in the
-// iso (perspective) panel; center lines (i=0) are skipped so the colored
-// reference axes act as the grid centerlines.
+// Faint floor grid on the XY plane (z=0) — the ground in Manim's Z-up world
+// (Z points up, X/Y span the floor). Gives a "ground" reference in the iso
+// (perspective) panel; center lines (i=0) are skipped so the colored reference
+// axes act as the grid centerlines.
 const FLOOR_GRID_EXT = 5;
 const floorGrid3d = computed(() => {
   if (!is3D.value) return [];
@@ -349,10 +350,10 @@ const floorGrid3d = computed(() => {
   const ln = (a, b) => ({ points: [a.px, a.py, b.px, b.py], stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false });
   for (let i = -G; i <= G; i++) {
     if (i === 0) continue;
-    // iso (perspective): lines parallel to X (at z=i) and parallel to Z (at x=i)
-    out.push(ln(iso(-G, 0, i, cx, cy, s), iso(G, 0, i, cx, cy, s)));
-    out.push(ln(iso(i, 0, -G, cx, cy, s), iso(i, 0, G, cx, cy, s)));
-    // top (XZ orthographic)
+    // iso (perspective): XY ground plane (z=0) — lines parallel to X (at y=i) and to Y (at x=i)
+    out.push(ln(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s)));
+    out.push(ln(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s)));
+    // top panel reference grid (XZ — the plane this orthographic view shows)
     out.push(ln(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s)));
     out.push(ln(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s)));
   }
