@@ -80,14 +80,6 @@
           :labelW="labelW"
         />
 
-        <!-- Keyframe Lanes -->
-        <KeyframeLanesPanel
-          :pps="pps"
-          :labelW="labelW"
-          :totalW="totalW"
-          @openEasingPopup="onOpenEasingPopup"
-        />
-
         <!-- Camera Track -->
         <div v-if="project.cameraType === 'moving'" class="timeline-row camera-track-row border-b border-studio-border/30 flex flex-shrink-0" style="height: 40px;">
           <div class="flex-shrink-0 flex items-center px-2 bg-studio-bg/30 border-r border-studio-border/50 text-[10px] text-violet-300 font-medium gap-1" :style="{ width: labelW + 'px' }">
@@ -113,6 +105,16 @@
         <div v-if="totalClipCount === 0 && objects.length > 0" class="px-4 py-3 text-[10px] text-studio-text-muted/60 text-center">
           Select two objects and click "Transform" to create your first animation
         </div>
+      </div>
+
+      <!-- Keyframe Lanes — pinned at the bottom, outside the scrolling list -->
+      <div class="flex-shrink-0 border-t border-studio-border">
+        <KeyframeLanesPanel
+          :pps="pps"
+          :labelW="labelW"
+          :totalW="totalW"
+          @openEasingPopup="onOpenEasingPopup"
+        />
       </div>
     </div>
 
