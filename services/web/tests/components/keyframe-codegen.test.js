@@ -72,4 +72,23 @@ describe('keyframe codegen — UpdateFromAlphaFunc mode', () => {
     expect(code).not.toMatch(/\bUpdateFromFunc\b(?!Alpha)/);
     expect(code).toContain('run_time=1.5');
   });
+
+  it('indents the multi-line UpdateFromAlphaFunc block for the construct body', () => {
+    const proj = makeProject({
+      objects: [{
+        id: 'obj_1', type: 'circle', name: 'Circle', x: 100, y: 540, width: 120, height: 120,
+        fill: '#22c55e', stroke: '#fff', strokeWidth: 2, opacity: 1,
+        enterTime: 0, duration: 5, enterAnim: 'none', exitAnim: 'none', rotation: 0,
+        keyframes: { x: [{ time: 0.5, value: 300, easing: { type: 'linear' } }, { time: 2.0, value: 900 }] },
+        keyframeCodegen: { x: 'UpdateFromAlphaFunc' },
+      }],
+    });
+    const code = generateManimScript(proj);
+    // def at construct level (8 spaces), body one level deeper (12), trailing
+    // self.play back at 8 — and never at column 0 (which broke the render).
+    expect(code).toMatch(/\n {8}def _kf_obj_1_x_0_fn\(mob, alpha\):/);
+    expect(code).toMatch(/\n {12}mob\.set_x\(/);
+    expect(code).toMatch(/\n {8}self\.play\(UpdateFromAlphaFunc\(/);
+    expect(code).not.toMatch(/\nself\.play\(UpdateFromAlphaFunc\(/); // no column-0 line
+  });
 });

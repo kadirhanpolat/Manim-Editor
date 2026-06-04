@@ -1000,7 +1000,13 @@ export function generatePythonCode(project, assetsPath) {
         L.push(`${indent}    self.wait(max(0, ${trackerId}.duration - ${dur}))`);
       }
     } else {
-      L.push(`${indent}${step.code}`);
+      // step.code may be a multi-line block (e.g. UpdateFromAlphaFunc def +
+      // self.play). Indent EVERY line to the construct body, preserving the
+      // block's own relative indentation — prefixing only the first line would
+      // leave the def body and trailing self.play at the wrong column.
+      for (const line of step.code.split('\n')) {
+        L.push(line ? `${indent}${line}` : '');
+      }
     }
     t = step.time + (step.dur || 0.5);
   }

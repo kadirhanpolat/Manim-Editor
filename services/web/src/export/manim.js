@@ -912,7 +912,12 @@ export function generateManimScript(project) {
         L.push(`${indent}    self.wait(max(0, ${trackerId}.duration - ${dur}))`);
       }
     } else {
-      L.push(`${indent}${step.code}`);
+      // step.code may be a multi-line block (e.g. UpdateFromAlphaFunc def +
+      // self.play). Indent every line to the construct body, preserving the
+      // block's own relative indentation.
+      for (const line of step.code.split('\n')) {
+        L.push(line ? `${indent}${line}` : '');
+      }
     }
     t = step.time + (step.dur || 0.5);
   }
