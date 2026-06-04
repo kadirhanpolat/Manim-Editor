@@ -390,6 +390,12 @@ watch(
   { immediate: true, deep: true }
 );
 
+watch(
+  () => store.project.camera3d,
+  (cam) => { getPlaybackEngine().setCamera3dBase(cam); },
+  { deep: true, immediate: true }
+);
+
 watch(renderStatus, (status) => {
   if (status === 'completed' && projectId.value) {
     loadRenderHistory();
