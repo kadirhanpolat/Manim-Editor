@@ -220,8 +220,10 @@ function iso(x3d, y3d, z3d, cx, cy, scale) {
   return project3D({ x3d, y3d, z3d }, cam3d.value, cx, cy, scale);
 }
 
-function top(x3d, z3d, cx2, cy2, scale) {
-  return { px: cx2 + x3d * scale, py: cy2 + z3d * scale };
+// Bird's-eye top view: looks straight down the +Z (up) axis onto the XY ground.
+// X → right, Y → up on screen (py inverted so +Y is up).
+function top(x3d, y3d, cx2, cy2, scale) {
+  return { px: cx2 + x3d * scale, py: cy2 - y3d * scale };
 }
 
 // ── Reactive state ──
@@ -318,9 +320,9 @@ const refAxes3d = computed(() => {
     ln(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x),
     ln(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y),
     ln(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z),
-    // top (XZ) panel — X horizontal, Z vertical
+    // top (bird's-eye XY) panel — X horizontal, Y vertical
     ln(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x),
-    ln(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.z),
+    ln(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.y),
   ];
 });
 const refAxisLabels3d = computed(() => {
@@ -333,7 +335,7 @@ const refAxisLabels3d = computed(() => {
     tx(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y),
     tx(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z),
     tx(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x),
-    tx(top(0, L, cx2, cy2, s), 'Z', AXIS_COLORS.z),
+    tx(top(0, L, cx2, cy2, s), 'Y', AXIS_COLORS.y),
   ];
 });
 
@@ -353,7 +355,7 @@ const floorGrid3d = computed(() => {
     // iso (perspective): XY ground plane (z=0) — lines parallel to X (at y=i) and to Y (at x=i)
     out.push(ln(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s)));
     out.push(ln(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s)));
-    // top panel reference grid (XZ — the plane this orthographic view shows)
+    // top panel — same XY ground grid, seen bird's-eye
     out.push(ln(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s)));
     out.push(ln(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s)));
   }
@@ -408,7 +410,7 @@ const pathCanvasPoints = computed(() => {
   if (!pathPoints.value.length) return [];
   return pathPoints.value.map(p => {
     if ('x3d' in p) {
-      const t = top(p.x3d, p.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+      const t = top(p.x3d, p.y3d, projCx2.value, projCy2.value, proj3DScale.value);
       return { cx: t.px, cy: t.py };   // top() is already canvas px — no s2c
     }
     const cp = s2c(p.x, p.y);
@@ -533,7 +535,7 @@ const path3dPolylines = computed(() => {
       for (const pt of clip.path) {
         const i = iso(pt.x3d, pt.y3d ?? 0, pt.z3d, projCx.value, projCy.value, proj3DScale.value);
         isoPts.push(i.px, i.py);
-        const t = top(pt.x3d, pt.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+        const t = top(pt.x3d, pt.y3d, projCx2.value, projCy2.value, proj3DScale.value);
         topPts.push(t.px, t.py);
       }
       const base = { stroke: '#a855f7', strokeWidth: 1.5, dash: [4, 4], listening: false, opacity: 0.7 };
@@ -857,12 +859,12 @@ function handleStageMouseDown(e) {
     const pos = stage.getPointerPosition();
     if (!pos) return;
     if (is3D.value) {
-      // 3D: clicks valid only in the top/XZ (right) panel; all coords are canvas px
+      // 3D: clicks valid only in the top (bird's-eye XY) right panel; all coords are canvas px
       if (pos.x < splitX.value) return;
       const x3d = parseFloat(((pos.x - projCx2.value) / proj3DScale.value).toFixed(3));
-      const z3d = parseFloat(((pos.y - projCy2.value) / proj3DScale.value).toFixed(3));
+      const y3d = parseFloat(((projCy2.value - pos.y) / proj3DScale.value).toFixed(3)); // Y up
       const srcObj = store.objectById(pathSourceId.value);
-      const y3d = srcObj?.y3d ?? 0;   // Y held constant at object's current y3d
+      const z3d = srcObj?.z3d ?? 0;   // Z (depth) held constant — path drawn on the XY ground
       pathPoints.value.push({ x3d, y3d, z3d });
       return;
     }
@@ -942,9 +944,10 @@ function onDrag3DEnd(objId, e, panel) {
     if (r.z3d !== null) patch.z3d = parseFloat(r.z3d.toFixed(3));
     store.updateObject(objId, patch);
   } else {
+    // top (bird's-eye XY): X right, Y up (py inverted)
     const x3d = (canvasX - projCx2.value) / scale;
-    const z3d = (canvasY - projCy2.value) / scale;
-    store.updateObject(objId, { x3d: parseFloat(x3d.toFixed(3)), z3d: parseFloat(z3d.toFixed(3)) });
+    const y3d = (projCy2.value - canvasY) / scale;
+    store.updateObject(objId, { x3d: parseFloat(x3d.toFixed(3)), y3d: parseFloat(y3d.toFixed(3)) });
   }
   store.commitState();
   node.position({ x: 0, y: 0 });
@@ -1139,7 +1142,7 @@ function axes3dLines(obj) {
 
 function sphere3dTopCfg(obj) {
   const e3 = eff3d(obj);
-  const p = top(e3.x3d, e3.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+  const p = top(e3.x3d, e3.y3d, projCx2.value, projCy2.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? 0.5) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
@@ -1152,7 +1155,7 @@ function sphere3dTopCfg(obj) {
 
 function cube3dTopCfg(obj) {
   const e3 = eff3d(obj);
-  const p = top(e3.x3d, e3.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+  const p = top(e3.x3d, e3.y3d, projCx2.value, projCy2.value, proj3DScale.value);
   const s = Math.max(8, (obj.sideLength ?? 1.0) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
@@ -1165,7 +1168,7 @@ function cube3dTopCfg(obj) {
 
 function generic3dTopCfg(obj) {
   const e3 = eff3d(obj);
-  const p = top(e3.x3d, e3.z3d, projCx2.value, projCy2.value, proj3DScale.value);
+  const p = top(e3.x3d, e3.y3d, projCx2.value, projCy2.value, proj3DScale.value);
   const r = Math.max(4, (obj.radius ?? obj.majorRadius ?? 0.5) * proj3DScale.value);
   const isSelected = store.selectedObjectIds.includes(obj.id);
   return {
