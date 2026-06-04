@@ -1,5 +1,5 @@
 <template>
-  <div v-if="selectedClip && sourceObj" class="border-b border-studio-border/30">
+  <div v-if="sourceObj" class="border-b border-studio-border/30">
     <!-- Lane header -->
     <div class="flex border-b border-studio-border/20" style="height:22px">
       <div
@@ -40,6 +40,8 @@ import { useProjectStore } from '../../store/project.js';
 import KeyframeLane from './KeyframeLane.vue';
 
 const KEYFRAMEABLE_PROPS = ['x', 'y', 'opacity', 'rotation', 'scaleX', 'scaleY', 'width', 'height', 'strokeWidth', 'fontSize'];
+const KEYFRAMEABLE_PROPS_3D = ['x3d', 'y3d', 'z3d', 'rx', 'ry', 'rz', 'opacity'];
+const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
 
 const props = defineProps({
   pps:    { type: Number, required: true },
@@ -51,10 +53,12 @@ defineEmits(['openEasingPopup']);
 
 const store = useProjectStore();
 const selectedClip = computed(() => store.selectedClip);
+// Keyframes are a per-object property, so resolve the object from the selected
+// clip when there is one, otherwise from the directly selected object.
 const sourceObj = computed(() => {
   const clip = selectedClip.value;
-  if (!clip?.sourceId) return null;
-  return store.objectById(clip.sourceId);
+  if (clip?.sourceId) return store.objectById(clip.sourceId);
+  return store.selectedObject || null;
 });
 
 const activePropLanes = computed(() => {
@@ -64,8 +68,11 @@ const activePropLanes = computed(() => {
 });
 
 const addableProps = computed(() => {
+  const obj = sourceObj.value;
+  if (!obj) return [];
+  const base = OBJ_3D_TYPES.includes(obj.type) ? KEYFRAMEABLE_PROPS_3D : KEYFRAMEABLE_PROPS;
   const active = new Set(activePropLanes.value);
-  return KEYFRAMEABLE_PROPS.filter(p => !active.has(p));
+  return base.filter(p => !active.has(p));
 });
 
 function addPropLane(prop) {
