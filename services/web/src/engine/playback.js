@@ -113,6 +113,13 @@ export class PlaybackEngine {
   }
 
   /**
+   * Set the baseline 3D camera state used as the "from" for the first camera_move clip.
+   */
+  setCamera3dBase(base) {
+    this._camera3dBase = base || { phi: 75, theta: -45, zoom: 1 };
+  }
+
+  /**
    * Start playback.
    */
   play(tracks, objects, duration, cameraTrack) {
@@ -254,6 +261,7 @@ export class PlaybackEngine {
     // Camera clips — sort by startTime and interpolate FROM previous clip's target state
     frame.cameraState = null;
     if (cameraTrack && cameraTrack.length > 0) {
+      const base = this._camera3dBase || { phi: 75, theta: -45, zoom: 1 };
       const sortedCam = [...cameraTrack].sort((a, b) => a.startTime - b.startTime);
       for (let ci = 0; ci < sortedCam.length; ci++) {
         const camClip = sortedCam[ci];
@@ -262,14 +270,27 @@ export class PlaybackEngine {
         const easedT = evaluateEasing(progress, camClip.easing || 'ease_in_out', 0, 1);
         // Interpolate FROM the previous clip's target (or default origin for first clip)
         const prev = ci > 0 ? sortedCam[ci - 1].params : null;
-        const fromX = prev?.targetX || 0;
-        const fromY = prev?.targetY || 0;
-        const fromZoom = prev?.zoom || 1;
-        frame.cameraState = {
-          x: lerp(fromX, camClip.params?.targetX || 0, easedT),
-          y: lerp(fromY, camClip.params?.targetY || 0, easedT),
-          zoom: lerp(fromZoom, camClip.params?.zoom || 1, easedT),
-        };
+        const is3d = camClip.params && 'phi' in camClip.params;
+        if (is3d) {
+          const fromPhi   = prev?.phi   ?? base.phi;
+          const fromTheta = prev?.theta ?? base.theta;
+          const fromZoom  = prev?.zoom  ?? base.zoom;
+          frame.cameraState = {
+            phi:   lerp(fromPhi,   camClip.params.phi   ?? base.phi,   easedT),
+            theta: lerp(fromTheta, camClip.params.theta ?? base.theta, easedT),
+            zoom:  lerp(fromZoom,  camClip.params.zoom  ?? 1,          easedT),
+            is3d: true,
+          };
+        } else {
+          const fromX = prev?.targetX || 0;
+          const fromY = prev?.targetY || 0;
+          const fromZoom = prev?.zoom || 1;
+          frame.cameraState = {
+            x: lerp(fromX, camClip.params?.targetX || 0, easedT),
+            y: lerp(fromY, camClip.params?.targetY || 0, easedT),
+            zoom: lerp(fromZoom, camClip.params?.zoom || 1, easedT),
+          };
+        }
         break; // Use first active camera clip
       }
     }
