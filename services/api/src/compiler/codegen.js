@@ -82,6 +82,19 @@ function stageToManim(x, y, sw, sh) {
   return { x: ((x / sw) - 0.5) * 14, y: -((y / sh) - 0.5) * 8 };
 }
 
+// path_move noktalarını Python koordinat string'ine çevirir.
+// 3D nokta (x3d alanı varsa) doğrudan Manim biriminde; aksi halde 2D piksel → Manim.
+function pathPointsPy(path, sw, sh) {
+  const is3dPath = path[0] && 'x3d' in path[0];
+  return path.map(p => {
+    if (is3dPath) {
+      return `[${(p.x3d ?? 0).toFixed(3)}, ${(p.y3d ?? 0).toFixed(3)}, ${(p.z3d ?? 0).toFixed(3)}]`;
+    }
+    const m = stageToManim(p.x, p.y, sw, sh);
+    return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
+  }).join(', ');
+}
+
 // ── 3D Object code ─────────────────────────────────────────────────────────────
 
 function fmt3d(num) {
@@ -746,11 +759,7 @@ export function generatePythonCode(project, assetsPath) {
           if (!c.path || c.path.length < 2) break;
           const cn = c.id ? c.id.replace(/[^a-zA-Z0-9_]/g, '_') : sn;
           const pn = `path_${cn}`;
-          const pts = c.path.map(p => {
-            const m = stageToManim(p.x, p.y, sw, sh);
-            return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
-          });
-          const ptsStr = pts.join(', ');
+          const ptsStr = pathPointsPy(c.path, sw, sh);
           code = [
             `${pn} = VMobject()`,
             `${pn}.set_points_as_corners([np.array(p) for p in [${ptsStr}]])`,
@@ -811,11 +820,7 @@ export function generatePythonCode(project, assetsPath) {
             if (!c.path || c.path.length < 2) break;
             const cn = c.id ? c.id.replace(/[^a-zA-Z0-9_]/g, '_') : sn;
             const pn = `path_${cn}`;
-            const pts = c.path.map(p => {
-              const m = stageToManim(p.x, p.y, sw, sh);
-              return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
-            });
-            const ptsStr = pts.join(', ');
+            const ptsStr = pathPointsPy(c.path, sw, sh);
             code = [
               `${pn} = VMobject()`,
               `${pn}.set_points_as_corners([np.array(p) for p in [${ptsStr}]])`,

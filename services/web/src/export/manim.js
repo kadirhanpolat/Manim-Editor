@@ -155,6 +155,19 @@ function manimToStage(mx, my, w, h) {
   return { x: (mx / FRAME_WIDTH + 0.5) * w, y: (-my / FRAME_HEIGHT + 0.5) * h };
 }
 
+// path_move noktalarını Python koordinat string'ine çevirir.
+// 3D nokta (x3d alanı varsa) doğrudan Manim biriminde; aksi halde 2D piksel → Manim.
+function pathPointsPy(path, sw, sh) {
+  const is3dPath = path[0] && 'x3d' in path[0];
+  return path.map(p => {
+    if (is3dPath) {
+      return `[${(p.x3d ?? 0).toFixed(3)}, ${(p.y3d ?? 0).toFixed(3)}, ${(p.z3d ?? 0).toFixed(3)}]`;
+    }
+    const m = stageToManim(p.x, p.y, sw, sh);
+    return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
+  }).join(', ');
+}
+
 /** Check if a font is a common system font (not requiring download from Google Fonts) */
 function isSystemFont(fontFamily) {
   const systemFonts = [
@@ -720,13 +733,10 @@ export function generateManimScript(project) {
         if (!c.path || c.path.length < 2) return null;
         const cn = (c.id || sn).replace(/[^a-zA-Z0-9_]/g, '_');
         const pn = `path_${cn}`;
-        const pts = c.path.map(p => {
-          const m = stageToManim(p.x, p.y, sw, sh);
-          return `[${m.x.toFixed(3)}, ${m.y.toFixed(3)}, 0]`;
-        });
+        const ptsStr = pathPointsPy(c.path, sw, sh);
         const multiLine = [
           `${pn} = VMobject()`,
-          `${pn}.set_points_as_corners([np.array(p) for p in [${pts.join(', ')}]])`,
+          `${pn}.set_points_as_corners([np.array(p) for p in [${ptsStr}]])`,
           `self.play(MoveAlongPath(${sn}, ${pn})${rtStr}${rfStr})`,
         ].join(`\n${indent}`);
         return { code: multiLine, dur };
@@ -932,6 +942,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
   let bgColor = '#000000';
   let cameraType = 'static';
+  let sceneType = '2d';
   const cameraTrack = [];
   let ct = 0;
   let clipIdx = 0;
@@ -989,6 +1000,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     // MovingCameraScene
     m = line.match(/^class\s+\w+\(MovingCameraScene\)/);
     if (m) { cameraType = 'moving'; continue; }
+
+    // ThreeDScene → 3D sahne
+    m = line.match(/^class\s+\w+\(ThreeDScene/);
+    if (m) { sceneType = '3d'; continue; }
 
     // Background
     m = line.match(/self\.camera\.background_color\s*=\s*["']([^"']+)["']/);
@@ -1176,6 +1191,99 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
           xMax: parseFloat(xMax),
           strokeWidth: sw2 ? parseFloat(sw2) : 3,
         });
+      }
+      continue;
+    }
+
+    // ── 3D object parsers ──
+
+    // Sphere
+    m = line.match(/^(\w+)\s*=\s*Sphere\(radius=([\d.]+),\s*resolution=\((\d+),\s*(\d+)\)\)/);
+    if (m) {
+      const [, name, r, res] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'sphere', name, x3d: 0, y3d: 0, z3d: 0, radius: parseFloat(r), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Cube
+    m = line.match(/^(\w+)\s*=\s*Cube\(side_length=([\d.]+)\)/);
+    if (m) {
+      const [, name, sl] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'cube', name, x3d: 0, y3d: 0, z3d: 0, sideLength: parseFloat(sl), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Cone
+    m = line.match(/^(\w+)\s*=\s*Cone\(base_radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/);
+    if (m) {
+      const [, name, r, h, res] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'cone', name, x3d: 0, y3d: 0, z3d: 0, radius: parseFloat(r), height: parseFloat(h), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Cylinder
+    m = line.match(/^(\w+)\s*=\s*Cylinder\(radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/);
+    if (m) {
+      const [, name, r, h, res] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'cylinder', name, x3d: 0, y3d: 0, z3d: 0, radius: parseFloat(r), height: parseFloat(h), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Torus
+    m = line.match(/^(\w+)\s*=\s*Torus\(major_radius=([\d.]+),\s*minor_radius=([\d.]+),\s*resolution=(\d+)\)/);
+    if (m) {
+      const [, name, mr, mnr, res] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'torus', name, x3d: 0, y3d: 0, z3d: 0, majorRadius: parseFloat(mr), minorRadius: parseFloat(mnr), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // ThreeDAxes
+    m = line.match(/^(\w+)\s*=\s*ThreeDAxes\(/);
+    if (m) {
+      const name = m[1];
+      const xrm = line.match(/x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+      const yrm = line.match(/y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+      const zrm = line.match(/z_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+      const id = uid('obj');
+      const obj = {
+        id, type: 'axes3d', name, x3d: 0, y3d: 0, z3d: 0,
+        xRange: xrm ? [parseFloat(xrm[1]), parseFloat(xrm[2]), parseFloat(xrm[3])] : [-3, 3, 1],
+        yRange: yrm ? [parseFloat(yrm[1]), parseFloat(yrm[2]), parseFloat(yrm[3])] : [-3, 3, 1],
+        zRange: zrm ? [parseFloat(zrm[1]), parseFloat(zrm[2]), parseFloat(zrm[3])] : [-3, 3, 1],
+        fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length,
+      };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // move_to with 3D coords (non-zero z) — update 3D object position
+    m = line.match(/^(\w+)\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        const mz = parseFloat(m[4]);
+        if (mz !== 0 || objById[id].type === 'sphere' || objById[id].type === 'cube' ||
+            objById[id].type === 'cone' || objById[id].type === 'cylinder' ||
+            objById[id].type === 'torus' || objById[id].type === 'axes3d') {
+          objById[id].x3d = parseFloat(m[2]);
+          objById[id].y3d = parseFloat(m[3]);
+          objById[id].z3d = mz;
+        } else {
+          const sp = manimToStage(parseFloat(m[2]), parseFloat(m[3]), sw, sh);
+          objById[id].x = Math.round(sp.x);
+          objById[id].y = Math.round(sp.y);
+        }
       }
       continue;
     }
@@ -1385,10 +1493,11 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, pathVar, pointsStr] = m;
       if (pendingPaths[pathVar] !== undefined) {
-        const pointMatches = [...pointsStr.matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*0\]/g)];
+        const pointMatches = [...pointsStr.matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/g)];
         pendingPaths[pathVar] = pointMatches.map(pm => ({
           mx: parseFloat(pm[1]),
           my: parseFloat(pm[2]),
+          mz: parseFloat(pm[3]),
         }));
       }
       continue;
@@ -1404,6 +1513,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         const dur = parseFloat(rtStr || 1);
         const easing = rfStr ? (EASING_REV[rfStr] || 'linear') : 'linear';
         const path = pathPoints.map(p => {
+          if (sceneType === '3d') {
+            return { x3d: p.mx, y3d: p.my, z3d: p.mz };
+          }
           const sp = manimToStage(p.mx, p.my, sw, sh);
           return { x: Math.round(sp.x), y: Math.round(sp.y) };
         });
@@ -1424,6 +1536,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     objects,
     tracks: clips.length > 0 ? [{ id: 'track_parsed', name: 'Track 1', clips }] : [],
     stage: { backgroundColor: bgColor, width: sw, height: sh },
+    sceneType,
     cameraType,
     cameraTrack,
   };
