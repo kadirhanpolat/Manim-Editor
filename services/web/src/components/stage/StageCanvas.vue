@@ -23,6 +23,7 @@
         <v-layer ref="objectsLayer">
           <!-- 3D reference axes (faint, behind objects) — orient the iso + top panels -->
           <template v-if="is3D">
+            <v-line v-for="(gl, gli) in floorGrid3d" :key="'flg' + gli" :config="gl" />
             <v-line v-for="(ax, axi) in refAxes3d" :key="'refax' + axi" :config="ax" />
             <v-text v-for="(lb, lbi) in refAxisLabels3d" :key="'reflb' + lbi" :config="lb" />
           </template>
@@ -334,6 +335,28 @@ const refAxisLabels3d = computed(() => {
     tx(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x),
     tx(top(0, L, cx2, cy2, s), 'Z', AXIS_COLORS.z),
   ];
+});
+
+// Faint floor grid on the XZ plane (y=0) — gives a "ground" reference in the
+// iso (perspective) panel; center lines (i=0) are skipped so the colored
+// reference axes act as the grid centerlines.
+const FLOOR_GRID_EXT = 5;
+const floorGrid3d = computed(() => {
+  if (!is3D.value) return [];
+  const G = FLOOR_GRID_EXT, s = proj3DScale.value;
+  const cx = projCx.value, cy = projCy.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const out = [];
+  const ln = (a, b) => ({ points: [a.px, a.py, b.px, b.py], stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false });
+  for (let i = -G; i <= G; i++) {
+    if (i === 0) continue;
+    // iso (perspective): lines parallel to X (at z=i) and parallel to Z (at x=i)
+    out.push(ln(iso(-G, 0, i, cx, cy, s), iso(G, 0, i, cx, cy, s)));
+    out.push(ln(iso(i, 0, -G, cx, cy, s), iso(i, 0, G, cx, cy, s)));
+    // top (XZ orthographic)
+    out.push(ln(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s)));
+    out.push(ln(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s)));
+  }
+  return out;
 });
 const bgConfig = computed(() => ({
   x: ox.value, y: oy.value,
