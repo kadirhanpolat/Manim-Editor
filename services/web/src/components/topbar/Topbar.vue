@@ -36,13 +36,12 @@
               role="menu"
               @keydown="onDropdownKey($event, mi)"
             >
-              <template v-for="(item, idx) in menu.items">
-                <div v-if="item.type === 'separator'" :key="'s' + idx" class="menu-sep"></div>
+              <template v-for="(item, idx) in menu.items" :key="item.id || ('s' + idx)">
+                <div v-if="item.type === 'separator'" class="menu-sep"></div>
 
                 <!-- Submenu (e.g. Theme) -->
                 <div
                   v-else-if="item.type === 'submenu'"
-                  :key="item.id"
                   class="menu-sub-anchor"
                   @mouseenter="hoveredSub = item.id"
                   @mouseleave="hoveredSub = null"
@@ -76,7 +75,6 @@
                 <!-- Toggle item (Grid/Snap) -->
                 <button
                   v-else-if="item.type === 'toggle'"
-                  :key="item.id"
                   class="menu-item"
                   :class="{ focused: focusIdx === idx }"
                   @click="executeItem(item)"
@@ -92,7 +90,6 @@
                 <!-- Normal item -->
                 <button
                   v-else
-                  :key="item.id"
                   class="menu-item"
                   :class="{ disabled: item.disabled && item.disabled(), focused: focusIdx === idx }"
                   :disabled="item.disabled && item.disabled()"
@@ -117,13 +114,12 @@
         </button>
         <transition name="menu-pop">
           <div v-if="openMenuId === '_collapsed'" class="menu-dropdown collapsed-dropdown" role="menu">
-            <template v-for="menu in menus">
-              <div :key="menu.id + '-hdr'" class="menu-group-hdr">{{ menu.label }}</div>
-              <template v-for="(item, idx) in menu.items">
-                <div v-if="item.type === 'separator'" :key="menu.id + 's' + idx" class="menu-sep"></div>
+            <template v-for="menu in menus" :key="menu.id">
+              <div class="menu-group-hdr">{{ menu.label }}</div>
+              <template v-for="(item, idx) in menu.items" :key="item.id || (menu.id + 's' + idx)">
+                <div v-if="item.type === 'separator'" class="menu-sep"></div>
                 <button
                   v-else-if="item.type !== 'submenu'"
-                  :key="item.id"
                   class="menu-item"
                   :disabled="item.disabled && item.disabled()"
                   @click="executeItem(item)"

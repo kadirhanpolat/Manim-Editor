@@ -294,3 +294,9 @@ ValueTracker and UpdateFromAlphaFunc skip properties where `_kfUpdater(prop)` re
 
 - `FRAME_WIDTH = 14 + 2/9` used in `manim.js` vs `14` in `codegen.js` — ~0.065 Manim unit divergence at stage edges
 - `_kfPropSet` in both codegen files uses `14` (not `FRAME_WIDTH`) for x-coordinate conversion — same divergence applies to keyframe-driven x positions in `manim.js`
+
+## Build / Environment Gotchas (fixed in v3.3.1)
+
+- **Vue 3 `<template v-for>` keys**: keys must sit on the `<template>` tag, not on child elements — a pure Vue 3 prod build (`npm run build`) errors otherwise. Watch for this when adding new keyed loops in `Topbar.vue` / `StageCanvas.vue`.
+- **Renderer `setuptools<81` pin**: `manimcommunity/manim:stable` ships setuptools 82 (no `pkg_resources`), but `manim-voiceover` imports `pkg_resources` at load and crashes the whole `manim` CLI. `services/renderer/Dockerfile` pins `setuptools<81`. Revisit if the renderer base image or manim-voiceover drops the `pkg_resources` dependency.
+- **`api_node_modules` named volume**: after adding an api dependency, run `docker volume rm manim_motion_api_node_modules` before `docker compose up` — named volumes don't refresh on image rebuild and will shadow new packages (`ERR_MODULE_NOT_FOUND`, unhealthy api).

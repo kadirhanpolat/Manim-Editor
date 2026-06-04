@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.3.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.3.1-6B7280" alt="Version">
 </p>
 
 ---
@@ -406,7 +406,15 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.3.0 (current)
+### v3.3.1 (current)
+
+Bug-fix release — three latent defects that broke a clean Docker build / first render from scratch:
+
+- **Fix (web build)**: `<template v-for>` keys were placed on child elements, which a pure Vue 3 production build rejects (`<template v-for> key should be placed on the <template> tag`). Relocated keys onto the `<template>` tags in `Topbar.vue` (3 loops) and `StageCanvas.vue` (16 objects); the text node's `fontLoadKey`-driven re-render is preserved via the template key. `npm run build` now succeeds (418 modules).
+- **Fix (renderer)**: Manim failed to start with `ModuleNotFoundError: No module named 'pkg_resources'`. The `manimcommunity/manim:stable` base now ships Python 3.14 + **setuptools 82**, which removed `pkg_resources`; `manim-voiceover` imports it at module load, so the plugin entry-point crashed and took the whole `manim` CLI down — breaking renders even for projects with no audio. Pinned `setuptools<81` in `services/renderer/Dockerfile`.
+- **Ops note**: the `api` service mounts a named volume `api_node_modules:/app/node_modules`. Named volumes are populated once and are not refreshed on image rebuild, so a newly added dependency (e.g. `ws`) can be shadowed by stale contents, surfacing as `ERR_MODULE_NOT_FOUND` and an unhealthy `api`. After changing api dependencies, run `docker volume rm manim_motion_api_node_modules` before `docker compose up`.
+
+### v3.3.0
 
 - **Feature**: 3D scene support — switch any project to 3D mode via the Topbar toggle; generates `ThreeDScene` base class with `set_camera_orientation(phi, theta, zoom)`
 - **Feature**: 6 new 3D shape types — Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes; positioned with `x3d/y3d/z3d` in Manim units
