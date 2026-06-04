@@ -82,6 +82,7 @@ function safeText(s) {
 const FRAME_WIDTH = 14 + 2 / 9;          // 14.222
 const FRAME_HEIGHT = 8;
 const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.111
+const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 function stageToManim(x, y, sw, sh) {
   return { x: ((x / sw) - 0.5) * FRAME_WIDTH, y: -((y / sh) - 0.5) * FRAME_HEIGHT };
@@ -177,7 +178,7 @@ function isSystemFont(fontFamily) {
 
 function objectCode(obj, sw, sh, assetsPath, assetMap) {
   const n = vn(obj.id), lines = [];
-  const scale = Math.min(obj.width, obj.height) / sw * FRAME_X_RADIUS;
+  const scale = Math.min(obj.width, obj.height) / sw * FRAME_WIDTH;
   const mp = stageToManim(obj.x, obj.y, sw, sh);
 
   // Helpers for this object
@@ -191,7 +192,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
   switch (obj.type) {
     case 'heart': {
       const mw = (obj.width / sw * FRAME_X_RADIUS).toFixed(3);
-      const mh = (obj.height / sh * 4).toFixed(3);
+      const mh = (obj.height / sh * FRAME_Y_RADIUS).toFixed(3);
       lines.push(`${n} = ParametricFunction(`);
       lines.push(`    lambda t: np.array([np.sin(t)**3 * ${mw}, (13*np.cos(t)-5*np.cos(2*t)-2*np.cos(3*t)-np.cos(4*t))/15 * ${mh}, 0]),`);
       lines.push(`    t_range=[0, 2*PI], color=${stroke})`);
@@ -275,7 +276,7 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       break;
     case 'dot_grid': {
       const c = safeNum(obj.gridCols, 5), r = safeNum(obj.gridRows, 5);
-      const sp = safeNum(obj.dotSpacing, 40) / sw * FRAME_X_RADIUS;
+      const sp = safeNum(obj.dotSpacing, 40) / sw * FRAME_WIDTH;
       lines.push(`${n} = VGroup(*[Dot(radius=0.06).move_to([c*${sp.toFixed(3)}-${((c - 1) * sp / 2).toFixed(3)}, r*${sp.toFixed(3)}-${((r - 1) * sp / 2).toFixed(3)}, 0]) for r in range(${r}) for c in range(${c})])`);
       if (hasFill)
         lines.push(`${n}.set_color(${fill})`);
