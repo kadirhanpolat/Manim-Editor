@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.4.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.5.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -65,6 +65,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Path animation (MoveAlongPath)** -- Draw a path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation. In **3D mode** the path is drawn in the top-down (XZ) panel with Y held constant, animates in the canvas preview, renders as a dashed overlay in both panels, and round-trips through `.py` export/import with full 3D coordinates
 - **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim (2D) or `self.move_camera(phi=..., theta=...)` (3D)
 - **Split viewport (3D)** -- In 3D mode, the canvas splits into perspective (isometric) + top-down (XZ) views; drag objects in either panel to position them; 3D objects animate live in both panels during playback; Blender/Unity style
+- **Camera-aware 3D preview** -- The isometric panel now projects from the actual camera angles (`phi`/`theta`) instead of a fixed 30° view, so the preview tracks the scene camera and live `camera_move` animation; choose **Orthographic** or **Perspective** projection (with focal distance) from the 3D Camera Preview panel when nothing is selected (preview-only — does not change the render)
 - **3D axes ranges** -- `axes3d` objects expose full X/Y/Z range editors (min–max per axis) in the 3D Position panel; ranges survive `.py` export/import round-trips
 - **Audio / Voiceover** -- Attach audio to any clip: upload `.mp3`/`.wav`/`.ogg`, synthesize with **gTTS** (online) or **Coqui TTS** (offline); auto-sync stretches clip duration to match audio; manual mode lets you set offset; generates `VoiceoverScene` + `with self.voiceover(audio=...)` in Manim
 - **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
@@ -374,7 +375,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 119 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene, 3D path)
+npm run test:unit # 131 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel)
 ```
 
 ---
@@ -407,7 +408,17 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.4.0 (current)
+### v3.5.0 (current)
+
+Tech-debt pass — coordinate unification + camera-aware 3D preview:
+
+- **Fix (coordinate parity)**: unified both Python generators on Manim CE's true default frame width `FRAME_WIDTH = 14 + 2/9 = 14.222` (height 8 unchanged). The server `codegen.js` previously used a bare `14` for positions and `7` for scale-based shapes (square/circle/triangle/star/polygon, dot-grid spacing) — the latter a 2× size divergence vs the client `manim.js` exporter. Server renders and client `.py` exports now produce identical coordinates. Radius-type values (heart, Dot radius) correctly use `FRAME_X_RADIUS`; keyframe-x and camera `set_width` are unified too (`manim.js` no longer mixes 14.222 for static x with 14 for keyframe x).
+- **Feature (camera-aware 3D preview)**: the isometric panel now projects from the actual `phi`/`theta` camera angles via a new pure `engine/projection3d.js` module (`project3D` + `unprojectIso`, Manim Z-up spherical camera), replacing the fixed 30° isometric. The preview tracks the scene's resting camera and animates live during 3D `camera_move` clips.
+- **Feature (projection modes)**: choose **Orthographic** or **Perspective** (with focal distance) from the new 3D Camera Preview panel (Inspector, shown when nothing is selected in a 3D scene). Stored on `project.camera3d.projection` / `focalDistance`. Preview-only — render output is unchanged.
+- **Engine**: `playback.js` now interpolates 3D `camera_move` clips (`{phi, theta, zoom}`) into `cameraState` with an `is3d` flag and `setCamera3dBase`; the 2D camera path is unchanged and guarded against the new 3D state.
+- **Tests**: +12 unit (`projection3d` 4, `playback-camera3d` 2, `Scene3DPanel` 2, store defaults 2, manim-export FRAME_WIDTH invariants 2); totals now **131 unit + 114 engine**.
+
+### v3.4.0
 
 Completes 3D parity — 3D path animation and full `axes3d` range editing:
 

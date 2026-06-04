@@ -208,12 +208,19 @@ Keyframed `x3d/y3d/z3d` are merged into **one** `move_to([x, y, z])` call per `[
 ### Store Actions
 
 - `setSceneType(type)` — `'2d' | '3d'`; calls `commitState()`
-- `setCamera3d(params)` — `Object.assign(project.camera3d, params)`; calls `commitState()`
+- `setCamera3d(params)` — `Object.assign(project.camera3d, params)`; calls `commitState()`. `camera3d` now also carries `projection: 'orthographic' | 'perspective'` (default `'orthographic'`) and `focalDistance` (default `8`) — **preview-only**, do not affect codegen.
+
+### 3D Preview Projection (v3.5.0)
+
+- `services/web/src/engine/projection3d.js` — pure, testable Manim Z-up spherical-camera projection: `project3D(p, cam, cx, cy, scale)` + `unprojectIso(px, py, cam, cx, cy, scale, yKnown)`. Orthographic + perspective.
+- `StageCanvas.vue` `iso()` delegates to `project3D` via a `cam3d` computed (live 3D `cameraState` if `is3d`, else `project.camera3d` base). The fixed `cos30/sin30` isometric is gone. `top()` (XZ) stays a fixed orthographic reference.
+- `playback.js` `computeFrame` lerps 3D `camera_move` clips (`{phi, theta, zoom}`, detected by `'phi' in params`) into `cameraState` with `is3d: true`; `setCamera3dBase(base)` seeds the resting angle (fed from `App.vue` watcher). 2D camera path (`{x, y, zoom}`) unchanged; `vs/ox/oy` guard on `!cs.is3d`.
+- Projection mode editable in `Scene3DPanel.vue` (Inspector, shown when nothing selected + `sceneType === '3d'`).
 
 ### Known Constraints
 
-- Isometric projection optimized for `phi=75°` — canvas preview diverges with other angles
-- `path_move` 3D and full `axes3d` range inspector (yRange/zRange) left for a future PR
+- Projection mode is **preview-only** — perspective preview will diverge slightly from the render (codegen still emits Manim's own camera). Convention (Z-up axis/angle signs) validated by manual render comparison, not unit tests.
+- Perspective-mode iso drag uses the orthographic inverse (`unprojectIso`); minor drag imprecision at extreme angles.
 
 ## Vue 3 Migration (Completed — 2026-06-03)
 
@@ -290,10 +297,14 @@ Drag in `KeyframeLane` mutates Pinia state directly (no `commitState()` per pixe
 
 ValueTracker and UpdateFromAlphaFunc skip properties where `_kfUpdater(prop)` returns null (unsupported setters).
 
-## Technical Debt (known)
+## Coordinate Constants (unified — v3.5.0)
 
-- `FRAME_WIDTH = 14 + 2/9` used in `manim.js` vs `14` in `codegen.js` — ~0.065 Manim unit divergence at stage edges
-- `_kfPropSet` in both codegen files uses `14` (not `FRAME_WIDTH`) for x-coordinate conversion — same divergence applies to keyframe-driven x positions in `manim.js`
+Both generators now share the same frame constants and emit identical coordinates:
+`FRAME_WIDTH = 14 + 2/9` (14.222, Manim CE default), `FRAME_HEIGHT = 8`, `FRAME_X_RADIUS = 7.111`, `FRAME_Y_RADIUS = 4`.
+
+- `codegen.js` previously used bare `14` (positions) and `7` (scale-based shapes — square/circle/triangle/star/polygon/dot_grid spacing) — the latter a 2× size divergence vs `manim.js`. All now use `FRAME_WIDTH`. Radius-type values (heart `mw`, `Dot` radius) correctly use `FRAME_X_RADIUS`; heart `mh` uses `FRAME_Y_RADIUS`.
+- `_kfPropSet` x-conversion and camera `set_width` in **both** files now use `FRAME_WIDTH`.
+- **When editing coordinate math, keep `codegen.js` and `manim.js` byte-identical in the multipliers** — they have no shared import (codegen.js can't be imported in Vitest), so parity is maintained by convention + the `manim-export.test.js` invariant tests.
 
 ## Build / Environment Gotchas (fixed in v3.3.1)
 
