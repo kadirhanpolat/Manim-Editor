@@ -203,18 +203,14 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } 
 import { useProjectStore } from '../../store/project.js';
 import { generateDotGridPositions } from '../../engine/geometry.js';
 import { applyOverrides } from '../../engine/blending.js';
+import { project3D, unprojectIso } from '../../engine/projection3d.js';
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 
 const store = useProjectStore();
 
 // ── 3D Projection ─────────────────────────────────────────────────────────
-const cos30 = Math.cos(Math.PI / 6);
-const sin30 = Math.sin(Math.PI / 6);
-
 function iso(x3d, y3d, z3d, cx, cy, scale) {
-  const px = (x3d - z3d) * cos30;
-  const py = -y3d + (x3d + z3d) * sin30;
-  return { px: cx + px * scale, py: cy + py * scale };
+  return project3D({ x3d, y3d, z3d }, cam3d.value, cx, cy, scale);
 }
 
 function top(x3d, z3d, cx2, cy2, scale) {
@@ -263,22 +259,32 @@ const vs = computed(() => {
   const sy = containerHeight.value / stg.value.height;
   const base = Math.min(sx, sy, 1) * 0.92 * zoomLevel.value;
   const cs = store.frameState.cameraState;
-  return cs?.zoom ? base * cs.zoom : base;
+  return (cs && !cs.is3d && cs.zoom) ? base * cs.zoom : base;
 });
 const ox = computed(() => {
   const cs = store.frameState.cameraState;
-  const camX = cs ? cs.x : stg.value.width / 2;
+  const camX = (cs && !cs.is3d) ? cs.x : stg.value.width / 2;
   return containerWidth.value / 2 - camX * vs.value + panOffset.value.x;
 });
 const oy = computed(() => {
   const cs = store.frameState.cameraState;
-  const camY = cs ? cs.y : stg.value.height / 2;
+  const camY = (cs && !cs.is3d) ? cs.y : stg.value.height / 2;
   return containerHeight.value / 2 - camY * vs.value + panOffset.value.y;
 });
 
 const stageConfig = computed(() => ({ width: containerWidth.value, height: containerHeight.value }));
 
 const is3D = computed(() => store.project?.sceneType === '3d');
+const cam3d = computed(() => {
+  const cs = store.frameState.cameraState;
+  const base = store.project?.camera3d ?? {};
+  if (cs && cs.is3d) {
+    return { phi: cs.phi, theta: cs.theta, zoom: cs.zoom,
+             mode: base.projection ?? 'orthographic', focalDistance: base.focalDistance ?? 8 };
+  }
+  return { phi: base.phi ?? 75, theta: base.theta ?? -45, zoom: base.zoom ?? 1,
+           mode: base.projection ?? 'orthographic', focalDistance: base.focalDistance ?? 8 };
+});
 const splitRatio = ref(0.5);
 
 const leftPanelWidth = computed(() => Math.floor((stageConfig.value?.width ?? 1920) * splitRatio.value));
@@ -866,11 +872,12 @@ function onDrag3DEnd(objId, e, panel) {
   const scale = proj3DScale.value;
 
   if (panel === 'iso') {
-    const dx = (canvasX - projCx.value) / scale;
-    const dz = (canvasY - projCy.value) / scale;
-    const x3d = (dx / cos30 + dz / sin30) / 2;
-    const z3d = (dz / sin30 - dx / cos30) / 2;
-    store.updateObject(objId, { x3d: parseFloat(x3d.toFixed(3)), z3d: parseFloat(z3d.toFixed(3)) });
+    const objY = store.project.objects.find(o => o.id === objId)?.y3d ?? 0;
+    const r = unprojectIso(canvasX, canvasY, cam3d.value, projCx.value, projCy.value, scale, objY);
+    const patch = {};
+    if (r.x3d !== null) patch.x3d = parseFloat(r.x3d.toFixed(3));
+    if (r.z3d !== null) patch.z3d = parseFloat(r.z3d.toFixed(3));
+    store.updateObject(objId, patch);
   } else {
     const x3d = (canvasX - projCx2.value) / scale;
     const z3d = (canvasY - projCy2.value) / scale;
