@@ -20,7 +20,7 @@
         type="number"
         data-testid="focal-distance"
         :value="cam.focalDistance ?? 8"
-        @input="store.setCamera3d({ focalDistance: parseFloat($event.target.value) || 8 })"
+        @change="store.setCamera3d({ focalDistance: parseFloat($event.target.value) || 8 })"
         min="2" step="1" class="input text-sm w-24"
       />
     </div>

@@ -278,7 +278,7 @@ export class PlaybackEngine {
           frame.cameraState = {
             phi:   lerp(fromPhi,   camClip.params.phi   ?? base.phi,   easedT),
             theta: lerp(fromTheta, camClip.params.theta ?? base.theta, easedT),
-            zoom:  lerp(fromZoom,  camClip.params.zoom  ?? 1,          easedT),
+            zoom:  lerp(fromZoom,  camClip.params.zoom  ?? base.zoom,   easedT),
             is3d: true,
           };
         } else {
