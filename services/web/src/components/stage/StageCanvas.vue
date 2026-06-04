@@ -21,19 +21,15 @@
 
         <!-- Objects layer -->
         <v-layer ref="objectsLayer">
-          <!-- 3D reference grid + axes (faint, behind objects), clipped per panel
-               so camera zoom doesn't push them outside the panel/canvas -->
+          <!-- 3D reference grid + axes (faint, behind objects); segments are
+               geometrically clipped to each panel so zoom can't overflow -->
           <template v-if="is3D">
-            <v-group :config="{ clipX: 0, clipY: 0, clipWidth: splitX, clipHeight: stageConfig.height }">
-              <v-line v-for="(gl, gli) in floorGridIso" :key="'flgi' + gli" :config="gl" />
-              <v-line v-for="(ax, axi) in refAxesIso" :key="'rai' + axi" :config="ax" />
-              <v-text v-for="(lb, lbi) in refLabelsIso" :key="'rli' + lbi" :config="lb" />
-            </v-group>
-            <v-group :config="{ clipX: splitX, clipY: 0, clipWidth: rightPanelWidth, clipHeight: stageConfig.height }">
-              <v-line v-for="(gl, gli) in floorGridTop" :key="'flgt' + gli" :config="gl" />
-              <v-line v-for="(ax, axi) in refAxesTop" :key="'rat' + axi" :config="ax" />
-              <v-text v-for="(lb, lbi) in refLabelsTop" :key="'rlt' + lbi" :config="lb" />
-            </v-group>
+            <v-line v-for="(gl, gli) in floorGridIso" :key="'flgi' + gli" :config="gl" />
+            <v-line v-for="(gl, gli) in floorGridTop" :key="'flgt' + gli" :config="gl" />
+            <v-line v-for="(ax, axi) in refAxesIso" :key="'rai' + axi" :config="ax" />
+            <v-line v-for="(ax, axi) in refAxesTop" :key="'rat' + axi" :config="ax" />
+            <v-text v-for="(lb, lbi) in refLabelsIso" :key="'rli' + lbi" :config="lb" />
+            <v-text v-for="(lb, lbi) in refLabelsTop" :key="'rlt' + lbi" :config="lb" />
           </template>
 
           <template v-for="obj in sortedObjects" :key="obj.id + (obj.type === 'text' ? '-' + fontLoadKey : '')">
@@ -314,69 +310,98 @@ const projCy = computed(() => (stageConfig.value?.height ?? 1080) / 2);
 const projCx2 = computed(() => splitX.value + rightPanelWidth.value / 2);
 const projCy2 = computed(() => (stageConfig.value?.height ?? 1080) / 2);
 
-// Faint reference XYZ axes + XY floor grid. Split per panel so each can be
-// clipped to its half of the canvas — otherwise camera zoom (cam3d.zoom)
-// scales the fixed-extent gizmo past the panel/canvas edges.
+// Faint reference XYZ axes + XY floor grid. Each segment is geometrically
+// clipped (Liang–Barsky) to its panel rectangle so camera zoom (cam3d.zoom)
+// can never push the gizmo past the panel/canvas edges. (Konva group clip
+// proved unreliable through vue-konva, so we clip the geometry ourselves.)
 const REF_AXIS_LEN = 4;
 const FLOOR_GRID_EXT = 5;
 const AXIS_COLORS = { x: '#f87171', y: '#4ade80', z: '#60a5fa' };
-const _axLn = (a, b, stroke) => ({ points: [a.px, a.py, b.px, b.py], stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false });
-const _axTx = (p, text, fill) => ({ x: p.px + 4, y: p.py - 7, text, fontSize: 12, fontStyle: 'bold', fill, opacity: 0.5, listening: false });
-const _gridLn = (a, b) => ({ points: [a.px, a.py, b.px, b.py], stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false });
+
+// Clip segment (x0,y0)-(x1,y1) to rect [rx0,ry0,rx1,ry1]; returns trimmed
+// [x0,y0,x1,y1] or null if fully outside.
+function _clipSeg(x0, y0, x1, y1, rx0, ry0, rx1, ry1) {
+  let t0 = 0, t1 = 1;
+  const dx = x1 - x0, dy = y1 - y0;
+  const p = [-dx, dx, -dy, dy], q = [x0 - rx0, rx1 - x0, y0 - ry0, ry1 - y0];
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) { if (q[i] < 0) return null; }
+    else {
+      const r = q[i] / p[i];
+      if (p[i] < 0) { if (r > t1) return null; if (r > t0) t0 = r; }
+      else { if (r < t0) return null; if (r < t1) t1 = r; }
+    }
+  }
+  return [x0 + t0 * dx, y0 + t0 * dy, x0 + t1 * dx, y0 + t1 * dy];
+}
+const isoRect = computed(() => [0, 0, splitX.value, stageConfig.value.height]);
+const topRect = computed(() => [splitX.value, 0, stageConfig.value.width, stageConfig.value.height]);
+function _axCfg(a, b, stroke, r) {
+  const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
+  return c ? { points: c, stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false } : null;
+}
+function _gridCfg(a, b, r) {
+  const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
+  return c ? { points: c, stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false } : null;
+}
+function _lblCfg(p, text, fill, r) {
+  if (p.px < r[0] || p.px > r[2] || p.py < r[1] || p.py > r[3]) return null;
+  return { x: p.px + 4, y: p.py - 7, text, fontSize: 12, fontStyle: 'bold', fill, opacity: 0.5, listening: false };
+}
 
 const refAxesIso = computed(() => {
   if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value;
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
   return [
-    _axLn(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x),
-    _axLn(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y),
-    _axLn(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z),
-  ];
+    _axCfg(iso(-L, 0, 0, cx, cy, s), iso(L, 0, 0, cx, cy, s), AXIS_COLORS.x, r),
+    _axCfg(iso(0, -L, 0, cx, cy, s), iso(0, L, 0, cx, cy, s), AXIS_COLORS.y, r),
+    _axCfg(iso(0, 0, -L, cx, cy, s), iso(0, 0, L, cx, cy, s), AXIS_COLORS.z, r),
+  ].filter(Boolean);
 });
 const refAxesTop = computed(() => {
   if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value, r = topRect.value;
   return [
-    _axLn(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x),
-    _axLn(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.y),
-  ];
+    _axCfg(top(-L, 0, cx2, cy2, s), top(L, 0, cx2, cy2, s), AXIS_COLORS.x, r),
+    _axCfg(top(0, -L, cx2, cy2, s), top(0, L, cx2, cy2, s), AXIS_COLORS.y, r),
+  ].filter(Boolean);
 });
 const refLabelsIso = computed(() => {
   if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value;
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
   return [
-    _axTx(iso(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x),
-    _axTx(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y),
-    _axTx(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z),
-  ];
+    _lblCfg(iso(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x, r),
+    _lblCfg(iso(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y, r),
+    _lblCfg(iso(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z, r),
+  ].filter(Boolean);
 });
 const refLabelsTop = computed(() => {
   if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const L = REF_AXIS_LEN, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value, r = topRect.value;
   return [
-    _axTx(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x),
-    _axTx(top(0, L, cx2, cy2, s), 'Y', AXIS_COLORS.y),
-  ];
+    _lblCfg(top(L, 0, cx2, cy2, s), 'X', AXIS_COLORS.x, r),
+    _lblCfg(top(0, L, cx2, cy2, s), 'Y', AXIS_COLORS.y, r),
+  ].filter(Boolean);
 });
 const floorGridIso = computed(() => {
   if (!is3D.value) return [];
-  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx = projCx.value, cy = projCy.value;
+  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
   const out = [];
   for (let i = -G; i <= G; i++) {
     if (i === 0) continue;
-    out.push(_gridLn(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s)));
-    out.push(_gridLn(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s)));
+    const a = _gridCfg(iso(-G, i, 0, cx, cy, s), iso(G, i, 0, cx, cy, s), r); if (a) out.push(a);
+    const b = _gridCfg(iso(i, -G, 0, cx, cy, s), iso(i, G, 0, cx, cy, s), r); if (b) out.push(b);
   }
   return out;
 });
 const floorGridTop = computed(() => {
   if (!is3D.value) return [];
-  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value;
+  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx2 = projCx2.value, cy2 = projCy2.value, r = topRect.value;
   const out = [];
   for (let i = -G; i <= G; i++) {
     if (i === 0) continue;
-    out.push(_gridLn(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s)));
-    out.push(_gridLn(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s)));
+    const a = _gridCfg(top(-G, i, cx2, cy2, s), top(G, i, cx2, cy2, s), r); if (a) out.push(a);
+    const b = _gridCfg(top(i, -G, cx2, cy2, s), top(i, G, cx2, cy2, s), r); if (b) out.push(b);
   }
   return out;
 });
