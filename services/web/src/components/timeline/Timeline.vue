@@ -36,8 +36,10 @@
         </div>
       </div>
 
-      <!-- Object lanes (one row per object so simultaneous objects don't overlap) -->
-      <div v-if="objects.length > 0" class="flex-shrink-0 max-h-40 overflow-y-auto">
+      <!-- Unified scroll: object lanes + animation tracks + keyframes + camera all share
+           the same scrollable area, so adding objects never starves the tracks -->
+      <div class="flex-1 overflow-y-auto overflow-x-hidden">
+        <!-- Object lanes (one row per object so simultaneous objects don't overlap) -->
         <div
           v-for="obj in objects"
           :key="'objrow-'+obj.id"
@@ -68,10 +70,8 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Animation tracks -->
-      <div class="flex-1 overflow-y-auto overflow-x-hidden">
+        <!-- Animation tracks -->
         <TimelineTrack
           v-for="track in visibleTracks"
           :key="track.id"
