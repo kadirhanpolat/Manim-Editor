@@ -14,6 +14,9 @@
         <input class="input input-sm" :value="obj.name" @change="u('name', $event.target.value)" />
       </Section>
 
+      <!-- 3D position / rotation / type params (3D objects only) -->
+      <Position3DPanel v-if="is3DObject" :element="obj" @update="onObj3DUpdate" />
+
       <!-- Position & Size (type-aware: match what preview actually renders) -->
       <Section label="Position & Size">
         <div class="grid grid-cols-2 gap-1.5">
@@ -425,6 +428,9 @@
     <template v-else>
       <div class="panel-header">Canvas</div>
 
+      <!-- 3D Camera Preview (projection mode) — only in 3D scenes -->
+      <Scene3DPanel v-if="store.project.sceneType === '3d'" />
+
       <!-- Background Properties -->
       <Section label="Background">
         <div class="space-y-1.5">
@@ -519,6 +525,8 @@ import { ENTER_ANIMS, EXIT_ANIMS } from '../../store/project.js';
 import { EASING_LIST } from '../../engine/easing.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
 import FontSelector from './FontSelector.vue';
+import Position3DPanel from './Position3DPanel.vue';
+import Scene3DPanel from './Scene3DPanel.vue';
 
 const Section = {
   props: ['label'],
@@ -544,6 +552,9 @@ const enterAnims = ENTER_ANIMS;
 const exitAnims = EXIT_ANIMS;
 
 const obj = computed(() => store.selectedObject);
+const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
+const is3DObject = computed(() => !!obj.value && OBJ_3D_TYPES.includes(obj.value.type));
+function onObj3DUpdate(payload) { if (obj.value) store.updateObject(obj.value.id, payload); }
 const clip = computed(() => store.selectedClip);
 const cameraClip = computed(() => {
   if (!store.selectedClipId) return null;

@@ -22,6 +22,25 @@
       </div>
     </div>
 
+    <!-- ═══ 3D Shapes (visual + 3D mode only) ═══ -->
+    <div v-if="!isCodeMode && is3D" class="p-3 border-b border-studio-border">
+      <h3 class="section-title">3D Shapes</h3>
+      <div class="grid grid-cols-3 gap-1.5">
+        <button
+          v-for="s in shapes3D"
+          :key="s.type"
+          class="shape-card group"
+          @click="addShape(s.type)"
+          :title="'Add ' + s.label"
+        >
+          <div class="shape-icon" :style="{ color: s.color }">
+            <span v-html="s.icon"></span>
+          </div>
+          <span class="shape-label">{{ s.label }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ═══ Text (visual mode only) ═══ -->
     <div v-if="!isCodeMode" class="p-3 border-b border-studio-border">
       <h3 class="section-title">Text</h3>
@@ -173,10 +192,21 @@ const shapes = [
   { type: 'axes',      label: 'Axes',      color: '#10b981', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="20" x2="3" y2="4"/><line x1="3" y1="20" x2="20" y2="20"/><polyline points="3 4 1 6 3 4 5 6"/><polyline points="20 20 18 18 20 20 18 22"/></svg>' },
 ];
 
+// 3D shapes — shown only when sceneType === '3d' (store.addObject sets x3d/y3d/z3d + 3D defaults)
+const shapes3D = [
+  { type: 'sphere',   label: 'Sphere',   color: '#e67700', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="4"/><line x1="3" y1="12" x2="21" y2="12"/></svg>' },
+  { type: 'cube',     label: 'Cube',     color: '#3b5bdb', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>' },
+  { type: 'cone',     label: 'Cone',     color: '#2f9e44', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 20h18L12 2z"/><ellipse cx="12" cy="20" rx="9" ry="2"/></svg>' },
+  { type: 'cylinder', label: 'Cylinder', color: '#1098ad', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/></svg>' },
+  { type: 'torus',    label: 'Torus',    color: '#9c36b5', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="3" ry="1.5"/></svg>' },
+  { type: 'axes3d',   label: 'Axes 3D',  color: '#868e96', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/><line x1="12" y1="12" x2="4" y2="16"/></svg>' },
+];
+
 const assets = computed(() => store.project.assets);
 const imageAssets = computed(() => assets.value.filter(a => a.type === 'image'));
 const svgAssets = computed(() => assets.value.filter(a => a.type === 'svg'));
 const isCodeMode = computed(() => store.project.editorMode === 'code');
+const is3D = computed(() => store.project.sceneType === '3d');
 const canTransform = computed(() => store.selectedObjectIds.length === 2);
 
 function addShape(type) {
