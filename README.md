@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.3.2-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.4.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -62,9 +62,10 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Transform morphing** -- Select two shapes and morph between them with customizable easing
 - **Animation types** -- Transform, Move, Scale, Fade, Rotate with 17 easing functions
 - **AnimationGroup / LaggedStart** -- Mark clips as parallel (`∥`) to run simultaneously; set `lag_ratio` for staggered starts; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)` in Manim
-- **Path animation (MoveAlongPath)** -- Draw a Bezier path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation
+- **Path animation (MoveAlongPath)** -- Draw a path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation. In **3D mode** the path is drawn in the top-down (XZ) panel with Y held constant, animates in the canvas preview, renders as a dashed overlay in both panels, and round-trips through `.py` export/import with full 3D coordinates
 - **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim (2D) or `self.move_camera(phi=..., theta=...)` (3D)
-- **Split viewport (3D)** -- In 3D mode, the canvas splits into perspective (isometric) + top-down (XZ) views; drag objects in either panel to position them; Blender/Unity style
+- **Split viewport (3D)** -- In 3D mode, the canvas splits into perspective (isometric) + top-down (XZ) views; drag objects in either panel to position them; 3D objects animate live in both panels during playback; Blender/Unity style
+- **3D axes ranges** -- `axes3d` objects expose full X/Y/Z range editors (min–max per axis) in the 3D Position panel; ranges survive `.py` export/import round-trips
 - **Audio / Voiceover** -- Attach audio to any clip: upload `.mp3`/`.wav`/`.ogg`, synthesize with **gTTS** (online) or **Coqui TTS** (offline); auto-sync stretches clip duration to match audio; manual mode lets you set offset; generates `VoiceoverScene` + `with self.voiceover(audio=...)` in Manim
 - **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
 - **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
@@ -372,8 +373,8 @@ All Docker containers run with **least-privilege non-root users**:
 
 ```bash
 cd services/web
-npm test          # 105 engine tests (easing, geometry, transform, blending, keyframe interpolation)
-npm run test:unit # 111 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene)
+npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
+npm run test:unit # 119 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene, 3D path)
 ```
 
 ---
@@ -406,7 +407,21 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.3.2 (current)
+### v3.4.0 (current)
+
+Completes 3D parity — 3D path animation and full `axes3d` range editing:
+
+- **Feature (3D path_move)**: `path_move` now works in 3D scenes. The path is drawn in the top-down (XZ) panel with Y held at the object's current `y3d`; points are stored as `{x3d, y3d, z3d}` in Manim units (detected by `'x3d' in point`, no separate flag).
+- **Feature (3D codegen)**: 3D paths emit `MoveAlongPath` with true 3D coordinates (`np.array([x, y, z])`, no `stageToManim`/`z=0`) in both `codegen.js` (server) and `manim.js` (client). The `manim.js` parser detects `ThreeDScene` → `sceneType: '3d'`, captures all three coordinates, and round-trips 3D paths back to project JSON.
+- **Feature (playback preview)**: extracted a pure, exported `interpolatePath(path, t)` (arc-length, 2D + 3D) in `playback.js`; 3D `path_move` now animates in the canvas. A new `eff3d(obj)` helper in `StageCanvas.vue` merges `objectOverrides`, so all 3D objects reflect animation overrides during playback (not just paths).
+- **Feature (visualization)**: committed 3D paths render as dashed purple polylines in both the iso and top panels.
+- **Feature (axes3d ranges)**: `Position3DPanel` now has full X/Y/Z range editors (min–max per axis), not just X.
+- **Fix (round-trip)**: `ThreeDAxes(...)` is now emitted on a single line so the regex parser reconstructs `axes3d` x/y/z ranges on `.py` import (previously reset to `[-3, 3, 1]`). Matches how `Axes`/`NumberPlane` are emitted.
+- **Fix (3D drawing coords)**: 3D path drawing/preview uses raw canvas-pixel pointer coordinates (`projCx2`/`proj3DScale`/`top()`), not the 2D `c2s`/`s2c` stage transform — the split viewport projection operates in canvas-pixel space.
+- **Cleanup**: removed a dead legacy 2D `move_to` parser handler superseded by a unified `move_to([x, y, z])` handler.
+- **Tests**: +8 (new `3d-path.test.js` codegen/round-trip/2D-regression/axes3d-range + `Position3DPanel.test.js`) and `interpolatePath` engine coverage; totals now **119 unit + 114 engine**.
+
+### v3.3.2
 
 Bug-fix release — hardens 3D keyframe code generation:
 
