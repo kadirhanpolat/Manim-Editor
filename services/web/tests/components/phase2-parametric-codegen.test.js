@@ -31,4 +31,19 @@ describe('parametric codegen', () => {
     const s = generateManimScript(makeProject([makeObj({ xExpr: '__import__("os")' })]));
     expect(s).not.toContain('__import__');
   });
+  it('round-trips a comma-containing (multi-arg) expression', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj({ xExpr: 'np.power(t, 2)', yExpr: 'np.sin(t)' })])), SW, SH).objects[0];
+    expect(o.xExpr).toBe('np.power(t, 2)');
+    expect(o.yExpr).toBe('np.sin(t)');
+  });
+
+  it('a parametric and a heart in the same scene each round-trip to their own type', () => {
+    const heart = { id: 'h1', type: 'heart', x: SW / 2, y: SH / 2, width: 120, height: 120,
+      fill: '#ec4899', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+      enterTime: 0, duration: 5, enterAnim: 'none', exitAnim: 'none' };
+    const objs = parseManimScript(generateManimScript(makeProject([makeObj(), heart])), SW, SH).objects;
+    const types = objs.map(o => o.type).sort();
+    expect(types).toContain('parametric');
+    expect(types).toContain('heart');
+  });
 });

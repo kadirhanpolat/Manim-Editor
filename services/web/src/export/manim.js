@@ -1312,12 +1312,22 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // ParametricFunction (single-line parametric object) — must precede the heart matcher
-    m = line.match(/^(\w+)\s*=\s*ParametricFunction\(lambda t: np\.array\(\[(.+?), (.+?), 0\]\), t_range=\[([-\d.]+), ([-\d.]+)\], color=["']([^"']+)["'], stroke_width=([\d.]+)\)/);
+    m = line.match(/^(\w+)\s*=\s*ParametricFunction\(lambda t: np\.array\(\[(.+), 0\]\), t_range=\[([-\d.]+), ([-\d.]+)\], color=["']([^"']+)["'], stroke_width=([\d.]+)\)/);
     if (m) {
-      const [, name, xe, ye, t0, t1, color, sw_] = m;
+      const [, name, body, t0, t1, color, sw_] = m;
+      // split "xExpr, yExpr" on the top-level (paren-depth 0) comma
+      let depth = 0, splitAt = -1;
+      for (let i = 0; i < body.length; i++) {
+        const ch = body[i];
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        else if (ch === ',' && depth === 0) { splitAt = i; break; }
+      }
+      const xe = (splitAt >= 0 ? body.slice(0, splitAt) : body).trim();
+      const ye = (splitAt >= 0 ? body.slice(splitAt + 1) : '0').trim();
       const id = uid('obj');
       const obj = { id, type: 'parametric', name, x: sw / 2, y: sh / 2, width: 160, height: 160,
-        xExpr: xe.trim(), yExpr: ye.trim(), tMin: parseFloat(t0), tMax: parseFloat(t1),
+        xExpr: xe, yExpr: ye, tMin: parseFloat(t0), tMax: parseFloat(t1),
         fill: 'transparent', stroke: color, strokeWidth: parseFloat(sw_), opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
