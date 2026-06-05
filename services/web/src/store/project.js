@@ -12,6 +12,7 @@
 
 import { createPinia, defineStore, setActivePinia } from 'pinia';
 import api, { connectJobWebSocket } from '../api.js';
+import { presetVertices } from '../engine/polygonVertices.js';
 
 const MAX_HISTORY = 50;
 
@@ -133,6 +134,7 @@ export const SHAPE_DEFAULTS = {
   triangle: { width: 120, height: 120, fill: '#f59e0b', stroke: '#fff',  strokeWidth: 2 },
   star:     { width: 120, height: 120, fill: '#eab308', stroke: '#fff',  strokeWidth: 2 },
   polygon:  { width: 120, height: 120, fill: '#8b5cf6', stroke: '#fff',  strokeWidth: 2 },
+  polygon_free: { width: 160, height: 120, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 },
   line:     { width: 200, height: 4,   fill: '#94a3b8', stroke: '#94a3b8', strokeWidth: 3 },
   arrow:    { width: 200, height: 40,  fill: '#ef4444', stroke: '#fff',  strokeWidth: 2 },
   heart:    { width: 120, height: 120, fill: '#ec4899', stroke: '#fff',  strokeWidth: 2 },
@@ -168,6 +170,7 @@ export const SHAPE_COLORS = {
   sphere: '#e67700', cube: '#3b5bdb', cone: '#2f9e44',
   cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981',
   annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
+  polygon_free: '#8b5cf6',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -281,6 +284,7 @@ const useProjectStore = defineStore('project', {
         latex: 'LaTeX', axes: 'Axes',
         numberplane: 'NumberPlane', numberline: 'NumberLine',
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
+        polygon_free: 'Polygon',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -309,6 +313,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'text' ? { content: 'Hello World', fontSize: 48, fontFamily: 'Roboto', textAlign: 'center', fontWeight: 'normal', fontStyle: 'normal' } : {}),
         ...(type === 'polygon' ? { sides: 6 } : {}),
         ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
+        ...(type === 'polygon_free' ? { vertices: presetVertices('trapezoid', SHAPE_DEFAULTS.polygon_free.width, SHAPE_DEFAULTS.polygon_free.height) } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),
@@ -371,6 +376,14 @@ const useProjectStore = defineStore('project', {
       for (const key of Object.keys(updates)) {
         obj[key] = updates[key];
       }
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setPolygonVertices(id, vertices) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !Array.isArray(vertices) || vertices.length < 3) return;
+      obj.vertices = vertices.map(([x, y]) => [Math.round(x), Math.round(y)]);
       this.isDirty = true;
       this._debouncedCommit();
     },
