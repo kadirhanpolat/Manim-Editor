@@ -77,7 +77,7 @@ const addableProps = computed(() => {
 
 function addPropLane(prop) {
   if (!sourceObj.value) return;
-  const val = sourceObj.value[prop] ?? 0;
-  store.addKeyframe(sourceObj.value.id, prop, store.playbackTime ?? 0, val);
+  // First keyframe also seeds start/end so the property has a usable baseline.
+  store.addKeyframeScaffold(sourceObj.value.id, prop, store.playbackTime ?? 0);
 }
 </script>

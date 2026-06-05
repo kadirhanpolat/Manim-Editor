@@ -1224,6 +1224,34 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
+    // Add a keyframe at `time` for `prop`. When this is the property's FIRST
+    // keyframe, also seed keyframes at the object's start and end (same current
+    // value) so a lone keyframe isn't a no-op in opt-in mode and the user gets a
+    // baseline to animate from. `time` is clamped to the visible interval and
+    // every insert is upserted within 0.01s tolerance. One commit for the lot.
+    addKeyframeScaffold(objId, prop, time) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj) return;
+      const val = obj[prop] ?? 0;
+      const start = obj.enterTime || 0;
+      const end = start + (obj.duration ?? 3);
+      const t = Math.round(Math.max(start, Math.min(end, time)) * 100) / 100;
+      const isFirst = !obj.keyframes?.[prop]?.length;
+      if (!obj.keyframes) obj.keyframes = {};
+      if (!obj.keyframes[prop]) obj.keyframes[prop] = [];
+      const arr = obj.keyframes[prop];
+      const upsert = (tt) => {
+        const i = arr.findIndex(k => Math.abs(k.time - tt) < 0.01);
+        if (i >= 0) arr[i].value = val;
+        else arr.push({ time: tt, value: val, easing: { type: 'linear' } });
+      };
+      if (isFirst) { upsert(start); upsert(end); }
+      upsert(t);
+      arr.sort((a, b) => a.time - b.time);
+      this.isDirty = true;
+      this.commitState();
+    },
+
     removeKeyframe(objId, prop, time) {
       const obj = this.project.objects.find(o => o.id === objId);
       if (!obj?.keyframes?.[prop]) return;

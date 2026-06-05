@@ -6,7 +6,7 @@
     >
       <span class="truncate flex-1">↳ {{ prop }}</span>
       <button
-        class="flex-shrink-0 text-studio-accent/70 hover:text-studio-accent leading-none px-1"
+        class="flex-shrink-0 text-sm font-bold text-studio-accent/80 hover:text-studio-accent leading-none px-1.5"
         title="Playhead konumuna keyframe ekle"
         @click.stop="addAtPlayhead"
       >+</button>
@@ -127,8 +127,7 @@ function onDblClick(e) { addKfAt(e.clientX); }
 // object's visible interval. Upserts within addKeyframe's 0.01s tolerance, so
 // re-clicking without moving the playhead just refreshes the existing key.
 function addAtPlayhead() {
-  const t = Math.round(clampToObj(store.playbackTime ?? 0) * 100) / 100;
-  store.addKeyframe(props.objId, props.prop, t, obj.value?.[props.prop] ?? 0);
+  store.addKeyframeScaffold(props.objId, props.prop, store.playbackTime ?? 0);
 }
 
 // Segment click is debounced: a lone click opens the easing popup after a short

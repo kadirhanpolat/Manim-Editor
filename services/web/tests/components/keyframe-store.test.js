@@ -75,6 +75,33 @@ describe('addKeyframe', () => {
   });
 });
 
+describe('addKeyframeScaffold', () => {
+  it('seeds start + end keyframes on the first keyframe of a property', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 1, duration: 3 }); // visible [1, 4]
+    store.addKeyframeScaffold(obj.id, 'x', 2.5);
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([1, 2.5, 4]);
+  });
+
+  it('clamps the playhead time into the visible interval', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 3 }); // visible [0, 3]
+    store.addKeyframeScaffold(obj.id, 'x', 9.0); // past end → clamps to 3 (dedup with seeded end)
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 3]);
+  });
+
+  it('adds only one keyframe once the property already has keyframes', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // visible [0, 4]
+    store.addKeyframeScaffold(obj.id, 'x', 1); // first → seeds 0, 1, 4
+    store.addKeyframeScaffold(obj.id, 'x', 2); // not first → just adds 2
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 1, 2, 4]);
+  });
+});
+
 describe('removeKeyframe', () => {
   it('removes a keyframe', () => {
     const obj = store.addObject('circle', 960, 540);
