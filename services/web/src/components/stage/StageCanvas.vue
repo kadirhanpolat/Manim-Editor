@@ -171,6 +171,12 @@
           <v-circle v-for="(pt, pi) in pathCanvasPoints" :key="'pp'+pi" :config="{ x: pt.cx, y: pt.cy, radius: 5, fill: '#a855f7', stroke: '#fff', strokeWidth: 1, listening: false }" />
         </v-layer>
 
+        <v-layer v-if="polygonHandles">
+          <v-circle v-for="pt in polygonHandles.points" :key="'pv' + pt.i"
+            :config="{ x: pt.cx, y: pt.cy, radius: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 1.5, draggable: true, name: 'vertexHandle' }"
+            @dragmove="onVertexDrag(pt.i, $event)" @dragend="onVertexDragEnd" />
+        </v-layer>
+
         <!-- Group bounds layer -->
         <v-layer>
           <v-rect v-for="gb in groupBounds" :key="'gb-'+gb.id" :config="gb" />
@@ -234,6 +240,7 @@ import { applyOverrides } from '../../engine/blending.js';
 import { project3D, unprojectIso, perspectiveScale } from '../../engine/projection3d.js';
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 import { latexToUnicode } from '../../utils/latexPreview.js';
+import { canvasToVertex } from '../../engine/polygonVertices.js';
 
 const store = useProjectStore();
 
@@ -476,6 +483,28 @@ const pathPreviewLineCfg = computed(() => {
     listening: false,
   };
 });
+
+const polygonHandles = computed(() => {
+  if (store.activeTool !== 'select' || store.selectedObjectIds.length !== 1) return null;
+  const obj = store.objectById(store.selectedObjectIds[0]);
+  if (!obj || obj.type !== 'polygon_free' || !Array.isArray(obj.vertices)) return null;
+  const c = s2c(obj.x, obj.y);
+  return { id: obj.id,
+    points: obj.vertices.map(([vx, vy], i) => ({ i, cx: c.x + vx * vs.value, cy: c.y + vy * vs.value })) };
+});
+
+function onVertexDrag(i, evt) {
+  const h = polygonHandles.value; if (!h) return;
+  const obj = store.objectById(h.id); if (!obj) return;
+  const c = s2c(obj.x, obj.y);
+  const node = evt.target;
+  const nv = obj.vertices.slice();
+  nv[i] = canvasToVertex(node.x(), node.y(), c.x, c.y, vs.value);
+  obj.vertices = nv;             // live update (no commit per pixel)
+}
+function onVertexDragEnd() {
+  store.commitState();
+}
 
 const groupBounds = computed(() => {
   const groups = store.project.groups || [];
