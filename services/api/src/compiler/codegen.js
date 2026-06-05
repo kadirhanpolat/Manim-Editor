@@ -85,8 +85,8 @@ const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.111
 const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/web/src/export/manim.js) ──
-const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow']);
+const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -269,6 +269,14 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       if (hasStroke)
         lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
+    case 'annulus': {
+      const ri = (obj.innerRadius / sw * FRAME_WIDTH);
+      const ro = (obj.outerRadius / sw * FRAME_WIDTH);
+      lines.push(`${n} = Annulus(inner_radius=${ri.toFixed(3)}, outer_radius=${ro.toFixed(3)})`);
+      if (hasFill) lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
+      if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
     case 'ellipse':
       lines.push(`${n} = Ellipse(width=${(obj.width / sw * FRAME_WIDTH).toFixed(3)}, height=${(obj.height / sh * FRAME_HEIGHT).toFixed(3)})`);
       if (hasFill)
