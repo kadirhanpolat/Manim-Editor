@@ -186,6 +186,12 @@
           <template v-for="pl in path3dPolylines" :key="pl.id">
             <v-line :config="pl" />
           </template>
+
+          <!-- Circumscribe emphasis overlays -->
+          <template v-for="o in emphasisOverlays" :key="o.id">
+            <v-rect v-if="o.kind === 'rect'" :config="o" />
+            <v-ellipse v-else :config="o" />
+          </template>
         </v-layer>
 
         <!-- Morph preview layer -->
@@ -642,6 +648,30 @@ function eff3d(obj) {
     z3d: ov.z3d ?? obj.z3d ?? 0,
   };
 }
+
+// ── Emphasis overlay (circumscribe) ──────────────────────────────────────
+const emphasisOverlays = computed(() => {
+  const out = [];
+  const ovMap = frameState.value.objectOverrides || {};
+  for (const obj of objects.value) {
+    const ov = ovMap[obj.id];
+    const e = ov && ov._emphasis;
+    if (!e || e.kind !== 'circumscribe') continue;
+    const m = eff(obj);
+    const c = s2c(m.x, m.y);
+    const w = (m.width || 100) * 1.25 * vs.value;
+    const h = (m.height || 100) * 1.25 * vs.value;
+    const p = e.progress;
+    const op = e.fadeOut ? Math.sin(Math.PI * p) : Math.min(1, p * 2);
+    const base = { stroke: e.color, strokeWidth: 3, opacity: Math.max(0, op), listening: false, id: obj.id + '-emph' };
+    if (e.shape === 'Circle') {
+      out.push({ ...base, kind: 'ellipse', x: c.x, y: c.y, radiusX: w / 2, radiusY: h / 2 });
+    } else {
+      out.push({ ...base, kind: 'rect', x: c.x - w / 2, y: c.y - h / 2, width: w, height: h });
+    }
+  }
+  return out;
+});
 
 // Draw committed 3D path_move paths as a polyline in the single 3D view (visual only).
 const path3dPolylines = computed(() => {
