@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.8.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.9.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -56,6 +56,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
 - **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
 - **Geometry, calculus & data objects** -- Annulus, Arc, Sector, Double Arrow, Free Polygon (with draggable canvas vertex handles + Trapezoid/Parallelogram presets), Parametric curves (`x(t)`/`y(t)` over a `t`-range), Matrix (per-cell grid editor with `[ ]` / `( )` / `| |` bracket styles), and per-graph Area-under-curve / Riemann-rectangle overlays on Axes -- all render in Manim and round-trip through `.py` export/import
+- **Relational objects** -- Brace (bracket between two draggable points with an optional LaTeX label) and Angle (angle/right-angle mark from a vertex + two draggable endpoints, with arc radius and optional LaTeX label); both are self-contained (defined by their own points) and round-trip through `.py`
 - **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square), separate fill/stroke opacity, and dashed stroke; controls appear only for shapes that support them; all four render in Manim and round-trip through `.py` export/import
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
 
@@ -244,7 +245,7 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
 
@@ -381,7 +382,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 234 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security)
+npm run test:unit # 253 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle)
 ```
 
 ---
@@ -414,7 +415,18 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.8.0 (current)
+### v3.9.0 (current)
+
+Relational objects (Phase 2.5) — two self-contained relational mobjects following the constructor → styling → single-line round-trip pattern, emitted byte-identically by both generators:
+
+- **Brace** (`brace` → `BraceBetweenPoints`): a bracket spanning two object-relative points (`p1`/`p2`) edited via draggable canvas handles, with an optional LaTeX label. Unlabeled emits one line; labeled wraps the brace + `get_tex` label in a `VGroup`.
+- **Angle** (`angle` → `Angle` / `RightAngle`): an angle mark from a `vertex` and two endpoints (three draggable handles), with a right-angle-square mode, configurable arc radius, and an optional LaTeX label. Emitted via two helper `Line`s passed to `Angle`/`RightAngle`.
+- **Independent geometric definition**: both are defined by their own points (no dependency on other objects); move/scale/rotate work through the standard object transform; the generic post-switch `move_to` positions them.
+- **Labels**: optional LaTeX via `get_tex("...")` with non-raw, doubled-backslash escaping (`safeLatex`, the same convention as `MathTex` — avoids the v3.6.0 literal-`int` bug).
+- **Round-trip + parity**: both types round-trip through `.py` export/import (the parser reconstructs angle points from the helper-`Line` vars and attaches labels from the `VGroup` line) and are emitted byte-identically by `codegen.js` (server) and `manim.js` (client), guarded by `manim-export.test.js`.
+- **Tests**: +19 unit (store, brace/angle generator + round-trip codegen, inspector panels); totals now **253 unit + 114 engine**.
+
+### v3.8.0
 
 Object library enrichment (Phase 2) — seven new standalone object types plus two Axes graph extensions, all following the constructor → styling → single-line round-trip pattern and emitted byte-identically by both generators:
 

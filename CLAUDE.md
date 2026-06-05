@@ -104,7 +104,7 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 ## Object Types
 
-**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`
+**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`
 
 **3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`
 
@@ -354,6 +354,37 @@ constructor → styling → single-line round-trip pattern:
   byte-identical across codegen.js and manim.js** — guarded by `manim-export.test.js`.
 - **Axes graph extensions**: each `axes.graphs[]` item gains optional `area`
   (`get_area`) and `riemann` (`get_riemann_rectangles`) fields with full canvas preview.
+
+## Phase 2.5 Relational Objects (Brace + Angle — 2026-06-05)
+
+Two relational mobjects, defined by **their own object-relative px points** (no
+dependency on other objects — the relational-reference and hybrid options were
+rejected). Points convert with the `polygon_free` scale; the generic post-switch
+`move_to` positions the object/group.
+
+- **`brace`** (`BraceBetweenPoints`): fields `p1`/`p2` (object-relative px), `label`.
+  Unlabeled = single line; labeled = `<n>_brace = BraceBetweenPoints(...)` +
+  `<n> = VGroup(<n>_brace, <n>_brace.get_tex("..."))`.
+- **`angle`** (`Angle`/`RightAngle`): fields `vertex`/`point1`/`point2`,
+  `rightAngle` (bool), `radius`, `label`. Emitted via two helper `Line`s
+  (`<n>_l1`/`<n>_l2`) then `Angle(<n>_l1, <n>_l2, radius=...)` or
+  `RightAngle(<n>_l1, <n>_l2)`; labeled wraps the `<n>_arc` constructor in a VGroup.
+- **Labels** use `get_tex("...")` with **non-raw, doubled-backslash escaping**
+  (`safeLatex` helper) — same convention as the `latex` case; raw `r"..."` would
+  reproduce the v3.6.0 literal-`int` bug.
+- **Parser** (`manim.js`): captures the `_l1`/`_l2` helper Lines into `relLineMap`
+  (so they don't become standalone `line` objects), reconstructs points from them on
+  the `Angle`/`RightAngle` line, and attaches labels from the following `VGroup` +
+  `get_tex` line (renaming the base var). `for..of` loop — cross-iteration state via
+  `varMap`/`objById`/`relLineMap`.
+- **Preview** (`StageCanvas.vue`): composite groups with a listening hit region;
+  brace bulge / angle arc are **preview-only approximations**. Draggable point
+  handles reuse the generalized `polygonHandles` computed (`kind: 'relational'`,
+  named-point keys) + `onVertexDrag` branch.
+- Store actions: `setRelationalPoint`, `setAngleRightMode`, `setAngleRadius`,
+  `setRelationalLabel`. **Keep `safeLatex` + the `case 'brace'`/`case 'angle'`
+  byte-identical across codegen.js and manim.js** — guarded by `manim-export.test.js`.
+  Not in GRADIENT_TYPES/DASH_TYPES (stroke marks).
 
 ## Build / Environment Gotchas (fixed in v3.3.1)
 
