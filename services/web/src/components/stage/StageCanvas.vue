@@ -103,6 +103,8 @@
               <v-text :config="axesLabelCfg(obj, 'x')" />
               <v-text :config="axesLabelCfg(obj, 'y')" />
               <!-- Graph curves preview -->
+              <v-line v-for="(ar, ai) in axesAreaRiemann(obj).areas" :key="'ar'+ai" :config="ar" />
+              <v-rect v-for="(rr, ri) in axesAreaRiemann(obj).rects" :key="'rr'+ri" :config="rr" />
               <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc'+gi" :config="gc" />
             </v-group>
 
@@ -1266,20 +1268,8 @@ function axesGraphCurves(obj) {
   const ph = obj.height * vs.value;
 
   for (const graph of obj.graphs) {
-    let fn;
-    // Validate expression before eval
-    const safeExpr = (() => {
-      const e = (graph.expression || '').trim();
-      if (!e) return null;
-      if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(e)) return null;
-      if (/import|eval|exec|open|__/.test(e)) return null;
-      return e;
-    })();
-    if (!safeExpr) continue;
-    try {
-      // eslint-disable-next-line no-new-func
-      fn = new Function('x', `"use strict"; return (${safeExpr});`);
-    } catch { continue; }
+    const fn = compileExpr(graph.expression, 'x');
+    if (!fn) continue;
 
     const steps = 80;
     const points = [];
@@ -1304,6 +1294,52 @@ function axesGraphCurves(obj) {
     }
   }
   return curves;
+}
+function axesAreaRiemann(obj) {
+  if (!obj.graphs || obj.graphs.length === 0) return { areas: [], rects: [] };
+  const xr = obj.xRange || [-5, 5, 1], yr = obj.yRange || [-3, 3, 1];
+  const xMin = xr[0], xMax = xr[1], yMin = yr[0], yMax = yr[1];
+  const pw = obj.width * vs.value, ph = obj.height * vs.value;
+  const toCx = (x) => ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
+  const toCy = (y) => -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
+  const cy0 = toCy(0);
+  const areas = [], rects = [];
+  for (const graph of obj.graphs) {
+    const fn = compileExpr(graph.expression, 'x');
+    if (!fn) continue;
+    if (graph.area && graph.area.enabled) {
+      const a0 = Number.isFinite(graph.area.xMin) ? graph.area.xMin : xMin;
+      const a1 = Number.isFinite(graph.area.xMax) ? graph.area.xMax : xMax;
+      const pts = [];
+      const steps = 60;
+      for (let i = 0; i <= steps; i++) {
+        const x = a0 + (a1 - a0) * (i / steps); const y = fn(x);
+        if (!Number.isFinite(y)) continue;
+        pts.push(toCx(x), toCy(y));
+      }
+      if (pts.length >= 4) {
+        pts.push(toCx(a1), cy0, toCx(a0), cy0);   // close down to the x-axis
+        areas.push({ points: pts, closed: true, fill: graph.area.color || graph.color || '#f59e0b',
+          opacity: graph.area.opacity ?? 0.5, listening: false });
+      }
+    }
+    if (graph.riemann && graph.riemann.enabled) {
+      const r0 = Number.isFinite(graph.riemann.xMin) ? graph.riemann.xMin : xMin;
+      const r1 = Number.isFinite(graph.riemann.xMax) ? graph.riemann.xMax : xMax;
+      const dx = (Number.isFinite(graph.riemann.dx) && graph.riemann.dx > 0) ? graph.riemann.dx : (r1 - r0) / 10;
+      const type = graph.riemann.type || 'left';
+      for (let x = r0; x < r1 - 1e-9; x += dx) {
+        const sx = type === 'right' ? x + dx : type === 'center' ? x + dx / 2 : x;
+        const y = fn(sx);
+        if (!Number.isFinite(y)) continue;
+        const left = toCx(x), right = toCx(Math.min(x + dx, r1));
+        rects.push({ x: left, y: toCy(y), width: right - left, height: cy0 - toCy(y),
+          fill: graph.riemann.color || graph.color || '#f59e0b', opacity: 0.45,
+          stroke: '#fff', strokeWidth: 0.5, listening: false });
+      }
+    }
+  }
+  return { areas, rects };
 }
 // ── 3D shape rendering helpers ────────────────────────────────────────────
 const _DEG = Math.PI / 180;
