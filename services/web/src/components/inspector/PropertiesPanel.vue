@@ -246,6 +246,16 @@
         <Num label="Sides" :value="obj.sides || 6" :min="3" :max="20" @input="u('sides', $event)" />
       </Section>
 
+      <!-- Free polygon presets -->
+      <Section v-if="obj.type === 'polygon_free'" label="Polygon">
+        <div class="flex gap-1.5">
+          <button class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="applyPolygonPreset('trapezoid')">Trapezoid</button>
+          <button data-test="preset-parallelogram" class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="applyPolygonPreset('parallelogram')">Parallelogram</button>
+          <button class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="applyPolygonPreset('free')">Free</button>
+        </div>
+        <p class="text-[10px] text-studio-text-muted mt-1.5">{{ (obj.vertices || []).length }} vertices · drag corners on canvas</p>
+      </Section>
+
       <!-- Annulus settings -->
       <Section v-if="obj.type === 'annulus'" label="Annulus">
         <div class="grid grid-cols-2 gap-1.5">
@@ -611,6 +621,7 @@ import { useProjectStore } from '../../store/project.js';
 import { ENTER_ANIMS, EXIT_ANIMS } from '../../store/project.js';
 import { EASING_LIST } from '../../engine/easing.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
+import { presetVertices } from '../../engine/polygonVertices.js';
 import FontSelector from './FontSelector.vue';
 import Position3DPanel from './Position3DPanel.vue';
 import Scene3DPanel from './Scene3DPanel.vue';
@@ -709,9 +720,13 @@ function delCameraClip() {
 }
 function u(k, v) { if (obj.value) store.updateObject(obj.value.id, { [k]: v }); }
 function uSize(v) { if (obj.value) store.updateObject(obj.value.id, { width: v, height: v }); }
+function applyPolygonPreset(kind) {
+  if (!obj.value) return;
+  store.setPolygonVertices(obj.value.id, presetVertices(kind, obj.value.width, obj.value.height));
+}
 
-const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow']);
+const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free']);
 const ROUND_TYPES = new Set(['rectangle', 'square']);
 
 const canGradient = computed(() => obj.value && GRADIENT_TYPES.has(obj.value.type));
