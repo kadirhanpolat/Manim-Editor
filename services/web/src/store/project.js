@@ -366,6 +366,42 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
+    setGradient(id, gradient) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj) return;
+      if (gradient && Array.isArray(gradient.colors) && gradient.colors.length >= 2) {
+        obj.gradient = { colors: [...gradient.colors], angle: gradient.angle ?? 135 };
+      } else {
+        delete obj.gradient;
+      }
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setCornerRadius(id, px) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj) return;
+      const r = Number(px);
+      if (Number.isFinite(r) && r > 0) obj.cornerRadius = r;
+      else delete obj.cornerRadius;
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setDash(id, dash) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj) return;
+      if (dash) {
+        const numDashes = Math.max(2, Math.round(Number(dash.numDashes) || 12));
+        const ratio = Math.max(0, Math.min(1, Number(dash.ratio ?? 0.5)));
+        obj.dash = { numDashes, ratio };
+      } else {
+        delete obj.dash;
+      }
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
     deleteObject(id) {
       const idx = this.project.objects.findIndex(o => o.id === id);
       if (idx === -1) return;
