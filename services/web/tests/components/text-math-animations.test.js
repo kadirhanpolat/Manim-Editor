@@ -57,3 +57,40 @@ describe('font round-trip', () => {
     expect(reObj.fontFamily).toBe('Courier New');
   });
 });
+
+describe.skip('tex-matching transform', () => {  // unskipped in Task 3 once manim.js mirrors transformExpr
+  function twoObjThenTransform(srcType, tgtType, matchTerms) {
+    const a = store.addObject(srcType, 600, 540);
+    const b = store.addObject(tgtType, 1200, 540);
+    if (srcType === 'latex') a.latex = 'a^2 + b^2';
+    if (tgtType === 'latex') b.latex = 'c^2';
+    a.enterTime = 0; a.duration = 5; b.enterTime = 0; b.duration = 5;
+    const clip = store.addClip(0, {
+      type: 'transform', startTime: 1, duration: 1.5, easing: 'ease_in_out_cubic',
+      sourceId: a.id, targetId: b.id,
+    });
+    if (matchTerms) clip.matchTerms = true;
+    return { a, b, clip };
+  }
+
+  it('emits TransformMatchingTex for two latex objects with matchTerms', () => {
+    twoObjThenTransform('latex', 'latex', true);
+    expect(generateManimScript(store.project)).toContain('TransformMatchingTex(');
+  });
+  it('emits TransformMatchingShapes for non-latex VMobjects with matchTerms', () => {
+    twoObjThenTransform('circle', 'square', true);
+    expect(generateManimScript(store.project)).toContain('TransformMatchingShapes(');
+  });
+  it('without matchTerms emits ReplacementTransform (byte-identical legacy)', () => {
+    twoObjThenTransform('latex', 'latex', false);
+    const py = generateManimScript(store.project);
+    expect(py).toContain('ReplacementTransform(');
+    expect(py).not.toContain('TransformMatching');
+  });
+  it('raster source ignores matchTerms and uses FadeTransform', () => {
+    twoObjThenTransform('image', 'latex', true);
+    const py = generateManimScript(store.project);
+    expect(py).toContain('FadeTransform(');
+    expect(py).not.toContain('TransformMatching');
+  });
+});

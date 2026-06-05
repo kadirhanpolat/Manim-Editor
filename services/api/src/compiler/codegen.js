@@ -566,6 +566,23 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
   return lines;
 }
 
+// ── Transform clip expression ──────────────────────────────────────────────
+
+// Shared transform-clip expression. matchTerms (when set and no raster involved)
+// upgrades to TransformMatchingTex (both latex) or TransformMatchingShapes (other
+// VMobjects). Used by all three transform-clip codegen sites + the parallel group.
+function transformExpr(clip, sn, tn, srcObj, tgtObj) {
+  const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+  if (hasRaster) return `FadeTransform(${sn}, ${tn})`;
+  if (clip.matchTerms) {
+    const bothLatex = srcObj?.type === 'latex' && tgtObj?.type === 'latex';
+    return bothLatex
+      ? `TransformMatchingTex(${sn}, ${tn})`
+      : `TransformMatchingShapes(${sn}, ${tn})`;
+  }
+  return `ReplacementTransform(${sn}, ${tn})`;
+}
+
 // ── Keyframe helpers ───────────────────────────────────────────────────────
 
 function _kfPropSet(n, prop, value, sw, sh) {
@@ -965,10 +982,7 @@ export function generatePythonCode(project, assetsPath) {
       switch (c.type) {
         case 'transform': {
           const tn = vn(c.targetId);
-          const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
-          const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
-          const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
-          code = `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`;
+          code = `self.play(${transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId])}${rtStr}${rfStr})`;
           break;
         }
         case 'move': {
@@ -1035,10 +1049,7 @@ export function generatePythonCode(project, assetsPath) {
         switch (c.type) {
           case 'transform': {
             const tn = vn(c.targetId);
-            const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
-            const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
-            const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
-            code = `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`;
+            code = `self.play(${transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId])}${rtStr}${rfStr})`;
             break;
           }
           case 'move': {
@@ -1126,9 +1137,7 @@ export function generatePythonCode(project, assetsPath) {
           }
           case 'transform': {
             const tn = vn(c.targetId);
-            const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
-            const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
-            return hasRaster ? `FadeTransform(${sn}, ${tn})` : `ReplacementTransform(${sn}, ${tn})`;
+            return transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId]);
           }
           case 'indicate':
           case 'flash':
