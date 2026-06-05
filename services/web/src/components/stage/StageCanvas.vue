@@ -62,6 +62,7 @@
 
             <!-- Dot Grid -->
             <v-group v-if="obj.type === 'dot_grid' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)">
+              <v-rect :config="dotGridHitCfg(obj)" />
               <v-circle v-for="(d, di) in dotGridDots(obj)" :key="di" :config="d" />
             </v-group>
 
@@ -95,7 +96,7 @@
 
             <!-- NumberPlane -->
             <v-group v-if="obj.type === 'numberplane' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
-              <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: false }" />
+              <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: true }" />
               <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
               <v-line :config="{ points: [0, -obj.height/2 * vs, 0, obj.height/2 * vs], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
               <v-text :config="{ text: 'NumberPlane', x: -40, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
@@ -103,6 +104,7 @@
 
             <!-- NumberLine -->
             <v-group v-if="obj.type === 'numberline' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="{ x: -obj.width/2 * vs, y: -16, width: obj.width * vs, height: 32, fill: 'rgba(0,0,0,0.01)', listening: true }" />
               <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
               <v-line :config="{ points: [obj.width/2 * vs - 8 * vs, -5 * vs, obj.width/2 * vs, 0, obj.width/2 * vs - 8 * vs, 5 * vs], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
               <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
@@ -774,6 +776,16 @@ function dotGridDots(obj) {
   const sp = (obj.dotSpacing || 40) * vs.value, r = Math.max(2, (obj.dotRadius || 5) * vs.value);
   return generateDotGridPositions(obj.gridCols || 5, obj.gridRows || 5, sp).map(p => ({ x: p.x, y: p.y, radius: r, fill: obj.fill || '#fff', listening: false }));
 }
+// Transparent rect spanning the dot grid — the group's hit area, so the whole
+// grid (not just the tiny dots) can be selected/dragged on the canvas.
+function dotGridHitCfg(obj) {
+  const sp = (obj.dotSpacing || 40) * vs.value, r = Math.max(2, (obj.dotRadius || 5) * vs.value);
+  const pts = generateDotGridPositions(obj.gridCols || 5, obj.gridRows || 5, sp);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pts) { if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y; if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y; }
+  if (!isFinite(minX)) { minX = minY = maxX = maxY = 0; }
+  return { x: minX - r, y: minY - r, width: (maxX - minX) + 2 * r, height: (maxY - minY) + 2 * r, fill: 'rgba(0,0,0,0.01)', listening: true };
+}
 function imageCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x - e.width / 2, e.y - e.height / 2);
@@ -806,7 +818,9 @@ function latexBadgeCfg(obj) {
 // ── Axes config ──
 function axesBgCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
-  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(16,185,129,0.04)', stroke: 'rgba(16,185,129,0.15)', strokeWidth: 1, cornerRadius: 4, listening: false };
+  // listening:true → this rect is the group's hit area so the axes can be
+  // selected/dragged on the canvas (the lines/ticks/labels stay non-listening).
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(16,185,129,0.04)', stroke: 'rgba(16,185,129,0.15)', strokeWidth: 1, cornerRadius: 4, listening: true };
 }
 function axesXLineCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
