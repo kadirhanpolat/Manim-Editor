@@ -827,9 +827,15 @@ function parametricCfg(obj) {
       pts.push(x * unit, -y * unit);   // y-flip
     }
   }
-  return { x: c.x, y: c.y, points: pts, stroke: e.stroke || '#10b981',
+  const cfg = { x: c.x, y: c.y, points: pts, stroke: e.stroke || '#10b981',
     strokeWidth: (e.strokeWidth || 4) * vs.value / 2, opacity: e.opacity ?? 1, tension: 0.3,
     rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12, lineCap: 'round' };
+  let minX = 0, maxX = 0, minY = 0, maxY = 0;
+  for (let i = 0; i < pts.length; i += 2) {
+    if (pts[i] < minX) minX = pts[i]; if (pts[i] > maxX) maxX = pts[i];
+    if (pts[i + 1] < minY) minY = pts[i + 1]; if (pts[i + 1] > maxY) maxY = pts[i + 1];
+  }
+  return applyEffects(cfg, obj, maxX - minX, maxY - minY, true);
 }
 function starCfg(obj) {
   const L = live(obj);
