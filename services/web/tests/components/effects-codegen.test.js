@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateManimScript } from '../../src/export/manim.js';
+import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
 
 const SW = 1920, SH = 1080;
 function makeObj(type, extra = {}) {
@@ -50,5 +50,34 @@ describe('effects codegen (manim.js)', () => {
     expect(s).toContain('num_dashes=12');
     expect(s).toContain('dashed_ratio=0.5');
     expect(s).toMatch(/= VGroup\(\w+, DashedVMobject\(/);
+  });
+});
+
+describe('effects round-trip (manim.js)', () => {
+  const roundTrip = (o) => {
+    const code = generateManimScript(makeProject([o]));
+    return parseManimScript(code, SW, SH).objects[0];
+  };
+
+  it('gradient colors survive', () => {
+    const o = roundTrip(makeObj('circle', { gradient: { colors: ['#ff0000', '#00ff00'], angle: 90 } }));
+    expect(o.gradient.colors).toEqual(['#ff0000', '#00ff00']);
+  });
+
+  it('rounded corners survive (non-square stays rectangle, cornerRadius > 0)', () => {
+    const o = roundTrip(makeObj('rectangle', { cornerRadius: 48, width: 300, height: 150 }));
+    expect(o.type).toBe('rectangle');
+    expect(o.cornerRadius).toBeGreaterThan(0);
+  });
+
+  it('fill/stroke opacity survive', () => {
+    const o = roundTrip(makeObj('square', { opacity: 1, fillOpacity: 0.5, strokeOpacity: 0.25 }));
+    expect(o.fillOpacity).toBeCloseTo(0.5, 2);
+    expect(o.strokeOpacity).toBeCloseTo(0.25, 2);
+  });
+
+  it('dash survives via the VGroup form', () => {
+    const o = roundTrip(makeObj('rectangle', { dash: { numDashes: 12, ratio: 0.5 } }));
+    expect(o.dash).toEqual({ numDashes: 12, ratio: 0.5 });
   });
 });

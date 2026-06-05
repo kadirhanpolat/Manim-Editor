@@ -1087,6 +1087,22 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // RoundedRectangle (rectangle/square with cornerRadius)
+    m = line.match(/^(\w+)\s*=\s*RoundedRectangle\(corner_radius=([\d.]+),\s*width=([\d.]+),\s*height=([\d.]+)\)/);
+    if (m) {
+      const [, name, cr, w, h] = m;
+      const width = Math.round(parseFloat(w) / FRAME_WIDTH * sw);
+      const height = Math.round(parseFloat(h) / FRAME_HEIGHT * sh);
+      const type = Math.abs(parseFloat(w) - parseFloat(h)) < 0.01 ? 'square' : 'rectangle';
+      const id = uid('obj');
+      const obj = { id, type, name, x: sw / 2, y: sh / 2, width, height,
+        cornerRadius: Math.round(parseFloat(cr) / FRAME_WIDTH * sw),
+        fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
     // Rectangle
     m = line.match(/^(\w+)\s*=\s*Rectangle\(width=([\d.]+),\s*height=([\d.]+)\)/);
     if (m) {
@@ -1359,23 +1375,49 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
     // ── Property setters ──
 
+    m = line.match(/^(\w+)\.set_color_by_gradient\(([^)]+)\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        const colors = m[2].split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+        if (colors.length >= 2) objById[id].gradient = { colors, angle: 135 };
+      }
+      continue;
+    }
+
     m = line.match(/^(\w+)\.set_fill\(color=["']([^"']+)["'](?:,\s*opacity=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
       if (id && objById[id]) {
         objById[id].fill = m[2];
-        if (m[3] !== undefined) objById[id].opacity = parseFloat(m[3]);
+        if (m[3] !== undefined) {
+          const op = parseFloat(m[3]);
+          const master = objById[id].opacity ?? 1;
+          if (master > 0 && Math.abs(op - master) > 0.001) objById[id].fillOpacity = +(op / master).toFixed(3);
+        }
       }
       continue;
     }
 
-    m = line.match(/^(\w+)\.set_stroke\(color=["']([^"']+)["'](?:,\s*width=([\d.]+))?\)/);
+    m = line.match(/^(\w+)\.set_stroke\(color=["']([^"']+)["'](?:,\s*width=([\d.]+))?(?:,\s*opacity=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
       if (id && objById[id]) {
         objById[id].stroke = m[2];
         if (m[3]) objById[id].strokeWidth = parseFloat(m[3]);
+        if (m[4] !== undefined) {
+          const op = parseFloat(m[4]);
+          const master = objById[id].opacity ?? 1;
+          if (master > 0) objById[id].strokeOpacity = +(op / master).toFixed(3);
+        }
       }
+      continue;
+    }
+
+    m = line.match(/^\w+\s*=\s*VGroup\((\w+),\s*DashedVMobject\([^,]+,\s*num_dashes=(\d+),\s*dashed_ratio=([\d.]+)\)\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) objById[id].dash = { numDashes: parseInt(m[2]), ratio: parseFloat(m[3]) };
       continue;
     }
 
