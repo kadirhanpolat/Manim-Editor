@@ -75,6 +75,19 @@ function safeText(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
 }
 
+/** Sanitize a Matrix entry to a safe Manim display string (no eval; strips quotes/backslashes/newlines). */
+function safeMatrixEntry(s) {
+  const t = String(s == null ? '' : s).replace(/\\/g, '').replace(/"/g, '').replace(/[\n\r]/g, '').slice(0, 32);
+  return t.length ? t : '0';
+}
+
+/** Manim Matrix bracket args: '' for default '[', explicit left/right_bracket otherwise. */
+function matrixBrackets(b) {
+  if (b === '(') return ', left_bracket="(", right_bracket=")"';
+  if (b === '|') return ', left_bracket="|", right_bracket="|"';
+  return '';
+}
+
 // Manim frame dimensions (matches Manim CE default)
 const FRAME_WIDTH = 14 + 2 / 9;   // 14.22
 const FRAME_HEIGHT = 8;
@@ -346,6 +359,14 @@ function objCode(obj, sw, sh) {
       const t1 = Number.isFinite(obj.tMax) ? obj.tMax : 6.283;
       const col = hex(obj.stroke) || hex(obj.fill) || '"#10B981"';
       lines.push(`${n} = ParametricFunction(lambda t: np.array([${xe}, ${ye}, 0]), t_range=[${t0}, ${t1}], color=${col}, stroke_width=${sw2})`);
+      break;
+    }
+    case 'matrix': {
+      const data = (Array.isArray(obj.matrixData) && obj.matrixData.length && Array.isArray(obj.matrixData[0]))
+        ? obj.matrixData : [['1', '0'], ['0', '1']];
+      const body = data.map(row => `[${row.map(c => `"${safeMatrixEntry(c)}"`).join(', ')}]`).join(', ');
+      lines.push(`${n} = Matrix([${body}]${matrixBrackets(obj.bracket)})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
     case 'line':
@@ -1305,6 +1326,27 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = uid('obj');
       const obj = { id, type: 'polygon_free', name, x: sw / 2, y: sh / 2, width, height, vertices: verts,
         fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Matrix (single-line) — Matrix([["a","b"],...], left_bracket=..., right_bracket=...)
+    m = line.match(/^(\w+)\s*=\s*Matrix\(\[(\[.+\])\](?:, left_bracket="([^"]*)", right_bracket="[^"]*")?\)/);
+    if (m) {
+      const [, name, body, leftBracket] = m;
+      const rows = [];
+      const rowRe = /\[([^\]]*)\]/g;
+      let rm;
+      while ((rm = rowRe.exec(body))) {
+        const cells = rm[1].match(/"([^"]*)"/g);
+        rows.push(cells ? cells.map(c => c.slice(1, -1)) : []);
+      }
+      const bracket = leftBracket === '(' ? '(' : leftBracket === '|' ? '|' : '[';
+      const id = uid('obj');
+      const obj = { id, type: 'matrix', name, x: sw / 2, y: sh / 2, width: 160, height: 120,
+        matrixData: rows.length ? rows : [['1', '0'], ['0', '1']], bracket,
+        fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;

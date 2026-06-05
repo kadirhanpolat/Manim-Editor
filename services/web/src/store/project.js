@@ -158,6 +158,7 @@ export const SHAPE_DEFAULTS = {
   sector:   { width: 140, height: 140, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
   double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
   parametric: { width: 160, height: 160, fill: 'transparent', stroke: '#10b981', strokeWidth: 4 },
+  matrix: { width: 160, height: 120, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
 };
 
 export const SHAPE_COLORS = {
@@ -173,6 +174,7 @@ export const SHAPE_COLORS = {
   annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
   polygon_free: '#8b5cf6',
   parametric: '#10b981',
+  matrix: '#ffffff',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -287,6 +289,7 @@ const useProjectStore = defineStore('project', {
         numberplane: 'NumberPlane', numberline: 'NumberLine',
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
+        matrix: 'Matrix',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -317,6 +320,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
         ...(type === 'parametric' ? { xExpr: 'np.cos(t)', yExpr: 'np.sin(t)', tMin: 0, tMax: 6.283 } : {}),
         ...(type === 'polygon_free' ? { vertices: presetVertices('trapezoid', SHAPE_DEFAULTS.polygon_free.width, SHAPE_DEFAULTS.polygon_free.height) } : {}),
+        ...(type === 'matrix' ? { matrixData: [['1', '0'], ['0', '1']], bracket: '[' } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),
@@ -387,6 +391,55 @@ const useProjectStore = defineStore('project', {
       const obj = this.project.objects.find(o => o.id === id);
       if (!obj || !Array.isArray(vertices) || vertices.length < 3) return;
       obj.vertices = vertices.map(([x, y]) => [Math.round(x), Math.round(y)]);
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setMatrixCell(id, r, c, value) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !Array.isArray(obj.matrixData)) return;
+      if (!obj.matrixData[r] || obj.matrixData[r][c] === undefined) return;
+      obj.matrixData[r][c] = String(value);
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    addMatrixRow(id) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !Array.isArray(obj.matrixData) || !obj.matrixData[0]) return;
+      obj.matrixData.push(new Array(obj.matrixData[0].length).fill('0'));
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeMatrixRow(id) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !Array.isArray(obj.matrixData) || obj.matrixData.length <= 1) return;
+      obj.matrixData.pop();
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addMatrixColumn(id) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !Array.isArray(obj.matrixData)) return;
+      obj.matrixData.forEach(row => row.push('0'));
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeMatrixColumn(id) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !Array.isArray(obj.matrixData) || !obj.matrixData[0] || obj.matrixData[0].length <= 1) return;
+      obj.matrixData.forEach(row => row.pop());
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    setMatrixBracket(id, bracket) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !['[', '(', '|'].includes(bracket)) return;
+      obj.bracket = bracket;
       this.isDirty = true;
       this._debouncedCommit();
     },

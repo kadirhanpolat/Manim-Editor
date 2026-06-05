@@ -196,6 +196,7 @@ const shapes = [
   { type: 'sector', label: 'Sector', color: '#f59e0b', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12 L12 3 A9 9 0 0 1 21 12 Z"/></svg>' },
   { type: 'double_arrow', label: 'Double Arrow', color: '#ef4444', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4M19 12l-4-4M19 12l-4 4"/></svg>' },
   { type: 'parametric', label: 'Parametric', color: '#10b981', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18c4 0 4-12 8-12s4 12 8 12"/></svg>' },
+  { type: 'matrix', label: 'Matrix', color: '#ffffff', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4H5v16h2M17 4h2v16h-2"/><circle cx="10" cy="9" r="0.6" fill="currentColor"/><circle cx="14" cy="9" r="0.6" fill="currentColor"/><circle cx="10" cy="15" r="0.6" fill="currentColor"/><circle cx="14" cy="15" r="0.6" fill="currentColor"/></svg>' },
 ];
 
 // 3D shapes — shown only when sceneType === '3d' (store.addObject sets x3d/y3d/z3d + 3D defaults)

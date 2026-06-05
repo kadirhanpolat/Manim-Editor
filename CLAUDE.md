@@ -104,7 +104,7 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 ## Object Types
 
-**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
+**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`
 
 **3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`
 
@@ -326,6 +326,34 @@ Optional object fields, absent ⇒ byte-identical legacy output:
 - Preview-only divergences: gradient **angle** (Manim orients by point order),
   and dashed+fill (preview = single shape, render = VGroup). Phase 2: glow,
   drop shadow, `.round_corners()` for polygon/triangle/star.
+
+## Phase 2 Objects (Geometry / Calculus / Data — 2026-06-05)
+
+Seven standalone object types + axes graph extensions, all following the
+constructor → styling → single-line round-trip pattern:
+
+- **Geometry**: `annulus` (`Annulus`), `arc` (`Arc`), `sector` (`Sector`),
+  `double_arrow` (`DoubleArrow`) — radii in project px (convert via `FRAME_WIDTH`),
+  angles in degrees emitted as `<deg> * DEGREES`.
+- **`polygon_free`** (`Polygon`): `obj.vertices` (object-relative px) with draggable
+  canvas vertex handles; presets in `engine/polygonVertices.js`.
+- **`parametric`** (`ParametricFunction`): `obj.xExpr`/`yExpr` (t-based), `tMin`/`tMax`;
+  expressions pass the `safeMathExpr` whitelist (kept in sync across codegen.js,
+  manim.js, StageCanvas.vue); preview samples via `engine/mathExpr.js compileExpr`.
+- **`matrix`** (`Matrix`): source of truth is `obj.matrixData` (2D string array) +
+  `obj.bracket` (`'['` | `'('` | `'|'`); rows/cols are **derived, never stored**.
+  Codegen emits single-line `Matrix([["a","b"],...])` (+ `left_bracket`/`right_bracket`
+  for non-default brackets) then `.set_color(fill)`; entries are sanitized display
+  strings via `safeMatrixEntry` (strips quotes/backslashes/newlines, **no eval**) —
+  `matrix` is in **neither** GRADIENT_TYPES nor DASH_TYPES. Store actions:
+  `setMatrixCell`, `add/removeMatrixRow`, `add/removeMatrixColumn`, `setMatrixBracket`
+  (remove guards at 1×1). Composite Konva preview (`matrixHitCfg`/`matrixCellConfigs`/
+  `matrixBracketConfigs`) with a listening hit rect; inspector grid editor in
+  `PropertiesPanel.vue`. Round-trips single-line `Matrix([[...]])` only (nested-LaTeX
+  entries limited). **Keep `safeMatrixEntry`/`matrixBrackets` + the `case 'matrix'`
+  byte-identical across codegen.js and manim.js** — guarded by `manim-export.test.js`.
+- **Axes graph extensions**: each `axes.graphs[]` item gains optional `area`
+  (`get_area`) and `riemann` (`get_riemann_rectangles`) fields with full canvas preview.
 
 ## Build / Environment Gotchas (fixed in v3.3.1)
 
