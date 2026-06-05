@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.5.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.6.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -52,7 +52,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **16 shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, and more
 - **6 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes — available when scene is switched to 3D mode
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
-- **LaTeX math objects** -- Add `MathTex` expressions (e.g. `E = mc^2`) that render natively in Manim
+- **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
 - **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
 - **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
@@ -71,6 +71,8 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
 - **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
 - **Keyframe animation** -- Per-property absolute-time keyframes independent of clips; add keyframe lanes to any numeric property (x, y, opacity, rotation, scale, x3d, y3d, z3d…); drag diamond markers to adjust timing; Bezier easing editor with draggable handles and Linear/Ease In/Out presets; 3 behavior modes (opt-in, override, additive) and 3 Python codegen modes (UpdateFromAlphaFunc, animate, ValueTracker) configurable per property; simultaneous 3D coordinate keyframes merged into a single `move_to([x, y, z])` call
+- **Timeline playhead** -- A vertical playhead marks the current time across the ruler and all lanes; click or drag the ruler to scrub (seeks the canvas live)
+- **Smart keyframe seeding** -- The first keyframe added to a property auto-seeds locked keyframes at the object's start and end (so a lone keyframe isn't a no-op); a per-lane `+` adds a keyframe at the playhead; pinned boundary keyframes stay welded to the object's edges — they follow the bar when it is moved, and middle keyframes rescale proportionally when it is resized from either side
 
 ### Code-Only Editor
 - **Full Manim power** -- Write any valid Manim code (imports, custom classes, 3D scenes) and render it directly
@@ -375,7 +377,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 131 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel)
+npm run test:unit # 157 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel)
 ```
 
 ---
@@ -408,7 +410,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.5.0 (current)
+### v3.6.0 (current)
+
+Timeline playhead, keyframe ergonomics, and LaTeX/canvas selection fixes:
+
+- **Feature (timeline playhead)**: a vertical playhead line (diamond handle) marks the current playback time across the ruler, object/track lanes, and the keyframe panel; clicking or dragging the time ruler scrubs — it syncs the engine duration to the project length and seeks, updating the canvas frame live.
+- **Feature (keyframe seeding)**: the first keyframe added to a property now auto-seeds keyframes at the object's start and end (a lone keyframe is a no-op in opt-in mode); a per-lane `+` button inserts a keyframe at the playhead (clamped to the object's visible interval).
+- **Feature (pinned boundary keyframes)**: the seeded start/end keyframes are locked to the object's edges — not draggable (rendered with a locked halo), they follow the bar when it is moved, snap outward when it is expanded, and middle keyframes rescale **proportionally** when the bar is resized from either edge. Delete rules: a boundary can't be removed while other keyframes remain; when only the two boundaries are left, deleting either clears the property.
+- **Fix (LaTeX render)**: `MathTex` was emitted as a raw string with doubled backslashes (`MathTex(r"\\int_a^b")`), so LaTeX received `\\int` (a line break) and rendered the literal word "int". Now emitted as a normal escaped Python string (`MathTex("\\int_a^b")` → `\int_a^b` at runtime) in both `codegen.js` and `manim.js`; the parser un-escapes on import (also repairs the legacy raw form). 
+- **Fix (canvas selection)**: composite objects (LaTeX, axes, dot grid, number plane/line) couldn't be selected — all their Konva children were non-listening, leaving the group with no hit area. Each now has a listening hit region.
+- **Feature (LaTeX preview)**: the canvas draws an approximate Unicode rendering of the raw LaTeX (`\int_a^b` → `∫ₐᵇ`; greek, operators, arrows, `\frac`/`\sqrt`, sub/superscripts) instead of raw source. Preview-only — Manim still typesets the raw LaTeX as MathTex.
+- **Tests**: +26 unit (keyframe scaffold/pinned/delete/rescale, LaTeX preview, LaTeX export round-trip); totals now **157 unit + 114 engine**.
+
+### v3.5.0
 
 Tech-debt pass — coordinate unification + camera-aware 3D preview:
 
