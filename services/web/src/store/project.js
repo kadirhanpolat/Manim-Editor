@@ -521,6 +521,24 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
+    setShadow(id, shadow) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj) return;
+      if (shadow) {
+        obj.shadow = {
+          color: typeof shadow.color === 'string' ? shadow.color : '#000000',
+          opacity: Number.isFinite(shadow.opacity) ? shadow.opacity : 0.4,
+          dx: Number.isFinite(shadow.dx) ? shadow.dx : 8,
+          dy: Number.isFinite(shadow.dy) ? shadow.dy : 8,
+          blur: Number.isFinite(shadow.blur) ? shadow.blur : 12,
+        };
+      } else {
+        delete obj.shadow;
+      }
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
     deleteObject(id) {
       const idx = this.project.objects.findIndex(o => o.id === id);
       if (idx === -1) return;
