@@ -365,6 +365,27 @@
         </div>
       </Section>
 
+      <!-- Counter settings -->
+      <Section v-if="obj.type === 'counter'" label="Counter">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-20">Start value</span>
+            <input type="number" step="1" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.value ?? 0" @change="store.setCounterValue(obj.id, $event.target.value)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-20">Decimals</span>
+            <input type="number" step="1" min="0" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.numDecimals ?? 0" @change="store.setCounterDecimals(obj.id, $event.target.value)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-20">Suffix</span>
+            <input type="text" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.suffix ?? ''" @input="store.setCounterSuffix(obj.id, $event.target.value)" placeholder="e.g. %" />
+          </div>
+        </div>
+      </Section>
+
       <!-- LaTeX settings -->
       <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
         <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
@@ -503,6 +524,16 @@
           <button data-test="anim-circumscribe" class="anim-btn emph" @click="anim('circumscribe')">Circumscribe</button>
           <button data-test="anim-focus_on" class="anim-btn emph" @click="anim('focus_on')">Focus On</button>
         </div>
+        <template v-if="obj.type === 'counter'">
+          <p class="text-[8px] text-studio-text-muted/50 mb-1.5 mt-2">Counter</p>
+          <div class="grid grid-cols-2 gap-1">
+            <button data-test="anim-count" class="anim-btn move col-span-2"
+                    @click="store.createCount()">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 9h16M4 15h16"/></svg>
+              Count
+            </button>
+          </div>
+        </template>
       </Section>
 
       <div class="px-3 py-3 mt-auto">

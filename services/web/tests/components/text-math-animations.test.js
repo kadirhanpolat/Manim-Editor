@@ -177,6 +177,19 @@ describe('keyframable value', () => {
   });
 });
 
+describe('counter actions', () => {
+  it('setCounterValue / setCounterDecimals / setCounterSuffix mutate + commit', () => {
+    const c = store.addObject('counter', 960, 540);
+    store.setCounterValue(c.id, 12);
+    store.setCounterDecimals(c.id, 2);
+    store.setCounterSuffix(c.id, '%');
+    const re = store.objectById(c.id);
+    expect(re.value).toBe(12);
+    expect(re.numDecimals).toBe(2);
+    expect(re.suffix).toBe('%');
+  });
+});
+
 describe('count clip', () => {
   it('emits ValueTracker + add_updater + animate.set_value + clear_updaters', () => {
     const c = store.addObject('counter', 960, 540);

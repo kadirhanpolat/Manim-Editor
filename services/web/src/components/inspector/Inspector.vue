@@ -100,6 +100,38 @@
         </label>
       </div>
 
+      <!-- Count clip controls (shown when a count clip is selected) -->
+      <div
+        v-if="selectedClip?.type === 'count'"
+        class="px-4 py-3 border-b border-studio-border"
+      >
+        <label class="block text-xs text-studio-text-muted mb-2">Count Animation</label>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-12">From</span>
+            <input type="number" step="1"
+                   class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="selectedClip.from ?? 0"
+                   @change="store.updateClip(selectedClip.id, { from: Number($event.target.value) }); store.commitState()" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-12">To</span>
+            <input type="number" step="1"
+                   class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="selectedClip.to ?? 100"
+                   @change="store.updateClip(selectedClip.id, { to: Number($event.target.value) }); store.commitState()" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-12">Duration</span>
+            <input type="number" step="0.1" min="0.1"
+                   class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="selectedClip.duration ?? 2"
+                   @change="store.updateClip(selectedClip.id, { duration: Math.max(0.1, Number($event.target.value)) }); store.commitState()" />
+            <span class="text-[10px] text-studio-text-muted">s</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Audio Panel (shown when a clip is selected) -->
       <AudioPanel
         v-if="selectedClip"

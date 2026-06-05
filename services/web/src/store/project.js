@@ -551,6 +551,10 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
+    setCounterValue(objId, v) { const o = this.objectById(objId); if (!o) return; o.value = Number(v) || 0; this.commitState(); },
+    setCounterDecimals(objId, n) { const o = this.objectById(objId); if (!o) return; o.numDecimals = Math.max(0, Math.floor(Number(n) || 0)); this.commitState(); },
+    setCounterSuffix(objId, s) { const o = this.objectById(objId); if (!o) return; o.suffix = String(s ?? ''); this.commitState(); },
+
     deleteObject(id) {
       const idx = this.project.objects.findIndex(o => o.id === id);
       if (idx === -1) return;
