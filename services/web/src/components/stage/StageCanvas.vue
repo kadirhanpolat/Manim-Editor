@@ -81,6 +81,9 @@
             <!-- Text -->
             <v-text v-if="obj.type === 'text' && isVis(obj.id)" :config="textCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" @dblclick="onTextDblClick(obj.id)" />
 
+            <!-- Counter (DecimalNumber) -->
+            <v-text v-if="obj.type === 'counter' && isVis(obj.id)" :config="counterCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+
             <!-- Image / SVG -->
             <v-image v-if="(obj.type === 'image' || obj.type === 'svg_asset') && isVis(obj.id) && imageElements[obj.assetId]" :config="imageCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
@@ -1016,6 +1019,27 @@ function measureTextWidth(text, fontSize, fontFamily, fontStyle) {
   }
   _measureCtx.font = `${fontStyle}${fontSize}px ${fontFamily}`;
   return _measureCtx.measureText(text).width;
+}
+function counterText(obj) {
+  const ov = frameState.value.objectOverrides[obj.id];
+  const raw = (ov && 'value' in ov) ? ov.value : (obj.value ?? 0);
+  const dec = Number.isFinite(obj.numDecimals) ? Math.max(0, Math.trunc(obj.numDecimals)) : 0;
+  return raw.toFixed(dec) + (obj.suffix || '');
+}
+function counterCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj);
+  const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const fontSize = (e.fontSize || e.height || 48) * vs.value;
+  const text = counterText(obj);
+  const textWidth = measureTextWidth(text, fontSize, 'Arial', '');
+  const rot = L ? L.rotation : (e.rotation || 0);
+  return {
+    x: p.x, y: p.y, text, fontSize, fontFamily: 'Arial',
+    fontStyle: '', fill: e.fill || '#ffffff', opacity: e.opacity ?? 1,
+    rotation: rot, offsetX: textWidth / 2, offsetY: fontSize / 2,
+    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10
+  };
 }
 function groupCfg(obj) {
   const L = live(obj);
