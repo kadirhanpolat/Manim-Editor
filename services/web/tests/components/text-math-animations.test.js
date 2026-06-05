@@ -36,4 +36,24 @@ describe('typewriter presets', () => {
     const reObj = parsed.objects.find(o => o.type === 'text');
     expect(reObj.enterAnim).toBe('typewriter');
   });
+
+  it('round-trips typewriter_out exit through parse', () => {
+    const obj = store.addObject('text', 960, 540);
+    obj.content = 'Bye'; obj.exitAnim = 'typewriter_out'; obj.enterTime = 0; obj.duration = 3;
+    const py = generateManimScript(store.project);
+    const parsed = parseManimScript(py);
+    const reObj = parsed.objects.find(o => o.type === 'text');
+    expect(reObj.exitAnim).toBe('typewriter_out');
+  });
+});
+
+describe('font round-trip', () => {
+  it('preserves fontFamily through generate/parse', () => {
+    const obj = store.addObject('text', 960, 540);
+    obj.content = 'Hello'; obj.fontFamily = 'Courier New'; obj.enterTime = 0; obj.duration = 3;
+    const py = generateManimScript(store.project);
+    const parsed = parseManimScript(py);
+    const reObj = parsed.objects.find(o => o.type === 'text');
+    expect(reObj.fontFamily).toBe('Courier New');
+  });
 });
