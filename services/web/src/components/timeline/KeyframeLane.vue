@@ -1,10 +1,15 @@
 <template>
   <div class="keyframe-lane flex border-b border-studio-border/20" style="height: 20px;">
     <div
-      class="flex-shrink-0 flex items-center px-2 text-[9px] text-studio-text-muted/60 bg-studio-bg/10 border-r border-studio-border/30 truncate"
+      class="flex-shrink-0 flex items-center gap-1 px-2 text-[9px] text-studio-text-muted/60 bg-studio-bg/10 border-r border-studio-border/30"
       :style="{ width: labelW + 'px' }"
     >
-      ↳ {{ prop }}
+      <span class="truncate flex-1">↳ {{ prop }}</span>
+      <button
+        class="flex-shrink-0 text-studio-accent/70 hover:text-studio-accent leading-none px-1"
+        title="Playhead konumuna keyframe ekle"
+        @click.stop="addAtPlayhead"
+      >+</button>
     </div>
     <div
       ref="laneArea"
@@ -117,6 +122,14 @@ function addKfAt(clientX) {
   store.addKeyframe(props.objId, props.prop, t, obj.value?.[props.prop] ?? 0);
 }
 function onDblClick(e) { addKfAt(e.clientX); }
+
+// Add a keyframe at the playhead (current playback time), clamped to the
+// object's visible interval. Upserts within addKeyframe's 0.01s tolerance, so
+// re-clicking without moving the playhead just refreshes the existing key.
+function addAtPlayhead() {
+  const t = Math.round(clampToObj(store.playbackTime ?? 0) * 100) / 100;
+  store.addKeyframe(props.objId, props.prop, t, obj.value?.[props.prop] ?? 0);
+}
 
 // Segment click is debounced: a lone click opens the easing popup after a short
 // delay; a double-click within that delay cancels it and adds a keyframe on the
