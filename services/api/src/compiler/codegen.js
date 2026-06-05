@@ -78,6 +78,12 @@ function safeText(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
 }
 
+/** Escape a label for a NON-raw Python string passed to MathTex/get_tex (one backslash
+    survives so LaTeX commands typeset; mirrors the `latex` case — avoids the \\int line-break bug). */
+function safeLatex(s) {
+  return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, ' ');
+}
+
 /** Sanitize a Matrix entry to a safe Manim display string (no eval; strips quotes/backslashes/newlines). */
 function safeMatrixEntry(s) {
   const t = String(s == null ? '' : s).replace(/\\/g, '').replace(/"/g, '').replace(/[\n\r]/g, '').slice(0, 32);
@@ -365,6 +371,21 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
         ? obj.matrixData : [['1', '0'], ['0', '1']];
       const body = data.map(row => `[${row.map(c => `"${safeMatrixEntry(c)}"`).join(', ')}]`).join(', ');
       lines.push(`${n} = Matrix([${body}]${matrixBrackets(obj.bracket)})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
+    case 'brace': {
+      const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
+      const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];
+      const a = `[${(p1[0] / sw * FRAME_WIDTH).toFixed(3)}, ${(-p1[1] / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      const b = `[${(p2[0] / sw * FRAME_WIDTH).toFixed(3)}, ${(-p2[1] / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      const label = (obj.label || '').trim();
+      if (label) {
+        lines.push(`${n}_brace = BraceBetweenPoints(${a}, ${b})`);
+        lines.push(`${n} = VGroup(${n}_brace, ${n}_brace.get_tex("${safeLatex(label)}"))`);
+      } else {
+        lines.push(`${n} = BraceBetweenPoints(${a}, ${b})`);
+      }
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
