@@ -316,6 +316,34 @@
         </div>
       </Section>
 
+      <!-- Brace -->
+      <Section v-if="obj.type === 'brace'" label="Brace">
+        <div class="space-y-2">
+          <label class="block text-[10px] text-studio-text-muted">Label (LaTeX, optional)</label>
+          <input data-test="rel-label" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                 :value="obj.label" @input="store.setRelationalLabel(obj.id, $event.target.value)" placeholder="e.g. x or \\frac{a}{b}" />
+          <p class="text-[10px] text-studio-text-muted">Drag the two endpoint handles on the canvas to reshape.</p>
+        </div>
+      </Section>
+
+      <!-- Angle -->
+      <Section v-if="obj.type === 'angle'" label="Angle">
+        <div class="space-y-2">
+          <button data-test="angle-right" class="w-full py-1 text-[11px] rounded border"
+                  :class="obj.rightAngle ? 'border-studio-accent text-studio-accent' : 'border-studio-border text-studio-text-muted hover:bg-studio-accent/10'"
+                  @click="store.setAngleRightMode(obj.id, !obj.rightAngle)">Right angle mark</button>
+          <div v-if="!obj.rightAngle" class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-14">Arc radius</span>
+            <input type="number" step="0.1" min="0.1" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.radius" @input="store.setAngleRadius(obj.id, $event.target.value)" />
+          </div>
+          <label class="block text-[10px] text-studio-text-muted">Label (LaTeX, optional)</label>
+          <input data-test="rel-label" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                 :value="obj.label" @input="store.setRelationalLabel(obj.id, $event.target.value)" placeholder="e.g. \\theta" />
+          <p class="text-[10px] text-studio-text-muted">Drag the vertex + two endpoint handles on the canvas.</p>
+        </div>
+      </Section>
+
       <!-- LaTeX settings -->
       <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
         <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
