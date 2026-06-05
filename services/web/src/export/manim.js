@@ -603,6 +603,7 @@ function _kfPropSet(n, prop, value, sw, sh) {
     case 'rx':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=RIGHT)`;
     case 'ry':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=UP)`;
     case 'rz':  return `${n}.animate.rotate(${(value * Math.PI / 180).toFixed(4)}, axis=OUT)`;
+    case 'value': return `${n}.animate.set_value(${value.toFixed(4)})`;
     default: return null;
   }
 }
@@ -612,6 +613,7 @@ function _kfUpdater(prop) {
     case 'x':       return 'set_x';
     case 'y':       return 'set_y';
     case 'opacity': return 'set_opacity';
+    case 'value':   return 'set_value';
     default:        return null;
   }
 }

@@ -156,6 +156,27 @@ describe('counter object', () => {
   });
 });
 
+describe('keyframable value', () => {
+  it('emits set_value for a value keyframe (animate mode)', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 0; c.enterTime = 0; c.duration = 5;
+    store.addKeyframe(c.id, 'value', 0.5, 0);
+    store.addKeyframe(c.id, 'value', 2.5, 100);
+    store.setKeyframeCodegen(c.id, 'value', 'animate');
+    const py = generateManimScript(store.project);
+    expect(py).toContain('set_value');
+  });
+  it('emits set_value updater for a value keyframe (ValueTracker mode)', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 0; c.enterTime = 0; c.duration = 5;
+    store.addKeyframe(c.id, 'value', 0.5, 0);
+    store.addKeyframe(c.id, 'value', 2.5, 100);
+    store.setKeyframeCodegen(c.id, 'value', 'ValueTracker');
+    const py = generateManimScript(store.project);
+    expect(py).toContain('set_value');
+  });
+});
+
 describe('count clip', () => {
   it('emits ValueTracker + add_updater + animate.set_value + clear_updaters', () => {
     const c = store.addObject('counter', 960, 540);
