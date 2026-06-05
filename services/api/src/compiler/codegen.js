@@ -60,15 +60,15 @@ function safeOpacity(v) {
 }
 
 /** Validate a math expression: only allow characters safe for both Python and JS math. */
-function safeMathExpr(expr) {
-  if (!expr || typeof expr !== 'string') return 'x**2';
+function safeMathExpr(expr, fallback = 'x**2') {
+  if (!expr || typeof expr !== 'string') return fallback;
   const trimmed = expr.trim();
-  if (!trimmed) return 'x**2';
+  if (!trimmed) return fallback;
   // Whitelist: digits, letters (for sin/cos/pi/Math/np etc.), math operators, parens, dot, comma, space
   // Reject anything with underscores (blocks __import__, __builtins__ etc.)
-  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(trimmed)) return 'x**2';
+  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(trimmed)) return fallback;
   // Also reject if it contains 'import', 'eval', 'exec', 'open', '__'
-  if (/import|eval|exec|open|__/.test(trimmed)) return 'x**2';
+  if (/import|eval|exec|open|__/.test(trimmed)) return fallback;
   return trimmed;
 }
 
@@ -86,7 +86,7 @@ const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/web/src/export/manim.js) ──
 const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free', 'parametric']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -336,6 +336,15 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       lines.push(`${n} = Polygon(${pts})`);
       if (hasFill) lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
+    case 'parametric': {
+      const xe = safeMathExpr(obj.xExpr, 't');
+      const ye = safeMathExpr(obj.yExpr, '0');
+      const t0 = Number.isFinite(obj.tMin) ? obj.tMin : 0;
+      const t1 = Number.isFinite(obj.tMax) ? obj.tMax : 6.283;
+      const col = hex(obj.stroke) || hex(obj.fill) || '"#10B981"';
+      lines.push(`${n} = ParametricFunction(lambda t: np.array([${xe}, ${ye}, 0]), t_range=[${t0}, ${t1}], color=${col}, stroke_width=${sw2})`);
       break;
     }
     case 'line':
