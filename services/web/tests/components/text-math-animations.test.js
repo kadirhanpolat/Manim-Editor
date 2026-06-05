@@ -136,4 +136,22 @@ describe('counter object', () => {
     expect(re.numDecimals).toBe(2);
     expect(re.suffix).toBe('kg');
   });
+
+  it('round-trips value=0 (not dropped to a fallback)', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 0; c.numDecimals = 0;
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'counter');
+    expect(re).toBeTruthy();
+    expect(re.value).toBe(0);
+  });
+
+  it('round-trips a negative value', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = -3; c.numDecimals = 0;
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'counter');
+    expect(re).toBeTruthy();
+    expect(re.value).toBe(-3);
+  });
 });

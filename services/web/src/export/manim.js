@@ -1604,7 +1604,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // Counter (DecimalNumber)
-    m = line.match(/^(\w+) = DecimalNumber\(([\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/);
+    m = line.match(/^(\w+) = DecimalNumber\((-?[\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/);
     if (m) {
       const obj = { id: uid('obj'), type: 'counter', name: 'Counter',
         x: sw / 2, y: sh / 2, width: 120, height: 60,
