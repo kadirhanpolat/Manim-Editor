@@ -924,6 +924,9 @@ export function generatePythonCode(project, assetsPath) {
       case 'bounce_in':
         enterCode = `self.play(GrowFromCenter(${n}, rate_func=rate_functions.ease_out_bounce)${rt})`;
         break;
+      case 'typewriter':
+        enterCode = `self.play(AddTextLetterByLetter(${n})${rt})`;
+        break;
       default:
         enterCode = `self.play(FadeIn(${n})${rt})`;
     }
@@ -1229,6 +1232,9 @@ export function generatePythonCode(project, assetsPath) {
         break;
       case 'spin_out':
         exitCode = `self.play(FadeOut(${n}, shift=OUT, scale=0.5)${rt})`;
+        break;
+      case 'typewriter_out':
+        exitCode = `self.play(RemoveTextLetterByLetter(${n})${rt})`;
         break;
       default:
         exitCode = `self.play(FadeOut(${n})${rt})`;

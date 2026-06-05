@@ -110,6 +110,7 @@ export const ENTER_ANIMS = [
   { value: 'write',          label: 'Write',            icon: '✍',  desc: 'Write effect (text/shapes)' },
   { value: 'spin_in',        label: 'Spin In',          icon: '↻',  desc: 'Rotate in while fading' },
   { value: 'bounce_in',      label: 'Bounce In',        icon: '⤴',  desc: 'Bounce into place' },
+  { value: 'typewriter',     label: 'Typewriter',       icon: '⌨',  desc: 'Reveal char by char' },
 ];
 
 export const EXIT_ANIMS = [
@@ -122,6 +123,7 @@ export const EXIT_ANIMS = [
   { value: 'fly_out_bottom',  label: 'Fly Out Bottom',   icon: '↓',  desc: 'Slide out to bottom' },
   { value: 'uncreate',        label: 'Uncreate',         icon: '✎',  desc: 'Reverse draw' },
   { value: 'spin_out',        label: 'Spin Out',         icon: '↻',  desc: 'Rotate out while fading' },
+  { value: 'typewriter_out',  label: 'Typewriter Out',   icon: '⌨',  desc: 'Hide char by char' },
 ];
 
 // ─── Shape palette ───────────────────────────────────────────────────────────

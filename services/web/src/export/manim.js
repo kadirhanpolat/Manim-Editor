@@ -901,6 +901,9 @@ export function generateManimScript(project) {
       case 'bounce_in':
         enterCode = `self.play(GrowFromCenter(${n}, rate_func=rate_functions.ease_out_bounce)${rt})`;
         break;
+      case 'typewriter':
+        enterCode = `self.play(AddTextLetterByLetter(${n})${rt})`;
+        break;
       default:
         enterCode = `self.play(FadeIn(${n})${rt})`;
     }
@@ -1130,6 +1133,9 @@ export function generateManimScript(project) {
         break;
       case 'spin_out':
         exitCode = `self.play(FadeOut(${n}, shift=OUT, scale=0.5)${rt})`;
+        break;
+      case 'typewriter_out':
+        exitCode = `self.play(RemoveTextLetterByLetter(${n})${rt})`;
         break;
       default:
         exitCode = `self.play(FadeOut(${n})${rt})`;
@@ -1570,11 +1576,11 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // Text
-    m = line.match(/^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?\)/);
+    m = line.match(/^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?(?:,\s*font="([^"]*)")?\)/);
     if (m) {
-      const [, name, content, fontSize, color] = m;
+      const [, name, content, fontSize, color, fontFamily] = m;
       const id = uid('obj');
-      const obj = { id, type: 'text', name, content, fontSize: parseInt(fontSize), x: sw / 2, y: sh / 2, width: 200, height: 50, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      const obj = { id, type: 'text', name, content, fontSize: parseInt(fontSize), fontFamily: fontFamily || 'Roboto', x: sw / 2, y: sh / 2, width: 200, height: 50, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;
     }
@@ -1936,6 +1942,22 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m[1]];
       if (id && objById[id]) { objById[id].enterTime = ct; objById[id].enterAnim = 'none'; }
       ct += parseFloat(m[2] || 1);
+      continue;
+    }
+
+    m = line.match(/^self\.play\(AddTextLetterByLetter\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) { objById[id].enterTime = ct; objById[id].enterAnim = 'typewriter'; }
+      ct += parseFloat(m[2] || 0.5);
+      continue;
+    }
+
+    m = line.match(/^self\.play\(RemoveTextLetterByLetter\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) { objById[id].exitAnim = 'typewriter_out'; }
+      ct += parseFloat(m[2] || 0.5);
       continue;
     }
 

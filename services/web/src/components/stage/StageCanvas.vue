@@ -992,7 +992,10 @@ function textCfg(obj) {
   const manimFontScale = (e.fontSize || 48) * vs.value;
   const fontFamily = e.fontFamily || 'Arial';
   const fontStyle = (e.fontWeight === 'bold' ? 'bold ' : '') + (e.fontStyle === 'italic' ? 'italic ' : '');
-  const text = e.content || 'Text';
+  const rawContent = e.content || 'Text';
+  const ov = frameState.value.objectOverrides[obj.id];
+  const twFrac = ov && ov._typewriter !== undefined ? ov._typewriter : null;
+  const text = twFrac !== null ? rawContent.slice(0, Math.max(1, Math.round(rawContent.length * twFrac))) : rawContent;
   const align = e.textAlign || 'center';
   const textWidth = measureTextWidth(text, manimFontScale, fontFamily, fontStyle);
   let offsetX = 0;

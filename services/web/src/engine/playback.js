@@ -405,6 +405,10 @@ export class PlaybackEngine {
             overrides.scaleY = 0.8 + 0.2 * eased;
             changed = true;
             break;
+          case 'typewriter':
+            overrides._typewriter = eased; // 0..1 reveal fraction
+            changed = true;
+            break;
           case 'spin_in':
             overrides.rotation = (obj.rotation || 0) - (1 - eased) * 360;
             overrides.opacity = eased * (obj.opacity ?? 1);
@@ -476,6 +480,10 @@ export class PlaybackEngine {
             overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
             overrides.scaleX = 0.8 + 0.2 * eased;
             overrides.scaleY = 0.8 + 0.2 * eased;
+            changed = true;
+            break;
+          case 'typewriter_out':
+            overrides._typewriter = eased; // 0..1 remaining fraction
             changed = true;
             break;
           case 'spin_out':
