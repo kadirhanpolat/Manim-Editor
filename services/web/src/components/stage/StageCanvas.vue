@@ -222,6 +222,7 @@ import { generateDotGridPositions } from '../../engine/geometry.js';
 import { applyOverrides } from '../../engine/blending.js';
 import { project3D, unprojectIso, perspectiveScale } from '../../engine/projection3d.js';
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
+import { latexToUnicode } from '../../utils/latexPreview.js';
 
 const store = useProjectStore();
 
@@ -788,11 +789,14 @@ function imageCfg(obj) {
 // ── LaTeX config ──
 function latexBgCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
-  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.06)', stroke: themeAccent.value, strokeWidth: 1.5, dash: [6, 4], cornerRadius: 6, listening: false };
+  // listening:true → this rect is the group's hit area so the LaTeX box can be
+  // selected/dragged on the canvas (the text/badge stay non-listening).
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.06)', stroke: themeAccent.value, strokeWidth: 1.5, dash: [6, 4], cornerRadius: 6, listening: true };
 }
 function latexTextCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
-  return { x: -w / 2, y: -h / 2, width: w, height: h, text: obj.latex || 'E = mc^2', fontSize: Math.max(12, 18 * vs.value), fontFamily: 'serif', fontStyle: 'italic', fill: obj.fill || '#ffffff', align: 'center', verticalAlign: 'middle', padding: 8, listening: false };
+  // Approximate Unicode preview of the raw LaTeX (Manim does the real MathTex).
+  return { x: -w / 2, y: -h / 2, width: w, height: h, text: latexToUnicode(obj.latex || 'E = mc^2'), fontSize: Math.max(12, 18 * vs.value), fontFamily: 'serif', fontStyle: 'italic', fill: obj.fill || '#ffffff', align: 'center', verticalAlign: 'middle', padding: 8, listening: false };
 }
 function latexBadgeCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
