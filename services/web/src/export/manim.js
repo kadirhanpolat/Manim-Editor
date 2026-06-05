@@ -1157,6 +1157,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const objById = {};
   const graphVarMap = {};
   const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
+  const pendingShadow = {};   // base var → { color, opacity, dx, dy } awaiting its VGroup line
 
   let bgColor = '#000000';
   let cameraType = 'static';
@@ -1468,6 +1469,36 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         delete varMap[base];
         varMap[vg] = target.id;
       }
+      continue;
+    }
+
+    // round_corners(radius=...) → restore cornerRadius (px) on polygon/triangle/star
+    m = line.match(/^(\w+)\.round_corners\(radius=([-\d.]+)\)/);
+    if (m) {
+      const t = objById[varMap[m[1]]];
+      if (t && ['polygon', 'triangle', 'star'].includes(t.type)) {
+        t.cornerRadius = Math.round(parseFloat(m[2]) / FRAME_WIDTH * sw);
+      }
+      continue;
+    }
+
+    // Drop-shadow copy line → stash by base var
+    m = line.match(/^_shadow_(\w+)\s*=\s*\w+\.copy\(\)\.set_color\("([^"]+)"\)\.set_opacity\(([-\d.]+)\)\.shift\(\[([-\d.]+), ([-\d.]+), 0\]\)/);
+    if (m) {
+      pendingShadow[m[1]] = {
+        color: m[2], opacity: parseFloat(m[3]),
+        dx: Math.round(parseFloat(m[4]) / FRAME_WIDTH * sw),
+        dy: Math.round(-parseFloat(m[5]) / FRAME_HEIGHT * sh),
+      };
+      continue;
+    }
+
+    // Shadow VGroup wrapper → attach the stashed shadow to the base object
+    m = line.match(/^(\w+)\s*=\s*VGroup\(_shadow_(\w+), \2\)/);
+    if (m) {
+      const ps = pendingShadow[m[2]];
+      const t = objById[varMap[m[2]]];
+      if (ps && t) { t.shadow = { ...ps, blur: 12 }; delete pendingShadow[m[2]]; }
       continue;
     }
 

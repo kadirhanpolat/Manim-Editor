@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateManimScript } from '../../src/export/manim.js';
+import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
 
 const SW = 1920, SH = 1080;
 function makeObj(type, extra = {}) {
@@ -38,5 +38,23 @@ describe('shadow codegen', () => {
   it('emits no shadow lines when shadow is absent (legacy)', () => {
     const s = generateManimScript(makeProject([makeObj('circle')]));
     expect(s).not.toMatch(/_shadow_/);
+  });
+});
+
+describe('effects round-trip', () => {
+  it('round-trips a circle drop shadow', () => {
+    const proj = makeProject([makeObj('circle', { shadow: { color: '#123456', opacity: 0.5, dx: 10, dy: 6, blur: 12 } })]);
+    const o = parseManimScript(generateManimScript(proj), SW, SH).objects[0];
+    expect(o.shadow).toBeTruthy();
+    expect(o.shadow.color.toLowerCase()).toBe('#123456');
+    expect(o.shadow.opacity).toBeCloseTo(0.5, 2);
+    expect(o.shadow.dx).toBeCloseTo(10, 0);
+    expect(o.shadow.dy).toBeCloseTo(6, 0);
+  });
+  it('round-trips round_corners on a triangle', () => {
+    const proj = makeProject([makeObj('triangle', { cornerRadius: 20 })]);
+    const o = parseManimScript(generateManimScript(proj), SW, SH).objects[0];
+    expect(o.type).toBe('triangle');
+    expect(o.cornerRadius).toBeCloseTo(20, 0);
   });
 });
