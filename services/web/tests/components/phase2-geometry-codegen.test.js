@@ -44,3 +44,18 @@ describe('arc codegen', () => {
     expect(o.startAngle).toBeCloseTo(30, 0);
   });
 });
+
+describe('sector codegen', () => {
+  const script = (o) => generateManimScript(makeProject([o]));
+  const roundTrip = (o) => parseManimScript(generateManimScript(makeProject([o])), SW, SH).objects[0];
+  it('emits Sector with radius + angles in DEGREES', () => {
+    const s = script(makeObj('sector', { radius: 70, startAngle: 0, sweepAngle: 90, fill: '#f59e0b', stroke: '#ffffff' }));
+    expect(s).toMatch(/= Sector\(radius=[\d.]+, start_angle=[-\d.]+ \* DEGREES, angle=[-\d.]+ \* DEGREES\)/);
+    expect(s).toContain('.set_fill(color="#f59e0b"');
+  });
+  it('round-trips type + angles', () => {
+    const o = roundTrip(makeObj('sector', { radius: 70, startAngle: 0, sweepAngle: 90, fill: '#f59e0b', stroke: '#ffffff' }));
+    expect(o.type).toBe('sector');
+    expect(o.sweepAngle).toBeCloseTo(90, 0);
+  });
+});
