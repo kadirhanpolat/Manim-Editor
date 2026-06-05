@@ -192,13 +192,21 @@
                   :style="{ width: renderProgress + '%' }"
                 ></div>
               </div>
-              <p v-if="renderLog" class="mt-3 text-[10px] text-studio-text-muted text-left font-mono bg-studio-bg rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">{{ renderLog }}</p>
+              <div v-if="renderLog" class="mt-3">
+                <div class="flex justify-end mb-1">
+                  <button @click="copyRenderLog" class="text-[10px] text-studio-accent hover:opacity-80">{{ renderCopied ? '✓ Copied' : '⧉ Copy log' }}</button>
+                </div>
+                <p class="text-[10px] text-studio-text-muted text-left font-mono bg-studio-bg rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap select-text" style="user-select: text;">{{ renderLog }}</p>
+              </div>
             </div>
 
             <!-- Error -->
             <div v-if="renderStatus === 'failed'" class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p class="text-xs text-red-400 font-medium mb-1">Render Failed</p>
-              <p class="text-[11px] text-red-300 whitespace-pre-wrap">{{ renderError }}</p>
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-xs text-red-400 font-medium">Render Failed</p>
+                <button @click="copyRenderLog" class="text-[10px] text-red-300 hover:text-red-100">{{ renderCopied ? '✓ Copied' : '⧉ Copy error' }}</button>
+              </div>
+              <p class="text-[11px] text-red-300 whitespace-pre-wrap select-text max-h-40 overflow-y-auto" style="user-select: text;">{{ renderError }}</p>
               <button @click="retryRender" class="mt-3 px-4 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-colors">Retry</button>
             </div>
 
@@ -529,6 +537,19 @@ function resetRender() {
   store.renderError = null;
   store.renderVideoUrl = null;
   store.renderLog = '';
+}
+
+const renderCopied = ref(false);
+function copyRenderLog() {
+  const text = [store.renderError, store.renderLog].filter(Boolean).join('\n\n');
+  const done = () => { renderCopied.value = true; setTimeout(() => { renderCopied.value = false; }, 1500); };
+  navigator.clipboard?.writeText(text).then(done).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch { /* ignore */ }
+    ta.remove(); done();
+  });
 }
 
 // ── Project browser ──
