@@ -151,6 +151,10 @@ export const SHAPE_DEFAULTS = {
   cylinder:   { width: 100, height: 120, fill: '#1098ad', stroke: '#fff', strokeWidth: 2 },
   torus:      { width: 130, height: 130, fill: '#ae3ec9', stroke: '#fff', strokeWidth: 2 },
   axes3d:     { width: 400, height: 400, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  annulus:  { width: 140, height: 140, fill: '#14b8a6', stroke: '#fff', strokeWidth: 2 },
+  arc:      { width: 140, height: 140, fill: 'transparent', stroke: '#f97316', strokeWidth: 4 },
+  sector:   { width: 140, height: 140, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
+  double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -163,6 +167,7 @@ export const SHAPE_COLORS = {
   numberplane: '#334155', numberline: '#10b981',
   sphere: '#e67700', cube: '#3b5bdb', cone: '#2f9e44',
   cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981',
+  annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -274,7 +279,8 @@ const useProjectStore = defineStore('project', {
         ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
         polygon: 'Polygon', line: 'Line', arrow: 'Arrow', text: 'Text',
         latex: 'LaTeX', axes: 'Axes',
-        numberplane: 'NumberPlane', numberline: 'NumberLine'
+        numberplane: 'NumberPlane', numberline: 'NumberLine',
+        annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -303,6 +309,9 @@ const useProjectStore = defineStore('project', {
         ...(type === 'text' ? { content: 'Hello World', fontSize: 48, fontFamily: 'Roboto', textAlign: 'center', fontWeight: 'normal', fontStyle: 'normal' } : {}),
         ...(type === 'polygon' ? { sides: 6 } : {}),
         ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
+        ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
+        ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
+        ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),
         ...(type === 'latex' ? { latex: 'E = mc^2' } : {}),
         ...(type === 'axes'        ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
         ...(type === 'numberplane' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 } : {}),

@@ -60,6 +60,12 @@
             <!-- Arrow -->
             <v-arrow v-if="obj.type === 'arrow' && isVis(obj.id)" :config="arrowCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
+            <!-- Annulus / Sector / Arc / DoubleArrow -->
+            <v-ring v-if="obj.type === 'annulus' && isVis(obj.id)" :config="annulusCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-wedge v-if="obj.type === 'sector' && isVis(obj.id)" :config="sectorCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-shape v-if="obj.type === 'arc' && isVis(obj.id)" :config="arcCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-arrow v-if="obj.type === 'double_arrow' && isVis(obj.id)" :config="doubleArrowCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+
             <!-- Dot Grid -->
             <v-group v-if="obj.type === 'dot_grid' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)">
               <v-rect :config="dotGridHitCfg(obj)" />
@@ -784,6 +790,40 @@ function arrowCfg(obj) {
   const hw = L ? L.w / 2 : e.width / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
   const cfg = { x: p.x, y: p.y, points: [-hw, 0, hw, 0], fill: e.fill, stroke: e.stroke || e.fill || '#ef4444', strokeWidth: Math.max(2, (e.strokeWidth || 2) * vs.value / 2), opacity: e.opacity ?? 1, rotation: rot, pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, scaleX: 1, scaleY: 1 };
   return applyEffects(cfg, obj, hw * 2, 0, false);
+}
+function annulusCfg(obj) {
+  const e = eff(obj); const c = s2c(e.x, e.y);
+  const cfg = { x: c.x, y: c.y, innerRadius: (obj.innerRadius || 35) * vs.value, outerRadius: (obj.outerRadius || 70) * vs.value,
+    fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1,
+    rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const d = (obj.outerRadius || 70) * 2 * vs.value;
+  return applyEffects(cfg, obj, d, d, true);
+}
+function sectorCfg(obj) {
+  const e = eff(obj); const c = s2c(e.x, e.y);
+  const cfg = { x: c.x, y: c.y, radius: (obj.radius || 70) * vs.value, angle: obj.sweepAngle || 90, rotation: (obj.startAngle || 0) + (e.rotation || 0),
+    fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1,
+    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const d = (obj.radius || 70) * 2 * vs.value;
+  return applyEffects(cfg, obj, d, d, true);
+}
+function arcCfg(obj) {
+  const e = eff(obj); const c = s2c(e.x, e.y);
+  const r = (obj.radius || 70) * vs.value;
+  const a0 = (obj.startAngle || 0) * Math.PI / 180;
+  const a1 = ((obj.startAngle || 0) + (obj.sweepAngle || 180)) * Math.PI / 180;
+  const cfg = { x: c.x, y: c.y, stroke: e.stroke || '#f97316', strokeWidth: (e.strokeWidth || 4) * vs.value / 2,
+    opacity: e.opacity ?? 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12,
+    sceneFunc: (ctx, shape) => { ctx.beginPath(); ctx.arc(0, 0, r, -a1, -a0); ctx.strokeShape(shape); } };
+  return applyEffects(cfg, obj, r * 2, r * 2, true);
+}
+function doubleArrowCfg(obj) {
+  const e = eff(obj); const c = s2c(e.x, e.y); const half = (e.width || 200) / 2 * vs.value;
+  const cfg = { x: c.x, y: c.y, points: [-half, 0, half, 0], pointerAtBeginning: true, pointerAtEnding: true,
+    pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, fill: e.fill || '#ef4444', stroke: e.stroke || e.fill || '#ef4444',
+    strokeWidth: (e.strokeWidth || 2) * vs.value / 2 + 2, opacity: e.opacity ?? 1, rotation: e.rotation || 0,
+    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12 };
+  return applyEffects(cfg, obj, (e.width || 200) * vs.value, 0, false);
 }
 function textCfg(obj) {
   const L = live(obj);

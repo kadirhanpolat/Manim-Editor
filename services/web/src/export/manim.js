@@ -82,8 +82,8 @@ const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.11
 const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/api/src/compiler/codegen.js) ──
-const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow']);
+const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -270,6 +270,32 @@ function objCode(obj, sw, sh) {
       if (hasStroke)
         lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
+    case 'annulus': {
+      const ri = safeNum(obj.innerRadius, 35) / sw * FRAME_WIDTH;
+      const ro = safeNum(obj.outerRadius, 70) / sw * FRAME_WIDTH;
+      lines.push(`${n} = Annulus(inner_radius=${ri.toFixed(3)}, outer_radius=${ro.toFixed(3)})`);
+      if (hasFill) lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
+      if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
+    case 'arc': {
+      const r = safeNum(obj.radius, 70) / sw * FRAME_WIDTH;
+      lines.push(`${n} = Arc(radius=${r.toFixed(3)}, start_angle=${(+obj.startAngle || 0)} * DEGREES, angle=${(+obj.sweepAngle || 0)} * DEGREES)`);
+      lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
+    case 'sector': {
+      const r = safeNum(obj.radius, 70) / sw * FRAME_WIDTH;
+      lines.push(`${n} = Sector(radius=${r.toFixed(3)}, start_angle=${(+obj.startAngle || 0)} * DEGREES, angle=${(+obj.sweepAngle || 0)} * DEGREES)`);
+      if (hasFill) lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
+      if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
+    case 'double_arrow': {
+      const half = (obj.width / 2 / sw * FRAME_WIDTH).toFixed(3);
+      lines.push(`${n} = DoubleArrow(start=LEFT * ${half}, end=RIGHT * ${half}, color=${hex(obj.fill) || '"#EF4444"'}, buff=0, stroke_width=${sw2})`);
+      break;
+    }
     case 'ellipse':
       lines.push(`${n} = Ellipse(width=${(obj.width / sw * FRAME_WIDTH).toFixed(3)}, height=${(obj.height / sh * FRAME_HEIGHT).toFixed(3)})`);
       if (hasFill)
@@ -1120,6 +1146,61 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const size = Math.round(parseFloat(r) * 2 / FRAME_WIDTH * sw);
       const id = uid('obj');
       const obj = { id, type: 'circle', name, x: sw / 2, y: sh / 2, width: size, height: size, fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Annulus
+    m = line.match(/^(\w+)\s*=\s*Annulus\(inner_radius=([\d.]+),\s*outer_radius=([\d.]+)\)/);
+    if (m) {
+      const [, name, ri, ro] = m;
+      const innerRadius = Math.round(parseFloat(ri) / FRAME_WIDTH * sw);
+      const outerRadius = Math.round(parseFloat(ro) / FRAME_WIDTH * sw);
+      const id = uid('obj');
+      const obj = { id, type: 'annulus', name, x: sw / 2, y: sh / 2, width: outerRadius * 2, height: outerRadius * 2,
+        innerRadius, outerRadius, fill: '#14b8a6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Arc
+    m = line.match(/^(\w+)\s*=\s*Arc\(radius=([\d.]+),\s*start_angle=([-\d.]+) \* DEGREES,\s*angle=([-\d.]+) \* DEGREES\)/);
+    if (m) {
+      const [, name, r, a0, sw_] = m;
+      const radius = Math.round(parseFloat(r) / FRAME_WIDTH * sw);
+      const id = uid('obj');
+      const obj = { id, type: 'arc', name, x: sw / 2, y: sh / 2, width: radius * 2, height: radius * 2,
+        radius, startAngle: parseFloat(a0), sweepAngle: parseFloat(sw_),
+        fill: 'transparent', stroke: '#f97316', strokeWidth: 4, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Sector
+    m = line.match(/^(\w+)\s*=\s*Sector\(radius=([\d.]+),\s*start_angle=([-\d.]+) \* DEGREES,\s*angle=([-\d.]+) \* DEGREES\)/);
+    if (m) {
+      const [, name, r, a0, sw_] = m;
+      const radius = Math.round(parseFloat(r) / FRAME_WIDTH * sw);
+      const id = uid('obj');
+      const obj = { id, type: 'sector', name, x: sw / 2, y: sh / 2, width: radius * 2, height: radius * 2,
+        radius, startAngle: parseFloat(a0), sweepAngle: parseFloat(sw_),
+        fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // DoubleArrow
+    m = line.match(/^(\w+)\s*=\s*DoubleArrow\(start=LEFT \* ([\d.]+), end=RIGHT \* ([\d.]+), color=["']([^"']+)["']/);
+    if (m) {
+      const [, name, half, , color] = m;
+      const width = Math.round(parseFloat(half) * 2 / FRAME_WIDTH * sw);
+      const id = uid('obj');
+      const obj = { id, type: 'double_arrow', name, x: sw / 2, y: sh / 2, width, height: 40,
+        fill: color, stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;
     }

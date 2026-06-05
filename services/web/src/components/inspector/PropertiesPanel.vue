@@ -246,6 +246,23 @@
         <Num label="Sides" :value="obj.sides || 6" :min="3" :max="20" @input="u('sides', $event)" />
       </Section>
 
+      <!-- Annulus settings -->
+      <Section v-if="obj.type === 'annulus'" label="Annulus">
+        <div class="grid grid-cols-2 gap-1.5">
+          <Num label="Inner radius" :value="obj.innerRadius || 35" :min="0" @input="u('innerRadius', $event)" />
+          <Num label="Outer radius" :value="obj.outerRadius || 70" :min="1" @input="u('outerRadius', $event)" />
+        </div>
+      </Section>
+
+      <!-- Arc / Sector settings -->
+      <Section v-if="obj.type === 'arc' || obj.type === 'sector'" :label="obj.type === 'arc' ? 'Arc' : 'Sector'">
+        <div class="grid grid-cols-3 gap-1.5">
+          <Num label="Radius" :value="obj.radius || 70" :min="1" @input="u('radius', $event)" />
+          <Num label="Start°" :value="obj.startAngle || 0" @input="u('startAngle', $event)" />
+          <Num label="Sweep°" :value="obj.sweepAngle || 90" @input="u('sweepAngle', $event)" />
+        </div>
+      </Section>
+
       <!-- LaTeX settings -->
       <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
         <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
@@ -693,8 +710,8 @@ function delCameraClip() {
 function u(k, v) { if (obj.value) store.updateObject(obj.value.id, { [k]: v }); }
 function uSize(v) { if (obj.value) store.updateObject(obj.value.id, { width: v, height: v }); }
 
-const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow']);
+const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow']);
 const ROUND_TYPES = new Set(['rectangle', 'square']);
 
 const canGradient = computed(() => obj.value && GRADIENT_TYPES.has(obj.value.type));
