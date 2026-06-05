@@ -382,6 +382,7 @@ describe('generator — count clip (ValueTracker block)', () => {
     expect(py).toContain('_count_');
     expect(py).toContain('= ValueTracker(');
     expect(py).toContain('.add_updater(lambda m: m.set_value(');
+    expect(py).toContain('.get_value()');
     expect(py).toContain('.animate.set_value(');
     expect(py).toContain('.clear_updaters()');
   });

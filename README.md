@@ -386,7 +386,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 293 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on, text-math animations: counter/count/typewriter/tex-matching)
+npm run test:unit # 314 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on, text-math animations: counter/count/typewriter/tex-matching)
 ```
 
 ---
@@ -428,7 +428,7 @@ Text & Math Animations (Phase 3) — animated counter object, count clip, Tex-ma
 - **Tex-matching morph** (transform clip `matchTerms` toggle): upgrades the emitted class — `TransformMatchingTex` when both objects are `latex`, `TransformMatchingShapes` for other VMobjects, `FadeTransform` for raster sources, `ReplacementTransform` when absent (legacy, byte-identical). Implemented via a shared `transformExpr` helper kept byte-identical across both generators.
 - **Typewriter presets**: `typewriter` entrance → `AddTextLetterByLetter`, `typewriter_out` exit → `RemoveTextLetterByLetter`.
 - **Accepted preview ≈ render divergences**: Tex term-matching morph shows a generic crossfade (Manim does actual alignment); typewriter timing is approximate; counter font metrics differ between Konva and Manim `DecimalNumber`.
-- **Tests**: +10 parity invariant tests in `manim-export.test.js` (byte-stable exact-string assertions for all four new constructs); totals now **293 unit + 114 engine**.
+- **Tests**: +10 parity invariant tests in `manim-export.test.js` (byte-stable exact-string assertions for all four new constructs); totals now **314 unit + 114 engine**.
 
 ### v3.11.0
 
