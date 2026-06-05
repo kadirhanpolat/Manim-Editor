@@ -767,8 +767,7 @@ function triangleCfg(obj) {
   return applyEffects(cfg, obj, hw * 2, hh * 2, true);
 }
 function polygonFreeCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const e = eff(obj); const p = s2c(e.x, e.y);
   const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 3) ? obj.vertices : [[-80, -60], [80, -60], [80, 60], [-80, 60]];
   const pts = verts.flatMap(([vx, vy]) => [vx * vs.value, vy * vs.value]);
   const xs = verts.map(v => v[0]), ys = verts.map(v => v[1]);
