@@ -83,6 +83,23 @@
         </select>
       </div>
 
+      <!-- Match Terms checkbox (shown when a transform clip is selected and both objects are non-raster) -->
+      <div
+        v-if="selectedClip?.type === 'transform' && bothNonRaster"
+        class="px-4 py-3 border-b border-studio-border"
+      >
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="!!selectedClip.matchTerms"
+            @change="store.setClipMatchTerms(selectedClip.id, $event.target.checked)"
+            class="w-3.5 h-3.5"
+          />
+          <span class="text-xs text-studio-text-muted">Match terms</span>
+          <span class="text-xs text-studio-text-muted opacity-60">(TransformMatchingTex/Shapes)</span>
+        </label>
+      </div>
+
       <!-- Audio Panel (shown when a clip is selected) -->
       <AudioPanel
         v-if="selectedClip"
@@ -134,6 +151,15 @@ const store = useProjectStore()
 
 const selectedElement = computed(() => store.selectedObject)
 const selectedClip = computed(() => store.selectedClip)
+
+const RASTER_TYPES = new Set(['image', 'svg_asset'])
+const bothNonRaster = computed(() => {
+  const c = selectedClip.value
+  if (!c || c.type !== 'transform') return false
+  const s = store.objectById(c.sourceId)
+  const t = store.objectById(c.targetId)
+  return s && t && !RASTER_TYPES.has(s.type) && !RASTER_TYPES.has(t.type)
+})
 
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d']
 const is3DObject = computed(() => OBJ_3D_TYPES.includes(selectedElement.value?.type))

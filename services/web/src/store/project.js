@@ -239,6 +239,13 @@ const useProjectStore = defineStore('project', {
     },
     objectById: (state) => (id) => state.project.objects.find(o => o.id === id) || null,
     assetById: (state) => (id) => state.project.assets.find(a => a.id === id) || null,
+    clipById: (state) => (id) => {
+      for (const track of state.project.tracks) {
+        const clip = track.clips.find(c => c.id === id);
+        if (clip) return clip;
+      }
+      return null;
+    },
     groupById: (state) => (id) => (state.project.groups || []).find(g => g.id === id) || null,
     objectGroup: (state) => (objId) => (state.project.groups || []).find(g => g.childIds && g.childIds.includes(objId)) || null,
     computedDuration: (state) => {
@@ -829,6 +836,14 @@ const useProjectStore = defineStore('project', {
       this.selectedClipId = clip.id;
       this.selectedObjectIds = [];
       return clip;
+    },
+
+    setClipMatchTerms(clipId, on) {
+      const clip = this.clipById(clipId);
+      if (!clip) return;
+      if (on) clip.matchTerms = true;
+      else delete clip.matchTerms;
+      this.commitState();
     },
 
     createAnimation(type, params = {}) {

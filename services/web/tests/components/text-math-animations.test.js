@@ -101,3 +101,15 @@ describe('tex-matching transform', () => {
     expect(clip.matchTerms).toBe(true);
   });
 });
+
+describe('setClipMatchTerms action', () => {
+  it('sets and clears matchTerms, commits state', () => {
+    const a = store.addObject('latex', 600, 540);
+    const b = store.addObject('latex', 1200, 540);
+    const clip = store.addClip(0, { type: 'transform', startTime: 0, duration: 1, easing: 'linear', sourceId: a.id, targetId: b.id });
+    store.setClipMatchTerms(clip.id, true);
+    expect(store.clipById(clip.id).matchTerms).toBe(true);
+    store.setClipMatchTerms(clip.id, false);
+    expect(store.clipById(clip.id).matchTerms).toBeUndefined();
+  });
+});
