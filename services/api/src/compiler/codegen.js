@@ -389,6 +389,26 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
+    case 'angle': {
+      const V = Array.isArray(obj.vertex) ? obj.vertex : [-40, 40];
+      const P1 = Array.isArray(obj.point1) ? obj.point1 : [80, 40];
+      const P2 = Array.isArray(obj.point2) ? obj.point2 : [-40, -60];
+      const pt = (p) => `[${(p[0] / sw * FRAME_WIDTH).toFixed(3)}, ${(-p[1] / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      lines.push(`${n}_l1 = Line(${pt(V)}, ${pt(P1)})`);
+      lines.push(`${n}_l2 = Line(${pt(V)}, ${pt(P2)})`);
+      const ctor = obj.rightAngle
+        ? `RightAngle(${n}_l1, ${n}_l2)`
+        : `Angle(${n}_l1, ${n}_l2, radius=${Number.isFinite(obj.radius) ? obj.radius : 0.6})`;
+      const label = (obj.label || '').trim();
+      if (label) {
+        lines.push(`${n}_arc = ${ctor}`);
+        lines.push(`${n} = VGroup(${n}_arc, ${n}_arc.get_tex("${safeLatex(label)}"))`);
+      } else {
+        lines.push(`${n} = ${ctor}`);
+      }
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
     case 'line':
       lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)})`);
       lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${safeNum(obj.strokeWidth, 3)})`);
