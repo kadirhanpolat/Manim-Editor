@@ -410,6 +410,25 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
           const xMin = Number.isFinite(g.xMin) ? g.xMin : xr[0];
           const xMax = Number.isFinite(g.xMax) ? g.xMax : xr[1];
           lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
+          if (g.area && g.area.enabled) {
+            const an = `${gn}_area`;
+            const axMin = Number.isFinite(g.area.xMin) ? g.area.xMin : xMin;
+            const axMax = Number.isFinite(g.area.xMax) ? g.area.xMax : xMax;
+            const acol = hex(g.area.color) || col;
+            const aop = Number.isFinite(g.area.opacity) ? g.area.opacity : 0.5;
+            lines.push(`${an} = ${n}.get_area(${gn}, x_range=[${axMin}, ${axMax}], color=${acol}, opacity=${aop})`);
+            lines.push(`${n}.add(${an})`);
+          }
+          if (g.riemann && g.riemann.enabled) {
+            const rn = `${gn}_riemann`;
+            const rxMin = Number.isFinite(g.riemann.xMin) ? g.riemann.xMin : xMin;
+            const rxMax = Number.isFinite(g.riemann.xMax) ? g.riemann.xMax : xMax;
+            const rdx = (Number.isFinite(g.riemann.dx) && g.riemann.dx > 0) ? g.riemann.dx : ((rxMax - rxMin) / 10);
+            const rtype = ['left', 'right', 'center'].includes(g.riemann.type) ? g.riemann.type : 'left';
+            const rcol = hex(g.riemann.color) || col;
+            lines.push(`${rn} = ${n}.get_riemann_rectangles(${gn}, x_range=[${rxMin}, ${rxMax}], dx=${rdx}, input_sample_type="${rtype}", color=${rcol})`);
+            lines.push(`${n}.add(${rn})`);
+          }
         }
       }
       break;

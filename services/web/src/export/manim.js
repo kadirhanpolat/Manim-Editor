@@ -402,6 +402,25 @@ function objCode(obj, sw, sh) {
           const xMax = Number.isFinite(g.xMax) ? g.xMax : xr[1];
           lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
           lines.push(`${n}.add(${gn})`);
+          if (g.area && g.area.enabled) {
+            const an = `${gn}_area`;
+            const axMin = Number.isFinite(g.area.xMin) ? g.area.xMin : xMin;
+            const axMax = Number.isFinite(g.area.xMax) ? g.area.xMax : xMax;
+            const acol = hex(g.area.color) || col;
+            const aop = Number.isFinite(g.area.opacity) ? g.area.opacity : 0.5;
+            lines.push(`${an} = ${n}.get_area(${gn}, x_range=[${axMin}, ${axMax}], color=${acol}, opacity=${aop})`);
+            lines.push(`${n}.add(${an})`);
+          }
+          if (g.riemann && g.riemann.enabled) {
+            const rn = `${gn}_riemann`;
+            const rxMin = Number.isFinite(g.riemann.xMin) ? g.riemann.xMin : xMin;
+            const rxMax = Number.isFinite(g.riemann.xMax) ? g.riemann.xMax : xMax;
+            const rdx = (Number.isFinite(g.riemann.dx) && g.riemann.dx > 0) ? g.riemann.dx : ((rxMax - rxMin) / 10);
+            const rtype = ['left', 'right', 'center'].includes(g.riemann.type) ? g.riemann.type : 'left';
+            const rcol = hex(g.riemann.color) || col;
+            lines.push(`${rn} = ${n}.get_riemann_rectangles(${gn}, x_range=[${rxMin}, ${rxMax}], dx=${rdx}, input_sample_type="${rtype}", color=${rcol})`);
+            lines.push(`${n}.add(${rn})`);
+          }
         }
       }
       break;
@@ -1051,6 +1070,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const clips   = [];
   const varMap  = {};
   const objById = {};
+  const graphVarMap = {};
 
   let bgColor = '#000000';
   let cameraType = 'static';
@@ -1414,15 +1434,32 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const axesId = varMap[axesVar];
       if (axesId && objById[axesId] && objById[axesId].type === 'axes') {
         if (!objById[axesId].graphs) objById[axesId].graphs = [];
-        objById[axesId].graphs.push({
+        const _g = {
           id: uid('graph').split('_').slice(-2).join('_'),
           expression: expr.trim(),
           color: color || '#F59E0B',
           xMin: parseFloat(xMin),
           xMax: parseFloat(xMax),
           strokeWidth: sw2 ? parseFloat(sw2) : 3,
-        });
+        };
+        objById[axesId].graphs.push(_g);
+        graphVarMap[graphVar] = _g;
       }
+      continue;
+    }
+
+    // axes.get_area(graphVar, ...)
+    m = line.match(/^\w+\s*=\s*\w+\.get_area\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\](?:,\s*color=["']([^"']+)["'])?(?:,\s*opacity=([\d.]+))?\)/);
+    if (m) {
+      const g = graphVarMap[m[1]];
+      if (g) g.area = { enabled: true, xMin: parseFloat(m[2]), xMax: parseFloat(m[3]), color: m[4] || g.color, opacity: m[5] !== undefined ? parseFloat(m[5]) : 0.5 };
+      continue;
+    }
+    // axes.get_riemann_rectangles(graphVar, ...)
+    m = line.match(/^\w+\s*=\s*\w+\.get_riemann_rectangles\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\],\s*dx=([\d.]+),\s*input_sample_type=["'](\w+)["'](?:,\s*color=["']([^"']+)["'])?\)/);
+    if (m) {
+      const g = graphVarMap[m[1]];
+      if (g) g.riemann = { enabled: true, xMin: parseFloat(m[2]), xMax: parseFloat(m[3]), dx: parseFloat(m[4]), type: m[5], color: m[6] || g.color };
       continue;
     }
 
