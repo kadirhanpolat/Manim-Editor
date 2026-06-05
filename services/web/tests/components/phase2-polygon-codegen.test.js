@@ -28,4 +28,13 @@ describe('polygon_free codegen', () => {
     expect(o.vertices[0][0]).toBeCloseTo(-40, -1); // within ~10px after round-trip
     expect(o.vertices[0][1]).toBeCloseTo(-60, -1);
   });
+  it('round-trips an off-center polygon (position + relative vertices)', () => {
+    const code = generateManimScript(makeProject([makeObj({ x: 1400, y: 400 })]));
+    const o = parseManimScript(code, SW, SH).objects[0];
+    expect(o.x).toBeCloseTo(1400, -1);   // position survives the move_to
+    expect(o.y).toBeCloseTo(400, -1);
+    expect(o.vertices.length).toBe(4);
+    expect(o.vertices[0][0]).toBeCloseTo(-40, -1);  // vertices stay center-relative
+    expect(o.vertices[0][1]).toBeCloseTo(-60, -1);
+  });
 });
