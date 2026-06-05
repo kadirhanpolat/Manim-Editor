@@ -288,8 +288,12 @@ function objCode(obj, sw, sh) {
       lines.push(`${n} = SVGMobject("${obj.name || 'asset'}.svg").scale_to_fit_width(${(obj.width / sw * FRAME_WIDTH).toFixed(3)})`);
       break;
     case 'latex': {
-      const texStr = (obj.latex || 'E = mc^2').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      lines.push(`${n} = MathTex(r"${texStr}", color=${fill})`);
+      // Escape for a normal Python string (NOT raw): a single backslash in the
+      // LaTeX (e.g. \int) must survive as one backslash so MathTex typesets the
+      // command. Doubling here + a raw r"..." would emit \\int (a LaTeX line
+      // break) and render literal "int".
+      const texStr = (obj.latex || 'E = mc^2').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, ' ');
+      lines.push(`${n} = MathTex("${texStr}", color=${fill})`);
       lines.push(`${n}.scale(${(scale * 2).toFixed(3)})`);
       break;
     }
@@ -1148,10 +1152,12 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
-    // MathTex (LaTeX)
-    m = line.match(/^(\w+)\s*=\s*MathTex\(r?"([^"]*)"(?:,\s*color=["']([^"']+)["'])?\)/);
+    // MathTex (LaTeX) — un-escape the Python string literal (\\ → \, \" → ").
+    // Handles both the normal "..." form and the legacy raw r"..." form.
+    m = line.match(/^(\w+)\s*=\s*MathTex\(r?"((?:[^"\\]|\\.)*)"(?:,\s*color=["']([^"']+)["'])?\)/);
     if (m) {
-      const [, name, latex, color] = m;
+      const [, name, rawLatex, color] = m;
+      const latex = rawLatex.replace(/\\([\\"])/g, '$1');
       const id = uid('obj');
       const obj = { id, type: 'latex', name, latex, x: sw / 2, y: sh / 2, width: 200, height: 80, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;

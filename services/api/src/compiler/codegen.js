@@ -297,8 +297,12 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       break;
     }
     case 'latex': {
-      const texStr = (obj.latex || 'E = mc^2').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      lines.push(`${n} = MathTex(r"${texStr}", color=${fill})`);
+      // Escape for a normal Python string (NOT raw): a single backslash in the
+      // LaTeX (e.g. \int) must survive as one backslash so MathTex typesets the
+      // command. Doubling here + a raw r"..." would emit \\int (a LaTeX line
+      // break) and render literal "int".
+      const texStr = (obj.latex || 'E = mc^2').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, ' ');
+      lines.push(`${n} = MathTex("${texStr}", color=${fill})`);
       lines.push(`${n}.scale(${(scale * 2).toFixed(3)})`);
       break;
     }

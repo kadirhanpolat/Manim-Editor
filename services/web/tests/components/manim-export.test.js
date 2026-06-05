@@ -39,6 +39,26 @@ describe('generator — numberplane', () => {
   });
 });
 
+describe('generator/parser — latex', () => {
+  it('emits MathTex as a normal (non-raw) python string so \\int survives', () => {
+    const project = makeProject([makeObj('obj1', 'latex', { latex: '\\int_a^b' })], []);
+    const script = generateManimScript(project);
+    // normal python string with escaped backslash: "\\int_a^b" → \int_a^b at runtime
+    expect(script).toMatch(/MathTex\("\\\\int_a\^b"/);
+    // must NOT use a raw string (r"\\int" → LaTeX sees \\int, renders literal "int")
+    expect(script).not.toContain('MathTex(r"');
+  });
+
+  it('round-trips \\int_a^b back to a single-backslash latex string', () => {
+    const project = makeProject([makeObj('obj1', 'latex', { latex: '\\int_a^b' })], []);
+    const script = generateManimScript(project);
+    const parsed = parseManimScript(script, SW, SH);
+    const tex = parsed.objects.find(o => o.type === 'latex');
+    expect(tex).toBeTruthy();
+    expect(tex.latex).toBe('\\int_a^b');
+  });
+});
+
 describe('generator — numberline', () => {
   it('emits NumberLine with x_range and length', () => {
     const project = makeProject([makeObj('obj1', 'numberline', {
