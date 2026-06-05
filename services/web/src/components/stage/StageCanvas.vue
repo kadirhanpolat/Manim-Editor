@@ -782,6 +782,23 @@ function applyEffects(cfg, obj, w, h, centered) {
     const off = Math.max(2, peri / Math.max(2, obj.dash.numDashes) * (1 - (obj.dash.ratio ?? 0.5)));
     cfg.dash = [on, off];
   }
+  // drop shadow (Konva native; blur is preview-only — Manim has no blur)
+  if (obj.shadow) {
+    cfg.shadowColor = obj.shadow.color || '#000000';
+    cfg.shadowOpacity = obj.shadow.opacity ?? 0.4;
+    cfg.shadowBlur = (obj.shadow.blur ?? 12) * vs.value;
+    cfg.shadowOffset = { x: (obj.shadow.dx ?? 8) * vs.value, y: (obj.shadow.dy ?? 8) * vs.value };
+  }
+  // corner rounding for polygon/triangle/star — rect/square round via rectCfg before applyEffects
+  if (obj.cornerRadius > 0) {
+    if (obj.type === 'star' || obj.type === 'polygon') {
+      // Konva Star and RegularPolygon support native cornerRadius
+      cfg.cornerRadius = obj.cornerRadius * vs.value;
+    } else if (obj.type === 'triangle') {
+      // Konva Line (closed) has no cornerRadius; use tension as an approximation
+      cfg.tension = 0.35;
+    }
+  }
   return cfg;
 }
 function rectCfg(obj) {
