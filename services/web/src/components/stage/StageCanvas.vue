@@ -665,23 +665,65 @@ function onDrop(e) {
 function live(obj) {
   return liveTransform.value && liveTransform.value.id === obj.id ? liveTransform.value : null;
 }
+// ── Effect preview helpers ──
+function hexToRgba(h, a) {
+  if (typeof h !== 'string' || !h.startsWith('#')) return h;
+  let s = h.slice(1);
+  if (s.length === 3) s = s.split('').map(c => c + c).join('');
+  if (s.length !== 6) return h;
+  const r = parseInt(s.slice(0, 2), 16), g = parseInt(s.slice(2, 4), 16), b = parseInt(s.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return h;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+/** Mutates a Konva config with gradient / cornerRadius / dashed / per-channel alpha.
+ *  centered = shape origin is its center (circle/star/polygon/triangle) vs top-left (rect). */
+function applyEffects(cfg, obj, w, h, centered) {
+  // per-channel opacity → baked into rgba colors (node opacity stays the master)
+  if (obj.fillOpacity != null && obj.fillOpacity !== 1 && cfg.fill) cfg.fill = hexToRgba(cfg.fill, obj.fillOpacity);
+  if (obj.strokeOpacity != null && obj.strokeOpacity !== 1 && cfg.stroke) cfg.stroke = hexToRgba(cfg.stroke, obj.strokeOpacity);
+  // gradient
+  const g = obj.gradient;
+  if (g && Array.isArray(g.colors) && g.colors.length >= 2) {
+    const rad = (g.angle ?? 135) * Math.PI / 180;
+    const dx = Math.cos(rad) * w / 2, dy = Math.sin(rad) * h / 2;
+    const cx = centered ? 0 : w / 2, cy = centered ? 0 : h / 2;
+    cfg.fillLinearGradientStartPoint = { x: cx - dx, y: cy - dy };
+    cfg.fillLinearGradientEndPoint = { x: cx + dx, y: cy + dy };
+    const stops = [];
+    const ga = (obj.fillOpacity != null && obj.fillOpacity !== 1) ? obj.fillOpacity : null;
+    g.colors.forEach((c, i) => { stops.push(i / (g.colors.length - 1), ga != null ? hexToRgba(c, ga) : c); });
+    cfg.fillLinearGradientColorStops = stops;
+  }
+  // dashed stroke (Konva keeps fill underneath, matching the render's VGroup)
+  if (obj.dash) {
+    const peri = centered ? Math.PI * Math.max(w, h) : (h === 0 ? w : 2 * (w + h));
+    const on = Math.max(2, peri / Math.max(2, obj.dash.numDashes) * (obj.dash.ratio ?? 0.5));
+    const off = Math.max(2, peri / Math.max(2, obj.dash.numDashes) * (1 - (obj.dash.ratio ?? 0.5)));
+    cfg.dash = [on, off];
+  }
+  return cfg;
+}
 function rectCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x - e.width / 2, e.y - e.height / 2);
   const w = L ? L.w : e.width * vs.value, h = L ? L.h : e.height * vs.value, rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, width: w, height: h, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, cornerRadius: (obj.type === 'square' ? 4 : 2) * vs.value, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const crPx = (obj.cornerRadius > 0 ? obj.cornerRadius : (obj.type === 'square' ? 4 : 2)) * vs.value;
+  const cfg = { x: p.x, y: p.y, width: w, height: h, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, cornerRadius: crPx, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, w, h, false);
 }
 function circleCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y); const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value;
   const rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const cfg = { x: p.x, y: p.y, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, r * 2, r * 2, true);
 }
 function ellipseCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
   const rx = L ? L.w / 2 : (e.width / 2) * vs.value, ry = L ? L.h / 2 : (e.height / 2) * vs.value, rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, radiusX: rx, radiusY: ry, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const cfg = { x: p.x, y: p.y, radiusX: rx, radiusY: ry, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, rx * 2, ry * 2, true);
 }
 function dotCfg(obj) {
   const e = eff(obj); const p = s2c(e.x, e.y);
@@ -690,7 +732,7 @@ function dotCfg(obj) {
 function heartCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y); const w = L ? L.w : e.width * vs.value; const h = L ? L.h : e.height * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
-  return {
+  const cfg = {
     x: p.x, y: p.y, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2,
     opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1,
     draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10,
@@ -706,36 +748,42 @@ function heartCfg(obj) {
       ctx.closePath(); ctx.fillStrokeShape(shape);
     }
   };
+  return applyEffects(cfg, obj, w, h, true);
 }
 function triangleCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
   const hw = L ? L.w / 2 : e.width / 2 * vs.value, hh = L ? L.h / 2 : e.height / 2 * vs.value, rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const cfg = { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, hw * 2, hh * 2, true);
 }
 function starCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
   const outerRadius = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value;
   const inner = (obj.innerRatio || 0.4) * outerRadius; const rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, numPoints: obj.starArms || 5, innerRadius: inner, outerRadius: outerRadius, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const cfg = { x: p.x, y: p.y, numPoints: obj.starArms || 5, innerRadius: inner, outerRadius: outerRadius, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, outerRadius * 2, outerRadius * 2, true);
 }
 function polygonCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
   const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, sides: obj.sides || 6, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  const cfg = { x: p.x, y: p.y, sides: obj.sides || 6, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, r * 2, r * 2, true);
 }
 function lineCfg(obj) {
   const e = eff(obj); const p = s2c(e.x, e.y);
   const hw = e.width / 2 * vs.value;
-  return { x: p.x, y: p.y, points: [-hw, 0, hw, 0], stroke: e.stroke || e.fill || '#94a3b8', strokeWidth: Math.max(2, (e.strokeWidth || 3) * vs.value / 2), opacity: e.opacity ?? 1, rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, lineCap: 'round' };
+  const cfg = { x: p.x, y: p.y, points: [-hw, 0, hw, 0], stroke: e.stroke || e.fill || '#94a3b8', strokeWidth: Math.max(2, (e.strokeWidth || 3) * vs.value / 2), opacity: e.opacity ?? 1, rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, lineCap: 'round' };
+  return applyEffects(cfg, obj, hw * 2, 0, false);
 }
 function arrowCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
   const hw = L ? L.w / 2 : e.width / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
-  return { x: p.x, y: p.y, points: [-hw, 0, hw, 0], fill: e.fill, stroke: e.stroke || e.fill || '#ef4444', strokeWidth: Math.max(2, (e.strokeWidth || 2) * vs.value / 2), opacity: e.opacity ?? 1, rotation: rot, pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, scaleX: 1, scaleY: 1 };
+  const cfg = { x: p.x, y: p.y, points: [-hw, 0, hw, 0], fill: e.fill, stroke: e.stroke || e.fill || '#ef4444', strokeWidth: Math.max(2, (e.strokeWidth || 2) * vs.value / 2), opacity: e.opacity ?? 1, rotation: rot, pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, scaleX: 1, scaleY: 1 };
+  return applyEffects(cfg, obj, hw * 2, 0, false);
 }
 function textCfg(obj) {
   const L = live(obj);
