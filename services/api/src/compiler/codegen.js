@@ -270,8 +270,8 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
         lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     case 'annulus': {
-      const ri = (obj.innerRadius / sw * FRAME_WIDTH);
-      const ro = (obj.outerRadius / sw * FRAME_WIDTH);
+      const ri = safeNum(obj.innerRadius, 35) / sw * FRAME_WIDTH;
+      const ro = safeNum(obj.outerRadius, 70) / sw * FRAME_WIDTH;
       lines.push(`${n} = Annulus(inner_radius=${ri.toFixed(3)}, outer_radius=${ro.toFixed(3)})`);
       if (hasFill) lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);

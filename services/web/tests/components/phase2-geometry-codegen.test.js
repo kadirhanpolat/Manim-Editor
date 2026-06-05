@@ -25,6 +25,7 @@ describe('annulus codegen', () => {
   it('round-trips type + radii', () => {
     const o = roundTrip(makeObj('annulus', { innerRadius: 35, outerRadius: 70 }));
     expect(o.type).toBe('annulus');
-    expect(o.outerRadius).toBeGreaterThan(o.innerRadius);
+    expect(o.innerRadius).toBe(35);
+    expect(o.outerRadius).toBe(70);
   });
 });
