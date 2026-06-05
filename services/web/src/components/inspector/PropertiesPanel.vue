@@ -149,7 +149,7 @@
       </Section>
 
       <!-- Effects -->
-      <Section v-if="canGradient || canDash || canRound" label="Effects">
+      <Section v-if="canGradient || canDash || canRound || canShadow" label="Effects">
         <div class="space-y-2">
 
           <!-- Gradient -->
@@ -176,6 +176,27 @@
           <div v-if="canRound" data-test="corner-radius" class="flex items-center gap-2">
             <span class="text-[10px] text-studio-text-muted w-20">Corner radius</span>
             <input class="input input-sm w-16" type="number" min="0" step="1" :value="obj.cornerRadius || 0" @change="store.setCornerRadius(obj.id, Number($event.target.value))" />
+          </div>
+
+          <!-- Drop shadow -->
+          <div v-if="canShadow" class="space-y-1 border-t border-studio-border/40 pt-2">
+            <button data-test="shadow-toggle" class="w-full py-1 text-[11px] rounded border"
+                    :class="obj.shadow ? 'border-studio-accent text-studio-accent' : 'border-studio-border text-studio-text-muted hover:bg-studio-accent/10'"
+                    @click="store.setShadow(obj.id, obj.shadow ? null : { color: '#000000', opacity: 0.4, dx: 8, dy: 8, blur: 12 })">
+              {{ obj.shadow ? 'Drop shadow: on' : 'Drop shadow: off' }}
+            </button>
+            <div v-if="obj.shadow" class="grid grid-cols-2 gap-1 items-center">
+              <label class="text-[10px] text-studio-text-muted">Color</label>
+              <input type="color" class="w-full h-6 rounded bg-studio-bg border border-studio-border" :value="obj.shadow.color" @input="store.setShadow(obj.id, { ...obj.shadow, color: $event.target.value })" />
+              <label class="text-[10px] text-studio-text-muted">Opacity</label>
+              <input type="number" step="0.05" min="0" max="1" class="input input-sm" :value="obj.shadow.opacity" @input="store.setShadow(obj.id, { ...obj.shadow, opacity: Number($event.target.value) })" />
+              <label class="text-[10px] text-studio-text-muted">Offset X</label>
+              <input type="number" step="1" class="input input-sm" :value="obj.shadow.dx" @input="store.setShadow(obj.id, { ...obj.shadow, dx: Number($event.target.value) })" />
+              <label class="text-[10px] text-studio-text-muted">Offset Y</label>
+              <input type="number" step="1" class="input input-sm" :value="obj.shadow.dy" @input="store.setShadow(obj.id, { ...obj.shadow, dy: Number($event.target.value) })" />
+              <label class="text-[10px] text-studio-text-muted">Blur (preview)</label>
+              <input type="number" step="1" min="0" class="input input-sm" :value="obj.shadow.blur" @input="store.setShadow(obj.id, { ...obj.shadow, blur: Number($event.target.value) })" />
+            </div>
           </div>
 
           <!-- Fill opacity -->
@@ -813,11 +834,13 @@ function applyPolygonPreset(kind) {
 
 const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
 const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free', 'parametric']);
-const ROUND_TYPES = new Set(['rectangle', 'square']);
+const ROUND_TYPES = new Set(['rectangle', 'square', 'polygon', 'triangle', 'star']);
+const SHADOW_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free', 'text', 'latex']);
 
 const canGradient = computed(() => obj.value && GRADIENT_TYPES.has(obj.value.type));
 const canDash = computed(() => obj.value && DASH_TYPES.has(obj.value.type));
 const canRound = computed(() => obj.value && ROUND_TYPES.has(obj.value.type));
+const canShadow = computed(() => obj.value && SHADOW_TYPES.has(obj.value.type));
 
 function toggleGradient() {
   if (!obj.value) return;
