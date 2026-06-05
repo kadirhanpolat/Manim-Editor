@@ -124,6 +124,13 @@
               <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
             </v-group>
 
+            <!-- Matrix -->
+            <v-group v-if="obj.type === 'matrix' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="matrixHitCfg(obj)" />
+              <v-line v-for="(b, bi) in matrixBracketConfigs(obj)" :key="'mb'+bi" :config="b" />
+              <v-text v-for="(t, ti) in matrixCellConfigs(obj)" :key="'mc'+ti" :config="t" />
+            </v-group>
+
             <!-- 3D: Sphere -->
             <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
@@ -977,6 +984,51 @@ function latexTextCfg(obj) {
 function latexBadgeCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
   return { x: -w / 2 + 4, y: -h / 2 + 4, text: 'TEX', fontSize: 9, fill: themeAccent.value, fontFamily: 'monospace', fontStyle: 'bold', listening: false };
+}
+
+// ── Matrix config ──
+function matrixHitCfg(obj) {
+  const w = (obj.width || 160) * vs.value;
+  const h = (obj.height || 120) * vs.value;
+  // listening:true → group hit area so the matrix can be selected/dragged
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
+}
+
+function matrixCellConfigs(obj) {
+  const data = (Array.isArray(obj.matrixData) && obj.matrixData.length) ? obj.matrixData : [['1', '0'], ['0', '1']];
+  const rows = data.length, cols = data[0]?.length || 1;
+  const w = (obj.width || 160) * vs.value, h = (obj.height || 120) * vs.value;
+  const padX = 0.18 * w, padY = 0.12 * h;
+  const cellW = cols > 1 ? (w - 2 * padX) / (cols - 1) : 0;
+  const cellH = rows > 1 ? (h - 2 * padY) / (rows - 1) : 0;
+  const out = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cx = cols > 1 ? (-w / 2 + padX + c * cellW) : 0;
+      const cy = rows > 1 ? (-h / 2 + padY + r * cellH) : 0;
+      out.push({ x: cx - 16, y: cy - 8, width: 32, text: String(data[r][c]), align: 'center',
+        fontSize: Math.max(10, 16 * vs.value), fill: obj.fill || '#ffffff', listening: false });
+    }
+  }
+  return out;
+}
+
+function matrixBracketConfigs(obj) {
+  const w = (obj.width || 160) * vs.value, h = (obj.height || 120) * vs.value;
+  const bx = 0.40 * w, top = -h / 2 + 0.04 * h, bot = h / 2 - 0.04 * h, tick = 0.06 * w;
+  const col = obj.fill || '#ffffff';
+  if (obj.bracket === '|') {
+    return [
+      { points: [-bx, top, -bx, bot], stroke: col, strokeWidth: 2, listening: false },
+      { points: [bx, top, bx, bot], stroke: col, strokeWidth: 2, listening: false },
+    ];
+  }
+  const left = [-bx + tick, top, -bx, top, -bx, bot, -bx + tick, bot];
+  const right = [bx - tick, top, bx, top, bx, bot, bx - tick, bot];
+  return [
+    { points: left, stroke: col, strokeWidth: 2, listening: false },
+    { points: right, stroke: col, strokeWidth: 2, listening: false },
+  ];
 }
 
 // ── Axes config ──
