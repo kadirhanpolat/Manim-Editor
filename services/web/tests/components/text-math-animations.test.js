@@ -113,3 +113,27 @@ describe('setClipMatchTerms action', () => {
     expect(store.clipById(clip.id).matchTerms).toBeUndefined();
   });
 });
+
+describe('counter object', () => {
+  it('emits DecimalNumber with num_decimal_places', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 42; c.numDecimals = 0;
+    const py = generateManimScript(store.project);
+    expect(py).toContain('DecimalNumber(42');
+    expect(py).toContain('num_decimal_places=0');
+  });
+  it('emits unit="..." only when suffix set', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 50; c.numDecimals = 1; c.suffix = '%';
+    expect(generateManimScript(store.project)).toContain('unit="%"');
+  });
+  it('round-trips a counter', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 7; c.numDecimals = 2; c.suffix = 'kg';
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'counter');
+    expect(re.value).toBe(7);
+    expect(re.numDecimals).toBe(2);
+    expect(re.suffix).toBe('kg');
+  });
+});

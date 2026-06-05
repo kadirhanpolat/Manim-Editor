@@ -478,6 +478,14 @@ function objCode(obj, sw, sh) {
       lines.push(`${n} = Arrow(start=LEFT * ${halfLen}, end=RIGHT * ${halfLen}, color=${hex(obj.fill) || '"#EF4444"'}, buff=0, tip_length=${tipLen}, stroke_width=${sw2}, max_tip_length_to_length_ratio=0.15)`);
       break;
     }
+    case 'counter': {
+      const val = Number.isFinite(obj.value) ? obj.value : 0;
+      const dec = Number.isFinite(obj.numDecimals) ? Math.max(0, Math.trunc(obj.numDecimals)) : 0;
+      const unit = obj.suffix ? `, unit="${safeText(obj.suffix)}"` : '';
+      lines.push(`${n} = DecimalNumber(${val}, num_decimal_places=${dec}${unit})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
     case 'text': {
       const fontFamily = obj.fontFamily || 'Roboto';
       lines.push(`# Font: ${fontFamily}`);
@@ -1592,6 +1600,18 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const ps = pendingShadow[m[2]];
       const t = objById[varMap[m[2]]];
       if (ps && t) { t.shadow = { ...ps, blur: 12 }; delete pendingShadow[m[2]]; }
+      continue;
+    }
+
+    // Counter (DecimalNumber)
+    m = line.match(/^(\w+) = DecimalNumber\(([\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/);
+    if (m) {
+      const obj = { id: uid('obj'), type: 'counter', name: 'Counter',
+        x: sw / 2, y: sh / 2, width: 120, height: 60,
+        fill: '#ffffff', stroke: 'transparent', strokeWidth: 0, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
+        value: parseFloat(m[2]), numDecimals: parseInt(m[3], 10), suffix: m[4] || '' };
+      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
       continue;
     }
 

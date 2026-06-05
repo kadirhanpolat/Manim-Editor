@@ -462,6 +462,14 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       lines.push(`${n} = Arrow(start=LEFT * ${halfLen}, end=RIGHT * ${halfLen}, color=${hex(obj.fill) || '"#EF4444"'}, buff=0, tip_length=${tipLen}, stroke_width=${sw2}, max_tip_length_to_length_ratio=0.15)`);
       break;
     }
+    case 'counter': {
+      const val = Number.isFinite(obj.value) ? obj.value : 0;
+      const dec = Number.isFinite(obj.numDecimals) ? Math.max(0, Math.trunc(obj.numDecimals)) : 0;
+      const unit = obj.suffix ? `, unit="${safeText(obj.suffix)}"` : '';
+      lines.push(`${n} = DecimalNumber(${val}, num_decimal_places=${dec}${unit})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
     case 'text': {
       const fontFamily = obj.fontFamily || 'Roboto';
       const fontVar = `font_${vn(obj.id)}`;
