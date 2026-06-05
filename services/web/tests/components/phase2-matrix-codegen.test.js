@@ -42,3 +42,25 @@ describe('matrix codegen', () => {
     expect(s).toMatch(/Matrix\(\[\["x", "y", "z"\]\]\)/);
   });
 });
+
+describe('matrix round-trip', () => {
+  it('round-trips type + data + default bracket', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj()])), SW, SH).objects[0];
+    expect(o.type).toBe('matrix');
+    expect(o.matrixData).toEqual([['1', '0'], ['0', '1']]);
+    expect(o.bracket).toBe('[');
+  });
+
+  it('round-trips paren bracket and entry color', () => {
+    const o = parseManimScript(
+      generateManimScript(makeProject([makeObj({ bracket: '(', fill: '#ff0000' })])), SW, SH).objects[0];
+    expect(o.bracket).toBe('(');
+    expect(o.fill.toLowerCase()).toBe('#ff0000');
+  });
+
+  it('round-trips a non-square 1x3 matrix', () => {
+    const o = parseManimScript(
+      generateManimScript(makeProject([makeObj({ matrixData: [['x', 'y', 'z']] })])), SW, SH).objects[0];
+    expect(o.matrixData).toEqual([['x', 'y', 'z']]);
+  });
+});

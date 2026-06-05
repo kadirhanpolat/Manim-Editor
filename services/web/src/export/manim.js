@@ -1331,6 +1331,27 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // Matrix (single-line) — Matrix([["a","b"],...], left_bracket=..., right_bracket=...)
+    m = line.match(/^(\w+)\s*=\s*Matrix\(\[(\[.+\])\](?:, left_bracket="([^"]*)", right_bracket="[^"]*")?\)/);
+    if (m) {
+      const [, name, body, leftBracket] = m;
+      const rows = [];
+      const rowRe = /\[([^\]]*)\]/g;
+      let rm;
+      while ((rm = rowRe.exec(body))) {
+        const cells = rm[1].match(/"([^"]*)"/g);
+        rows.push(cells ? cells.map(c => c.slice(1, -1)) : []);
+      }
+      const bracket = leftBracket === '(' ? '(' : leftBracket === '|' ? '|' : '[';
+      const id = uid('obj');
+      const obj = { id, type: 'matrix', name, x: sw / 2, y: sh / 2, width: 160, height: 120,
+        matrixData: rows.length ? rows : [['1', '0'], ['0', '1']], bracket,
+        fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
     // Text
     m = line.match(/^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?\)/);
     if (m) {
