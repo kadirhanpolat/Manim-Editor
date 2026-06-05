@@ -1133,6 +1133,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const varMap  = {};
   const objById = {};
   const graphVarMap = {};
+  const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
 
   let bgColor = '#000000';
   let cameraType = 'static';
@@ -1390,6 +1391,60 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Angle helper Lines (our naming) — captured into relLineMap, not turned into objects
+    m = line.match(/^(\w+_l[12])\s*=\s*Line\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/);
+    if (m) {
+      relLineMap[m[1]] = { start: [parseFloat(m[2]), parseFloat(m[3])], end: [parseFloat(m[4]), parseFloat(m[5])] };
+      continue;
+    }
+
+    // Brace — BraceBetweenPoints([..],[..]); the geometry name may be <n> or <n>_brace
+    m = line.match(/^(\w+)\s*=\s*BraceBetweenPoints\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/);
+    if (m) {
+      const [, name, x1, y1, x2, y2] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'brace', name, x: sw / 2, y: sh / 2, width: 160, height: 60,
+        p1: [Math.round(parseFloat(x1) / FRAME_WIDTH * sw), Math.round(-parseFloat(y1) / FRAME_HEIGHT * sh)],
+        p2: [Math.round(parseFloat(x2) / FRAME_WIDTH * sw), Math.round(-parseFloat(y2) / FRAME_HEIGHT * sh)],
+        label: '', fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Angle / RightAngle — references two helper Lines in relLineMap
+    m = line.match(/^(\w+)\s*=\s*(Angle|RightAngle)\((\w+_l1), (\w+_l2)(?:, radius=([-\d.]+))?\)/);
+    if (m) {
+      const [, name, ctor, l1, l2, rad] = m;
+      const L1 = relLineMap[l1], L2 = relLineMap[l2];
+      if (L1 && L2) {
+        const toPx = (mp) => [Math.round(mp[0] / FRAME_WIDTH * sw), Math.round(-mp[1] / FRAME_HEIGHT * sh)];
+        const id = uid('obj');
+        const obj = { id, type: 'angle', name, x: sw / 2, y: sh / 2, width: 140, height: 140,
+          vertex: toPx(L1.start), point1: toPx(L1.end), point2: toPx(L2.end),
+          rightAngle: ctor === 'RightAngle', radius: rad ? parseFloat(rad) : 0.6, label: '',
+          fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2, opacity: 1, rotation: 0,
+          enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+        objects.push(obj); varMap[name] = id; objById[id] = obj;
+        continue;
+      }
+    }
+
+    // VGroup label wrapper for brace/angle — renames base obj to the VGroup var + sets label
+    m = line.match(/^(\w+)\s*=\s*VGroup\((\w+(?:_brace|_arc)), \2\.get_tex\("(.*)"\)\)/);
+    if (m) {
+      const [, vg, base, tex] = m;
+      const baseId = varMap[base];
+      const target = baseId ? objById[baseId] : null;
+      if (target && (target.type === 'brace' || target.type === 'angle')) {
+        target.name = vg;
+        target.label = tex.replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+        delete varMap[base];
+        varMap[vg] = target.id;
+      }
       continue;
     }
 

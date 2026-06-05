@@ -35,3 +35,23 @@ describe('angle codegen', () => {
     expect(s).toMatch(/= VGroup\(\w+_arc, \w+_arc\.get_tex\("\\\\theta"\)\)/);
   });
 });
+
+describe('angle round-trip', () => {
+  it('round-trips an unlabeled angle (points + radius)', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj()])), SW, SH).objects[0];
+    expect(o.type).toBe('angle');
+    expect(o.vertex[0]).toBeCloseTo(-40, 0);
+    expect(o.point1[0]).toBeCloseTo(80, 0);
+    expect(o.point2[1]).toBeCloseTo(-60, 0);
+    expect(o.rightAngle).toBe(false);
+    expect(o.radius).toBeCloseTo(0.6, 2);
+  });
+  it('round-trips a right angle', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj({ rightAngle: true })])), SW, SH).objects[0];
+    expect(o.rightAngle).toBe(true);
+  });
+  it('round-trips a labeled angle', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj({ label: '\\theta' })])), SW, SH).objects[0];
+    expect(o.label).toBe('\\theta');
+  });
+});

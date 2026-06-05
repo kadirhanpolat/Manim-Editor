@@ -28,3 +28,18 @@ describe('brace codegen', () => {
     expect(s).toMatch(/= VGroup\(\w+_brace, \w+_brace\.get_tex\("\\\\frac\{x\}\{2\}"\)\)/);
   });
 });
+
+describe('brace round-trip', () => {
+  it('round-trips an unlabeled brace (type + points)', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj()])), SW, SH).objects[0];
+    expect(o.type).toBe('brace');
+    expect(o.p1[0]).toBeCloseTo(-80, 0);
+    expect(o.p2[0]).toBeCloseTo(80, 0);
+    expect(o.label).toBe('');
+  });
+  it('round-trips a labeled brace', () => {
+    const o = parseManimScript(generateManimScript(makeProject([makeObj({ label: 'x' })])), SW, SH).objects[0];
+    expect(o.type).toBe('brace');
+    expect(o.label).toBe('x');
+  });
+});
