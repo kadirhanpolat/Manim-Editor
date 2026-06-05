@@ -149,7 +149,7 @@
       </Section>
 
       <!-- Effects -->
-      <Section v-if="obj.type !== 'text' && obj.type !== 'image' && obj.type !== 'svg_asset'" label="Effects">
+      <Section v-if="canGradient || canDash || canRound" label="Effects">
         <div class="space-y-2">
 
           <!-- Gradient -->
@@ -173,20 +173,20 @@
           </div>
 
           <!-- Rounded corners -->
-          <div v-if="canRound" class="flex items-center gap-2">
+          <div v-if="canRound" data-test="corner-radius" class="flex items-center gap-2">
             <span class="text-[10px] text-studio-text-muted w-20">Corner radius</span>
             <input class="input input-sm w-16" type="number" min="0" step="1" :value="obj.cornerRadius || 0" @change="store.setCornerRadius(obj.id, Number($event.target.value))" />
           </div>
 
           <!-- Fill opacity -->
-          <div class="flex items-center gap-2">
+          <div v-if="canGradient" class="flex items-center gap-2">
             <span class="text-[10px] text-studio-text-muted w-20">Fill opacity</span>
             <input type="range" min="0" max="1" step="0.01" class="flex-1 accent-studio-accent" :value="obj.fillOpacity ?? 1" @input="u('fillOpacity', Number($event.target.value))" />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">{{ Math.round((obj.fillOpacity ?? 1) * 100) }}%</span>
           </div>
 
           <!-- Stroke opacity -->
-          <div class="flex items-center gap-2">
+          <div v-if="canGradient" class="flex items-center gap-2">
             <span class="text-[10px] text-studio-text-muted w-20">Stroke opacity</span>
             <input type="range" min="0" max="1" step="0.01" class="flex-1 accent-studio-accent" :value="obj.strokeOpacity ?? 1" @input="u('strokeOpacity', Number($event.target.value))" />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">{{ Math.round((obj.strokeOpacity ?? 1) * 100) }}%</span>

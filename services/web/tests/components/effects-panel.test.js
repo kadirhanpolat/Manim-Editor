@@ -17,13 +17,13 @@ beforeEach(() => {
 describe('Effects panel', () => {
   it('shows a corner-radius control for a rectangle', () => {
     const w = mount(PropertiesPanel);
-    expect(w.html()).toContain('Corner');
+    expect(w.find('[data-test="corner-radius"]').exists()).toBe(true);
   });
 
   it('hides the corner-radius control for a circle', () => {
     store.project.objects[0].type = 'circle';
     const w = mount(PropertiesPanel);
-    expect(w.html()).not.toContain('Corner radius');
+    expect(w.find('[data-test="corner-radius"]').exists()).toBe(false);
   });
 
   it('toggling gradient on calls setGradient with two stops', async () => {
@@ -32,6 +32,7 @@ describe('Effects panel', () => {
     const toggle = w.find('[data-test="gradient-toggle"]');
     await toggle.trigger('click');
     expect(spy).toHaveBeenCalled();
+    expect(spy.mock.calls[0][0]).toBe(id);
     expect(spy.mock.calls[0][1].colors.length).toBeGreaterThanOrEqual(2);
   });
 });
