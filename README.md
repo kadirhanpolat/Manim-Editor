@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.11.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.12.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -49,7 +49,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
 - **Light & Dark themes** -- Toggle between warm light and sleek dark palettes via View > Theme; persists across sessions
 - **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
-- **23+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, and Matrix (grid editor)
+- **24+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), and **Counter** (animated `DecimalNumber` with configurable decimals and suffix)
 - **6 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes — available when scene is switched to 3D mode
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
@@ -65,6 +65,9 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Transform morphing** -- Select two shapes and morph between them with customizable easing
 - **Animation types** -- Transform, Move, Scale, Fade, Rotate with 17 easing functions
 - **Emphasis animations** -- Five transient (there-and-back) Manim emphasis clips: Indicate, Flash, Wiggle, Circumscribe, FocusOn; full parameter set per type, render-exact output, mixed-fidelity canvas preview, and `.py` round-trip
+- **Tex-matching morph** -- A "Match terms" toggle on any transform clip upgrades the emitted animation: two `MathTex` objects morph via `TransformMatchingTex` (Manim aligns matching sub-expressions); other VMobjects use `TransformMatchingShapes`; raster objects fall back to `FadeTransform`; absent toggle = legacy `ReplacementTransform`. Round-trips through `.py` export/import
+- **Animated counter** -- A `Counter` object (`DecimalNumber`) with configurable decimal places and optional suffix string; add a `count` clip to animate the value from/to in Python using a `ValueTracker` block; the counter's `value` property is also keyframable (all three codegen modes). Render-accurate; canvas preview shows the formatted number
+- **Typewriter reveal** -- `typewriter` entrance and `typewriter_out` exit presets for text objects; emits `AddTextLetterByLetter` / `RemoveTextLetterByLetter` in Manim; round-trips through `.py` export/import
 - **AnimationGroup / LaggedStart** -- Mark clips as parallel (`∥`) to run simultaneously; set `lag_ratio` for staggered starts; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)` in Manim
 - **Path animation (MoveAlongPath)** -- Draw a path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation. In **3D mode** the path is drawn in the top-down (XZ) panel with Y held constant, animates in the canvas preview, renders as a dashed overlay in both panels, and round-trips through `.py` export/import with full 3D coordinates
 - **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim (2D) or `self.move_camera(phi=..., theta=...)` (3D)
@@ -246,11 +249,11 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
 
-**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene / ThreeDScene); **emphasis (transient)**: `indicate`, `flash`, `wiggle`, `circumscribe`, `focus_on`
+**Clip types**: `transform` (morph A->B; optional `matchTerms` for `TransformMatchingTex`/`TransformMatchingShapes`), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene / ThreeDScene), `count` (ValueTracker counter animation); **emphasis (transient)**: `indicate`, `flash`, `wiggle`, `circumscribe`, `focus_on`
 
 **Parallel clips**: Any clip can be marked `parallel: true` with a `lag_ratio` to group with adjacent clips into `AnimationGroup` / `LaggedStart`.
 
@@ -383,7 +386,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 283 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on)
+npm run test:unit # 293 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on, text-math animations: counter/count/typewriter/tex-matching)
 ```
 
 ---
@@ -416,7 +419,18 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.11.0 (current)
+### v3.12.0 (current)
+
+Text & Math Animations (Phase 3) — animated counter object, count clip, Tex-matching morph, and typewriter presets, all byte-identical across the server (`codegen.js`) and client (`manim.js`) generators and round-tripping through `.py` export/import:
+
+- **Counter object** (`counter` → `DecimalNumber`): fields `value`, `numDecimals`, and `suffix` (→ `unit="..."`, only when non-empty). Canvas preview shows the formatted number; inspector has value/decimals/suffix inputs. Not in GRADIENT_TYPES/DASH_TYPES. `value` is keyframable with all three codegen modes.
+- **Count clip** (`count` → `ValueTracker` block): animates a counter from/to with `_count_<clipid> = ValueTracker(from)` + `add_updater` + `animate.set_value(to)` + `clear_updaters()`. The `_count_` prefix is distinct from keyframe `_vt_` blocks to prevent parser collisions. Skipped inside parallel `AnimationGroup`; parsed by a dedicated `pendingCount` pending-dict branch.
+- **Tex-matching morph** (transform clip `matchTerms` toggle): upgrades the emitted class — `TransformMatchingTex` when both objects are `latex`, `TransformMatchingShapes` for other VMobjects, `FadeTransform` for raster sources, `ReplacementTransform` when absent (legacy, byte-identical). Implemented via a shared `transformExpr` helper kept byte-identical across both generators.
+- **Typewriter presets**: `typewriter` entrance → `AddTextLetterByLetter`, `typewriter_out` exit → `RemoveTextLetterByLetter`.
+- **Accepted preview ≈ render divergences**: Tex term-matching morph shows a generic crossfade (Manim does actual alignment); typewriter timing is approximate; counter font metrics differ between Konva and Manim `DecimalNumber`.
+- **Tests**: +10 parity invariant tests in `manim-export.test.js` (byte-stable exact-string assertions for all four new constructs); totals now **293 unit + 114 engine**.
+
+### v3.11.0
 
 Emphasis animations — five transient ("there-and-back") Manim emphasis clips that play and return the object to its original state, integrated into the existing clip pipeline (store → byte-identical codegen → playback → inspector → `.py` round-trip):
 

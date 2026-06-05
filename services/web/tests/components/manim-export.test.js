@@ -354,6 +354,105 @@ class MainScene(MovingCameraScene):
   });
 });
 
+// ── Text & Math Animations — byte-stability invariants (Phase 3) ─────────────
+
+describe('generator — counter (DecimalNumber)', () => {
+  it('value=0, numDecimals=0, no suffix → DecimalNumber(0, num_decimal_places=0) without unit=', () => {
+    const project = makeProject([makeObj('obj1', 'counter', { value: 0, numDecimals: 0 })], []);
+    const py = generateManimScript(project);
+    expect(py).toContain('DecimalNumber(0, num_decimal_places=0)');
+    expect(py).not.toContain('unit=');
+  });
+
+  it('value=50, numDecimals=1, suffix="%" → DecimalNumber(50, num_decimal_places=1, unit="%")', () => {
+    const project = makeProject([makeObj('obj1', 'counter', { value: 50, numDecimals: 1, suffix: '%' })], []);
+    const py = generateManimScript(project);
+    expect(py).toContain('DecimalNumber(50, num_decimal_places=1, unit="%")');
+  });
+});
+
+describe('generator — count clip (ValueTracker block)', () => {
+  it('emits _count_<clipid> = ValueTracker(, add_updater set_value, animate.set_value, clear_updaters', () => {
+    const obj = makeObj('ctr1', 'counter', { value: 0, numDecimals: 0 });
+    const clip = {
+      id: 'clip1', type: 'count', objectId: 'ctr1',
+      from: 0, to: 100, startTime: 1, duration: 2, easing: 'linear', parallel: false, lag_ratio: 0,
+    };
+    const py = generateManimScript(makeProject([obj], [clip]));
+    expect(py).toContain('_count_');
+    expect(py).toContain('= ValueTracker(');
+    expect(py).toContain('.add_updater(lambda m: m.set_value(');
+    expect(py).toContain('.animate.set_value(');
+    expect(py).toContain('.clear_updaters()');
+  });
+
+  it('count clip is skipped in parallel group (animExpr returns null, no _count_ in AnimationGroup)', () => {
+    const obj1 = makeObj('ctr1', 'counter', { value: 0, numDecimals: 0 });
+    const obj2 = makeObj('obj2', 'circle');
+    const clips = [
+      { id: 'c1', type: 'count', objectId: 'ctr1', from: 0, to: 50, startTime: 1, duration: 2, easing: 'linear', parallel: true, lag_ratio: 0 },
+      { id: 'c2', type: 'move', sourceId: 'obj2', startTime: 1, duration: 2, easing: 'linear', parallel: true, lag_ratio: 0, params: { targetX: 400, targetY: SH / 2 } },
+    ];
+    const py = generateManimScript(makeProject([obj1, obj2], clips));
+    // The AnimationGroup expression list must not include a _count_ reference
+    expect(py).not.toMatch(/AnimationGroup\([^)]*_count_/);
+  });
+});
+
+describe('generator — transformExpr (matchTerms)', () => {
+  it('two latex + matchTerms → TransformMatchingTex(', () => {
+    const la = makeObj('la1', 'latex', { latex: 'a^2', enterTime: 0, duration: 5 });
+    const lb = makeObj('lb1', 'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
+    const clip = { id: 'tc1', type: 'transform', sourceId: 'la1', targetId: 'lb1',
+      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0, matchTerms: true };
+    const py = generateManimScript(makeProject([la, lb], [clip]));
+    expect(py).toContain('TransformMatchingTex(');
+  });
+
+  it('two non-latex VMobjects + matchTerms → TransformMatchingShapes(', () => {
+    const ca = makeObj('ca1', 'circle', { enterTime: 0, duration: 5 });
+    const cb = makeObj('cb1', 'square', { enterTime: 0, duration: 5 });
+    const clip = { id: 'tc2', type: 'transform', sourceId: 'ca1', targetId: 'cb1',
+      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0, matchTerms: true };
+    const py = generateManimScript(makeProject([ca, cb], [clip]));
+    expect(py).toContain('TransformMatchingShapes(');
+  });
+
+  it('no matchTerms → ReplacementTransform(, NOT TransformMatching', () => {
+    const la = makeObj('la1', 'latex', { latex: 'a^2', enterTime: 0, duration: 5 });
+    const lb = makeObj('lb1', 'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
+    const clip = { id: 'tc3', type: 'transform', sourceId: 'la1', targetId: 'lb1',
+      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0 };
+    const py = generateManimScript(makeProject([la, lb], [clip]));
+    expect(py).toContain('ReplacementTransform(');
+    expect(py).not.toContain('TransformMatching');
+  });
+
+  it('raster source + matchTerms → FadeTransform(, NOT TransformMatching', () => {
+    const img = makeObj('img1', 'image', { name: 'photo', enterTime: 0, duration: 5 });
+    const lb  = makeObj('lb1',  'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
+    const clip = { id: 'tc4', type: 'transform', sourceId: 'img1', targetId: 'lb1',
+      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0, matchTerms: true };
+    const py = generateManimScript(makeProject([img, lb], [clip]));
+    expect(py).toContain('FadeTransform(');
+    expect(py).not.toContain('TransformMatching');
+  });
+});
+
+describe('generator — typewriter presets', () => {
+  it('enterAnim typewriter → AddTextLetterByLetter(', () => {
+    const project = makeProject([makeObj('obj1', 'text', { content: 'Hello', enterAnim: 'typewriter' })], []);
+    const py = generateManimScript(project);
+    expect(py).toContain('AddTextLetterByLetter(');
+  });
+
+  it('exitAnim typewriter_out → RemoveTextLetterByLetter(', () => {
+    const project = makeProject([makeObj('obj1', 'text', { content: 'Bye', exitAnim: 'typewriter_out', duration: 3 })], []);
+    const py = generateManimScript(project);
+    expect(py).toContain('RemoveTextLetterByLetter(');
+  });
+});
+
 describe('FRAME_WIDTH unification', () => {
   const FRAME_WIDTH = 14 + 2 / 9;
 

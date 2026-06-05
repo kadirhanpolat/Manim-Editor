@@ -80,9 +80,11 @@ store.assetById(id)       // factory getter — called as function
 
 ## Clip Types
 
-`transform`, `move`, `scale`, `fade`, `rotate`, `path_move`, `camera_move`
+`transform` (optional `matchTerms: true` field — upgrades to `TransformMatchingTex`/`TransformMatchingShapes` via the shared `transformExpr` helper), `move`, `scale`, `fade`, `rotate`, `path_move`, `camera_move`
 
 **Emphasis (transient)**: `indicate`, `flash`, `wiggle`, `circumscribe`, `focus_on` — there-and-back animations (return the object to its original state, unlike the persistent-target clips above). Emitted via the byte-identical `emphasisExpr(c, sn)` helper (`Indicate`/`Flash`/`Wiggle`/`Circumscribe`/`FocusOn`); `color` via `hex()`, `rotation_angle` stored in degrees and emitted as `<deg> * DEGREES`, `shape` as a bare class (`Rectangle`/`Circle`), `fade_out` as a Python bool. Full `.py` round-trip (standalone `self.play(...)` matchers + `parseAnimExpr` inner matchers for parallel groups). Playback derives its own pulse from raw `progress` (Indicate/Wiggle faithful; Flash/FocusOn color-pulse approximations; Circumscribe writes an `overrides._emphasis = {kind, shape, color, fadeOut, progress}` descriptor that `StageCanvas` renders as an overlay box/ellipse). **Keep `emphasisExpr` byte-identical across codegen.js/manim.js** — guarded by `manim-export.test.js`.
+
+**Count**: `count` — `{ type:'count', objectId, from, to, duration, easing }`. Emits a 4-line `ValueTracker` block using a distinct `_count_<clipid>` variable prefix (avoids colliding with keyframe `_vt_<obj>_<prop>` blocks): `_count_<id> = ValueTracker(from)` / `add_updater(set_value(get_value()))` / `animate.set_value(to)` / `clear_updaters()`. Skipped (returns `null`) in `animExpr` so it is never included in a parallel `AnimationGroup`. Parsed by a dedicated pending-dict branch (`pendingCount`) that buffers the tracker-init line and resolves on the `animate.set_value` line. **Keep the `case 'count'` block byte-identical across codegen.js/manim.js** — guarded by `manim-export.test.js`.
 
 All clips have: `id, type, startTime, duration, easing, parallel, lag_ratio`
 
@@ -106,7 +108,9 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 ## Object Types
 
-**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`
+**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`
+
+`counter` object fields: `value` (number, default 0), `numDecimals` (int ≥ 0, default 0), `suffix` (string, optional). Emits `DecimalNumber(<value>, num_decimal_places=<dec>[, unit="<suffix>"])` — `unit=` only when `suffix` is non-empty. Not in GRADIENT_TYPES or DASH_TYPES. `value` is keyframable via `_kfPropSet`/`_kfUpdater` (`set_value` setter). Store actions: `setCounterValue`, `setCounterDecimals`, `setCounterSuffix`.
 
 **3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`
 
@@ -411,6 +415,17 @@ rejected). Points convert with the `polygon_free` scale; the generic post-switch
   `setRelationalLabel`. **Keep `safeLatex` + the `case 'brace'`/`case 'angle'`
   byte-identical across codegen.js and manim.js** — guarded by `manim-export.test.js`.
   Not in GRADIENT_TYPES/DASH_TYPES (stroke marks).
+
+## Text & Math Animations (Phase 3 — 2026-06-06)
+
+New object, new clip, and two entrance/exit presets, all emitted byte-identically by both `codegen.js` (server) and `manim.js` (client). Parity guarded by `manim-export.test.js`.
+
+- **`transformExpr` helper** (byte-identical across both files): selects the Manim transform class for a `transform` clip. Raster source/target (`image`/`svg_asset`) → `FadeTransform`; `matchTerms: true` + both `latex` → `TransformMatchingTex`; `matchTerms: true` + other VMobjects → `TransformMatchingShapes`; absent `matchTerms` → `ReplacementTransform` (legacy, byte-identical). Applied in the sequential `singleClipCode` path and the parallel `animExpr` path. Round-trips via the unified `parseAnimExpr` transform branch (all four class names captured in one regex). **Keep `transformExpr` byte-identical across codegen.js/manim.js** — guarded by `manim-export.test.js`.
+- **`counter` object** (`DecimalNumber`): fields `value`, `numDecimals`, `suffix`. Emits `DecimalNumber(<v>, num_decimal_places=<d>[, unit="<s>"])` — `unit=` only when `suffix` is non-empty. Not in GRADIENT_TYPES/DASH_TYPES. Canvas preview: a formatted number in a text node. Inspector controls: value spinner, decimals spinner, suffix input. **Keep `case 'counter'` byte-identical across codegen.js/manim.js** — guarded by `manim-export.test.js`.
+- **`count` clip** (ValueTracker block): `{ type:'count', objectId, from, to, duration, easing }`. Emits 4 lines using a `_count_<clipid>` prefix (distinct from keyframe `_vt_<obj>_<prop>` to avoid parser collision). `animExpr` returns `null` so the clip is silently skipped inside a parallel `AnimationGroup`. Parser uses a dedicated `pendingCount` dict: the tracker-init line buffers `{ from, objVar }` keyed by tracker var; the `animate.set_value` line resolves it into a full clip. **Keep the `case 'count'` block byte-identical across codegen.js/manim.js** — guarded by `manim-export.test.js`.
+- **Keyframable `value`** arm added to `_kfPropSet` (`<n>.animate.set_value(...)`) and `_kfUpdater` (`set_value`) in both generators, so `counter.value` works with all three keyframe codegen modes (`animate`, `ValueTracker`, `UpdateFromAlphaFunc`).
+- **Typewriter presets**: `enterAnim: 'typewriter'` → `AddTextLetterByLetter(<n>)`, `exitAnim: 'typewriter_out'` → `RemoveTextLetterByLetter(<n>)`. Both emit as standard `self.play(...)` lines in the enter/exit step loops. Round-trip via enter/exit anim string parsers.
+- **Preview ≈ render divergences** (accepted): Tex term-matching morph shows a generic crossfade in the canvas (Manim does the actual term alignment); typewriter timing is approximate (Manim scales letter delay to match `run_time`, preview does not); `counter` font metrics differ between Konva text preview and Manim `DecimalNumber`.
 
 ## Build / Environment Gotchas (fixed in v3.3.1)
 
