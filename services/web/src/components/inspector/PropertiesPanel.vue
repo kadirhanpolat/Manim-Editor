@@ -495,6 +495,14 @@
             Rotate
           </button>
         </div>
+        <p class="text-[8px] text-studio-text-muted/50 mb-1.5 mt-2">Emphasis (transient)</p>
+        <div class="grid grid-cols-2 gap-1">
+          <button data-test="anim-indicate" class="anim-btn emph" @click="anim('indicate')">Indicate</button>
+          <button data-test="anim-flash" class="anim-btn emph" @click="anim('flash')">Flash</button>
+          <button data-test="anim-wiggle" class="anim-btn emph" @click="anim('wiggle')">Wiggle</button>
+          <button data-test="anim-circumscribe" class="anim-btn emph" @click="anim('circumscribe')">Circumscribe</button>
+          <button data-test="anim-focus_on" class="anim-btn emph" @click="anim('focus_on')">Focus On</button>
+        </div>
       </Section>
 
       <div class="px-3 py-3 mt-auto">
@@ -566,6 +574,54 @@
 
       <Section v-if="clip.type === 'rotate'" label="Target Rotation">
         <Num label="Degrees" :value="(clip.params||{}).targetRotation||360" @input="up('targetRotation', $event)" />
+      </Section>
+
+      <Section v-if="clip.type === 'indicate'" label="Indicate">
+        <div class="space-y-1.5">
+          <input type="color" class="w-full h-7 rounded" :value="(clip.params||{}).color || '#FFFF00'" @input="up('color', $event.target.value)" />
+          <div data-test="emph-scale-factor">
+            <Num label="Scale factor" :value="(clip.params||{}).scale_factor||1.2" :step="0.1" @input="up('scale_factor', $event)" />
+          </div>
+        </div>
+      </Section>
+
+      <Section v-if="clip.type === 'flash'" label="Flash">
+        <div class="space-y-1.5">
+          <input type="color" class="w-full h-7 rounded" :value="(clip.params||{}).color || '#FFFF00'" @input="up('color', $event.target.value)" />
+          <Num label="Flash radius" :value="(clip.params||{}).flash_radius||0.3" :step="0.05" @input="up('flash_radius', $event)" />
+          <Num label="Line length" :value="(clip.params||{}).line_length||0.2" :step="0.05" @input="up('line_length', $event)" />
+          <Num label="Num lines" :value="(clip.params||{}).num_lines||12" :step="1" @input="up('num_lines', $event)" />
+        </div>
+      </Section>
+
+      <Section v-if="clip.type === 'wiggle'" label="Wiggle">
+        <div class="space-y-1.5">
+          <Num label="Scale value" :value="(clip.params||{}).scale_value||1.1" :step="0.05" @input="up('scale_value', $event)" />
+          <Num label="Rotation angle (deg)" :value="(clip.params||{}).rotation_angle||3.6" :step="0.5" @input="up('rotation_angle', $event)" />
+          <Num label="Num wiggles" :value="(clip.params||{}).n_wiggles||6" :step="1" @input="up('n_wiggles', $event)" />
+        </div>
+      </Section>
+
+      <Section v-if="clip.type === 'circumscribe'" label="Circumscribe">
+        <div class="space-y-1.5">
+          <input type="color" class="w-full h-7 rounded" :value="(clip.params||{}).color || '#FFFF00'" @input="up('color', $event.target.value)" />
+          <select class="select text-sm w-full" :value="(clip.params||{}).shape || 'Rectangle'" @change="up('shape', $event.target.value)">
+            <option value="Rectangle">Rectangle</option>
+            <option value="Circle">Circle</option>
+          </select>
+          <label class="flex items-center gap-2 text-xs text-studio-text-muted cursor-pointer">
+            <input type="checkbox" :checked="(clip.params||{}).fade_out" @change="up('fade_out', $event.target.checked)" />
+            Fade out
+          </label>
+          <Num label="Time width" :value="(clip.params||{}).time_width||0.3" :step="0.05" @input="up('time_width', $event)" />
+        </div>
+      </Section>
+
+      <Section v-if="clip.type === 'focus_on'" label="Focus On">
+        <div class="space-y-1.5">
+          <input type="color" class="w-full h-7 rounded" :value="(clip.params||{}).color || '#FFFFFF'" @input="up('color', $event.target.value)" />
+          <Num label="Dim opacity" :value="(clip.params||{}).opacity||0.2" :step="0.05" @input="up('opacity', $event)" />
+        </div>
       </Section>
 
       <Section label="Parallel (AnimationGroup)">
@@ -896,6 +952,11 @@ function anim(type) {
   if (type === 'scale') { p.targetScaleX = 2; p.targetScaleY = 2; }
   if (type === 'fade') { p.targetOpacity = 0; }
   if (type === 'rotate') { p.targetRotation = (obj.value.rotation || 0) + 360; }
+  if (type === 'indicate') { p.color = '#FFFF00'; p.scale_factor = 1.2; }
+  if (type === 'flash') { p.color = '#FFFF00'; p.flash_radius = 0.3; p.line_length = 0.2; p.num_lines = 12; }
+  if (type === 'wiggle') { p.scale_value = 1.1; p.rotation_angle = 3.6; p.n_wiggles = 6; }
+  if (type === 'circumscribe') { p.color = '#FFFF00'; p.shape = 'Rectangle'; p.fade_out = false; p.time_width = 0.3; }
+  if (type === 'focus_on') { p.color = '#FFFFFF'; p.opacity = 0.2; }
   store.createAnimation(type, p);
 }
 function addGraph() {
@@ -944,6 +1005,7 @@ function setRiemannField(graph, key, val) {
 .anim-btn.scale { background: linear-gradient(135deg, #22c55e, #10b981); }
 .anim-btn.fade { background: linear-gradient(135deg, #f59e0b, #ef4444); }
 .anim-btn.rotate { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+.anim-btn.emph { background: linear-gradient(135deg, #7c3aed, #a855f7); }
 
 .obj-list-item {
   @apply flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors;
