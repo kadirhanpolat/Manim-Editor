@@ -159,6 +159,8 @@ export const SHAPE_DEFAULTS = {
   double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
   parametric: { width: 160, height: 160, fill: 'transparent', stroke: '#10b981', strokeWidth: 4 },
   matrix: { width: 160, height: 120, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
+  brace: { width: 160, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -175,6 +177,8 @@ export const SHAPE_COLORS = {
   polygon_free: '#8b5cf6',
   parametric: '#10b981',
   matrix: '#ffffff',
+  brace: '#ffffff',
+  angle: '#fbbf24',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -289,7 +293,7 @@ const useProjectStore = defineStore('project', {
         numberplane: 'NumberPlane', numberline: 'NumberLine',
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
-        matrix: 'Matrix',
+        matrix: 'Matrix', brace: 'Brace', angle: 'Angle',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -321,6 +325,8 @@ const useProjectStore = defineStore('project', {
         ...(type === 'parametric' ? { xExpr: 'np.cos(t)', yExpr: 'np.sin(t)', tMin: 0, tMax: 6.283 } : {}),
         ...(type === 'polygon_free' ? { vertices: presetVertices('trapezoid', SHAPE_DEFAULTS.polygon_free.width, SHAPE_DEFAULTS.polygon_free.height) } : {}),
         ...(type === 'matrix' ? { matrixData: [['1', '0'], ['0', '1']], bracket: '[' } : {}),
+        ...(type === 'brace' ? { p1: [-80, 0], p2: [80, 0], label: '' } : {}),
+        ...(type === 'angle' ? { vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '' } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),
@@ -440,6 +446,41 @@ const useProjectStore = defineStore('project', {
       const obj = this.project.objects.find(o => o.id === id);
       if (!obj || !['[', '(', '|'].includes(bracket)) return;
       obj.bracket = bracket;
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setRelationalPoint(id, key, pt) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || !['p1', 'p2', 'vertex', 'point1', 'point2'].includes(key)) return;
+      if (obj[key] === undefined || !Array.isArray(pt) || pt.length !== 2) return;
+      obj[key] = [Math.round(pt[0]), Math.round(pt[1])];
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setAngleRightMode(id, on) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || obj.type !== 'angle') return;
+      obj.rightAngle = !!on;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    setAngleRadius(id, r) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj || obj.type !== 'angle') return;
+      const v = Number(r);
+      if (!Number.isFinite(v) || v <= 0) return;
+      obj.radius = v;
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
+    setRelationalLabel(id, label) {
+      const obj = this.project.objects.find(o => o.id === id);
+      if (!obj) return;
+      obj.label = String(label == null ? '' : label);
       this.isDirty = true;
       this._debouncedCommit();
     },
