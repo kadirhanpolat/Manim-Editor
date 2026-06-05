@@ -273,6 +273,24 @@
         </div>
       </Section>
 
+      <!-- Parametric settings -->
+      <Section v-if="obj.type === 'parametric'" label="Parametric">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-8">x(t)</span>
+            <input class="input input-sm flex-1" :value="obj.xExpr" @change="u('xExpr', $event.target.value)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-8">y(t)</span>
+            <input class="input input-sm flex-1" :value="obj.yExpr" @change="u('yExpr', $event.target.value)" />
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <Num label="t min" :value="obj.tMin ?? 0" @input="u('tMin', $event)" />
+            <Num label="t max" :value="obj.tMax ?? 6.283" @input="u('tMax', $event)" />
+          </div>
+        </div>
+      </Section>
+
       <!-- LaTeX settings -->
       <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
         <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
@@ -726,7 +744,7 @@ function applyPolygonPreset(kind) {
 }
 
 const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free', 'parametric']);
 const ROUND_TYPES = new Set(['rectangle', 'square']);
 
 const canGradient = computed(() => obj.value && GRADIENT_TYPES.has(obj.value.type));
