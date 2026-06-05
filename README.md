@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.7.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.8.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -244,7 +244,7 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
 
@@ -381,7 +381,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 173 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects: store/codegen+round-trip/Effects panel)
+npm run test:unit # 234 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security)
 ```
 
 ---
@@ -414,7 +414,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.7.0 (current)
+### v3.8.0 (current)
+
+Object library enrichment (Phase 2) — seven new standalone object types plus two Axes graph extensions, all following the constructor → styling → single-line round-trip pattern and emitted byte-identically by both generators:
+
+- **Geometry primitives**: **Annulus** (`Annulus`), **Arc** (`Arc`), **Sector** (`Sector`), and **Double Arrow** (`DoubleArrow`). Radii convert through `FRAME_WIDTH`; angles are stored in degrees and emitted as `<deg> * DEGREES`. Annulus/sector are fillable + gradient/dash-eligible; arc/double-arrow are open strokes (dash-eligible).
+- **Free Polygon** (`polygon_free` → `Polygon`): arbitrary vertices edited directly on the canvas via draggable vertex handles, with **Trapezoid** / **Parallelogram** / **Free** presets in the inspector. Emitted single-line with literal coordinate arrays.
+- **Parametric curve** (`parametric` → `ParametricFunction`): `x(t)` / `y(t)` expression strings over a `[tMin, tMax]` range; expressions pass the shared `safeMathExpr` whitelist (no `import`/`eval`/`exec`) and preview by sampling through `engine/mathExpr.js`.
+- **Matrix** (`matrix` → `Matrix`): per-cell grid editor with add/remove row & column, and `[ ]` / `( )` / `| |` bracket styles. Source of truth is `matrixData` (2-D string array) + `bracket`; rows/cols are derived. Entries are sanitized display strings (quotes/backslashes/newlines stripped — **no expression evaluation**). Composite Konva canvas preview with a selectable hit region; round-trips single-line `Matrix([[...]])`.
+- **Area & Riemann overlays**: each graph in an `Axes` object gains optional **Area-under-curve** (`get_area`) and **Riemann-rectangle** (`get_riemann_rectangles`, left/right/midpoint) overlays, with x-range / opacity / dx / color controls and full canvas preview.
+- **Round-trip + parity**: every new object and overlay round-trips through `.py` export/import and is emitted byte-identically by `codegen.js` (server) and `manim.js` (client), guarded by `manim-export.test.js`.
+- **Tests**: +61 unit across the four Phase 2 plans (store, generator + round-trip codegen, inspector panels, math-expression security, polygon-vertex geometry); totals now **234 unit + 114 engine**.
+
+### v3.7.0
 
 2D object styling effects (Phase 1) — a new **Effects** panel adds four render-accurate styling capabilities:
 
