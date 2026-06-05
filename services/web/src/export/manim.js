@@ -81,6 +81,41 @@ const FRAME_HEIGHT = 8;
 const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.11
 const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
+// ── Style effect helpers (KEEP BYTE-IDENTICAL with services/api/src/compiler/codegen.js) ──
+const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow']);
+
+/** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
+function fillOpacityExpr(obj, master) {
+  const f = obj.fillOpacity;
+  if (f == null || f === 1) return `${master}`;
+  return `${+(master * f).toFixed(3)}`;
+}
+/** Stroke opacity arg: emitted only when strokeOpacity is set and < 1. */
+function strokeOpacityArg(obj, master) {
+  const s = obj.strokeOpacity;
+  if (s == null || s === 1) return '';
+  return `, opacity=${+(master * s).toFixed(3)}`;
+}
+/** set_color_by_gradient line, or null when no valid gradient. */
+function gradientLine(n, obj) {
+  if (!obj.gradient || !Array.isArray(obj.gradient.colors)) return null;
+  const cols = obj.gradient.colors.map(c => hex(c)).filter(Boolean);
+  if (cols.length < 2) return null;
+  return `${n}.set_color_by_gradient(${cols.join(', ')})`;
+}
+/** Dashed-wrap lines (fill-preserving VGroup), or [] when no dash. */
+function dashedLines(n, obj) {
+  if (!obj.dash || !DASH_TYPES.has(obj.type)) return [];
+  const numDashes = Math.max(2, Math.round(obj.dash.numDashes || 12));
+  const ratio = Math.max(0, Math.min(1, obj.dash.ratio ?? 0.5));
+  return [
+    `_dash_src_${n} = ${n}.copy()`,
+    `${n}.set_stroke(width=0)`,
+    `${n} = VGroup(${n}, DashedVMobject(_dash_src_${n}, num_dashes=${numDashes}, dashed_ratio=${+ratio}))`,
+  ];
+}
+
 // ── 3D Object code ────────────────────────────────────────────────────────────
 
 function fmt3d(n) {
@@ -198,61 +233,74 @@ function objCode(obj, sw, sh) {
       lines.push(`    lambda t: np.array([np.sin(t)**3 * ${mw}, (13*np.cos(t)-5*np.cos(2*t)-2*np.cos(3*t)-np.cos(4*t))/15 * ${mh}, 0]),`);
       lines.push(`    t_range=[0, 2*PI], color=${stroke})`);
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       break;
     }
     case 'rectangle':
-      lines.push(`${n} = Rectangle(width=${(obj.width / sw * FRAME_WIDTH).toFixed(3)}, height=${(obj.height / sh * FRAME_HEIGHT).toFixed(3)})`);
+      {
+        const rw = obj.width / sw * FRAME_WIDTH, rh = obj.height / sh * FRAME_HEIGHT;
+        if (obj.cornerRadius > 0) {
+          const cr = Math.min(obj.cornerRadius / sw * FRAME_WIDTH, Math.min(rw, rh) / 2 - 0.001);
+          lines.push(`${n} = RoundedRectangle(corner_radius=${cr.toFixed(3)}, width=${rw.toFixed(3)}, height=${rh.toFixed(3)})`);
+        } else {
+          lines.push(`${n} = Rectangle(width=${rw.toFixed(3)}, height=${rh.toFixed(3)})`);
+        }
+      }
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     case 'square':
-      lines.push(`${n} = Square(side_length=${scale.toFixed(3)})`);
+      if (obj.cornerRadius > 0) {
+        const cr = Math.min(obj.cornerRadius / sw * FRAME_WIDTH, scale / 2 - 0.001);
+        lines.push(`${n} = RoundedRectangle(corner_radius=${cr.toFixed(3)}, width=${scale.toFixed(3)}, height=${scale.toFixed(3)})`);
+      } else {
+        lines.push(`${n} = Square(side_length=${scale.toFixed(3)})`);
+      }
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     case 'circle':
       lines.push(`${n} = Circle(radius=${(scale / 2).toFixed(3)})`);
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     case 'ellipse':
       lines.push(`${n} = Ellipse(width=${(obj.width / sw * FRAME_WIDTH).toFixed(3)}, height=${(obj.height / sh * FRAME_HEIGHT).toFixed(3)})`);
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     case 'triangle':
       lines.push(`${n} = Triangle().scale(${scale.toFixed(3)})`);
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     case 'star': {
       const arms = safeNum(obj.starArms, 5);
       const inner = safeNum(obj.innerRatio, 0.4);
       lines.push(`${n} = Star(n=${arms}, outer_radius=${(scale / 2).toFixed(3)}, inner_radius=${(scale / 2 * inner).toFixed(3)})`);
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     }
     case 'polygon': {
       const sides = safeNum(obj.sides, 6);
       lines.push(`${n} = RegularPolygon(n=${sides}).scale(${(scale / 2).toFixed(3)})`);
       if (hasFill)
-        lines.push(`${n}.set_fill(color=${fill}, opacity=${opacity})`);
+        lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
-        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2})`);
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     }
     case 'line':
@@ -329,6 +377,9 @@ function objCode(obj, sw, sh) {
     default:
       lines.push(`${n} = Circle(radius=0.5)  # ${obj.type}`);
   }
+  const gl = gradientLine(n, obj);
+  if (gl && GRADIENT_TYPES.has(obj.type)) lines.push(gl);
+  for (const dl of dashedLines(n, obj)) lines.push(dl);
   lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
   if (obj.rotation) lines.push(`${n}.rotate(${(obj.rotation * Math.PI / 180).toFixed(4)})`);
   return lines;
