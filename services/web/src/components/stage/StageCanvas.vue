@@ -48,6 +48,9 @@
             <!-- Triangle -->
             <v-line v-if="obj.type === 'triangle' && isVis(obj.id)" :config="triangleCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
+            <!-- Free Polygon -->
+            <v-line v-if="obj.type === 'polygon_free' && isVis(obj.id)" :config="polygonFreeCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+
             <!-- Star -->
             <v-star v-if="obj.type === 'star' && isVis(obj.id)" :config="starCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
@@ -762,6 +765,18 @@ function triangleCfg(obj) {
   const hw = L ? L.w / 2 : e.width / 2 * vs.value, hh = L ? L.h / 2 : e.height / 2 * vs.value, rot = L ? L.rotation : (e.rotation || 0);
   const cfg = { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
   return applyEffects(cfg, obj, hw * 2, hh * 2, true);
+}
+function polygonFreeCfg(obj) {
+  const L = live(obj);
+  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
+  const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 3) ? obj.vertices : [[-80, -60], [80, -60], [80, 60], [-80, 60]];
+  const pts = verts.flatMap(([vx, vy]) => [vx * vs.value, vy * vs.value]);
+  const xs = verts.map(v => v[0]), ys = verts.map(v => v[1]);
+  const w = (Math.max(...xs) - Math.min(...xs)) * vs.value, h = (Math.max(...ys) - Math.min(...ys)) * vs.value;
+  const cfg = { x: p.x, y: p.y, points: pts, closed: true, fill: e.fill, stroke: e.stroke,
+    strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: e.rotation || 0,
+    scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, w, h, true);
 }
 function starCfg(obj) {
   const L = live(obj);
