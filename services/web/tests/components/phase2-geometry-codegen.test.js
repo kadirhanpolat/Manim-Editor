@@ -29,3 +29,18 @@ describe('annulus codegen', () => {
     expect(o.outerRadius).toBe(70);
   });
 });
+
+describe('arc codegen', () => {
+  const script = (o) => generateManimScript(makeProject([o]));
+  const roundTrip = (o) => parseManimScript(generateManimScript(makeProject([o])), SW, SH).objects[0];
+  it('emits Arc with radius + angles in DEGREES', () => {
+    const s = script(makeObj('arc', { radius: 70, startAngle: 0, sweepAngle: 180, fill: 'transparent', stroke: '#f97316' }));
+    expect(s).toMatch(/= Arc\(radius=[\d.]+, start_angle=[-\d.]+ \* DEGREES, angle=[-\d.]+ \* DEGREES\)/);
+  });
+  it('round-trips radius + angles', () => {
+    const o = roundTrip(makeObj('arc', { radius: 70, startAngle: 30, sweepAngle: 120, fill: 'transparent', stroke: '#f97316' }));
+    expect(o.type).toBe('arc');
+    expect(o.sweepAngle).toBeCloseTo(120, 0);
+    expect(o.startAngle).toBeCloseTo(30, 0);
+  });
+});
