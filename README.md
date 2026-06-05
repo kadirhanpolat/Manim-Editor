@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.10.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.11.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -64,6 +64,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Multi-track timeline** -- Up to 5 tracks with draggable, resizable animation clips
 - **Transform morphing** -- Select two shapes and morph between them with customizable easing
 - **Animation types** -- Transform, Move, Scale, Fade, Rotate with 17 easing functions
+- **Emphasis animations** -- Five transient (there-and-back) Manim emphasis clips: Indicate, Flash, Wiggle, Circumscribe, FocusOn; full parameter set per type, render-exact output, mixed-fidelity canvas preview, and `.py` round-trip
 - **AnimationGroup / LaggedStart** -- Mark clips as parallel (`∥`) to run simultaneously; set `lag_ratio` for staggered starts; generates `AnimationGroup(...)` or `LaggedStart(..., lag_ratio=x)` in Manim
 - **Path animation (MoveAlongPath)** -- Draw a path on the canvas (click to add points, double-click to finish); object follows the path with arc-length interpolation. In **3D mode** the path is drawn in the top-down (XZ) panel with Y held constant, animates in the canvas preview, renders as a dashed overlay in both panels, and round-trips through `.py` export/import with full 3D coordinates
 - **Camera animations** -- Toggle Moving Camera mode (🎥); add camera clips to the dedicated camera track to pan and zoom; generates `MovingCameraScene` + `self.camera.frame.animate.move_to().set_width()` in Manim (2D) or `self.move_camera(phi=..., theta=...)` (3D)
@@ -249,7 +250,7 @@ Project
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
 
-**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene / ThreeDScene)
+**Clip types**: `transform` (morph A->B), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene / ThreeDScene); **emphasis (transient)**: `indicate`, `flash`, `wiggle`, `circumscribe`, `focus_on`
 
 **Parallel clips**: Any clip can be marked `parallel: true` with a `lag_ratio` to group with adjacent clips into `AnimationGroup` / `LaggedStart`.
 
@@ -382,7 +383,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 265 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners)
+npm run test:unit # 283 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on)
 ```
 
 ---
@@ -415,7 +416,15 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.10.0 (current)
+### v3.11.0 (current)
+
+Emphasis animations — five transient ("there-and-back") Manim emphasis clips that play and return the object to its original state, integrated into the existing clip pipeline (store → byte-identical codegen → playback → inspector → `.py` round-trip):
+
+- **`Indicate`** (`color`, `scale_factor`), **`Flash`** (`color`, `flash_radius`, `line_length`, `num_lines`), **`Wiggle`** (`scale_value`, `rotation_angle` in deg, `n_wiggles`), **`Circumscribe`** (`color`, `shape` = Rectangle/Circle, `fade_out`, `time_width`), **`FocusOn`** (`color`, `opacity`). Created from a new "Emphasis (transient)" button group in the inspector, each with its own param section.
+- **Render-exact, mixed-fidelity preview**: the generated Manim is faithful for all five; the canvas preview is faithful for Indicate/Wiggle, a color-pulse approximation for Flash/FocusOn, and an overlay box/ellipse for Circumscribe. Emitted via a byte-identical `emphasisExpr(c, sn)` helper shared by `codegen.js`/`manim.js` and round-tripped through `.py` (standalone + parallel `AnimationGroup`/`LaggedStart` groups).
+- **Tests**: +18 unit (codegen + full round-trip parser, there-and-back playback, inspector buttons + param sections); totals now **283 unit + 114 engine**.
+
+### v3.10.0
 
 Effects Phase 2.6 — two more optional, render-faithful object effects extending the Phase 1 "Effects" system, both byte-identical across the server (`codegen.js`) and client (`manim.js`) generators and round-tripping through `.py` export/import:
 

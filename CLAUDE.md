@@ -82,6 +82,8 @@ store.assetById(id)       // factory getter — called as function
 
 `transform`, `move`, `scale`, `fade`, `rotate`, `path_move`, `camera_move`
 
+**Emphasis (transient)**: `indicate`, `flash`, `wiggle`, `circumscribe`, `focus_on` — there-and-back animations (return the object to its original state, unlike the persistent-target clips above). Emitted via the byte-identical `emphasisExpr(c, sn)` helper (`Indicate`/`Flash`/`Wiggle`/`Circumscribe`/`FocusOn`); `color` via `hex()`, `rotation_angle` stored in degrees and emitted as `<deg> * DEGREES`, `shape` as a bare class (`Rectangle`/`Circle`), `fade_out` as a Python bool. Full `.py` round-trip (standalone `self.play(...)` matchers + `parseAnimExpr` inner matchers for parallel groups). Playback derives its own pulse from raw `progress` (Indicate/Wiggle faithful; Flash/FocusOn color-pulse approximations; Circumscribe writes an `overrides._emphasis = {kind, shape, color, fadeOut, progress}` descriptor that `StageCanvas` renders as an overlay box/ellipse). **Keep `emphasisExpr` byte-identical across codegen.js/manim.js** — guarded by `manim-export.test.js`.
+
 All clips have: `id, type, startTime, duration, easing, parallel, lag_ratio`
 
 `parallel: true` clips at the same `startTime` → `AnimationGroup` / `LaggedStart` in codegen.
