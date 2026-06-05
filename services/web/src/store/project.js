@@ -1240,12 +1240,14 @@ const useProjectStore = defineStore('project', {
       if (!obj.keyframes) obj.keyframes = {};
       if (!obj.keyframes[prop]) obj.keyframes[prop] = [];
       const arr = obj.keyframes[prop];
-      const upsert = (tt) => {
+      // `pinned: 'start'|'end'` marks the boundary keyframes — they are locked to
+      // the object's edges (not draggable) and follow them on move/resize.
+      const upsert = (tt, pinned) => {
         const i = arr.findIndex(k => Math.abs(k.time - tt) < 0.01);
-        if (i >= 0) arr[i].value = val;
-        else arr.push({ time: tt, value: val, easing: { type: 'linear' } });
+        if (i >= 0) { arr[i].value = val; if (pinned) arr[i].pinned = pinned; }
+        else arr.push({ time: tt, value: val, easing: { type: 'linear' }, ...(pinned ? { pinned } : {}) });
       };
-      if (isFirst) { upsert(start); upsert(end); }
+      if (isFirst) { upsert(start, 'start'); upsert(end, 'end'); }
       upsert(t);
       arr.sort((a, b) => a.time - b.time);
       this.isDirty = true;
@@ -1278,8 +1280,11 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    // Clamp every keyframe of an object into its visible interval
-    // [enterTime, enterTime+duration] (called after the object bar is resized/moved).
+    // Reconcile keyframes with the object's visible interval [enterTime,
+    // enterTime+duration] (called after the object bar is resized/moved).
+    // Pinned boundary keyframes snap exactly to the edges — outward as well as
+    // inward, so expanding the bar drags them back out to the new edge. Regular
+    // keyframes are clamped inside the interval.
     clampKeyframesToRange(objId) {
       const obj = this.project.objects.find(o => o.id === objId);
       if (!obj?.keyframes) return;
@@ -1290,11 +1295,15 @@ const useProjectStore = defineStore('project', {
         const seen = [];
         const next = [...obj.keyframes[prop]]
           .map(kf => {
-            const t = Math.round(Math.max(start, Math.min(end, kf.time)) * 100) / 100;
+            const target = kf.pinned === 'start' ? start
+              : kf.pinned === 'end' ? end
+              : Math.max(start, Math.min(end, kf.time));
+            const t = Math.round(target * 100) / 100;
             if (t !== kf.time) changed = true;
             return { ...kf, time: t };
           })
-          .sort((a, b) => a.time - b.time)
+          // At equal time, keep the pinned keyframe and drop the colliding regular one.
+          .sort((a, b) => (a.time - b.time) || ((b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)))
           .filter(kf => {
             if (seen.some(t => Math.abs(t - kf.time) < 0.01)) { changed = true; return false; }
             seen.push(kf.time); return true;

@@ -100,6 +100,40 @@ describe('addKeyframeScaffold', () => {
     const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
     expect(times).toEqual([0, 1, 2, 4]);
   });
+
+  it('marks the seeded boundary keyframes as pinned start/end', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 3 });
+    store.addKeyframeScaffold(obj.id, 'x', 1.5);
+    const kfs = store.objectById(obj.id).keyframes.x;
+    expect(kfs[0].pinned).toBe('start');
+    expect(kfs[kfs.length - 1].pinned).toBe('end');
+    expect(kfs[1].pinned).toBeUndefined();
+  });
+});
+
+describe('clampKeyframesToRange with pinned keyframes', () => {
+  it('drags the pinned end keyframe outward when the bar is expanded', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 3 }); // [0, 3]
+    store.addKeyframeScaffold(obj.id, 'x', 1.5);               // 0(start), 1.5, 3(end)
+    store.updateObject(obj.id, { duration: 6 });               // expand to [0, 6]
+    store.clampKeyframesToRange(obj.id);
+    const kfs = store.objectById(obj.id).keyframes.x;
+    expect(kfs.find(k => k.pinned === 'start').time).toBe(0);
+    expect(kfs.find(k => k.pinned === 'end').time).toBe(6);    // followed the new edge
+  });
+
+  it('keeps pinned keyframes at the edges when the object is repositioned', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // [0, 4]
+    store.addKeyframeScaffold(obj.id, 'x', 2);                 // 0, 2, 4
+    store.updateObject(obj.id, { enterTime: 2 });              // moved → [2, 6]
+    store.clampKeyframesToRange(obj.id);
+    const kfs = store.objectById(obj.id).keyframes.x;
+    expect(kfs.find(k => k.pinned === 'start').time).toBe(2);
+    expect(kfs.find(k => k.pinned === 'end').time).toBe(6);
+  });
 });
 
 describe('removeKeyframe', () => {

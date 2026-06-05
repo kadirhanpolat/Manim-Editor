@@ -46,15 +46,17 @@
         <div
           v-for="kf in sortedKeyframes"
           :key="kf.time"
-          class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer transition-transform hover:scale-125"
-          :class="{ 'scale-150': isSelected(kf) }"
+          class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-transform"
+          :class="[kf.pinned ? 'cursor-default' : 'cursor-pointer hover:scale-125', { 'scale-150': isSelected(kf) }]"
           :style="{ left: kf.time * pps + 'px' }"
-          :title="`t=${kf.time.toFixed(2)}s  v=${kf.value}` + (isSelected(kf) ? ' (selected)' : '')"
+          :title="`t=${kf.time.toFixed(2)}s  v=${kf.value}` + (kf.pinned ? ' (uçta sabit)' : '') + (isSelected(kf) ? ' (seçili)' : '')"
           @click.stop="toggleKf(kf)"
           @contextmenu.prevent="rightClickKf(kf)"
           @mousedown.stop="startDrag(kf, $event)"
         >
-          <svg width="10" height="10" viewBox="-5 -5 10 10">
+          <svg width="12" height="12" viewBox="-6 -6 12 12">
+            <!-- locked halo marks a pinned (boundary) keyframe -->
+            <circle v-if="kf.pinned" r="5" fill="none" :stroke="modeColor" stroke-width="0.8" stroke-opacity="0.55" />
             <polygon
               points="0,-4 4,0 0,4 -4,0"
               :fill="isSelected(kf) ? '#ffffff' : modeColor"
@@ -149,6 +151,7 @@ function onSegDblClick(e) {
 
 let _dragMoved = false;
 function startDrag(kf, e) {
+  if (kf.pinned) return;  // boundary keyframes are locked to the object's edges
   _dragMoved = false;
   // Don't select on mousedown — let the click handler toggle pure clicks.
   // A real drag selects via the move handler below.
