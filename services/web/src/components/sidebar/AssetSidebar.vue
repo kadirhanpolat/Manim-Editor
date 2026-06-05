@@ -197,6 +197,8 @@ const shapes = [
   { type: 'double_arrow', label: 'Double Arrow', color: '#ef4444', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4M19 12l-4-4M19 12l-4 4"/></svg>' },
   { type: 'parametric', label: 'Parametric', color: '#10b981', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18c4 0 4-12 8-12s4 12 8 12"/></svg>' },
   { type: 'matrix', label: 'Matrix', color: '#ffffff', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4H5v16h2M17 4h2v16h-2"/><circle cx="10" cy="9" r="0.6" fill="currentColor"/><circle cx="14" cy="9" r="0.6" fill="currentColor"/><circle cx="10" cy="15" r="0.6" fill="currentColor"/><circle cx="14" cy="15" r="0.6" fill="currentColor"/></svg>' },
+  { type: 'brace', label: 'Brace', color: '#ffffff', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4c0 4-2 4-2 8s2 4 2 8M19 4c0 4 2 4 2 8s-2 4-2 8"/></svg>' },
+  { type: 'angle', label: 'Angle', color: '#fbbf24', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M4 20L18 6"/><path d="M9 20a7 7 0 0 1 3-5"/></svg>' },
 ];
 
 // 3D shapes — shown only when sceneType === '3d' (store.addObject sets x3d/y3d/z3d + 3D defaults)
