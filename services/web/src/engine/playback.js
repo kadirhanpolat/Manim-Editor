@@ -513,6 +513,17 @@ export class PlaybackEngine {
       return this._evaluateTransformClip(clip, time, active, completed, objectMap);
     }
 
+    if (clip.type === 'count') {
+      if (!active && !completed) return null;
+      const objId = clip.objectId || clip.sourceId;
+      if (!objId) return null;
+      const p = completed ? 1 : Math.max(0, Math.min(1, getClipProgress(clip, time)));
+      const easedT = evaluateEasing(p, clip.easing || 'ease_in_out', 0, 1.0);
+      const from = Number.isFinite(clip.from) ? clip.from : 0;
+      const to = Number.isFinite(clip.to) ? clip.to : 0;
+      return { objectId: objId, overrides: { value: from + (to - from) * easedT }, clipId: clip.id };
+    }
+
     if (!active) return null;
     const progress = getClipProgress(clip, time);
     const easedT = evaluateEasing(progress, clip.easing || 'ease_in_out', clip.overshoot || 0, clip.settle || 1.0);

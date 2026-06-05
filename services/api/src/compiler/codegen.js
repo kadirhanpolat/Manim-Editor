@@ -1033,6 +1033,19 @@ export function generatePythonCode(project, assetsPath) {
           ].join(`\n${indent}`);
           break;
         }
+        case 'count': {
+          const cn = c.id ? c.id.replace(/[^a-zA-Z0-9_]/g, '_') : sn;
+          const vt = `_count_${cn}`;   // distinct from keyframe _vt_<obj>_<prop> to avoid parser collision
+          const from = Number.isFinite(c.from) ? c.from : 0;
+          const to = Number.isFinite(c.to) ? c.to : 0;
+          code = [
+            `${vt} = ValueTracker(${from})`,
+            `${sn}.add_updater(lambda m: m.set_value(${vt}.get_value()))`,
+            `self.play(${vt}.animate.set_value(${to})${rtStr}${rfStr})`,
+            `${sn}.clear_updaters()`,
+          ].join(`\n${indent}`);
+          break;
+        }
         case 'indicate':
         case 'flash':
         case 'wiggle':
@@ -1100,6 +1113,19 @@ export function generatePythonCode(project, assetsPath) {
             ].join(`\n${indent}`);
             break;
           }
+          case 'count': {
+            const cn = c.id ? c.id.replace(/[^a-zA-Z0-9_]/g, '_') : sn;
+            const vt = `_count_${cn}`;   // distinct from keyframe _vt_<obj>_<prop> to avoid parser collision
+            const from = Number.isFinite(c.from) ? c.from : 0;
+            const to = Number.isFinite(c.to) ? c.to : 0;
+            code = [
+              `${vt} = ValueTracker(${from})`,
+              `${sn}.add_updater(lambda m: m.set_value(${vt}.get_value()))`,
+              `self.play(${vt}.animate.set_value(${to})${rtStr}${rfStr})`,
+              `${sn}.clear_updaters()`,
+            ].join(`\n${indent}`);
+            break;
+          }
           case 'indicate':
           case 'flash':
           case 'wiggle':
@@ -1153,6 +1179,7 @@ export function generatePythonCode(project, assetsPath) {
           case 'circumscribe':
           case 'focus_on':
             return emphasisExpr(c, sn);
+          case 'count': return null;
           default: return null;
         }
       }).filter(Boolean);

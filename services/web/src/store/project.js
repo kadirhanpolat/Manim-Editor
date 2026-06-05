@@ -1332,6 +1332,22 @@ const useProjectStore = defineStore('project', {
       return clip;
     },
 
+    createCount(from = 0, to = 100) {
+      if (this.selectedObjectIds.length !== 1) { this.setError('Select 1 counter to animate'); return null; }
+      const objectId = this.selectedObjectIds[0];
+      const src = this.objectById(objectId);
+      const startTime = src ? (src.enterTime || 0) : 0;
+      let trackIndex = 0;
+      for (let i = 0; i < this.project.tracks.length; i++) {
+        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        trackIndex = i + 1;
+      }
+      trackIndex = Math.min(trackIndex, 4);
+      const clip = this.addClip(trackIndex, { type: 'count', objectId, from, to, startTime, duration: 2, easing: 'ease_in_out_cubic' });
+      this.selectedClipId = clip.id;
+      return clip;
+    },
+
     // ══════════════════════════════════════════════════════════════════════════
     // Camera
     // ══════════════════════════════════════════════════════════════════════════

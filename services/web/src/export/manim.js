@@ -998,6 +998,19 @@ export function generateManimScript(project) {
         ].join(`\n${indent}`);
         return { code: multiLine, dur };
       }
+      case 'count': {
+        const cn = (c.id || sn).replace(/[^a-zA-Z0-9_]/g, '_');
+        const vt = `_count_${cn}`;   // distinct from keyframe _vt_<obj>_<prop> to avoid parser collision
+        const from = Number.isFinite(c.from) ? c.from : 0;
+        const to = Number.isFinite(c.to) ? c.to : 0;
+        const multiLine = [
+          `${vt} = ValueTracker(${from})`,
+          `${sn}.add_updater(lambda m: m.set_value(${vt}.get_value()))`,
+          `self.play(${vt}.animate.set_value(${to})${rtStr}${rfStr})`,
+          `${sn}.clear_updaters()`,
+        ].join(`\n${indent}`);
+        return { code: multiLine, dur };
+      }
       case 'indicate':
       case 'flash':
       case 'wiggle':
@@ -1045,6 +1058,7 @@ export function generateManimScript(project) {
       case 'circumscribe':
       case 'focus_on':
         return emphasisExpr(c, sn);
+      case 'count': return null;
       default: return null;
     }
   }
@@ -1219,6 +1233,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const graphVarMap = {};
   const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
   const pendingShadow = {};   // base var → { color, opacity, dx, dy } awaiting its VGroup line
+  const pendingCount = {};    // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
 
   let bgColor = '#000000';
   let cameraType = 'static';
@@ -1606,7 +1621,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     // Counter (DecimalNumber)
     m = line.match(/^(\w+) = DecimalNumber\((-?[\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/);
     if (m) {
-      const obj = { id: uid('obj'), type: 'counter', name: 'Counter',
+      // Use the variable name as the object id so count clip objectId round-trips correctly
+      // (v(id) === id for obj_ ids since they only contain [a-z0-9_])
+      const obj = { id: m[1], type: 'counter', name: 'Counter',
         x: sw / 2, y: sh / 2, width: 120, height: 60,
         fill: '#ffffff', stroke: 'transparent', strokeWidth: 0, opacity: 1, rotation: 0,
         enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
@@ -2142,6 +2159,44 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       ct += dur;
       continue;
     }
+
+    // _count_<cn> = ValueTracker(<from>) — start of a count block
+    m = line.match(/^(_count_\w+)\s*=\s*ValueTracker\((-?[\d.]+)\)/);
+    if (m) {
+      pendingCount[m[1]] = { from: parseFloat(m[2]) };
+      continue;
+    }
+
+    // <sn>.add_updater(lambda m: m.set_value(_count_<cn>.get_value())) — middle of count block
+    m = line.match(/^(\w+)\.add_updater\(lambda m: m\.set_value\((_count_\w+)\.get_value\(\)\)\)/);
+    if (m) {
+      const vtVar = m[2];
+      if (pendingCount[vtVar]) pendingCount[vtVar].objVar = m[1];
+      continue;
+    }
+
+    // self.play(_count_<cn>.animate.set_value(<to>)...) — completes the count clip
+    m = line.match(/^self\.play\((_count_\w+)\.animate\.set_value\((-?[\d.]+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
+    if (m) {
+      const vtVar = m[1];
+      const pc = pendingCount[vtVar];
+      if (pc && pc.objVar) {
+        const objectId = varMap[pc.objVar];
+        const to = parseFloat(m[2]);
+        const dur = parseFloat(m[3] || 1);
+        const easing = m[4] ? (EASING_REV[m[4]] || 'linear') : 'linear';
+        if (objectId) {
+          clips.push({ id: `clip_${clipIdx++}`, type: 'count', objectId, from: pc.from, to, startTime: ct, duration: dur, easing });
+          ct += dur;
+        }
+        delete pendingCount[vtVar];
+      }
+      continue;
+    }
+
+    // <sn>.clear_updaters() — tail of count block (consumed, ct already advanced)
+    m = line.match(/^(\w+)\.clear_updaters\(\)/);
+    if (m) { continue; }
 
     // VMobject() — start of a path definition
     m = line.match(/^(\w+)\s*=\s*VMobject\(\)/);

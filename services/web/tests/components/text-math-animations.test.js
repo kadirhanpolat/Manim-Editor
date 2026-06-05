@@ -155,3 +155,28 @@ describe('counter object', () => {
     expect(re.value).toBe(-3);
   });
 });
+
+describe('count clip', () => {
+  it('emits ValueTracker + add_updater + animate.set_value + clear_updaters', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 0; c.enterTime = 0; c.duration = 5;
+    store.addClip(0, { type: 'count', objectId: c.id, from: 0, to: 100, startTime: 1, duration: 2, easing: 'linear' });
+    const py = generateManimScript(store.project);
+    expect(py).toContain('ValueTracker(0)');
+    expect(py).toContain('add_updater(');
+    expect(py).toContain('animate.set_value(100)');
+    expect(py).toContain('clear_updaters()');
+    expect(py).toMatch(/_count_\w+ = ValueTracker/);
+  });
+  it('round-trips a count clip', () => {
+    const c = store.addObject('counter', 960, 540);
+    c.value = 0; c.enterTime = 0; c.duration = 5;
+    store.addClip(0, { type: 'count', objectId: c.id, from: 5, to: 50, startTime: 1, duration: 2, easing: 'linear' });
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const clip = parsed.tracks.flatMap(t => t.clips).find(cl => cl.type === 'count');
+    expect(clip).toBeTruthy();
+    expect(clip.from).toBe(5);
+    expect(clip.to).toBe(50);
+    expect(clip.objectId).toBe(c.id);
+  });
+});
