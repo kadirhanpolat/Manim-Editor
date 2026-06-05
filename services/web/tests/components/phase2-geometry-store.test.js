@@ -7,6 +7,7 @@ beforeEach(() => {
   setActivePinia(createPinia());
   store = useProjectStore();
   store.newProject('Test', 'visual');
+  store.commitState();
 });
 
 describe('phase 2 geometry object seeds', () => {
