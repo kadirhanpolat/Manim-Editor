@@ -58,7 +58,7 @@ describe('font round-trip', () => {
   });
 });
 
-describe.skip('tex-matching transform', () => {  // unskipped in Task 3 once manim.js mirrors transformExpr
+describe('tex-matching transform', () => {
   function twoObjThenTransform(srcType, tgtType, matchTerms) {
     const a = store.addObject(srcType, 600, 540);
     const b = store.addObject(tgtType, 1200, 540);
@@ -92,5 +92,12 @@ describe.skip('tex-matching transform', () => {  // unskipped in Task 3 once man
     const py = generateManimScript(store.project);
     expect(py).toContain('FadeTransform(');
     expect(py).not.toContain('TransformMatching');
+  });
+  it('round-trips matchTerms through generate→parse', () => {
+    twoObjThenTransform('latex', 'latex', true);
+    const py = generateManimScript(store.project);
+    const parsed = parseManimScript(py);
+    const clip = parsed.tracks.flatMap(t => t.clips).find(c => c.type === 'transform');
+    expect(clip.matchTerms).toBe(true);
   });
 });

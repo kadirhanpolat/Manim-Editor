@@ -155,6 +155,21 @@ function shadowLines(n, obj, sw, sh) {
   ];
 }
 
+// Shared transform-clip expression. matchTerms (when set and no raster involved)
+// upgrades to TransformMatchingTex (both latex) or TransformMatchingShapes (other
+// VMobjects). Used by all three transform-clip codegen sites + the parallel group.
+function transformExpr(clip, sn, tn, srcObj, tgtObj) {
+  const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+  if (hasRaster) return `FadeTransform(${sn}, ${tn})`;
+  if (clip.matchTerms) {
+    const bothLatex = srcObj?.type === 'latex' && tgtObj?.type === 'latex';
+    return bothLatex
+      ? `TransformMatchingTex(${sn}, ${tn})`
+      : `TransformMatchingShapes(${sn}, ${tn})`;
+  }
+  return `ReplacementTransform(${sn}, ${tn})`;
+}
+
 /** Inner Manim expression for an emphasis clip (Indicate/Flash/Wiggle/Circumscribe/FocusOn), or null. */
 function emphasisExpr(c, sn) {
   const p = c.params || {};
@@ -940,10 +955,7 @@ export function generateManimScript(project) {
     switch (c.type) {
       case 'transform': {
         const tn = v(c.targetId);
-        const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
-        const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
-        const anim = hasRaster ? 'FadeTransform' : 'ReplacementTransform';
-        return { code: `self.play(${anim}(${sn}, ${tn})${rtStr}${rfStr})`, dur };
+        return { code: `self.play(${transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId])}${rtStr}${rfStr})`, dur };
       }
       case 'move': {
         const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
@@ -1017,9 +1029,7 @@ export function generateManimScript(project) {
       }
       case 'transform': {
         const tn = v(c.targetId);
-        const srcObj = oMap[c.sourceId], tgtObj = oMap[c.targetId];
-        const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
-        return hasRaster ? `FadeTransform(${sn}, ${tn})` : `ReplacementTransform(${sn}, ${tn})`;
+        return transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId]);
       }
       case 'indicate':
       case 'flash':
@@ -1282,6 +1292,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m2) {
       const id = varMap[m2[1]]; if (!id) return null;
       return { type: 'focus_on', sourceId: id, params: { color: m2[2], opacity: parseFloat(m2[3]) } };
+    }
+    // ReplacementTransform / FadeTransform / TransformMatchingTex / TransformMatchingShapes
+    m2 = expr.match(/^(ReplacementTransform|FadeTransform|Transform|TransformMatchingTex|TransformMatchingShapes)\((\w+),\s*(\w+)\)/);
+    if (m2) {
+      const animName = m2[1];
+      const srcId = varMap[m2[2]], tgtId = varMap[m2[3]];
+      if (!srcId || !tgtId) return null;
+      const clip = { type: 'transform', sourceId: srcId, targetId: tgtId };
+      if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes') clip.matchTerms = true;
+      return clip;
     }
     return null;
   }
@@ -1961,13 +1981,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
-    m = line.match(/^self\.play\((?:ReplacementTransform|FadeTransform|Transform)\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
+    m = line.match(/^self\.play\((ReplacementTransform|FadeTransform|Transform|TransformMatchingTex|TransformMatchingShapes)\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
     if (m) {
-      const srcId = varMap[m[1]], tgtId = varMap[m[2]];
+      const animName = m[1];
+      const srcId = varMap[m[2]], tgtId = varMap[m[3]];
       if (srcId && tgtId) {
-        const dur = parseFloat(m[3] || 1);
-        const easing = m[4] ? (EASING_REV[m[4]] || 'ease_in_out') : 'ease_in_out';
-        clips.push({ id: `clip_${clipIdx++}`, type: 'transform', sourceId: srcId, targetId: tgtId, startTime: ct, duration: dur, easing });
+        const dur = parseFloat(m[4] || 1);
+        const easing = m[5] ? (EASING_REV[m[5]] || 'ease_in_out') : 'ease_in_out';
+        const clip = { id: `clip_${clipIdx++}`, type: 'transform', sourceId: srcId, targetId: tgtId, startTime: ct, duration: dur, easing };
+        if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes') clip.matchTerms = true;
+        clips.push(clip);
         ct += dur;
       }
       continue;
