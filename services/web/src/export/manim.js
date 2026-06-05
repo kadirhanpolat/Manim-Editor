@@ -75,6 +75,12 @@ function safeText(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
 }
 
+/** Escape a label for a NON-raw Python string passed to MathTex/get_tex (one backslash
+    survives so LaTeX commands typeset; mirrors the `latex` case — avoids the \\int line-break bug). */
+function safeLatex(s) {
+  return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, ' ');
+}
+
 /** Sanitize a Matrix entry to a safe Manim display string (no eval; strips quotes/backslashes/newlines). */
 function safeMatrixEntry(s) {
   const t = String(s == null ? '' : s).replace(/\\/g, '').replace(/"/g, '').replace(/[\n\r]/g, '').slice(0, 32);
@@ -366,6 +372,41 @@ function objCode(obj, sw, sh) {
         ? obj.matrixData : [['1', '0'], ['0', '1']];
       const body = data.map(row => `[${row.map(c => `"${safeMatrixEntry(c)}"`).join(', ')}]`).join(', ');
       lines.push(`${n} = Matrix([${body}]${matrixBrackets(obj.bracket)})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
+    case 'brace': {
+      const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
+      const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];
+      const a = `[${(p1[0] / sw * FRAME_WIDTH).toFixed(3)}, ${(-p1[1] / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      const b = `[${(p2[0] / sw * FRAME_WIDTH).toFixed(3)}, ${(-p2[1] / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      const label = (obj.label || '').trim();
+      if (label) {
+        lines.push(`${n}_brace = BraceBetweenPoints(${a}, ${b})`);
+        lines.push(`${n} = VGroup(${n}_brace, ${n}_brace.get_tex("${safeLatex(label)}"))`);
+      } else {
+        lines.push(`${n} = BraceBetweenPoints(${a}, ${b})`);
+      }
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
+    case 'angle': {
+      const V = Array.isArray(obj.vertex) ? obj.vertex : [-40, 40];
+      const P1 = Array.isArray(obj.point1) ? obj.point1 : [80, 40];
+      const P2 = Array.isArray(obj.point2) ? obj.point2 : [-40, -60];
+      const pt = (p) => `[${(p[0] / sw * FRAME_WIDTH).toFixed(3)}, ${(-p[1] / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      lines.push(`${n}_l1 = Line(${pt(V)}, ${pt(P1)})`);
+      lines.push(`${n}_l2 = Line(${pt(V)}, ${pt(P2)})`);
+      const ctor = obj.rightAngle
+        ? `RightAngle(${n}_l1, ${n}_l2)`
+        : `Angle(${n}_l1, ${n}_l2, radius=${Number.isFinite(obj.radius) ? obj.radius : 0.6})`;
+      const label = (obj.label || '').trim();
+      if (label) {
+        lines.push(`${n}_arc = ${ctor}`);
+        lines.push(`${n} = VGroup(${n}_arc, ${n}_arc.get_tex("${safeLatex(label)}"))`);
+      } else {
+        lines.push(`${n} = ${ctor}`);
+      }
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
@@ -1092,6 +1133,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const varMap  = {};
   const objById = {};
   const graphVarMap = {};
+  const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
 
   let bgColor = '#000000';
   let cameraType = 'static';
@@ -1349,6 +1391,60 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Angle helper Lines (our naming) — captured into relLineMap, not turned into objects
+    m = line.match(/^(\w+_l[12])\s*=\s*Line\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/);
+    if (m) {
+      relLineMap[m[1]] = { start: [parseFloat(m[2]), parseFloat(m[3])], end: [parseFloat(m[4]), parseFloat(m[5])] };
+      continue;
+    }
+
+    // Brace — BraceBetweenPoints([..],[..]); the geometry name may be <n> or <n>_brace
+    m = line.match(/^(\w+)\s*=\s*BraceBetweenPoints\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/);
+    if (m) {
+      const [, name, x1, y1, x2, y2] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'brace', name, x: sw / 2, y: sh / 2, width: 160, height: 60,
+        p1: [Math.round(parseFloat(x1) / FRAME_WIDTH * sw), Math.round(-parseFloat(y1) / FRAME_HEIGHT * sh)],
+        p2: [Math.round(parseFloat(x2) / FRAME_WIDTH * sw), Math.round(-parseFloat(y2) / FRAME_HEIGHT * sh)],
+        label: '', fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Angle / RightAngle — references two helper Lines in relLineMap
+    m = line.match(/^(\w+)\s*=\s*(Angle|RightAngle)\((\w+_l1), (\w+_l2)(?:, radius=([-\d.]+))?\)/);
+    if (m) {
+      const [, name, ctor, l1, l2, rad] = m;
+      const L1 = relLineMap[l1], L2 = relLineMap[l2];
+      if (L1 && L2) {
+        const toPx = (mp) => [Math.round(mp[0] / FRAME_WIDTH * sw), Math.round(-mp[1] / FRAME_HEIGHT * sh)];
+        const id = uid('obj');
+        const obj = { id, type: 'angle', name, x: sw / 2, y: sh / 2, width: 140, height: 140,
+          vertex: toPx(L1.start), point1: toPx(L1.end), point2: toPx(L2.end),
+          rightAngle: ctor === 'RightAngle', radius: rad ? parseFloat(rad) : 0.6, label: '',
+          fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2, opacity: 1, rotation: 0,
+          enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+        objects.push(obj); varMap[name] = id; objById[id] = obj;
+        continue;
+      }
+    }
+
+    // VGroup label wrapper for brace/angle — renames base obj to the VGroup var + sets label
+    m = line.match(/^(\w+)\s*=\s*VGroup\((\w+(?:_brace|_arc)), \2\.get_tex\("(.*)"\)\)/);
+    if (m) {
+      const [, vg, base, tex] = m;
+      const baseId = varMap[base];
+      const target = baseId ? objById[baseId] : null;
+      if (target && (target.type === 'brace' || target.type === 'angle')) {
+        target.name = vg;
+        target.label = tex.replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+        delete varMap[base];
+        varMap[vg] = target.id;
+      }
       continue;
     }
 
