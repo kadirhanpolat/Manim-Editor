@@ -1464,7 +1464,13 @@ function updateTransformer() {
   const t = tr.getNode(); const stage = ks.getNode(); if (!t || !stage) return;
   const layer = ol && ol.getNode ? ol.getNode() : null;
   const findNode = (id) => (layer ? layer.findOne('#' + id) : null) || stage.findOne('#' + id);
-  const nodes = store.selectedObjectIds.map(findNode).filter(Boolean);
+  // polygon_free is edited via draggable vertex handles, not the resize/rotate
+  // transformer — exclude it so its anchors don't overlap the vertex handles.
+  const ids = store.selectedObjectIds.filter((id) => {
+    const o = store.objectById(id);
+    return !o || o.type !== 'polygon_free';
+  });
+  const nodes = ids.map(findNode).filter(Boolean);
   t.nodes(nodes);
   t.getLayer().batchDraw();
 }
