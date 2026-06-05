@@ -157,6 +157,7 @@ export const SHAPE_DEFAULTS = {
   arc:      { width: 140, height: 140, fill: 'transparent', stroke: '#f97316', strokeWidth: 4 },
   sector:   { width: 140, height: 140, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
   double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
+  parametric: { width: 160, height: 160, fill: 'transparent', stroke: '#10b981', strokeWidth: 4 },
 };
 
 export const SHAPE_COLORS = {
@@ -171,6 +172,7 @@ export const SHAPE_COLORS = {
   cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981',
   annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
   polygon_free: '#8b5cf6',
+  parametric: '#10b981',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -284,7 +286,7 @@ const useProjectStore = defineStore('project', {
         latex: 'LaTeX', axes: 'Axes',
         numberplane: 'NumberPlane', numberline: 'NumberLine',
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
-        polygon_free: 'Polygon',
+        polygon_free: 'Polygon', parametric: 'Parametric',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -313,6 +315,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'text' ? { content: 'Hello World', fontSize: 48, fontFamily: 'Roboto', textAlign: 'center', fontWeight: 'normal', fontStyle: 'normal' } : {}),
         ...(type === 'polygon' ? { sides: 6 } : {}),
         ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
+        ...(type === 'parametric' ? { xExpr: 'np.cos(t)', yExpr: 'np.sin(t)', tMin: 0, tMax: 6.283 } : {}),
         ...(type === 'polygon_free' ? { vertices: presetVertices('trapezoid', SHAPE_DEFAULTS.polygon_free.width, SHAPE_DEFAULTS.polygon_free.height) } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),

@@ -273,6 +273,24 @@
         </div>
       </Section>
 
+      <!-- Parametric settings -->
+      <Section v-if="obj.type === 'parametric'" label="Parametric">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-8">x(t)</span>
+            <input class="input input-sm flex-1" :value="obj.xExpr" @change="u('xExpr', $event.target.value)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-8">y(t)</span>
+            <input class="input input-sm flex-1" :value="obj.yExpr" @change="u('yExpr', $event.target.value)" />
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <Num label="t min" :value="obj.tMin ?? 0" @input="u('tMin', $event)" />
+            <Num label="t max" :value="obj.tMax ?? 6.283" @input="u('tMax', $event)" />
+          </div>
+        </div>
+      </Section>
+
       <!-- LaTeX settings -->
       <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
         <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
@@ -316,6 +334,21 @@
           <div class="grid grid-cols-2 gap-1">
             <Num label="x min" :value="graph.xMin" @input="updateGraph(graph.id, 'xMin', $event)" />
             <Num label="x max" :value="graph.xMax" @input="updateGraph(graph.id, 'xMax', $event)" />
+          </div>
+          <div class="flex items-center gap-2 mt-1">
+            <button data-test="graph-area-toggle" class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.area && graph.area.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphArea(graph)">Area</button>
+            <button class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.riemann && graph.riemann.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphRiemann(graph)">Riemann</button>
+          </div>
+          <div v-if="graph.riemann && graph.riemann.enabled" class="grid grid-cols-2 gap-1.5 mt-1">
+            <Num label="dx" :value="graph.riemann.dx" :min="0.05" :step="0.05" @input="setRiemannField(graph, 'dx', $event)" />
+            <div>
+              <span class="text-[9px] text-studio-text-muted/50">Sample</span>
+              <select class="select text-xs" :value="graph.riemann.type" @change="setRiemannField(graph, 'type', $event.target.value)">
+                <option value="left">left</option>
+                <option value="right">right</option>
+                <option value="center">center</option>
+              </select>
+            </div>
           </div>
         </div>
         <button
@@ -726,7 +759,7 @@ function applyPolygonPreset(kind) {
 }
 
 const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free', 'parametric']);
 const ROUND_TYPES = new Set(['rectangle', 'square']);
 
 const canGradient = computed(() => obj.value && GRADIENT_TYPES.has(obj.value.type));
@@ -800,6 +833,30 @@ function removeGraph(graphId) {
 function updateGraph(graphId, key, value) {
   if (!obj.value) return;
   store.updateGraph(obj.value.id, graphId, { [key]: value });
+}
+function toggleGraphArea(graph) {
+  if (!obj.value) return;
+  const existing = graph.area || {};
+  const on = !existing.enabled;
+  store.updateGraph(obj.value.id, graph.id, {
+    area: on
+      ? { xMin: graph.xMin, xMax: graph.xMax, opacity: 0.5, color: graph.color, ...existing, enabled: true }
+      : { ...existing, enabled: false },
+  });
+}
+function toggleGraphRiemann(graph) {
+  if (!obj.value) return;
+  const existing = graph.riemann || {};
+  const on = !existing.enabled;
+  store.updateGraph(obj.value.id, graph.id, {
+    riemann: on
+      ? { xMin: graph.xMin, xMax: graph.xMax, dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10), type: 'left', color: graph.color, ...existing, enabled: true }
+      : { ...existing, enabled: false },
+  });
+}
+function setRiemannField(graph, key, val) {
+  if (!obj.value || !graph.riemann) return;
+  store.updateGraph(obj.value.id, graph.id, { riemann: { ...graph.riemann, [key]: val } });
 }
 </script>
 

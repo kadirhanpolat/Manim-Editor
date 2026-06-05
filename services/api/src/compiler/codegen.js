@@ -60,15 +60,15 @@ function safeOpacity(v) {
 }
 
 /** Validate a math expression: only allow characters safe for both Python and JS math. */
-function safeMathExpr(expr) {
-  if (!expr || typeof expr !== 'string') return 'x**2';
+function safeMathExpr(expr, fallback = 'x**2') {
+  if (!expr || typeof expr !== 'string') return fallback;
   const trimmed = expr.trim();
-  if (!trimmed) return 'x**2';
+  if (!trimmed) return fallback;
   // Whitelist: digits, letters (for sin/cos/pi/Math/np etc.), math operators, parens, dot, comma, space
   // Reject anything with underscores (blocks __import__, __builtins__ etc.)
-  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(trimmed)) return 'x**2';
+  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(trimmed)) return fallback;
   // Also reject if it contains 'import', 'eval', 'exec', 'open', '__'
-  if (/import|eval|exec|open|__/.test(trimmed)) return 'x**2';
+  if (/import|eval|exec|open|__/.test(trimmed)) return fallback;
   return trimmed;
 }
 
@@ -86,7 +86,7 @@ const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/web/src/export/manim.js) ──
 const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free', 'parametric']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -338,6 +338,15 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     }
+    case 'parametric': {
+      const xe = safeMathExpr(obj.xExpr, 't');
+      const ye = safeMathExpr(obj.yExpr, '0');
+      const t0 = Number.isFinite(obj.tMin) ? obj.tMin : 0;
+      const t1 = Number.isFinite(obj.tMax) ? obj.tMax : 6.283;
+      const col = hex(obj.stroke) || hex(obj.fill) || '"#10B981"';
+      lines.push(`${n} = ParametricFunction(lambda t: np.array([${xe}, ${ye}, 0]), t_range=[${t0}, ${t1}], color=${col}, stroke_width=${sw2})`);
+      break;
+    }
     case 'line':
       lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)})`);
       lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${safeNum(obj.strokeWidth, 3)})`);
@@ -401,6 +410,25 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
           const xMin = Number.isFinite(g.xMin) ? g.xMin : xr[0];
           const xMax = Number.isFinite(g.xMax) ? g.xMax : xr[1];
           lines.push(`${gn} = ${n}.plot(lambda x: ${safeMathExpr(g.expression)}, x_range=[${xMin}, ${xMax}], color=${col}, stroke_width=${g.strokeWidth || 3})`);
+          if (g.area && g.area.enabled) {
+            const an = `${gn}_area`;
+            const axMin = Number.isFinite(g.area.xMin) ? g.area.xMin : xMin;
+            const axMax = Number.isFinite(g.area.xMax) ? g.area.xMax : xMax;
+            const acol = hex(g.area.color) || col;
+            const aop = Number.isFinite(g.area.opacity) ? g.area.opacity : 0.5;
+            lines.push(`${an} = ${n}.get_area(${gn}, x_range=[${axMin}, ${axMax}], color=${acol}, opacity=${aop})`);
+            lines.push(`${n}.add(${an})`);
+          }
+          if (g.riemann && g.riemann.enabled) {
+            const rn = `${gn}_riemann`;
+            const rxMin = Number.isFinite(g.riemann.xMin) ? g.riemann.xMin : xMin;
+            const rxMax = Number.isFinite(g.riemann.xMax) ? g.riemann.xMax : xMax;
+            const rdx = (Number.isFinite(g.riemann.dx) && g.riemann.dx > 0) ? g.riemann.dx : ((rxMax - rxMin) / 10);
+            const rtype = ['left', 'right', 'center'].includes(g.riemann.type) ? g.riemann.type : 'left';
+            const rcol = hex(g.riemann.color) || col;
+            lines.push(`${rn} = ${n}.get_riemann_rectangles(${gn}, x_range=[${rxMin}, ${rxMax}], dx=${rdx}, input_sample_type="${rtype}", color=${rcol})`);
+            lines.push(`${n}.add(${rn})`);
+          }
         }
       }
       break;
