@@ -131,6 +131,22 @@
               <v-text v-for="(t, ti) in matrixCellConfigs(obj)" :key="'mc'+ti" :config="t" />
             </v-group>
 
+            <!-- Brace -->
+            <v-group v-if="obj.type === 'brace' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="relationalHitCfg(obj)" />
+              <v-line :config="braceLineCfg(obj)" />
+              <v-text v-if="obj.label" :config="relationalLabelCfg(obj, braceLabelAnchor(obj))" />
+            </v-group>
+
+            <!-- Angle -->
+            <v-group v-if="obj.type === 'angle' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="relationalHitCfg(obj)" />
+              <v-line v-for="(rc, ri) in angleRayCfgs(obj)" :key="'ar'+ri" :config="rc" />
+              <v-line v-if="!obj.rightAngle" :config="angleArcCfg(obj)" />
+              <v-line v-if="obj.rightAngle" :config="angleSquareCfg(obj)" />
+              <v-text v-if="obj.label" :config="relationalLabelCfg(obj, angleLabelAnchor(obj))" />
+            </v-group>
+
             <!-- 3D: Sphere -->
             <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
@@ -184,9 +200,9 @@
         </v-layer>
 
         <v-layer v-if="polygonHandles">
-          <v-circle v-for="pt in polygonHandles.points" :key="'pv' + pt.i"
-            :config="{ x: pt.cx, y: pt.cy, radius: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 1.5, draggable: true, name: 'vertexHandle' }"
-            @dragmove="onVertexDrag(pt.i, $event)" @dragend="onVertexDragEnd" />
+          <v-circle v-for="pt in polygonHandles.points" :key="'pv' + pt.key"
+            :config="{ x: pt.cx, y: pt.cy, radius: 6, fill: '#4CEEF9', stroke: '#0b1020', strokeWidth: 1.5, draggable: true }"
+            @dragmove="onVertexDrag(pt.key, $event)" @dragend="onVertexDragEnd" />
         </v-layer>
 
         <!-- Group bounds layer -->
@@ -500,20 +516,34 @@ const pathPreviewLineCfg = computed(() => {
 const polygonHandles = computed(() => {
   if (store.activeTool !== 'select' || store.selectedObjectIds.length !== 1) return null;
   const obj = store.objectById(store.selectedObjectIds[0]);
-  if (!obj || obj.type !== 'polygon_free' || !Array.isArray(obj.vertices)) return null;
+  if (!obj) return null;
   const c = s2c(obj.x, obj.y);
-  return { id: obj.id,
-    points: obj.vertices.map(([vx, vy], i) => ({ i, cx: c.x + vx * vs.value, cy: c.y + vy * vs.value })) };
+  if (obj.type === 'polygon_free' && Array.isArray(obj.vertices)) {
+    return { id: obj.id, kind: 'vertices',
+      points: obj.vertices.map(([vx, vy], i) => ({ key: i, cx: c.x + vx * vs.value, cy: c.y + vy * vs.value })) };
+  }
+  if (obj.type === 'brace') {
+    return { id: obj.id, kind: 'relational',
+      points: ['p1', 'p2'].map(k => ({ key: k, cx: c.x + obj[k][0] * vs.value, cy: c.y + obj[k][1] * vs.value })) };
+  }
+  if (obj.type === 'angle') {
+    return { id: obj.id, kind: 'relational',
+      points: ['vertex', 'point1', 'point2'].map(k => ({ key: k, cx: c.x + obj[k][0] * vs.value, cy: c.y + obj[k][1] * vs.value })) };
+  }
+  return null;
 });
 
-function onVertexDrag(i, evt) {
+function onVertexDrag(key, evt) {
   const h = polygonHandles.value; if (!h) return;
   const obj = store.objectById(h.id); if (!obj) return;
   const c = s2c(obj.x, obj.y);
   const node = evt.target;
-  const nv = obj.vertices.slice();
-  nv[i] = canvasToVertex(node.x(), node.y(), c.x, c.y, vs.value);
-  obj.vertices = nv;             // live update (no commit per pixel)
+  const nv = canvasToVertex(node.x(), node.y(), c.x, c.y, vs.value);
+  if (h.kind === 'vertices') {
+    const arr = obj.vertices.slice(); arr[key] = nv; obj.vertices = arr;
+  } else {
+    obj[key] = nv;
+  }
 }
 function onVertexDragEnd() {
   store.commitState();
@@ -1029,6 +1059,83 @@ function matrixBracketConfigs(obj) {
     { points: left, stroke: col, strokeWidth: 2, listening: false },
     { points: right, stroke: col, strokeWidth: 2, listening: false },
   ];
+}
+
+// ── Relational config (Brace, Angle) ──
+function relationalHitCfg(obj) {
+  const w = (obj.width || 140) * vs.value, h = (obj.height || 140) * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
+}
+
+function relationalLabelCfg(obj, anchor) {
+  return { x: anchor[0] - 12, y: anchor[1] - 8, width: 24, text: obj.label || '', align: 'center',
+    fontSize: Math.max(11, 16 * vs.value), fill: obj.fill || '#ffffff', fontStyle: 'italic', listening: false };
+}
+
+function braceLineCfg(obj) {
+  const p1 = obj.p1 || [-80, 0], p2 = obj.p2 || [80, 0];
+  const z = vs.value;
+  const ax = p1[0] * z, ay = p1[1] * z, bx = p2[0] * z, by = p2[1] * z;
+  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  const d = 14 * z;
+  const mx = (ax + bx) / 2 + nx * d, my = (ay + by) / 2 + ny * d;
+  return { points: [ax, ay, ax + nx * d, ay + ny * d, mx, my, bx + nx * d, by + ny * d, bx, by],
+    stroke: obj.stroke || '#ffffff', strokeWidth: 2, lineJoin: 'round', tension: 0.4, listening: false };
+}
+function braceLabelAnchor(obj) {
+  const p1 = obj.p1 || [-80, 0], p2 = obj.p2 || [80, 0];
+  const z = vs.value;
+  const ax = p1[0] * z, ay = p1[1] * z, bx = p2[0] * z, by = p2[1] * z;
+  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  return [(ax + bx) / 2 + nx * 26 * z, (ay + by) / 2 + ny * 26 * z];
+}
+
+function angleRayCfgs(obj) {
+  const z = vs.value;
+  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
+  const col = obj.stroke || '#fbbf24';
+  return [
+    { points: [v[0] * z, v[1] * z, p1[0] * z, p1[1] * z], stroke: col, strokeWidth: 2, listening: false },
+    { points: [v[0] * z, v[1] * z, p2[0] * z, p2[1] * z], stroke: col, strokeWidth: 2, listening: false },
+  ];
+}
+function angleArcCfg(obj) {
+  const z = vs.value;
+  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
+  const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
+  const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
+  const r = (obj.radius || 0.6) / 14.222 * (stg.value.width) * z * 0.5;
+  const pts = [];
+  let start = a1, end = a2;
+  if (end < start) end += Math.PI * 2;
+  const steps = 24;
+  for (let i = 0; i <= steps; i++) {
+    const a = start + (end - start) * (i / steps);
+    pts.push(v[0] * z + Math.cos(a) * r, v[1] * z + Math.sin(a) * r);
+  }
+  return { points: pts, stroke: obj.stroke || '#fbbf24', strokeWidth: 2, listening: false };
+}
+function angleSquareCfg(obj) {
+  const z = vs.value;
+  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
+  const u1a = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
+  const u2a = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
+  const r = 16 * z;
+  const c1 = [v[0] * z + Math.cos(u1a) * r, v[1] * z + Math.sin(u1a) * r];
+  const c2 = [v[0] * z + Math.cos(u2a) * r, v[1] * z + Math.sin(u2a) * r];
+  const corner = [c1[0] + (c2[0] - v[0] * z), c1[1] + (c2[1] - v[1] * z)];
+  return { points: [c1[0], c1[1], corner[0], corner[1], c2[0], c2[1]], stroke: obj.stroke || '#fbbf24', strokeWidth: 2, listening: false };
+}
+function angleLabelAnchor(obj) {
+  const z = vs.value;
+  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
+  const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
+  const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
+  const mid = (a1 + a2) / 2;
+  const r = 34 * z;
+  return [v[0] * z + Math.cos(mid) * r, v[1] * z + Math.sin(mid) * r];
 }
 
 // ── Axes config ──
