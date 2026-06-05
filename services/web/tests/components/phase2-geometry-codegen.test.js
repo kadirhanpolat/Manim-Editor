@@ -59,3 +59,17 @@ describe('sector codegen', () => {
     expect(o.sweepAngle).toBeCloseTo(90, 0);
   });
 });
+
+describe('double_arrow codegen', () => {
+  const script = (o) => generateManimScript(makeProject([o]));
+  const roundTrip = (o) => parseManimScript(generateManimScript(makeProject([o])), SW, SH).objects[0];
+  it('emits DoubleArrow', () => {
+    const s = script(makeObj('double_arrow', { width: 200, fill: '#ef4444' }));
+    expect(s).toMatch(/= DoubleArrow\(start=LEFT \* [\d.]+, end=RIGHT \* [\d.]+, color="#ef4444"/);
+  });
+  it('round-trips type + width', () => {
+    const o = roundTrip(makeObj('double_arrow', { width: 200, fill: '#ef4444' }));
+    expect(o.type).toBe('double_arrow');
+    expect(o.width).toBeGreaterThan(0);
+  });
+});
