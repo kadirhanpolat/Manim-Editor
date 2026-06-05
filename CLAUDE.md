@@ -306,6 +306,27 @@ Both generators now share the same frame constants and emit identical coordinate
 - `_kfPropSet` x-conversion and camera `set_width` in **both** files now use `FRAME_WIDTH`.
 - **When editing coordinate math, keep `codegen.js` and `manim.js` byte-identical in the multipliers** — they have no shared import (codegen.js can't be imported in Vitest), so parity is maintained by convention + the `manim-export.test.js` invariant tests.
 
+## 2D Object Effects (Phase 1 — 2026-06-05)
+
+Optional object fields, absent ⇒ byte-identical legacy output:
+`gradient {colors[], angle}`, `cornerRadius` (rect/square), `fillOpacity`,
+`strokeOpacity`, `dash {numDashes, ratio}`.
+
+- Codegen: `set_color_by_gradient(...)`, `RoundedRectangle`, `set_fill/stroke`
+  opacity = master × channel, dashed via fill-preserving
+  `VGroup(base, DashedVMobject(_dash_src, ...))`. **Keep codegen.js and manim.js
+  helpers (`fillOpacityExpr`, `strokeOpacityArg`, `gradientLine`, `dashedLines`)
+  byte-identical** — guarded by `effects-codegen.test.js`.
+- Preview: `StageCanvas.vue` `applyEffects()` (Konva gradient / cornerRadius /
+  rgba alpha / dash).
+- Inspector: "Effects" section in `PropertiesPanel.vue` (controls gate by shape
+  type via `canGradient` / `canDash` / `canRound`).
+- Store actions: `setGradient`, `setCornerRadius`, `setDash` (delete the field on
+  null/0 to preserve byte-identical legacy output).
+- Preview-only divergences: gradient **angle** (Manim orients by point order),
+  and dashed+fill (preview = single shape, render = VGroup). Phase 2: glow,
+  drop shadow, `.round_corners()` for polygon/triangle/star.
+
 ## Build / Environment Gotchas (fixed in v3.3.1)
 
 - **Vue 3 `<template v-for>` keys**: keys must sit on the `<template>` tag, not on child elements — a pure Vue 3 prod build (`npm run build`) errors otherwise. Watch for this when adding new keyed loops in `Topbar.vue` / `StageCanvas.vue`.
