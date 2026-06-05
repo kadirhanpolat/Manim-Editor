@@ -25,15 +25,23 @@
     </div>
 
     <!-- ═════════ TIMELINE ═════════ -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- Time ruler -->
-      <div class="h-6 border-b border-studio-border/50 relative flex-shrink-0">
+    <div ref="timelineBody" class="flex-1 flex flex-col overflow-hidden relative">
+      <!-- Time ruler (click / drag to scrub) -->
+      <div class="h-6 border-b border-studio-border/50 relative flex-shrink-0 cursor-pointer" @mousedown="startSeek">
         <div class="absolute top-0 left-0 h-full" :style="{ width: totalW + 'px', marginLeft: labelW + 'px' }">
           <div v-for="tk in ticks" :key="tk.t" class="absolute top-0 h-full flex flex-col justify-end" :style="{ left: tk.x + 'px' }">
             <div class="w-px" :class="tk.major ? 'h-3 bg-studio-text-muted/30' : 'h-1.5 bg-studio-border'"></div>
             <span v-if="tk.major" class="text-[8px] text-studio-text-muted/60 ml-0.5 leading-none">{{ tk.label }}</span>
           </div>
         </div>
+      </div>
+
+      <!-- Playhead: vertical line marking the current time across all lanes -->
+      <div
+        class="absolute top-0 bottom-0 w-px bg-studio-accent pointer-events-none z-20"
+        :style="{ left: (labelW + playheadTime * pps) + 'px' }"
+      >
+        <div class="absolute top-0 -left-[3px] w-[7px] h-[7px] rotate-45 bg-studio-accent"></div>
       </div>
 
       <!-- Unified scroll: object lanes + animation tracks + keyframes + camera all share
@@ -128,11 +136,32 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useProjectStore, SHAPE_COLORS } from '../../store/project.js';
+import { getPlaybackEngine } from '../../engine/playback.js';
 import TimelineTrack from './TimelineTrack.vue';
 import KeyframeLanesPanel from './KeyframeLanesPanel.vue';
 import KeyframeEasingPopup from './KeyframeEasingPopup.vue';
 
 const store = useProjectStore();
+const timelineBody = ref(null);
+const playheadTime = computed(() => store.playbackTime || 0);
+
+// Click/drag on the time ruler to move the playhead (scrub).
+function seekToClientX(clientX) {
+  const el = timelineBody.value;
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const t = Math.min(totalDuration.value, Math.max(0, (clientX - rect.left - labelW.value) / pps.value));
+  const eng = getPlaybackEngine();
+  eng.duration = totalDuration.value;  // keep engine clamp in sync with project length
+  eng.seekTo(t, store.project.tracks, store.project.objects, store.project.cameraTrack || []);
+}
+function startSeek(e) {
+  seekToClientX(e.clientX);
+  const move = (ev) => seekToClientX(ev.clientX);
+  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
 
 const pps = ref(80);
 const labelW = ref(90);
