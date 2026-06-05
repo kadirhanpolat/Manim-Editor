@@ -549,6 +549,49 @@ export class PlaybackEngine {
         Object.assign(overrides, pos);  // 2D: {x,y} · 3D: {x3d,y3d,z3d}
         break;
       }
+      case 'indicate': {
+        const params = clip.params || {};
+        const pulse = 1 - Math.abs(2 * progress - 1);
+        const sf = params.scale_factor !== undefined ? params.scale_factor : 1.2;
+        overrides.scaleX = lerp(1, sf, pulse);
+        overrides.scaleY = lerp(1, sf, pulse);
+        overrides.fill = interpolateColor(sourceObj.fill || '#ffffff', params.color || '#FFFF00', pulse);
+        break;
+      }
+      case 'wiggle': {
+        const params = clip.params || {};
+        const nW = params.n_wiggles !== undefined ? params.n_wiggles : 6;
+        const ang = params.rotation_angle !== undefined ? params.rotation_angle : 3.6;
+        const sv = params.scale_value !== undefined ? params.scale_value : 1.1;
+        const osc = Math.sin(2 * Math.PI * nW * progress);
+        overrides.rotation = (sourceObj.rotation || 0) + osc * ang;
+        overrides.scaleX = 1 + osc * (sv - 1);
+        overrides.scaleY = 1 + osc * (sv - 1);
+        break;
+      }
+      case 'flash': {
+        const params = clip.params || {};
+        const pulse = Math.sin(Math.PI * progress);
+        overrides.fill = interpolateColor(sourceObj.fill || '#ffffff', params.color || '#FFFF00', pulse);
+        break;
+      }
+      case 'focus_on': {
+        const params = clip.params || {};
+        const pulse = Math.sin(Math.PI * progress);
+        overrides.fill = interpolateColor(sourceObj.fill || '#ffffff', params.color || '#FFFF00', pulse * 0.6);
+        break;
+      }
+      case 'circumscribe': {
+        const params = clip.params || {};
+        overrides._emphasis = {
+          kind: 'circumscribe',
+          shape: params.shape === 'Circle' ? 'Circle' : 'Rectangle',
+          color: params.color || '#FFFF00',
+          fadeOut: !!params.fade_out,
+          progress,
+        };
+        break;
+      }
     }
 
     return {
