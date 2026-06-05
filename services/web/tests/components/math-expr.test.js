@@ -17,4 +17,17 @@ describe('mathExpr', () => {
   it('returns null for an undefined function (reference error)', () => {
     expect(compileExpr('foo(x)', 'x')).toBeNull();
   });
+  it('blocks side-effectful globals', () => {
+    expect(compileExpr('fetch(x)', 'x')).toBeNull();
+    expect(compileExpr('setTimeout(x)', 'x')).toBeNull();
+    expect(compileExpr('Math.random()', 'x')).toBeNull();
+    expect(isSafeExpr('window')).toBe(false);
+  });
+  it('rejects a malformed varName', () => {
+    expect(compileExpr('x', 'x, y')).toBeNull();
+    expect(compileExpr('x', '1bad')).toBeNull();
+  });
+  it('still allows the math namespace', () => {
+    expect(compileExpr('np.sqrt(np.abs(x)) + np.exp(x) + PI', 'x')(1)).toBeGreaterThan(0);
+  });
 });
