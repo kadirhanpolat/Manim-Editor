@@ -234,17 +234,25 @@ function startObjResize(obj, dir, e) {
   const startX = e.clientX;
   const startEnter = obj.enterTime || 0;
   const startDur = obj.duration || 3;
+  // Snapshot keyframes before resizing so each move remaps from the original
+  // interval (non-pinned keys keep their relative position; no compounding).
+  const origKfs = obj.keyframes ? JSON.parse(JSON.stringify(obj.keyframes)) : null;
+  const oldStart = startEnter;
+  const oldEnd = startEnter + startDur;
 
   const move = (ev) => {
     const dx = (ev.clientX - startX) / pps.value;
+    let newEnter, newDur;
     if (dir === 'left') {
-      const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
-      const newDur = Math.max(0.1, Math.round((startDur - dx) * 10) / 10);
+      newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
+      newDur = Math.max(0.1, Math.round((startDur - dx) * 10) / 10);
       store.updateObject(obj.id, { enterTime: newEnter, duration: newDur });
     } else {
-      const newDur = Math.max(0.1, Math.round((startDur + dx) * 10) / 10);
+      newEnter = startEnter;
+      newDur = Math.max(0.1, Math.round((startDur + dx) * 10) / 10);
       store.updateObject(obj.id, { duration: newDur });
     }
+    if (origKfs) store.rescaleKeyframes(obj.id, origKfs, oldStart, oldEnd, newEnter, newEnter + newDur);
   };
   const up = () => {
     draggingObjId.value = null;

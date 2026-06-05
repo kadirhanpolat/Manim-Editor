@@ -136,6 +136,38 @@ describe('clampKeyframesToRange with pinned keyframes', () => {
   });
 });
 
+describe('rescaleKeyframes (proportional resize)', () => {
+  it('remaps a middle keyframe proportionally when expanding from the right', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // [0, 4]
+    store.addKeyframeScaffold(obj.id, 'x', 2);                 // 0, 2(50%), 4
+    const orig = JSON.parse(JSON.stringify(store.objectById(obj.id).keyframes));
+    store.rescaleKeyframes(obj.id, orig, 0, 4, 0, 8);          // expand → [0, 8]
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 4, 8]);                          // 50% stays 50%
+  });
+
+  it('remaps proportionally when the left edge is dragged', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 2, duration: 4 }); // [2, 6]
+    store.addKeyframeScaffold(obj.id, 'x', 4);                 // 2, 4(50%), 6
+    const orig = JSON.parse(JSON.stringify(store.objectById(obj.id).keyframes));
+    store.rescaleKeyframes(obj.id, orig, 2, 6, 0, 6);          // left edge → 0
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 3, 6]);
+  });
+
+  it('shrinks middle keyframes proportionally', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // [0, 4]
+    store.addKeyframeScaffold(obj.id, 'x', 2);
+    const orig = JSON.parse(JSON.stringify(store.objectById(obj.id).keyframes));
+    store.rescaleKeyframes(obj.id, orig, 0, 4, 0, 2);          // shrink → [0, 2]
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 1, 2]);
+  });
+});
+
 describe('deleteKeyframe (pinned-boundary rules)', () => {
   it('removes a non-pinned keyframe normally', () => {
     const obj = store.addObject('rectangle', 960, 540);

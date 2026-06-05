@@ -1336,6 +1336,32 @@ const useProjectStore = defineStore('project', {
       if (changed) { this.isDirty = true; this.commitState(); }
     },
 
+    // Proportionally remap a property's keyframes when the object's interval
+    // changes from [oldStart,oldEnd] to [newStart,newEnd] (object bar resized).
+    // Non-pinned keyframes keep their RELATIVE position within the interval, so
+    // they slide/scale with the edge being dragged; pinned boundaries snap to
+    // the new edges. `origKeyframes` is a snapshot taken before the resize began
+    // so repeated calls during a drag remap from the original (no compounding).
+    rescaleKeyframes(objId, origKeyframes, oldStart, oldEnd, newStart, newEnd) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj || !origKeyframes) return;
+      const oldSpan = (oldEnd - oldStart) || 1;
+      const map = (t) => newStart + ((t - oldStart) / oldSpan) * (newEnd - newStart);
+      if (!obj.keyframes) obj.keyframes = {};
+      for (const prop of Object.keys(origKeyframes)) {
+        obj.keyframes[prop] = origKeyframes[prop]
+          .map(kf => {
+            const target = kf.pinned === 'start' ? newStart
+              : kf.pinned === 'end' ? newEnd
+              : map(kf.time);
+            return { ...kf, time: Math.round(Math.max(newStart, Math.min(newEnd, target)) * 100) / 100 };
+          })
+          .sort((a, b) => a.time - b.time);
+      }
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
     updateKeyframeValue(objId, prop, time, value) {
       const obj = this.project.objects.find(o => o.id === objId);
       const kf = obj?.keyframes?.[prop]?.find(k => Math.abs(k.time - time) < 0.01);
