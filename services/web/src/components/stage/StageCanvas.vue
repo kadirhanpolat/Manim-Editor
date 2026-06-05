@@ -48,6 +48,9 @@
             <!-- Triangle -->
             <v-line v-if="obj.type === 'triangle' && isVis(obj.id)" :config="triangleCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
+            <!-- Free Polygon -->
+            <v-line v-if="obj.type === 'polygon_free' && isVis(obj.id)" :config="polygonFreeCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+
             <!-- Star -->
             <v-star v-if="obj.type === 'star' && isVis(obj.id)" :config="starCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
@@ -168,6 +171,12 @@
           <v-circle v-for="(pt, pi) in pathCanvasPoints" :key="'pp'+pi" :config="{ x: pt.cx, y: pt.cy, radius: 5, fill: '#a855f7', stroke: '#fff', strokeWidth: 1, listening: false }" />
         </v-layer>
 
+        <v-layer v-if="polygonHandles">
+          <v-circle v-for="pt in polygonHandles.points" :key="'pv' + pt.i"
+            :config="{ x: pt.cx, y: pt.cy, radius: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 1.5, draggable: true, name: 'vertexHandle' }"
+            @dragmove="onVertexDrag(pt.i, $event)" @dragend="onVertexDragEnd" />
+        </v-layer>
+
         <!-- Group bounds layer -->
         <v-layer>
           <v-rect v-for="gb in groupBounds" :key="'gb-'+gb.id" :config="gb" />
@@ -231,6 +240,7 @@ import { applyOverrides } from '../../engine/blending.js';
 import { project3D, unprojectIso, perspectiveScale } from '../../engine/projection3d.js';
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 import { latexToUnicode } from '../../utils/latexPreview.js';
+import { canvasToVertex } from '../../engine/polygonVertices.js';
 
 const store = useProjectStore();
 
@@ -473,6 +483,28 @@ const pathPreviewLineCfg = computed(() => {
     listening: false,
   };
 });
+
+const polygonHandles = computed(() => {
+  if (store.activeTool !== 'select' || store.selectedObjectIds.length !== 1) return null;
+  const obj = store.objectById(store.selectedObjectIds[0]);
+  if (!obj || obj.type !== 'polygon_free' || !Array.isArray(obj.vertices)) return null;
+  const c = s2c(obj.x, obj.y);
+  return { id: obj.id,
+    points: obj.vertices.map(([vx, vy], i) => ({ i, cx: c.x + vx * vs.value, cy: c.y + vy * vs.value })) };
+});
+
+function onVertexDrag(i, evt) {
+  const h = polygonHandles.value; if (!h) return;
+  const obj = store.objectById(h.id); if (!obj) return;
+  const c = s2c(obj.x, obj.y);
+  const node = evt.target;
+  const nv = obj.vertices.slice();
+  nv[i] = canvasToVertex(node.x(), node.y(), c.x, c.y, vs.value);
+  obj.vertices = nv;             // live update (no commit per pixel)
+}
+function onVertexDragEnd() {
+  store.commitState();
+}
 
 const groupBounds = computed(() => {
   const groups = store.project.groups || [];
@@ -762,6 +794,17 @@ function triangleCfg(obj) {
   const hw = L ? L.w / 2 : e.width / 2 * vs.value, hh = L ? L.h / 2 : e.height / 2 * vs.value, rot = L ? L.rotation : (e.rotation || 0);
   const cfg = { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
   return applyEffects(cfg, obj, hw * 2, hh * 2, true);
+}
+function polygonFreeCfg(obj) {
+  const e = eff(obj); const p = s2c(e.x, e.y);
+  const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 3) ? obj.vertices : [[-80, -60], [80, -60], [80, 60], [-80, 60]];
+  const pts = verts.flatMap(([vx, vy]) => [vx * vs.value, vy * vs.value]);
+  const xs = verts.map(v => v[0]), ys = verts.map(v => v[1]);
+  const w = (Math.max(...xs) - Math.min(...xs)) * vs.value, h = (Math.max(...ys) - Math.min(...ys)) * vs.value;
+  const cfg = { x: p.x, y: p.y, points: pts, closed: true, fill: e.fill, stroke: e.stroke,
+    strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: e.rotation || 0,
+    scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
+  return applyEffects(cfg, obj, w, h, true);
 }
 function starCfg(obj) {
   const L = live(obj);
@@ -1421,7 +1464,13 @@ function updateTransformer() {
   const t = tr.getNode(); const stage = ks.getNode(); if (!t || !stage) return;
   const layer = ol && ol.getNode ? ol.getNode() : null;
   const findNode = (id) => (layer ? layer.findOne('#' + id) : null) || stage.findOne('#' + id);
-  const nodes = store.selectedObjectIds.map(findNode).filter(Boolean);
+  // polygon_free is edited via draggable vertex handles, not the resize/rotate
+  // transformer — exclude it so its anchors don't overlap the vertex handles.
+  const ids = store.selectedObjectIds.filter((id) => {
+    const o = store.objectById(id);
+    return !o || o.type !== 'polygon_free';
+  });
+  const nodes = ids.map(findNode).filter(Boolean);
   t.nodes(nodes);
   t.getLayer().batchDraw();
 }

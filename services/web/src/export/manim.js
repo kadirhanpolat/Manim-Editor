@@ -82,8 +82,8 @@ const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.11
 const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/api/src/compiler/codegen.js) ──
-const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow']);
+const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
+const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -327,6 +327,16 @@ function objCode(obj, sw, sh) {
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
       if (hasStroke)
         lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
+    case 'polygon_free': {
+      const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 3)
+        ? obj.vertices : [[-80, -60], [80, -60], [80, 60], [-80, 60]];
+      const pts = verts.map(([vx, vy]) =>
+        `[${(vx / sw * FRAME_WIDTH).toFixed(3)}, ${(-vy / sh * FRAME_HEIGHT).toFixed(3)}, 0]`).join(', ');
+      lines.push(`${n} = Polygon(${pts})`);
+      if (hasFill) lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(obj, opacity)})`);
+      if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     }
     case 'line':
@@ -1244,6 +1254,29 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const size = Math.round(parseFloat(sc) * 2 / FRAME_WIDTH * sw);
       const id = uid('obj');
       const obj = { id, type: 'polygon', name, x: sw / 2, y: sh / 2, width: size, height: size, sides: parseInt(sides), fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Polygon (free-vertex)
+    m = line.match(/^(\w+)\s*=\s*Polygon\((\[[-\d.]+,\s*[-\d.]+,\s*0\](?:,\s*\[[-\d.]+,\s*[-\d.]+,\s*0\])+)\)/);
+    if (m) {
+      const [, name, body] = m;
+      const verts = [];
+      const re = /\[([-\d.]+),\s*([-\d.]+),\s*0\]/g;
+      let v;
+      while ((v = re.exec(body)) !== null) {
+        verts.push([
+          Math.round(parseFloat(v[1]) / FRAME_WIDTH * sw),
+          Math.round(-parseFloat(v[2]) / FRAME_HEIGHT * sh),
+        ]);
+      }
+      const xs = verts.map(p => p[0]), ys = verts.map(p => p[1]);
+      const width = Math.max(...xs) - Math.min(...xs), height = Math.max(...ys) - Math.min(...ys);
+      const id = uid('obj');
+      const obj = { id, type: 'polygon_free', name, x: sw / 2, y: sh / 2, width, height, vertices: verts,
+        fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;
     }
