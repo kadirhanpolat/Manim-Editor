@@ -1234,6 +1234,22 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
+    // Shift every keyframe of an object in time by `delta` (clamped at 0) so the
+    // keyframes travel with the object bar when it is dragged left/right.
+    shiftKeyframes(objId, delta) {
+      if (!delta) return;
+      const obj = this.project.objects.find(o => o.id === objId);
+      if (!obj?.keyframes) return;
+      for (const prop of Object.keys(obj.keyframes)) {
+        for (const kf of obj.keyframes[prop]) {
+          kf.time = Math.max(0, Math.round((kf.time + delta) * 100) / 100);
+        }
+        obj.keyframes[prop].sort((a, b) => a.time - b.time);
+      }
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+
     // Clamp every keyframe of an object into its visible interval
     // [enterTime, enterTime+duration] (called after the object bar is resized/moved).
     clampKeyframesToRange(objId) {

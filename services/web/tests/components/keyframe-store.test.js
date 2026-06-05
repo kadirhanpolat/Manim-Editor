@@ -33,6 +33,18 @@ describe('clampKeyframesToRange', () => {
   });
 });
 
+describe('shiftKeyframes', () => {
+  it('shifts all keyframe times by delta (clamped at 0)', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.addKeyframe(obj.id, 'x', 1.0, 100);
+    store.addKeyframe(obj.id, 'x', 3.0, 500);
+    store.shiftKeyframes(obj.id, 1.5);
+    expect(store.objectById(obj.id).keyframes.x.map(k => k.time)).toEqual([2.5, 4.5]);
+    store.shiftKeyframes(obj.id, -10); // clamps both at 0
+    expect(store.objectById(obj.id).keyframes.x.every(k => k.time >= 0)).toBe(true);
+  });
+});
+
 describe('addKeyframe', () => {
   it('adds a keyframe to an object property', () => {
     const obj = store.addObject('circle', 960, 540);

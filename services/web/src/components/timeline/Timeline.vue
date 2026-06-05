@@ -179,14 +179,18 @@ function startObjDrag(obj, e) {
   draggingObjId.value = obj.id;
   const startX = e.clientX;
   const startEnter = obj.enterTime || 0;
+  let lastEnter = startEnter;
 
   const move = (ev) => {
     const dx = (ev.clientX - startX) / pps.value;
     const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
+    const d = Math.round((newEnter - lastEnter) * 100) / 100;
+    if (d !== 0) { store.shiftKeyframes(obj.id, d); lastEnter = newEnter; } // keyframes travel with the bar
     store.updateObject(obj.id, { enterTime: newEnter });
   };
   const up = () => {
     draggingObjId.value = null;
+    store.clampKeyframesToRange(obj.id);
     document.removeEventListener('mousemove', move);
     document.removeEventListener('mouseup', up);
   };
