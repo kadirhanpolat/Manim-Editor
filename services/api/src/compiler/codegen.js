@@ -106,6 +106,7 @@ const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/web/src/export/manim.js) ──
 const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
 const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free', 'parametric']);
+const SHADOW_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free', 'text', 'latex']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -135,6 +136,25 @@ function dashedLines(n, obj) {
     `_dash_src_${n} = ${n}.copy()`,
     `${n}.set_stroke(width=0)`,
     `${n} = VGroup(${n}, DashedVMobject(_dash_src_${n}, num_dashes=${numDashes}, dashed_ratio=${+ratio}))`,
+  ];
+}
+/** round_corners line for polygon/triangle/star (rect/square use RoundedRectangle), or null. */
+function roundCornersLine(n, obj, sw) {
+  if (!obj.cornerRadius || obj.cornerRadius <= 0) return null;
+  if (!['polygon', 'triangle', 'star'].includes(obj.type)) return null;
+  return `${n}.round_corners(radius=${(obj.cornerRadius / sw * FRAME_WIDTH).toFixed(3)})`;
+}
+/** Drop-shadow lines (shifted dark copy + VGroup), or [] when no shadow. */
+function shadowLines(n, obj, sw, sh) {
+  const s = obj.shadow;
+  if (!s || !SHADOW_TYPES.has(obj.type)) return [];
+  const color = hex(s.color) || '"#000000"';
+  const op = +(Number.isFinite(s.opacity) ? s.opacity : 0.4);
+  const dxm = ((Number.isFinite(s.dx) ? s.dx : 8) / sw * FRAME_WIDTH).toFixed(3);
+  const dym = ((-(Number.isFinite(s.dy) ? s.dy : 8)) / sh * FRAME_HEIGHT).toFixed(3);
+  return [
+    `_shadow_${n} = ${n}.copy().set_color(${color}).set_opacity(${op}).shift([${dxm}, ${dym}, 0])`,
+    `${n} = VGroup(_shadow_${n}, ${n})`,
   ];
 }
 
@@ -512,9 +532,12 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       lines.push(`${n} = Circle(radius=0.5)  # unknown type: ${obj.type}`);
   }
 
+  const rc = roundCornersLine(n, obj, sw);
+  if (rc) lines.push(rc);
   const gl = gradientLine(n, obj);
   if (gl && GRADIENT_TYPES.has(obj.type)) lines.push(gl);
   for (const dl of dashedLines(n, obj)) lines.push(dl);
+  for (const sl of shadowLines(n, obj, sw, sh)) lines.push(sl);
   lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
   if (obj.rotation) lines.push(`${n}.rotate(${(obj.rotation * Math.PI / 180).toFixed(4)})`);
   return lines;
