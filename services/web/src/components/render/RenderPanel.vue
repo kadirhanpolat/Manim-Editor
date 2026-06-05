@@ -45,17 +45,25 @@
       </div>
     </div>
     
-    <!-- Logs Toggle -->
-    <button
-      v-if="hasLogs"
-      @click="showLogs = !showLogs"
-      class="text-xs text-studio-text-muted hover:text-studio-text mb-2"
-    >
-      {{ showLogs ? '▼ Hide Logs' : '▶ Show Logs' }}
-    </button>
-    
+    <!-- Logs Toggle + Copy -->
+    <div v-if="hasLogs" class="flex items-center gap-3 mb-2">
+      <button
+        @click="showLogs = !showLogs"
+        class="text-xs text-studio-text-muted hover:text-studio-text"
+      >
+        {{ showLogs ? '▼ Hide Logs' : '▶ Show Logs' }}
+      </button>
+      <button
+        @click="copyLogs"
+        class="text-xs text-studio-accent hover:opacity-80"
+        title="Copy the render log to the clipboard"
+      >
+        {{ copied ? '✓ Copied' : '⧉ Copy logs' }}
+      </button>
+    </div>
+
     <div v-if="showLogs && hasLogs" class="mb-3 p-2 bg-studio-bg rounded text-xs font-mono max-h-32 overflow-y-auto">
-      <pre class="whitespace-pre-wrap text-studio-text-muted">{{ jobLogs }}</pre>
+      <pre class="whitespace-pre-wrap text-studio-text-muted select-text" style="user-select: text;">{{ jobLogs }}</pre>
     </div>
     
     <!-- Video Preview -->
@@ -80,6 +88,22 @@ const store = useProjectStore();
 const quality = ref('high');
 const qualityOptions = QUALITY_PRESETS;
 const showLogs = ref(false);
+const copied = ref(false);
+async function copyLogs() {
+  const text = jobLogs.value || '';
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Fallback for non-secure contexts / older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch { /* ignore */ }
+    ta.remove();
+  }
+  copied.value = true;
+  setTimeout(() => { copied.value = false; }, 1500);
+}
 let pollInterval = null;
 const jobData = ref(null);
 const hasRender = ref(false);
