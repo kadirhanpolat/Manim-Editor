@@ -112,7 +112,8 @@ function toggleKf(kf) {
 }
 
 function rightClickKf(kf) {
-  store.removeKeyframe(props.objId, props.prop, kf.time);
+  // deleteKeyframe enforces the pinned-boundary rules (block / delete-as-pair)
+  store.deleteKeyframe(props.objId, props.prop, kf.time);
 }
 
 const laneArea = ref(null);

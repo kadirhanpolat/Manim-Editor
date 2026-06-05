@@ -136,6 +136,35 @@ describe('clampKeyframesToRange with pinned keyframes', () => {
   });
 });
 
+describe('deleteKeyframe (pinned-boundary rules)', () => {
+  it('removes a non-pinned keyframe normally', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 3 });
+    store.addKeyframeScaffold(obj.id, 'x', 1.5); // 0(start), 1.5, 3(end)
+    store.deleteKeyframe(obj.id, 'x', 1.5);
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 3]);
+  });
+
+  it('blocks deleting a pinned boundary while a middle keyframe remains', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 3 });
+    store.addKeyframeScaffold(obj.id, 'x', 1.5); // 0, 1.5, 3
+    store.deleteKeyframe(obj.id, 'x', 3); // pinned end — should be blocked
+    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    expect(times).toEqual([0, 1.5, 3]);
+  });
+
+  it('deletes both boundaries together when only the pair remains', () => {
+    const obj = store.addObject('rectangle', 960, 540);
+    store.updateObject(obj.id, { enterTime: 0, duration: 3 });
+    store.addKeyframeScaffold(obj.id, 'x', 1.5);
+    store.removeKeyframe(obj.id, 'x', 1.5); // drop the middle → only boundaries left
+    store.deleteKeyframe(obj.id, 'x', 0);   // delete one boundary → clears the property
+    expect(store.objectById(obj.id).keyframes).toBeUndefined();
+  });
+});
+
 describe('removeKeyframe', () => {
   it('removes a keyframe', () => {
     const obj = store.addObject('circle', 960, 540);

@@ -1264,6 +1264,29 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
+    // Delete that respects pinned boundary keyframes:
+    // - a non-pinned keyframe is removed normally;
+    // - deleting a pinned boundary is blocked while other (non-pinned) keyframes
+    //   remain — the boundaries only make sense as a pair around real keys;
+    // - if ONLY the two pinned boundaries are left, deleting either clears the
+    //   whole property (both boundaries go together).
+    deleteKeyframe(objId, prop, time) {
+      const obj = this.project.objects.find(o => o.id === objId);
+      const arr = obj?.keyframes?.[prop];
+      if (!arr) return;
+      const kf = arr.find(k => Math.abs(k.time - time) < 0.01);
+      if (!kf) return;
+      if (!kf.pinned) { this.removeKeyframe(objId, prop, time); return; }
+      if (arr.some(k => !k.pinned)) return; // middle keyframes still present → block
+      // only the boundaries remain → drop the property entirely
+      delete obj.keyframes[prop];
+      if (obj.keyframes && Object.keys(obj.keyframes).length === 0) delete obj.keyframes;
+      const sel = this.selectedKeyframeId;
+      if (sel && sel.objId === objId && sel.prop === prop) this.selectedKeyframeId = null;
+      this.isDirty = true;
+      this.commitState();
+    },
+
     // Shift every keyframe of an object in time by `delta` (clamped at 0) so the
     // keyframes travel with the object bar when it is dragged left/right.
     shiftKeyframes(objId, delta) {
