@@ -1247,6 +1247,36 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       if (!id) return null;
       return { type: 'rotate', sourceId: id, params: { targetRotation: Math.round(parseFloat(m2[2]) * 180 / Math.PI) } };
     }
+    // Indicate(obj, color="#hex", scale_factor=f)
+    m2 = expr.match(/^Indicate\((\w+),\s*color="([^"]+)",\s*scale_factor=([\d.]+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]]; if (!id) return null;
+      return { type: 'indicate', sourceId: id, params: { color: m2[2], scale_factor: parseFloat(m2[3]) } };
+    }
+    // Flash(obj, color=, flash_radius=, line_length=, num_lines=)
+    m2 = expr.match(/^Flash\((\w+),\s*color="([^"]+)",\s*flash_radius=([\d.]+),\s*line_length=([\d.]+),\s*num_lines=(\d+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]]; if (!id) return null;
+      return { type: 'flash', sourceId: id, params: { color: m2[2], flash_radius: parseFloat(m2[3]), line_length: parseFloat(m2[4]), num_lines: parseInt(m2[5], 10) } };
+    }
+    // Wiggle(obj, scale_value=, rotation_angle=d * DEGREES, n_wiggles=)
+    m2 = expr.match(/^Wiggle\((\w+),\s*scale_value=([\d.]+),\s*rotation_angle=([\d.]+) \* DEGREES,\s*n_wiggles=(\d+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]]; if (!id) return null;
+      return { type: 'wiggle', sourceId: id, params: { scale_value: parseFloat(m2[2]), rotation_angle: parseFloat(m2[3]), n_wiggles: parseInt(m2[4], 10) } };
+    }
+    // Circumscribe(obj, color=, shape=Class, fade_out=Bool, time_width=)
+    m2 = expr.match(/^Circumscribe\((\w+),\s*color="([^"]+)",\s*shape=(Rectangle|Circle),\s*fade_out=(True|False),\s*time_width=([\d.]+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]]; if (!id) return null;
+      return { type: 'circumscribe', sourceId: id, params: { color: m2[2], shape: m2[3], fade_out: m2[4] === 'True', time_width: parseFloat(m2[5]) } };
+    }
+    // FocusOn(obj, color=, opacity=)
+    m2 = expr.match(/^FocusOn\((\w+),\s*color="([^"]+)",\s*opacity=([\d.]+)\)/);
+    if (m2) {
+      const id = varMap[m2[1]]; if (!id) return null;
+      return { type: 'focus_on', sourceId: id, params: { color: m2[2], opacity: parseFloat(m2[3]) } };
+    }
     return null;
   }
 
@@ -1927,6 +1957,61 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       if (id) {
         const dur = parseFloat(m[3] || 1);
         clips.push({ id: `clip_${clipIdx++}`, type: 'rotate', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { targetRotation: Math.round(parseFloat(m[2]) * 180 / Math.PI) } });
+        ct += dur;
+      }
+      continue;
+    }
+
+    m = line.match(/^self\.play\(Indicate\((\w+),\s*color="([^"]+)",\s*scale_factor=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id) {
+        const dur = parseFloat(m[4] || 1);
+        clips.push({ id: `clip_${clipIdx++}`, type: 'indicate', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], scale_factor: parseFloat(m[3]) } });
+        ct += dur;
+      }
+      continue;
+    }
+
+    m = line.match(/^self\.play\(Flash\((\w+),\s*color="([^"]+)",\s*flash_radius=([\d.]+),\s*line_length=([\d.]+),\s*num_lines=(\d+)\)(?:,\s*run_time=([\d.]+))?/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id) {
+        const dur = parseFloat(m[6] || 1);
+        clips.push({ id: `clip_${clipIdx++}`, type: 'flash', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], flash_radius: parseFloat(m[3]), line_length: parseFloat(m[4]), num_lines: parseInt(m[5], 10) } });
+        ct += dur;
+      }
+      continue;
+    }
+
+    m = line.match(/^self\.play\(Wiggle\((\w+),\s*scale_value=([\d.]+),\s*rotation_angle=([\d.]+) \* DEGREES,\s*n_wiggles=(\d+)\)(?:,\s*run_time=([\d.]+))?/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id) {
+        const dur = parseFloat(m[5] || 1);
+        clips.push({ id: `clip_${clipIdx++}`, type: 'wiggle', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { scale_value: parseFloat(m[2]), rotation_angle: parseFloat(m[3]), n_wiggles: parseInt(m[4], 10) } });
+        ct += dur;
+      }
+      continue;
+    }
+
+    m = line.match(/^self\.play\(Circumscribe\((\w+),\s*color="([^"]+)",\s*shape=(Rectangle|Circle),\s*fade_out=(True|False),\s*time_width=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id) {
+        const dur = parseFloat(m[6] || 1);
+        clips.push({ id: `clip_${clipIdx++}`, type: 'circumscribe', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], shape: m[3], fade_out: m[4] === 'True', time_width: parseFloat(m[5]) } });
+        ct += dur;
+      }
+      continue;
+    }
+
+    m = line.match(/^self\.play\(FocusOn\((\w+),\s*color="([^"]+)",\s*opacity=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id) {
+        const dur = parseFloat(m[4] || 1);
+        clips.push({ id: `clip_${clipIdx++}`, type: 'focus_on', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], opacity: parseFloat(m[3]) } });
         ct += dur;
       }
       continue;
