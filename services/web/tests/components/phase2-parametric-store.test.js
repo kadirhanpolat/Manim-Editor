@@ -15,9 +15,9 @@ describe('parametric store', () => {
     store.addObject('parametric', 960, 540);
     const o = store.project.objects[0];
     expect(o.type).toBe('parametric');
-    expect(typeof o.xExpr).toBe('string');
-    expect(typeof o.yExpr).toBe('string');
+    expect(o.xExpr).toBe('np.cos(t)');
+    expect(o.yExpr).toBe('np.sin(t)');
     expect(o.tMin).toBe(0);
-    expect(o.tMax).toBeGreaterThan(0);
+    expect(o.tMax).toBe(6.283);
   });
 });
