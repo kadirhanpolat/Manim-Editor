@@ -51,6 +51,9 @@
             <!-- Free Polygon -->
             <v-line v-if="obj.type === 'polygon_free' && isVis(obj.id)" :config="polygonFreeCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
 
+            <!-- Parametric Curve -->
+            <v-line v-if="obj.type === 'parametric' && isVis(obj.id)" :config="parametricCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+
             <!-- Star -->
             <v-star v-if="obj.type === 'star' && isVis(obj.id)" :config="starCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
 
@@ -241,6 +244,7 @@ import { project3D, unprojectIso, perspectiveScale } from '../../engine/projecti
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 import { latexToUnicode } from '../../utils/latexPreview.js';
 import { canvasToVertex } from '../../engine/polygonVertices.js';
+import { compileExpr } from '../../engine/mathExpr.js';
 
 const store = useProjectStore();
 
@@ -805,6 +809,27 @@ function polygonFreeCfg(obj) {
     strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: e.rotation || 0,
     scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
   return applyEffects(cfg, obj, w, h, true);
+}
+function parametricCfg(obj) {
+  const e = eff(obj); const c = s2c(e.x, e.y);
+  const fx = compileExpr(obj.xExpr || 'np.cos(t)', 't');
+  const fy = compileExpr(obj.yExpr || 'np.sin(t)', 't');
+  const t0 = Number.isFinite(obj.tMin) ? obj.tMin : 0;
+  const t1 = Number.isFinite(obj.tMax) ? obj.tMax : 6.283;
+  const unit = (store.project.stage.width / 14.222) * vs.value;   // px per Manim unit
+  const pts = [];
+  if (fx && fy && t1 > t0) {
+    const steps = 120;
+    for (let i = 0; i <= steps; i++) {
+      const t = t0 + (t1 - t0) * (i / steps);
+      const x = fx(t), y = fy(t);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      pts.push(x * unit, -y * unit);   // y-flip
+    }
+  }
+  return { x: c.x, y: c.y, points: pts, stroke: e.stroke || '#10b981',
+    strokeWidth: (e.strokeWidth || 4) * vs.value / 2, opacity: e.opacity ?? 1, tension: 0.3,
+    rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12, lineCap: 'round' };
 }
 function starCfg(obj) {
   const L = live(obj);
