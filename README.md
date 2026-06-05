@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.6.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.7.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -55,6 +55,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
 - **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
 - **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
+- **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square), separate fill/stroke opacity, and dashed stroke; controls appear only for shapes that support them; all four render in Manim and round-trip through `.py` export/import
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
 
 ### Animation & Timeline
@@ -169,7 +170,7 @@ Browser (localhost:8080)
 Click shapes in the left sidebar (including LaTeX and Axes). They appear on the stage and on the timeline.
 
 ### 2. Position and Style
-Drag shapes on the canvas. Edit fill, stroke, opacity, size, rotation in the Properties panel. LaTeX objects have a formula editor; Axes objects have configurable ranges.
+Drag shapes on the canvas. Edit fill, stroke, opacity, size, rotation in the Properties panel. The **Effects** section adds gradient fill, rounded corners (rectangle/square), separate fill/stroke opacity, and dashed stroke. LaTeX objects have a formula editor; Axes objects have configurable ranges.
 
 ### 3. Create Animations
 - **Transform**: Select two shapes (click + Shift+click), then click "Create Transform"
@@ -226,6 +227,8 @@ Project
  +-- objects[]: { id, type, name, x, y, width, height, rotation,
  |               fill, stroke, opacity, zOrder, enterTime, duration,
  |               enterAnim, exitAnim, latex?, xRange?, yRange?, assetId?,
+ |               gradient?: { colors[], angle }, cornerRadius?,
+ |               fillOpacity?, strokeOpacity?, dash?: { numDashes, ratio },
  |               graphs?: [{ id, expression, color, xMin, xMax, strokeWidth }],
  |               keyframes?: { propName: [{ time, value, easing: { type, handles? } }] },
  |               keyframeMode?: { propName: 'opt-in' | 'override' | 'additive' },
@@ -377,7 +380,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 157 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel)
+npm run test:unit # 173 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects: store/codegen+round-trip/Effects panel)
 ```
 
 ---
@@ -410,7 +413,20 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.6.0 (current)
+### v3.7.0 (current)
+
+2D object styling effects (Phase 1) — a new **Effects** panel adds four render-accurate styling capabilities:
+
+- **Feature (gradient fill)**: multi-stop linear gradient on fillable shapes (rectangle, square, circle, ellipse, triangle, star, polygon, heart); emits `set_color_by_gradient(...)`. The canvas previews the gradient at the chosen angle (Konva linear gradient); the angle is **preview-only** — Manim orients the gradient along the mobject's point order.
+- **Feature (rounded corners)**: corner-radius control for rectangle/square; emits `RoundedRectangle(corner_radius=...)` (clamped below half the shorter side).
+- **Feature (separate fill/stroke opacity)**: independent `fillOpacity` / `strokeOpacity` per object, combined multiplicatively with the master opacity (`set_fill`/`set_stroke` opacity = master × channel).
+- **Feature (dashed stroke)**: dashed outlines and lines via a fill-preserving `VGroup(base, DashedVMobject(...))`; dash density (`num_dashes`) and ratio (`dashed_ratio`) configurable.
+- **Inspector**: new "Effects" section in the Properties panel; each control gates by shape type (`canGradient` / `canDash` / `canRound`) and the whole section hides when no effect applies to the selected object.
+- **Round-trip + parity**: all four effects round-trip through `.py` export/import (`manim.js` parser) and are emitted byte-identically by both generators (`codegen.js` server + `manim.js` client). Objects with none of the new fields produce byte-identical legacy output. Store actions (`setGradient`, `setCornerRadius`, `setDash`) delete the field on null/0 to preserve that guarantee.
+- **Preview-only divergences**: gradient angle (above) and dashed+fill (preview draws one shape; render uses a `VGroup`). Deferred to Phase 2: glow, drop shadow, `.round_corners()` for polygon/triangle/star, and keyframing the effect channels.
+- **Tests**: +16 unit (store actions, generator + round-trip codegen, Effects panel); totals now **173 unit + 114 engine**.
+
+### v3.6.0
 
 Timeline playhead, keyframe ergonomics, and LaTeX/canvas selection fixes:
 
