@@ -836,13 +836,23 @@ function updateGraph(graphId, key, value) {
 }
 function toggleGraphArea(graph) {
   if (!obj.value) return;
-  const on = !(graph.area && graph.area.enabled);
-  store.updateGraph(obj.value.id, graph.id, { area: { enabled: on, xMin: graph.xMin, xMax: graph.xMax, opacity: 0.5, color: graph.color } });
+  const existing = graph.area || {};
+  const on = !existing.enabled;
+  store.updateGraph(obj.value.id, graph.id, {
+    area: on
+      ? { xMin: graph.xMin, xMax: graph.xMax, opacity: 0.5, color: graph.color, ...existing, enabled: true }
+      : { ...existing, enabled: false },
+  });
 }
 function toggleGraphRiemann(graph) {
   if (!obj.value) return;
-  const on = !(graph.riemann && graph.riemann.enabled);
-  store.updateGraph(obj.value.id, graph.id, { riemann: { enabled: on, xMin: graph.xMin, xMax: graph.xMax, dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10), type: 'left', color: graph.color } });
+  const existing = graph.riemann || {};
+  const on = !existing.enabled;
+  store.updateGraph(obj.value.id, graph.id, {
+    riemann: on
+      ? { xMin: graph.xMin, xMax: graph.xMax, dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10), type: 'left', color: graph.color, ...existing, enabled: true }
+      : { ...existing, enabled: false },
+  });
 }
 function setRiemannField(graph, key, val) {
   if (!obj.value || !graph.riemann) return;
