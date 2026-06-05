@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.9.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.10.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -57,7 +57,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
 - **Geometry, calculus & data objects** -- Annulus, Arc, Sector, Double Arrow, Free Polygon (with draggable canvas vertex handles + Trapezoid/Parallelogram presets), Parametric curves (`x(t)`/`y(t)` over a `t`-range), Matrix (per-cell grid editor with `[ ]` / `( )` / `| |` bracket styles), and per-graph Area-under-curve / Riemann-rectangle overlays on Axes -- all render in Manim and round-trip through `.py` export/import
 - **Relational objects** -- Brace (bracket between two draggable points with an optional LaTeX label) and Angle (angle/right-angle mark from a vertex + two draggable endpoints, with arc radius and optional LaTeX label); both are self-contained (defined by their own points) and round-trip through `.py`
-- **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square), separate fill/stroke opacity, and dashed stroke; controls appear only for shapes that support them; all four render in Manim and round-trip through `.py` export/import
+- **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square plus polygon/triangle/star via native `round_corners`), separate fill/stroke opacity, dashed stroke, and a configurable drop shadow (color/opacity/offset, with preview-only blur); controls appear only for shapes that support them; all render in Manim and round-trip through `.py` export/import
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
 
 ### Animation & Timeline
@@ -382,7 +382,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 253 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle)
+npm run test:unit # 265 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners)
 ```
 
 ---
@@ -415,7 +415,16 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.9.0 (current)
+### v3.10.0 (current)
+
+Effects Phase 2.6 — two more optional, render-faithful object effects extending the Phase 1 "Effects" system, both byte-identical across the server (`codegen.js`) and client (`manim.js`) generators and round-tripping through `.py` export/import:
+
+- **Drop shadow** (`obj.shadow {color, opacity, dx, dy, blur}`): emitted as a shifted, recolored `.copy()` placed behind the shape in a `VGroup(_shadow_<n>, <n>)`. Offsets convert px → Manim units (screen-down → −y). `blur` is **preview-only** (Manim CE has no blur); the preview uses Konva's native soft shadow (`shadowBlur = blur × zoom`).
+- **Rounded corners for polygon/triangle/star**: the existing `cornerRadius` field now also drives Manim's native `.round_corners(radius=…)` for polygon/triangle/star (rectangle/square keep their `RoundedRectangle` path). The inspector control shows for all five; codegen emits `.round_corners()` for only the three. Preview rounds via Konva `cornerRadius` (RegularPolygon/Star) or a `tension` approximation (closed-Line triangle).
+- **Glow evaluated and dropped**: Manim CE has no true blur/glow — a render would only stack scaled low-opacity copies (concentric rings, not a soft glow), so the fidelity gap wasn't worth shipping.
+- **Tests**: +12 unit (store `setShadow`, round_corners + drop-shadow codegen, round-trip parser, inspector shadow panel + corner-radius for polygon/triangle/star); totals now **265 unit + 114 engine**.
+
+### v3.9.0
 
 Relational objects (Phase 2.5) — two self-contained relational mobjects following the constructor → styling → single-line round-trip pattern, emitted byte-identically by both generators:
 

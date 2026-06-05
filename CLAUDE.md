@@ -324,8 +324,32 @@ Optional object fields, absent ⇒ byte-identical legacy output:
 - Store actions: `setGradient`, `setCornerRadius`, `setDash` (delete the field on
   null/0 to preserve byte-identical legacy output).
 - Preview-only divergences: gradient **angle** (Manim orients by point order),
-  and dashed+fill (preview = single shape, render = VGroup). Phase 2: glow,
-  drop shadow, `.round_corners()` for polygon/triangle/star.
+  and dashed+fill (preview = single shape, render = VGroup).
+
+### Phase 2.6 Effects (Drop Shadow + Round Corners — 2026-06-05)
+
+Two more optional fields (absent ⇒ byte-identical legacy output):
+- `shadow {color, opacity, dx, dy, blur}` — emits
+  `_shadow_<n> = <n>.copy().set_color(...).set_opacity(...).shift([dxm, dym, 0])` +
+  `<n> = VGroup(_shadow_<n>, <n>)` (shadow copy first/behind; `dym` is screen-down →
+  Manim −y). `blur` is **preview-only** (Manim has no blur). Eligible types =
+  `SHADOW_TYPES`. Store action `setShadow` (delete field on null).
+- `cornerRadius` now also rounds **polygon/triangle/star** via native
+  `.round_corners(radius=<cr/sw*FRAME_WIDTH>)` (rect/square keep `RoundedRectangle`).
+- **Two distinct "round" sets**: inspector `ROUND_TYPES` / `canRound` =
+  `{rectangle, square, polygon, triangle, star}` (which types show the control);
+  codegen `roundCornersLine` emits `.round_corners()` for **only**
+  `{polygon, triangle, star}`.
+- **Keep codegen.js / manim.js `shadowLines`, `roundCornersLine`, `SHADOW_TYPES`
+  byte-identical** — guarded by `phase26-effects-codegen.test.js` +
+  `manim-export.test.js`. Effect order in the post-construction block:
+  round_corners → gradient → dashed → shadow → move_to. Round-trip parser
+  reconstructs both (`blur` restores to default 12).
+- Preview: `applyEffects()` sets Konva native shadow props (`shadowBlur = blur*vs`)
+  + corner rounding (`cornerRadius` on RegularPolygon/Star, `tension` approx on the
+  closed-Line triangle).
+- **Glow dropped** — Manim CE has no true blur/glow (a render would only stack
+  scaled low-opacity copies = concentric rings, not a soft glow).
 
 ## Phase 2 Objects (Geometry / Calculus / Data — 2026-06-05)
 
