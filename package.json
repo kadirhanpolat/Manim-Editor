@@ -1,0 +1,11 @@
+{
+  "name": "manim-motion-editor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/api",
+    "services/web"
+  ]
+}
