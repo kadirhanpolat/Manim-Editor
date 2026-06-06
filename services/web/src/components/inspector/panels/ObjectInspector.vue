@@ -93,6 +93,8 @@
         </div>
       </Section>
 
+      <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
+
       <!-- Dot Grid -->
       <Section v-if="obj.type === 'dot_grid'" label="Grid Settings">
         <div class="grid grid-cols-2 gap-1.5">
@@ -502,6 +504,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { settingsComponentFor } from '../object-settings/index.js';
 import { useProjectStore } from '../../../store/project.js';
 import { ENTER_ANIMS, EXIT_ANIMS } from '../../../store/project.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../../constants/anchors.js';
@@ -523,6 +526,7 @@ const exitAnims = EXIT_ANIMS;
 
 const obj = computed(() => store.selectedObject);
 const { u, uSize, uRange } = useObjectUpdate(() => obj.value);
+const settingsComp = computed(() => settingsComponentFor(obj.value?.type));
 
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
 const is3DObject = computed(() => !!obj.value && OBJ_3D_TYPES.includes(obj.value.type));
