@@ -53,4 +53,11 @@ export const OBJECTS = {
   text:        { id: 'txt1',    type: 'text',         x: 960, y: 300, width: 400, height: 80,  fill: '#FFFFFF', opacity: 1, rotation: 0, content: 'Hello', fontSize: 48, fontFamily: 'Roboto' },
   counter:     { id: 'cnt1',    type: 'counter',      x: 960, y: 540, width: 200, height: 80,  fill: '#10B981', opacity: 1, rotation: 0, value: 42, numDecimals: 1, suffix: '%' },
   latex:       { id: 'tex1',    type: 'latex',        x: 960, y: 700, width: 300, height: 80,  fill: '#FFFFFF', opacity: 1, rotation: 0, content: 'x^2' },
+  group:       { id: 'grp1',   type: 'group',        x: 960, y: 540, width: 200, height: 200, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, childIds: [] },
+  dot_grid:    { id: 'dg1',    type: 'dot_grid',     x: 960, y: 540, width: 200, height: 200, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, gridCols: 3, gridRows: 3, dotSpacing: 40 },
+  matrix:      { id: 'mat1',   type: 'matrix',       x: 960, y: 540, width: 160, height: 120, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, matrixData: [['1', '2'], ['3', '4']], bracket: '[' },
+  table:       { id: 'tbl1',   type: 'table',        x: 960, y: 540, width: 200, height: 140, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, cellData: [['a', 'b'], ['c', 'd']], mathMode: false, rowLabels: [], colLabels: [] },
+  polar_plane: { id: 'pp1',    type: 'polar_plane',  x: 960, y: 540, width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 2, opacity: 1, rotation: 0, radiusMax: 4, radiusStep: 1, azimuthUnits: 12 },
+  graph:       { id: 'gr1',    type: 'graph',        x: 960, y: 540, width: 200, height: 200, fill: '#4ceef9', stroke: '#94a3b8', strokeWidth: 2, opacity: 1, rotation: 0, vertices: ['A', 'B'], edges: [['A', 'B']], positions: { A: [-40, 0], B: [40, 0] }, directed: false, showLabels: true },
+  vector_field:{ id: 'vf1',   type: 'vector_field', x: 960, y: 540, width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2, opacity: 1, rotation: 0, fx: 'y', fy: '-x', xRange: [-3, 3, 1], yRange: [-2, 2, 1] },
 };
