@@ -76,7 +76,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **3D axes ranges** -- `axes3d` objects expose full X/Y/Z range editors (min–max per axis) in the 3D Position panel; ranges survive `.py` export/import round-trips
 - **Audio / Voiceover** -- Attach audio to any clip: upload `.mp3`/`.wav`/`.ogg`, synthesize with **gTTS** (online) or **Coqui TTS** (offline); auto-sync stretches clip duration to match audio; manual mode lets you set offset; generates `VoiceoverScene` + `with self.voiceover(audio=...)` in Manim
 - **Timeline scrubbing** -- Arrange and trim clips; audio status stripe on clips; resize locked while auto-sync is active
-- **Entrance / exit animations** -- 11 entrance and 9 exit animation presets per object
+- **Entrance / exit animations** -- 12 entrance and 10 exit animation presets per object (including `typewriter` / `typewriter_out`)
 - **Keyframe animation** -- Per-property absolute-time keyframes independent of clips; add keyframe lanes to any numeric property (x, y, opacity, rotation, scale, x3d, y3d, z3d…); drag diamond markers to adjust timing; Bezier easing editor with draggable handles and Linear/Ease In/Out presets; 3 behavior modes (opt-in, override, additive) and 3 Python codegen modes (UpdateFromAlphaFunc, animate, ValueTracker) configurable per property; simultaneous 3D coordinate keyframes merged into a single `move_to([x, y, z])` call
 - **Timeline playhead** -- A vertical playhead marks the current time across the ruler and all lanes; click or drag the ruler to scrub (seeks the canvas live)
 - **Smart keyframe seeding** -- The first keyframe added to a property auto-seeds locked keyframes at the object's start and end (so a lone keyframe isn't a no-op); a per-lane `+` adds a keyframe at the playhead; pinned boundary keyframes stay welded to the object's edges — they follow the bar when it is moved, and middle keyframes rescale proportionally when it is resized from either side
@@ -102,8 +102,8 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 ### Full Stack with Docker (Recommended)
 
 ```bash
-git clone https://github.com/BlommeJan/Manim-Motion.git
-cd Manim-Motion
+git clone https://github.com/kadirhanpolat/Manim-Editor.git
+cd Manim-Editor
 docker compose up --build
 ```
 
