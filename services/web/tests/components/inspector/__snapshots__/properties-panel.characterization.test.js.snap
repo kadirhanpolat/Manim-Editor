@@ -10,39 +10,39 @@ exports[`PropertiesPanel characterization — canvas branch > nothing selected (
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- Nothing Selected: Show background & canvas props + object list -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
-  <div data-v-678ed7dd="" class="panel-header">Canvas</div><!-- 3D Camera Preview (projection mode) — only in 3D scenes -->
+  <div class="panel-header">Canvas</div><!-- 3D Camera Preview (projection mode) — only in 3D scenes -->
   <!--v-if-->
   <!-- Background Properties -->
-  <div data-v-678ed7dd="" class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Background</label>
-    <div data-v-678ed7dd="" class="space-y-1.5">
-      <div data-v-678ed7dd="" class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">Color</span><input type="color" class="color-input" value="#000000"><input class="input input-sm flex-1" value="#000000"></div>
-      <div data-v-678ed7dd="" class="flex items-center gap-2"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted w-12">Opacity</span><input data-v-678ed7dd="" type="range" min="0" max="1" step="0.01" class="flex-1 accent-studio-accent" value="1"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">100%</span></div>
+  <div class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Background</label>
+    <div class="space-y-1.5">
+      <div class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">Color</span><input type="color" class="color-input" value="#000000"><input class="input input-sm flex-1" value="#000000"></div>
+      <div class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">Opacity</span><input type="range" min="0" max="1" step="0.01" class="flex-1 accent-studio-accent" value="1"><span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">100%</span></div>
     </div>
   </div><!-- Grid Properties -->
-  <div data-v-678ed7dd="" class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Grid</label>
-    <div data-v-678ed7dd="" class="space-y-1.5">
-      <div data-v-678ed7dd="" class="flex items-center gap-2"><label data-v-678ed7dd="" class="flex items-center gap-1.5 cursor-pointer"><input data-v-678ed7dd="" type="checkbox" checked="" class="accent-studio-accent"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted">Visible</span></label></div>
-      <div data-v-678ed7dd="" class="grid grid-cols-2 gap-1.5">
-        <div data-v-678ed7dd=""><span class="text-[9px] text-studio-text-muted/50">Divisions</span><input class="input input-sm" type="number" min="2" max="24" step="1" value="8"></div>
-        <div data-v-678ed7dd=""><span data-v-678ed7dd="" class="text-[9px] text-studio-text-muted/50">Opacity</span><input data-v-678ed7dd="" class="input input-sm" type="number" min="0" max="1" step="0.02" value="0.12"></div>
+  <div class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Grid</label>
+    <div class="space-y-1.5">
+      <div class="flex items-center gap-2"><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked="" class="accent-studio-accent"><span class="text-[10px] text-studio-text-muted">Visible</span></label></div>
+      <div class="grid grid-cols-2 gap-1.5">
+        <div><span class="text-[9px] text-studio-text-muted/50">Divisions</span><input class="input input-sm" type="number" min="2" max="24" step="1" value="8"></div>
+        <div><span class="text-[9px] text-studio-text-muted/50">Opacity</span><input class="input input-sm" type="number" min="0" max="1" step="0.02" value="0.12"></div>
       </div>
-      <div data-v-678ed7dd="" class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">Grid Color</span><input type="color" class="color-input" value="#ffffff"><input class="input input-sm flex-1" value="#ffffff"></div>
+      <div class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">Grid Color</span><input type="color" class="color-input" value="#ffffff"><input class="input input-sm flex-1" value="#ffffff"></div>
     </div>
   </div><!-- Snap Settings -->
-  <div data-v-678ed7dd="" class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Snapping</label>
-    <div data-v-678ed7dd="" class="space-y-1.5"><label data-v-678ed7dd="" class="flex items-center gap-1.5 cursor-pointer"><input data-v-678ed7dd="" type="checkbox" checked="" class="accent-studio-accent"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted">Snap enabled</span></label><label data-v-678ed7dd="" class="flex items-center gap-1.5 cursor-pointer"><input data-v-678ed7dd="" type="checkbox" checked="" class="accent-studio-accent"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted">Snap to grid</span></label><label data-v-678ed7dd="" class="flex items-center gap-1.5 cursor-pointer"><input data-v-678ed7dd="" type="checkbox" checked="" class="accent-studio-accent"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted">Snap to center</span></label><label data-v-678ed7dd="" class="flex items-center gap-1.5 cursor-pointer"><input data-v-678ed7dd="" type="checkbox" class="accent-studio-accent"><span data-v-678ed7dd="" class="text-[10px] text-studio-text-muted">Snap to objects</span></label></div>
+  <div class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Snapping</label>
+    <div class="space-y-1.5"><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked="" class="accent-studio-accent"><span class="text-[10px] text-studio-text-muted">Snap enabled</span></label><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked="" class="accent-studio-accent"><span class="text-[10px] text-studio-text-muted">Snap to grid</span></label><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked="" class="accent-studio-accent"><span class="text-[10px] text-studio-text-muted">Snap to center</span></label><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="accent-studio-accent"><span class="text-[10px] text-studio-text-muted">Snap to objects</span></label></div>
   </div><!-- Stage Size -->
-  <div data-v-678ed7dd="" class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Stage Size</label>
-    <div data-v-678ed7dd="" class="grid grid-cols-2 gap-1.5">
-      <div data-v-678ed7dd=""><span class="text-[9px] text-studio-text-muted/50">Width</span><input class="input input-sm" type="number" min="100" step="1" value="1920"></div>
-      <div data-v-678ed7dd=""><span class="text-[9px] text-studio-text-muted/50">Height</span><input class="input input-sm" type="number" min="100" step="1" value="1080"></div>
+  <div class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">Stage Size</label>
+    <div class="grid grid-cols-2 gap-1.5">
+      <div><span class="text-[9px] text-studio-text-muted/50">Width</span><input class="input input-sm" type="number" min="100" step="1" value="1920"></div>
+      <div><span class="text-[9px] text-studio-text-muted/50">Height</span><input class="input input-sm" type="number" min="100" step="1" value="1080"></div>
     </div>
   </div><!-- Groups list -->
   <!--v-if-->
   <!-- Object list -->
-  <div data-v-678ed7dd="" class="border-t border-studio-border p-3 mt-auto">
-    <div data-v-678ed7dd="" class="text-[10px] text-studio-text-muted font-bold uppercase tracking-wider mb-2">Objects (0)</div>
-    <div data-v-678ed7dd="" class="max-h-40 overflow-y-auto space-y-0.5"></div>
+  <div class="border-t border-studio-border p-3 mt-auto">
+    <div class="text-[10px] text-studio-text-muted font-bold uppercase tracking-wider mb-2">Objects (0)</div>
+    <div class="max-h-40 overflow-y-auto space-y-0.5"></div>
   </div>
 </aside>"
 `;
