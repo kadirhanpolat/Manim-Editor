@@ -215,4 +215,10 @@ function cancelNewProject() {
   color: #fff;
 }
 .np-btn-create:hover { filter: brightness(1.1); }
+
+/* ── menu-pop transition ── */
+.menu-pop-enter-active { transition: opacity 0.1s ease, transform 0.1s ease; }
+.menu-pop-leave-active { transition: opacity 0.08s ease; }
+.menu-pop-enter { opacity: 0; transform: translateY(-4px); }
+.menu-pop-leave-to { opacity: 0; }
 </style>
