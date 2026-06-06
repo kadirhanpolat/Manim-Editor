@@ -240,6 +240,7 @@ const shapes3D = [
   { type: 'cylinder', label: 'Cylinder', color: '#1098ad', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/></svg>' },
   { type: 'torus',    label: 'Torus',    color: '#9c36b5', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="3" ry="1.5"/></svg>' },
   { type: 'axes3d',   label: 'Axes 3D',  color: '#868e96', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/><line x1="12" y1="12" x2="4" y2="16"/></svg>' },
+  { type: 'surface',  label: 'Surface',  color: '#9b59b6', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9c3 4 6 4 9 0s6-4 9 0"/><path d="M3 15c3 4 6 4 9 0s6-4 9 0"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="18" y1="7" x2="18" y2="17"/></svg>' },
 ];
 
 const assets = computed(() => store.project.assets);

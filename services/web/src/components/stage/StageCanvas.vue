@@ -217,6 +217,13 @@
               </v-group>
             </template>
 
+            <!-- 3D: Surface (z = f(x,y)) wireframe -->
+            <template v-if="obj.type === 'surface' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+                <v-line v-for="(ln, li) in surface3dMesh(obj)" :key="'sf' + li" :config="ln" />
+              </v-group>
+            </template>
+
             <!-- 3D: Axes3D -->
             <template v-if="obj.type === 'axes3d' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-group :config="{ x: 0, y: 0 }" @mousedown="onObjDown(obj.id, $event)">
@@ -450,6 +457,7 @@ const sphere3dCfg = (o) => objects3d.sphere3dCfg(o, ctx.value);
 const cube3dFaces = (o) => objects3d.cube3dFaces(o, ctx.value);
 const obj3dCenter = (o) => objects3d.obj3dCenter(o, ctx.value);
 const round3dParts = (o) => objects3d.round3dParts(o, ctx.value);
+const surface3dMesh = (o) => objects3d.surface3dMesh(o, ctx.value);
 const torus3dTube = (o) => objects3d.torus3dTube(o, ctx.value);
 const torusOutline = (o) => objects3d.torusOutline(o, ctx.value);
 const axes3dLines = (o) => objects3d.axes3dLines(o, ctx.value);

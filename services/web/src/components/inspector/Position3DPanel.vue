@@ -53,6 +53,22 @@
         <input type="number" data-testid="zRange-max" :value="element.zRange?.[1] ?? 3" @input="updateRange('zRange', 1, $event)" step="1" class="input text-sm w-16" />
       </div>
     </div>
+    <div class="mt-2" v-if="element.type === 'surface'">
+      <label class="block text-xs text-studio-text-muted mb-1">z = f(x, y)</label>
+      <input type="text" data-testid="surface-zexpr" :value="element.zExpr ?? 'x**2 - y**2'" @input="$emit('update', { zExpr: $event.target.value })" class="input text-sm w-full" placeholder="x**2 - y**2" />
+      <label class="block text-xs text-studio-text-muted mb-1 mt-2">X Range</label>
+      <div class="flex gap-1 items-center text-xs text-studio-text-muted">
+        <input type="number" data-testid="surface-x-min" :value="element.xRange?.[0] ?? -2" @input="updateRange('xRange', 0, $event)" step="0.5" class="input text-sm w-16" />
+        <span>–</span>
+        <input type="number" data-testid="surface-x-max" :value="element.xRange?.[1] ?? 2" @input="updateRange('xRange', 1, $event)" step="0.5" class="input text-sm w-16" />
+      </div>
+      <label class="block text-xs text-studio-text-muted mb-1 mt-2">Y Range</label>
+      <div class="flex gap-1 items-center text-xs text-studio-text-muted">
+        <input type="number" data-testid="surface-y-min" :value="element.yRange?.[0] ?? -2" @input="updateRange('yRange', 0, $event)" step="0.5" class="input text-sm w-16" />
+        <span>–</span>
+        <input type="number" data-testid="surface-y-max" :value="element.yRange?.[1] ?? 2" @input="updateRange('yRange', 1, $event)" step="0.5" class="input text-sm w-16" />
+      </div>
+    </div>
   </div>
 </template>
 

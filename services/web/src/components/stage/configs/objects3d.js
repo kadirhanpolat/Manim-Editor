@@ -3,6 +3,7 @@
 // No Vue refs, no reactive imports — all live values come through ctx.
 // ctx fields used: eff3d, iso, proj3DScale, projCx, projCy, cam3d, selectedObjectIds.
 import { perspectiveScale } from '../../../engine/projection3d.js';
+import { compileExpr } from '../../../engine/mathExpr.js';
 
 // ── Module-private math helpers ───────────────────────────────────────────
 const _DEG = Math.PI / 180;
@@ -183,6 +184,37 @@ export function torusOutline(obj, ctx) {
     { points: _flat(_circlePts(ctx, e3, Rmaj + Rmin, 'z', 0, c)), closed: true, stroke, strokeWidth: sw, listening: false },
     { points: _flat(_circlePts(ctx, e3, Rmaj - Rmin, 'z', 0, c)), closed: true, stroke, strokeWidth: sw, listening: false },
   ];
+}
+
+// Surface (z = f(x,y)): a wireframe. N×N samples of z=f(x,y), projected to iso and
+// drawn as row + column polylines relative to the projected centre (like cube faces).
+// Preview ≈ render divergence: wireframe here, a filled/shaded surface in Manim.
+export function surface3dMesh(obj, ctx) {
+  const e3 = ctx.eff3d(obj);
+  const c = ctx.iso(e3.x3d, e3.y3d, e3.z3d, ctx.projCx, ctx.projCy, ctx.proj3DScale);
+  const fn = compileExpr(obj.zExpr || 'x**2 - y**2', ['x', 'y']);
+  const xr = obj.xRange ?? [-2, 2], yr = obj.yRange ?? [-2, 2];
+  const sel = (ctx.selectedObjectIds || []).includes(obj.id);
+  const stroke = sel ? '#60a5fa' : (obj.fill ?? '#9b59b6');
+  const op = obj.opacity ?? 1;
+  const sw = sel ? 1.5 : 1;
+  const N = 12;
+  const grid = [];
+  for (let i = 0; i <= N; i++) {
+    grid[i] = [];
+    const x = xr[0] + (xr[1] - xr[0]) * i / N;
+    for (let j = 0; j <= N; j++) {
+      const y = yr[0] + (yr[1] - yr[0]) * j / N;
+      let z = 0;
+      if (fn) { try { z = fn(x, y); } catch { z = 0; } }
+      if (!Number.isFinite(z)) z = 0;
+      grid[i][j] = _rel(ctx, e3, x, y, z, c);
+    }
+  }
+  const out = [];
+  for (let i = 0; i <= N; i++) out.push({ points: _flat(grid[i]), stroke, strokeWidth: sw, opacity: op, listening: false });
+  for (let j = 0; j <= N; j++) out.push({ points: _flat(grid.map(r => r[j])), stroke, strokeWidth: sw, opacity: op, listening: false });
+  return out;
 }
 
 export function axes3dLines(obj, ctx) {

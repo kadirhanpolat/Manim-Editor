@@ -20,14 +20,19 @@ export function isSafeExpr(expr) {
   return true;
 }
 
-/** Returns a `(v) => number` function, or null if the expression is unsafe or won't evaluate. */
+/**
+ * Returns a `(...vars) => number` function, or null if the expression is unsafe
+ * or won't evaluate. `varName` is a single identifier (e.g. 'x') or an array of
+ * identifiers (e.g. ['x', 'y']) for multivariate expressions like a 3D surface.
+ */
 export function compileExpr(expr, varName = 'x') {
-  if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) return null;
+  const names = Array.isArray(varName) ? varName : [varName];
+  if (!names.every(v => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(v))) return null;
   if (!isSafeExpr(expr)) return null;
   try {
     // eslint-disable-next-line no-new-func
-    const fn = new Function(varName, '"use strict";' + SCOPE + 'return (' + expr.trim() + ');');
-    const probe = fn(1);                 // reject ReferenceError (undefined functions) early
+    const fn = new Function(...names, '"use strict";' + SCOPE + 'return (' + expr.trim() + ');');
+    const probe = fn(...names.map(() => 1)); // reject ReferenceError (undefined functions) early
     if (typeof probe !== 'number') return null;
     return fn;
   } catch {
