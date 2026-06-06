@@ -465,6 +465,37 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
+    setTableCell(id, r, c, value) {
+      const obj = this.objectById(id);
+      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[r] || obj.cellData[r][c] === undefined) return;
+      obj.cellData[r][c] = String(value); this.isDirty = true; this._debouncedCommit();
+    },
+    addTableRow(id) {
+      const obj = this.objectById(id);
+      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0]) return;
+      obj.cellData.push(new Array(obj.cellData[0].length).fill('0')); this.isDirty = true; this.commitState();
+    },
+    removeTableRow(id) {
+      const obj = this.objectById(id);
+      if (!obj || !Array.isArray(obj.cellData) || obj.cellData.length <= 1) return;
+      obj.cellData.pop(); if (Array.isArray(obj.rowLabels) && obj.rowLabels.length > obj.cellData.length) obj.rowLabels.pop();
+      this.isDirty = true; this.commitState();
+    },
+    addTableColumn(id) {
+      const obj = this.objectById(id);
+      if (!obj || !Array.isArray(obj.cellData)) return;
+      obj.cellData.forEach(row => row.push('0')); this.isDirty = true; this.commitState();
+    },
+    removeTableColumn(id) {
+      const obj = this.objectById(id);
+      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0] || obj.cellData[0].length <= 1) return;
+      obj.cellData.forEach(row => row.pop()); if (Array.isArray(obj.colLabels) && obj.colLabels.length > obj.cellData[0].length) obj.colLabels.pop();
+      this.isDirty = true; this.commitState();
+    },
+    setTableMathMode(id, on) { const o = this.objectById(id); if (!o) return; o.mathMode = !!on; this.isDirty = true; this.commitState(); },
+    setTableRowLabels(id, arr) { const o = this.objectById(id); if (!o || !Array.isArray(arr)) return; o.rowLabels = arr.map(s => String(s)); this.isDirty = true; this._debouncedCommit(); },
+    setTableColLabels(id, arr) { const o = this.objectById(id); if (!o || !Array.isArray(arr)) return; o.colLabels = arr.map(s => String(s)); this.isDirty = true; this._debouncedCommit(); },
+
     setRelationalPoint(id, key, pt) {
       const obj = this.project.objects.find(o => o.id === id);
       if (!obj || !['p1', 'p2', 'vertex', 'point1', 'point2'].includes(key)) return;

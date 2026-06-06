@@ -134,6 +134,13 @@
               <v-text v-for="(t, ti) in matrixCellConfigs(obj)" :key="'mc'+ti" :config="t" />
             </v-group>
 
+            <!-- Table -->
+            <v-group v-if="obj.type === 'table' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="tableHitCfg(obj)" />
+              <v-line v-for="(l, li) in tableGridLines(obj)" :key="'tgl'+li" :config="l" />
+              <v-text v-for="(tc, ti) in tableCellConfigs(obj)" :key="'tc'+ti" :config="tc" />
+            </v-group>
+
             <!-- Brace -->
             <v-group v-if="obj.type === 'brace' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
               <v-rect :config="relationalHitCfg(obj)" />
@@ -1133,6 +1140,80 @@ function matrixBracketConfigs(obj) {
     { points: left, stroke: col, strokeWidth: 2, listening: false },
     { points: right, stroke: col, strokeWidth: 2, listening: false },
   ];
+}
+
+// ── Table config ──
+function tableHitCfg(obj) {
+  const w = (obj.width || 200) * vs.value;
+  const h = (obj.height || 140) * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
+}
+
+function tableCellConfigs(obj) {
+  const data = (Array.isArray(obj.cellData) && obj.cellData.length) ? obj.cellData : [['1', '2'], ['3', '4']];
+  const rows = data.length, cols = data[0]?.length || 1;
+  const hasRowLabels = Array.isArray(obj.rowLabels) && obj.rowLabels.length > 0;
+  const hasColLabels = Array.isArray(obj.colLabels) && obj.colLabels.length > 0;
+  const w = (obj.width || 200) * vs.value, h = (obj.height || 140) * vs.value;
+  const labelColW = hasRowLabels ? w * 0.18 : 0;
+  const labelRowH = hasColLabels ? h * 0.16 : 0;
+  const gridW = w - labelColW, gridH = h - labelRowH;
+  const cellW = cols > 0 ? gridW / cols : gridW;
+  const cellH = rows > 0 ? gridH / rows : gridH;
+  const gridX = -w / 2 + labelColW, gridY = -h / 2 + labelRowH;
+  const fs = Math.max(9, 13 * vs.value);
+  const col = obj.fill || '#ffffff';
+  const out = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      out.push({ x: gridX + c * cellW, y: gridY + r * cellH, width: cellW, height: cellH,
+        text: String(data[r][c]), align: 'center', verticalAlign: 'middle',
+        fontSize: fs, fill: col, listening: false });
+    }
+  }
+  if (hasRowLabels) {
+    for (let r = 0; r < rows; r++) {
+      const lbl = obj.rowLabels[r] != null ? String(obj.rowLabels[r]) : '';
+      out.push({ x: -w / 2, y: gridY + r * cellH, width: labelColW, height: cellH,
+        text: lbl, align: 'center', verticalAlign: 'middle',
+        fontSize: fs, fill: themeAccent.value, fontStyle: 'italic', listening: false });
+    }
+  }
+  if (hasColLabels) {
+    for (let c = 0; c < cols; c++) {
+      const lbl = obj.colLabels[c] != null ? String(obj.colLabels[c]) : '';
+      out.push({ x: gridX + c * cellW, y: -h / 2, width: cellW, height: labelRowH,
+        text: lbl, align: 'center', verticalAlign: 'middle',
+        fontSize: fs, fill: themeAccent.value, fontStyle: 'italic', listening: false });
+    }
+  }
+  return out;
+}
+
+function tableGridLines(obj) {
+  const data = (Array.isArray(obj.cellData) && obj.cellData.length) ? obj.cellData : [['1', '2'], ['3', '4']];
+  const rows = data.length, cols = data[0]?.length || 1;
+  const hasRowLabels = Array.isArray(obj.rowLabels) && obj.rowLabels.length > 0;
+  const hasColLabels = Array.isArray(obj.colLabels) && obj.colLabels.length > 0;
+  const w = (obj.width || 200) * vs.value, h = (obj.height || 140) * vs.value;
+  const labelColW = hasRowLabels ? w * 0.18 : 0;
+  const labelRowH = hasColLabels ? h * 0.16 : 0;
+  const gridW = w - labelColW, gridH = h - labelRowH;
+  const cellW = cols > 0 ? gridW / cols : gridW;
+  const cellH = rows > 0 ? gridH / rows : gridH;
+  const gridX = -w / 2 + labelColW, gridY = -h / 2 + labelRowH;
+  const col = obj.stroke || '#4ceef9';
+  const sw = Math.max(0.5, vs.value);
+  const lines = [];
+  for (let r = 0; r <= rows; r++) {
+    const y = gridY + r * cellH;
+    lines.push({ points: [gridX, y, gridX + gridW, y], stroke: col, strokeWidth: sw, opacity: 0.4, listening: false });
+  }
+  for (let c = 0; c <= cols; c++) {
+    const x = gridX + c * cellW;
+    lines.push({ points: [x, gridY, x, gridY + gridH], stroke: col, strokeWidth: sw, opacity: 0.4, listening: false });
+  }
+  return lines;
 }
 
 // ── Relational config (Brace, Angle) ──

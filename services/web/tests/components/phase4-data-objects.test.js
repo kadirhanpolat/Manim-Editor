@@ -33,3 +33,23 @@ describe('table object', () => {
     expect(re.colLabels).toEqual(['x','y']);
   });
 });
+
+describe('table actions', () => {
+  it('setTableCell / add+remove row+col / mathMode / labels mutate', () => {
+    const t = store.addObject('table', 960, 540);
+    store.setTableCell(t.id, 0, 1, '9');
+    store.addTableRow(t.id); store.addTableColumn(t.id);
+    store.setTableMathMode(t.id, true);
+    store.setTableRowLabels(t.id, ['r1','r2','r3']);
+    store.setTableColLabels(t.id, ['c1','c2','c3']);
+    const re = store.objectById(t.id);
+    expect(re.cellData[0][1]).toBe('9');
+    expect(re.cellData.length).toBe(3);
+    expect(re.cellData[0].length).toBe(3);
+    expect(re.mathMode).toBe(true);
+    expect(re.rowLabels).toEqual(['r1','r2','r3']);
+    store.removeTableRow(t.id); store.removeTableColumn(t.id);
+    expect(store.objectById(t.id).cellData.length).toBe(2);
+    expect(store.objectById(t.id).cellData[0].length).toBe(2);
+  });
+});
