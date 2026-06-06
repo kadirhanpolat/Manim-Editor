@@ -103,12 +103,13 @@ const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'tri
 const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'sector', 'arc', 'double_arrow', 'polygon_free', 'parametric']);
 const ROUND_TYPES = new Set(['rectangle', 'square', 'polygon', 'triangle', 'star']);
 const SHADOW_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free', 'text', 'latex']);
-const canGradient = computed(() => GRADIENT_TYPES.has(obj.value.type));
-const canDash = computed(() => DASH_TYPES.has(obj.value.type));
-const canRound = computed(() => ROUND_TYPES.has(obj.value.type));
-const canShadow = computed(() => SHADOW_TYPES.has(obj.value.type));
+const canGradient = computed(() => obj.value && GRADIENT_TYPES.has(obj.value.type));
+const canDash = computed(() => obj.value && DASH_TYPES.has(obj.value.type));
+const canRound = computed(() => obj.value && ROUND_TYPES.has(obj.value.type));
+const canShadow = computed(() => obj.value && SHADOW_TYPES.has(obj.value.type));
 
 function toggleGradient() {
+  if (!obj.value) return;
   if (obj.value.gradient) store.setGradient(obj.value.id, null);
   else store.setGradient(obj.value.id, { colors: [obj.value.fill || '#3b82f6', '#8b5cf6'], angle: 135 });
 }
@@ -116,6 +117,6 @@ function setGradientStop(i, color) { const g = obj.value.gradient; if (!g) retur
 function addGradientStop() { const g = obj.value.gradient; if (!g) return; store.setGradient(obj.value.id, { ...g, colors: [...g.colors, '#ffffff'] }); }
 function removeGradientStop(i) { const g = obj.value.gradient; if (!g || g.colors.length <= 2) return; store.setGradient(obj.value.id, { ...g, colors: g.colors.filter((_, j) => j !== i) }); }
 function setGradientAngle(deg) { const g = obj.value.gradient; if (!g) return; store.setGradient(obj.value.id, { ...g, angle: Number(deg) }); }
-function toggleDash() { if (obj.value.dash) store.setDash(obj.value.id, null); else store.setDash(obj.value.id, { numDashes: 12, ratio: 0.5 }); }
+function toggleDash() { if (!obj.value) return; if (obj.value.dash) store.setDash(obj.value.id, null); else store.setDash(obj.value.id, { numDashes: 12, ratio: 0.5 }); }
 function setDashField(key, val) { const d = obj.value.dash || { numDashes: 12, ratio: 0.5 }; store.setDash(obj.value.id, { ...d, [key]: Number(val) }); }
 </script>

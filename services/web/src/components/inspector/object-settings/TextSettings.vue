@@ -58,7 +58,6 @@
 </template>
 
 <script setup>
-import { useProjectStore } from '../../../store/project.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
@@ -66,7 +65,6 @@ import ColorRow from '../ui/ColorRow.vue';
 import FontSelector from '../FontSelector.vue';
 
 const props = defineProps({ obj: { type: Object, required: true } });
-useProjectStore();
 const { u } = useObjectUpdate(() => props.obj);
 const obj = props.obj;
 </script>
