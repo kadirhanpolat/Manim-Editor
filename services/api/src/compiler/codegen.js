@@ -568,6 +568,12 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       lines.push(`${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
       break;
     }
+    case 'complex_plane': {
+      const xr = obj.xRange || [-3, 3, 1];
+      const yr = obj.yRange || [-2, 2, 1];
+      lines.push(`${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
+      break;
+    }
     case 'numberline': {
       const xr = obj.xRange || [-5, 5, 1];
       lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)})`);

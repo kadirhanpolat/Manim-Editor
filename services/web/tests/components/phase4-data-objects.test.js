@@ -70,3 +70,20 @@ describe('table actions', () => {
     expect(re.colLabels.length).toBeLessThanOrEqual(2);
   });
 });
+
+describe('complex_plane object', () => {
+  it('emits ComplexPlane with ranges', () => {
+    const p = store.addObject('complex_plane', 960, 540);
+    p.xRange = [-3,3,1]; p.yRange = [-2,2,1];
+    const py = generateManimScript(store.project);
+    expect(py).toContain('ComplexPlane(x_range=[-3, 3, 1], y_range=[-2, 2, 1]');
+  });
+  it('round-trips complex_plane', () => {
+    const p = store.addObject('complex_plane', 960, 540);
+    p.xRange = [-4,4,1]; p.yRange = [-2,2,1];
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'complex_plane');
+    expect(re.xRange).toEqual([-4,4,1]);
+    expect(re.yRange).toEqual([-2,2,1]);
+  });
+});

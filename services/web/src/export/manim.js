@@ -575,6 +575,12 @@ function objCode(obj, sw, sh) {
       lines.push(`${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
       break;
     }
+    case 'complex_plane': {
+      const xr = obj.xRange || [-3, 3, 1];
+      const yr = obj.yRange || [-2, 2, 1];
+      lines.push(`${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
+      break;
+    }
     case 'numberline': {
       const xr = obj.xRange || [-5, 5, 1];
       lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)})`);
@@ -1767,6 +1773,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
       const obj = { id, type: 'numberplane', name, x: sw / 2, y: sh / 2, width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], xStep: parseFloat(xs), yStep: parseFloat(ys), enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // ComplexPlane
+    m = line.match(/^(\w+)\s*=\s*ComplexPlane\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+    if (m) {
+      const [, name, x0, x1, xs, y0, y1, ys] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'complex_plane', name, x: sw / 2, y: sh / 2, width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;
     }

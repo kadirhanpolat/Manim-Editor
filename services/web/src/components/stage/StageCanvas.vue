@@ -111,12 +111,12 @@
               <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc'+gi" :config="gc" />
             </v-group>
 
-            <!-- NumberPlane -->
-            <v-group v-if="obj.type === 'numberplane' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <!-- NumberPlane / ComplexPlane -->
+            <v-group v-if="(obj.type === 'numberplane' || obj.type === 'complex_plane') && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
               <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: true }" />
               <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
               <v-line :config="{ points: [0, -obj.height/2 * vs, 0, obj.height/2 * vs], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
-              <v-text :config="{ text: 'NumberPlane', x: -40, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
+              <v-text :config="{ text: obj.type === 'complex_plane' ? 'ComplexPlane' : 'NumberPlane', x: -40, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
             </v-group>
 
             <!-- NumberLine -->
@@ -1569,7 +1569,7 @@ function onTransformEnd(id, e) {
   liveTransform.value = null;
 }
 function _isGroupType(type) {
-  return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'numberline';
+  return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'complex_plane' || type === 'numberline';
 }
 function axesGraphCurves(obj) {
   if (!obj.graphs || obj.graphs.length === 0) return [];
