@@ -417,6 +417,20 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
+    case 'table': {
+      const data = (Array.isArray(obj.cellData) && obj.cellData.length && Array.isArray(obj.cellData[0]))
+        ? obj.cellData : [['1', '2'], ['3', '4']];
+      const body = data.map(row => `[${row.map(c => `"${safeMatrixEntry(c)}"`).join(', ')}]`).join(', ');
+      const cls = obj.mathMode ? 'MathTable' : 'Table';
+      const wrap = obj.mathMode ? 'MathTex' : 'Text';
+      const labelArr = (arr) => `[${arr.map(s => `${wrap}("${safeMatrixEntry(s)}")`).join(', ')}]`;
+      let args = `[${body}]`;
+      if (Array.isArray(obj.rowLabels) && obj.rowLabels.length) args += `, row_labels=${labelArr(obj.rowLabels)}`;
+      if (Array.isArray(obj.colLabels) && obj.colLabels.length) args += `, col_labels=${labelArr(obj.colLabels)}`;
+      lines.push(`${n} = ${cls}(${args})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
     case 'brace': {
       const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
       const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];

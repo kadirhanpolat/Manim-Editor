@@ -161,6 +161,7 @@ export const SHAPE_DEFAULTS = {
   double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
   parametric: { width: 160, height: 160, fill: 'transparent', stroke: '#10b981', strokeWidth: 4 },
   matrix: { width: 160, height: 120, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
+  table:  { width: 200, height: 140, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
   brace: { width: 160, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
   counter: { width: 120, height: 60, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
@@ -180,6 +181,7 @@ export const SHAPE_COLORS = {
   polygon_free: '#8b5cf6',
   parametric: '#10b981',
   matrix: '#ffffff',
+  table: '#ffffff',
   brace: '#ffffff',
   angle: '#fbbf24',
   counter: '#38bdf8',
@@ -304,7 +306,7 @@ const useProjectStore = defineStore('project', {
         numberplane: 'NumberPlane', numberline: 'NumberLine',
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
-        matrix: 'Matrix', brace: 'Brace', angle: 'Angle', counter: 'Counter',
+        matrix: 'Matrix', table: 'Table', brace: 'Brace', angle: 'Angle', counter: 'Counter',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -336,6 +338,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'parametric' ? { xExpr: 'np.cos(t)', yExpr: 'np.sin(t)', tMin: 0, tMax: 6.283 } : {}),
         ...(type === 'polygon_free' ? { vertices: presetVertices('trapezoid', SHAPE_DEFAULTS.polygon_free.width, SHAPE_DEFAULTS.polygon_free.height) } : {}),
         ...(type === 'matrix' ? { matrixData: [['1', '0'], ['0', '1']], bracket: '[' } : {}),
+        ...(type === 'table' ? { cellData: [['1', '2'], ['3', '4']], mathMode: false, rowLabels: [], colLabels: [] } : {}),
         ...(type === 'brace' ? { p1: [-80, 0], p2: [80, 0], label: '' } : {}),
         ...(type === 'angle' ? { vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '' } : {}),
         ...(type === 'counter' ? { value: 0, numDecimals: 0, suffix: '' } : {}),

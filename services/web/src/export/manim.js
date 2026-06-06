@@ -433,6 +433,20 @@ function objCode(obj, sw, sh) {
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
+    case 'table': {
+      const data = (Array.isArray(obj.cellData) && obj.cellData.length && Array.isArray(obj.cellData[0]))
+        ? obj.cellData : [['1', '2'], ['3', '4']];
+      const body = data.map(row => `[${row.map(c => `"${safeMatrixEntry(c)}"`).join(', ')}]`).join(', ');
+      const cls = obj.mathMode ? 'MathTable' : 'Table';
+      const wrap = obj.mathMode ? 'MathTex' : 'Text';
+      const labelArr = (arr) => `[${arr.map(s => `${wrap}("${safeMatrixEntry(s)}")`).join(', ')}]`;
+      let args = `[${body}]`;
+      if (Array.isArray(obj.rowLabels) && obj.rowLabels.length) args += `, row_labels=${labelArr(obj.rowLabels)}`;
+      if (Array.isArray(obj.colLabels) && obj.colLabels.length) args += `, col_labels=${labelArr(obj.colLabels)}`;
+      lines.push(`${n} = ${cls}(${args})`);
+      if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
     case 'brace': {
       const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
       const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];
@@ -1512,6 +1526,22 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Table / MathTable (single-line)
+    m = line.match(/^(\w+) = (MathTable|Table)\(\[(\[.*\])\](?:, row_labels=\[(.*?)\])?(?:, col_labels=\[(.*?)\])?\)/);
+    if (m) {
+      const mathMode = m[2] === 'MathTable';
+      const rowStrs = m[3].match(/\[[^\]]*\]/g) || [];
+      const cellData = rowStrs.map(r => (r.match(/"([^"]*)"/g) || []).map(q => q.slice(1, -1)));
+      const labelList = (s) => s ? (s.match(/(?:MathTex|Text)\("([^"]*)"\)/g) || []).map(x => x.match(/"([^"]*)"/)[1]) : [];
+      const id = uid('obj');
+      const obj = { id, type: 'table', name: 'Table', x: sw / 2, y: sh / 2, width: 200, height: 140,
+        fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
+        cellData, mathMode, rowLabels: labelList(m[4]), colLabels: labelList(m[5]) };
+      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
       continue;
     }
 
