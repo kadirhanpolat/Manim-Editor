@@ -312,12 +312,12 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as shapes2d from './configs/shapes2d.js';
+import * as text from './configs/text.js';
 import { useProjectStore } from '../../store/project.js';
 import { generateDotGridPositions } from '../../engine/geometry.js';
 import { applyOverrides } from '../../engine/blending.js';
 import { project3D, unprojectIso, perspectiveScale } from '../../engine/projection3d.js';
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
-import { latexToUnicode } from '../../utils/latexPreview.js';
 import { canvasToVertex } from '../../engine/polygonVertices.js';
 import { compileExpr, isSafeExpr } from '../../engine/mathExpr.js';
 
@@ -351,8 +351,6 @@ const pathSourceId = ref(null);
 
 // ── Non-reactive instance vars ──
 let _pathLastClick = 0;
-let _measureCanvas = null;
-let _measureCtx = null;
 let _ro = null;
 let _onKeyDown = null;
 let _onKeyUp = null;
@@ -881,59 +879,7 @@ function applyEffects(cfg, obj, w, h, centered) {
   }
   return cfg;
 }
-function textCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  // Match Manim Text font_size: at 1080p, font_size N ≈ N px; scale by vs for stage→canvas
-  const manimFontScale = (e.fontSize || 48) * vs.value;
-  const fontFamily = e.fontFamily || 'Arial';
-  const fontStyle = (e.fontWeight === 'bold' ? 'bold ' : '') + (e.fontStyle === 'italic' ? 'italic ' : '');
-  const rawContent = e.content || 'Text';
-  const ov = frameState.value.objectOverrides[obj.id];
-  const twFrac = ov && ov._typewriter !== undefined ? ov._typewriter : null;
-  const text = twFrac !== null ? rawContent.slice(0, Math.max(0, Math.min(rawContent.length, Math.round(rawContent.length * twFrac)))) : rawContent;
-  const align = e.textAlign || 'center';
-  const textWidth = measureTextWidth(text, manimFontScale, fontFamily, fontStyle);
-  let offsetX = 0;
-  if (align === 'center') offsetX = textWidth / 2;
-  else if (align === 'right') offsetX = textWidth;
-  const rot = L ? L.rotation : (e.rotation || 0);
-  return {
-    x: p.x, y: p.y, text, fontSize: manimFontScale, fontFamily,
-    fontStyle: fontStyle.trim(), fill: e.fill || '#ffffff', opacity: e.opacity ?? 1,
-    rotation: rot, offsetX, offsetY: manimFontScale / 2,
-    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10
-  };
-}
-function measureTextWidth(text, fontSize, fontFamily, fontStyle) {
-  if (!_measureCanvas) {
-    _measureCanvas = document.createElement('canvas');
-    _measureCtx = _measureCanvas.getContext('2d');
-  }
-  _measureCtx.font = `${fontStyle}${fontSize}px ${fontFamily}`;
-  return _measureCtx.measureText(text).width;
-}
-function counterText(obj) {
-  const ov = frameState.value.objectOverrides[obj.id];
-  const raw = (ov && 'value' in ov) ? ov.value : (obj.value ?? 0);
-  const dec = Number.isFinite(obj.numDecimals) ? Math.max(0, Math.trunc(obj.numDecimals)) : 0;
-  return raw.toFixed(dec) + (obj.suffix || '');
-}
-function counterCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj);
-  const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  const fontSize = (e.fontSize || e.height || 48) * vs.value;
-  const text = counterText(obj);
-  const textWidth = measureTextWidth(text, fontSize, 'Arial', '');
-  const rot = L ? L.rotation : (e.rotation || 0);
-  return {
-    x: p.x, y: p.y, text, fontSize, fontFamily: 'Arial',
-    fontStyle: '', fill: e.fill || '#ffffff', opacity: e.opacity ?? 1,
-    rotation: rot, offsetX: textWidth / 2, offsetY: fontSize / 2,
-    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10
-  };
-}
+
 function groupCfg(obj) {
   const L = live(obj);
   const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
@@ -966,22 +912,6 @@ function imageCfg(obj) {
   };
 }
 
-// ── LaTeX config ──
-function latexBgCfg(obj) {
-  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
-  // listening:true → this rect is the group's hit area so the LaTeX box can be
-  // selected/dragged on the canvas (the text/badge stay non-listening).
-  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.06)', stroke: themeAccent.value, strokeWidth: 1.5, dash: [6, 4], cornerRadius: 6, listening: true };
-}
-function latexTextCfg(obj) {
-  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
-  // Approximate Unicode preview of the raw LaTeX (Manim does the real MathTex).
-  return { x: -w / 2, y: -h / 2, width: w, height: h, text: latexToUnicode(obj.latex || 'E = mc^2'), fontSize: Math.max(12, 18 * vs.value), fontFamily: 'serif', fontStyle: 'italic', fill: obj.fill || '#ffffff', align: 'center', verticalAlign: 'middle', padding: 8, listening: false };
-}
-function latexBadgeCfg(obj) {
-  const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
-  return { x: -w / 2 + 4, y: -h / 2 + 4, text: 'TEX', fontSize: 9, fill: themeAccent.value, fontFamily: 'monospace', fontStyle: 'bold', listening: false };
-}
 
 // ── Matrix config ──
 function matrixHitCfg(obj) {
@@ -1901,7 +1831,7 @@ const ctx = computed(() => ({
   themeAccent: themeAccent.value, themeSurface: themeSurface.value,
   imageElements, frameState: frameState.value, is3D: is3D.value, cam3d: cam3d.value,
   proj3DScale: proj3DScale.value, projCx: projCx.value, projCy: projCy.value,
-  iso, measureTextWidth,
+  iso, measureTextWidth: text.measureTextWidth,
   activeTool: store.activeTool,
 }));
 const rectCfg = (o) => shapes2d.rectCfg(o, ctx.value);
@@ -1920,6 +1850,11 @@ const annulusCfg = (o) => shapes2d.annulusCfg(o, ctx.value);
 const sectorCfg = (o) => shapes2d.sectorCfg(o, ctx.value);
 const arcCfg = (o) => shapes2d.arcCfg(o, ctx.value);
 const doubleArrowCfg = (o) => shapes2d.doubleArrowCfg(o, ctx.value);
+const textCfg = (o) => text.textCfg(o, ctx.value);
+const counterCfg = (o) => text.counterCfg(o, ctx.value);
+const latexBgCfg = (o) => text.latexBgCfg(o, ctx.value);
+const latexTextCfg = (o) => text.latexTextCfg(o, ctx.value);
+const latexBadgeCfg = (o) => text.latexBadgeCfg(o, ctx.value);
 
 // ── Expose for parent ref calls ──
 defineExpose({ startPathDraw });

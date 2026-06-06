@@ -50,4 +50,7 @@ export const OBJECTS = {
   arc:         { id: 'arc1',    type: 'arc',          x: 960, y: 540, width: 180, height: 180, fill: '#F97316', stroke: '#F97316', strokeWidth: 4, opacity: 1, rotation: 0, radius: 70, sweepAngle: 180, startAngle: 0 },
   double_arrow:{ id: 'da1',     type: 'double_arrow', x: 960, y: 540, width: 300, height: 10,  fill: '#EF4444', stroke: '#EF4444', strokeWidth: 2, opacity: 1, rotation: 0 },
   parametric:  { id: 'par1',    type: 'parametric',   x: 960, y: 540, width: 200, height: 200, fill: '#10B981', stroke: '#10B981', strokeWidth: 4, opacity: 1, rotation: 0, xExpr: 'cos(t)', yExpr: 'sin(t)', tMin: 0, tMax: 6.28 },
+  text:        { id: 'txt1',    type: 'text',         x: 960, y: 300, width: 400, height: 80,  fill: '#FFFFFF', opacity: 1, rotation: 0, content: 'Hello', fontSize: 48, fontFamily: 'Roboto' },
+  counter:     { id: 'cnt1',    type: 'counter',      x: 960, y: 540, width: 200, height: 80,  fill: '#10B981', opacity: 1, rotation: 0, value: 42, numDecimals: 1, suffix: '%' },
+  latex:       { id: 'tex1',    type: 'latex',        x: 960, y: 700, width: 300, height: 80,  fill: '#FFFFFF', opacity: 1, rotation: 0, content: 'x^2' },
 };

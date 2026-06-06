@@ -351,3 +351,79 @@ exports[`shapes2d > triangle config is stable 1`] = `
   "y": 210,
 }
 `;
+
+exports[`text configs > counter config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#10B981",
+  "fontFamily": "Arial",
+  "fontSize": 32,
+  "fontStyle": "",
+  "hitStrokeWidth": 10,
+  "id": "cnt1",
+  "name": "stageObject",
+  "offsetX": 0,
+  "offsetY": 16,
+  "opacity": 1,
+  "rotation": 0,
+  "text": "42.0%",
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`text configs > latex bg config is stable 1`] = `
+{
+  "cornerRadius": 6,
+  "dash": [
+    6,
+    4,
+  ],
+  "fill": "rgba(76,238,249,0.06)",
+  "height": 32,
+  "listening": true,
+  "stroke": "#4CEEF9",
+  "strokeWidth": 1.5,
+  "width": 120,
+  "x": -60,
+  "y": -16,
+}
+`;
+
+exports[`text configs > latex text config is stable 1`] = `
+{
+  "align": "center",
+  "fill": "#FFFFFF",
+  "fontFamily": "serif",
+  "fontSize": 12,
+  "fontStyle": "italic",
+  "height": 32,
+  "listening": false,
+  "padding": 8,
+  "text": "E = mc²",
+  "verticalAlign": "middle",
+  "width": 120,
+  "x": -60,
+  "y": -16,
+}
+`;
+
+exports[`text configs > text config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#FFFFFF",
+  "fontFamily": "Roboto",
+  "fontSize": 19.200000000000003,
+  "fontStyle": "",
+  "hitStrokeWidth": 10,
+  "id": "txt1",
+  "name": "stageObject",
+  "offsetX": 0,
+  "offsetY": 9.600000000000001,
+  "opacity": 1,
+  "rotation": 0,
+  "text": "Hello",
+  "x": 484,
+  "y": 170,
+}
+`;

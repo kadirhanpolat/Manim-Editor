@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { makeCtx, OBJECTS } from './fixtures.js';
 import * as shapes2d from '../../../src/components/stage/configs/shapes2d.js';
+import * as textCfgs from '../../../src/components/stage/configs/text.js';
 
 // Each extraction task appends a block here that snapshots its module's builders.
 // Vitest writes/commits the snapshot on first run; later drift fails the test.
@@ -24,4 +25,12 @@ describe('shapes2d', () => {
   for (const [type, fn] of Object.entries(map)) {
     it(`${type} config is stable`, () => { expect(fn(OBJECTS[type], ctx)).toMatchSnapshot(); });
   }
+});
+
+describe('text configs', () => {
+  const ctx = makeCtx();
+  it('text config is stable', () => { expect(textCfgs.textCfg(OBJECTS.text, ctx)).toMatchSnapshot(); });
+  it('counter config is stable', () => { expect(textCfgs.counterCfg(OBJECTS.counter, ctx)).toMatchSnapshot(); });
+  it('latex bg config is stable', () => { expect(textCfgs.latexBgCfg(OBJECTS.latex, ctx)).toMatchSnapshot(); });
+  it('latex text config is stable', () => { expect(textCfgs.latexTextCfg(OBJECTS.latex, ctx)).toMatchSnapshot(); });
 });
