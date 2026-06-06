@@ -6,6 +6,12 @@ import PolygonFreeSettings from './PolygonFreeSettings.vue';
 import AnnulusSettings from './AnnulusSettings.vue';
 import ArcSectorSettings from './ArcSectorSettings.vue';
 import ParametricSettings from './ParametricSettings.vue';
+import VectorFieldSettings from './VectorFieldSettings.vue';
+import TableSettings from './TableSettings.vue';
+import MatrixSettings from './MatrixSettings.vue';
+import BraceSettings from './BraceSettings.vue';
+import AngleSettings from './AngleSettings.vue';
+import CounterSettings from './CounterSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -15,5 +21,11 @@ const REGISTRY = {
   arc: ArcSectorSettings,
   sector: ArcSectorSettings,
   parametric: ParametricSettings,
+  vector_field: VectorFieldSettings,
+  table: TableSettings,
+  matrix: MatrixSettings,
+  brace: BraceSettings,
+  angle: AngleSettings,
+  counter: CounterSettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }
