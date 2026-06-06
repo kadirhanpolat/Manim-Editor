@@ -623,6 +623,7 @@ const useProjectStore = defineStore('project', {
     },
     addGraphEdge(id, a, b) {
       const o = this.objectById(id); if (!o || !o.vertices.includes(a) || !o.vertices.includes(b)) return;
+      if (a === b) return;
       if (o.edges.some(e => e[0] === a && e[1] === b)) return;
       o.edges.push([a, b]); this.isDirty = true; this.commitState();
     },

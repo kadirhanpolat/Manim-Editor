@@ -935,7 +935,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import { ENTER_ANIMS, EXIT_ANIMS } from '../../store/project.js';
 import { EASING_LIST } from '../../engine/easing.js';
@@ -1155,6 +1155,7 @@ function setRiemannField(graph, key, val) {
 // ── Graph/DiGraph editor ──
 const newEdgeFrom = ref('');
 const newEdgeTo = ref('');
+watch(() => store.selectedObjectIds, () => { newEdgeFrom.value = ''; newEdgeTo.value = ''; });
 function graphVertexName(v) { return String(v || '').trim(); }
 function addGraphVertexAuto() {
   if (!obj.value) return;

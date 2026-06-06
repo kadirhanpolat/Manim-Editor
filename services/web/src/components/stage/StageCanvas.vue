@@ -177,7 +177,9 @@
                 <v-line v-else :config="ecfg" />
               </template>
               <v-circle v-for="(vcfg, vi) in graphVertexConfigs(obj)" :key="'gv' + vi" :config="vcfg" />
-              <v-text v-if="obj.showLabels" v-for="(lcfg, li) in graphLabelConfigs(obj)" :key="'gl' + li" :config="lcfg" />
+              <template v-if="obj.showLabels">
+                <v-text v-for="(lcfg, li) in graphLabelConfigs(obj)" :key="'gl' + li" :config="lcfg" />
+              </template>
             </v-group>
 
             <!-- 3D: Sphere -->
@@ -585,7 +587,7 @@ function onVertexDrag(key, evt) {
   if (h.kind === 'vertices') {
     const arr = obj.vertices.slice(); arr[key] = nv; obj.vertices = arr;
   } else if (h.kind === 'graph') {
-    store.setGraphVertexPosition(obj.id, key, nv);
+    obj.positions[key] = [Math.round(nv[0]), Math.round(nv[1])];
   } else {
     obj[key] = nv;
   }
