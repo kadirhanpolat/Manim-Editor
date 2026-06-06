@@ -95,59 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Graph / DiGraph editor -->
-      <Section v-if="obj.type === 'graph'" label="Graph">
-        <div class="space-y-2">
-          <!-- Toggles -->
-          <div class="flex gap-3">
-            <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
-              <input type="checkbox" :checked="obj.directed" @change="store.setGraphDirected(obj.id, $event.target.checked)" />
-              Directed
-            </label>
-            <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
-              <input type="checkbox" :checked="obj.showLabels" @change="store.setGraphShowLabels(obj.id, $event.target.checked)" />
-              Labels
-            </label>
-          </div>
-          <!-- Vertex list -->
-          <div class="pt-1">
-            <p class="text-[10px] text-studio-text-muted mb-1">Vertices</p>
-            <div v-for="v in (obj.vertices || [])" :key="'gv-' + v" class="flex items-center gap-1 mb-1">
-              <input class="flex-1 min-w-0 px-1 py-0.5 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
-                     :value="v" @change="renameGraphVertex(v, $event.target.value)" />
-              <button class="px-1.5 py-0.5 text-[10px] rounded border border-studio-border hover:bg-red-500/20 text-studio-text-muted"
-                      @click="removeGraphVertex(v)">−</button>
-            </div>
-            <button class="w-full py-1 text-[10px] rounded border border-dashed border-studio-accent/50 text-studio-accent hover:bg-studio-accent/10"
-                    @click="addGraphVertexAuto">+ Add Vertex</button>
-          </div>
-          <!-- Edge list -->
-          <div class="pt-1">
-            <p class="text-[10px] text-studio-text-muted mb-1">Edges</p>
-            <div v-for="(edge, ei) in (obj.edges || [])" :key="'ge-' + ei" class="flex items-center gap-1 mb-1">
-              <span class="flex-1 px-1 py-0.5 text-[11px] text-studio-text-muted font-mono">{{ edge[0] }} → {{ edge[1] }}</span>
-              <button class="px-1.5 py-0.5 text-[10px] rounded border border-studio-border hover:bg-red-500/20 text-studio-text-muted"
-                      @click="removeGraphEdge(edge[0], edge[1])">−</button>
-            </div>
-            <div class="flex items-center gap-1 mt-1">
-              <select class="flex-1 min-w-0 px-1 py-0.5 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
-                      :value="newEdgeFrom" @change="newEdgeFrom = $event.target.value">
-                <option value="">From…</option>
-                <option v-for="v in (obj.vertices || [])" :key="'ef-' + v" :value="v">{{ v }}</option>
-              </select>
-              <select class="flex-1 min-w-0 px-1 py-0.5 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
-                      :value="newEdgeTo" @change="newEdgeTo = $event.target.value">
-                <option value="">To…</option>
-                <option v-for="v in (obj.vertices || [])" :key="'et-' + v" :value="v">{{ v }}</option>
-              </select>
-              <button class="px-2 py-0.5 text-[10px] rounded border border-studio-accent/50 text-studio-accent hover:bg-studio-accent/10"
-                      @click="addGraphEdgeFromUI">Add</button>
-            </div>
-          </div>
-          <p class="text-[10px] text-studio-text-muted/50">Drag vertex handles on the canvas to reposition.</p>
-        </div>
-      </Section>
-
       <!-- LaTeX settings -->
       <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
         <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
@@ -302,7 +249,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { settingsComponentFor } from '../object-settings/index.js';
 import { useProjectStore } from '../../../store/project.js';
 import { ENTER_ANIMS, EXIT_ANIMS } from '../../../store/project.js';
@@ -377,16 +324,6 @@ function toggleGraphRiemann(graph) {
   store.updateGraph(obj.value.id, graph.id, { riemann: on ? { xMin: graph.xMin, xMax: graph.xMax, dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10), type: 'left', color: graph.color, ...existing, enabled: true } : { ...existing, enabled: false } });
 }
 function setRiemannField(graph, key, val) { if (obj.value && graph.riemann) store.updateGraph(obj.value.id, graph.id, { riemann: { ...graph.riemann, [key]: val } }); }
-
-const newEdgeFrom = ref('');
-const newEdgeTo = ref('');
-watch(() => store.selectedObjectIds, () => { newEdgeFrom.value = ''; newEdgeTo.value = ''; });
-function graphVertexName(v) { return String(v || '').trim(); }
-function addGraphVertexAuto() { if (obj.value) store.addGraphVertex(obj.value.id); }
-function removeGraphVertex(v) { if (obj.value) store.removeGraphVertex(obj.value.id, v); }
-function renameGraphVertex(oldV, newV) { if (!obj.value) return; const nv = graphVertexName(newV); if (nv && nv !== oldV) store.renameGraphVertex(obj.value.id, oldV, nv); }
-function addGraphEdgeFromUI() { if (!obj.value) return; const a = newEdgeFrom.value, b = newEdgeTo.value; if (a && b && a !== b) { store.addGraphEdge(obj.value.id, a, b); newEdgeFrom.value = ''; newEdgeTo.value = ''; } }
-function removeGraphEdge(a, b) { if (obj.value) store.removeGraphEdge(obj.value.id, a, b); }
 
 function align(anchor) { if (obj.value) store.alignObject(obj.value.id, anchor); }
 function ungroup(groupId) { store.ungroupObjects(groupId); }

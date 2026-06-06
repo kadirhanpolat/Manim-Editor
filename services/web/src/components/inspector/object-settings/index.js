@@ -12,6 +12,7 @@ import MatrixSettings from './MatrixSettings.vue';
 import BraceSettings from './BraceSettings.vue';
 import AngleSettings from './AngleSettings.vue';
 import CounterSettings from './CounterSettings.vue';
+import GraphSettings from './GraphSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -27,5 +28,6 @@ const REGISTRY = {
   brace: BraceSettings,
   angle: AngleSettings,
   counter: CounterSettings,
+  graph: GraphSettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }
