@@ -15,13 +15,6 @@ export function useStageViewport(store, container) {
   function iso(x3d, y3d, z3d, cx, cy, scale) {
     return project3D({ x3d, y3d, z3d }, cam3d.value, cx, cy, scale);
   }
-  // Orthographic-forced projection (same phi/theta/zoom) for the faint reference
-  // gizmo — keeps the axes a clean symmetric cross instead of the lopsided arms
-  // perspective foreshortening produces. Perspective still applies to objects.
-  function isoRef(x3d, y3d, z3d, cx, cy, scale) {
-    const c = cam3d.value;
-    return project3D({ x3d, y3d, z3d }, { phi: c.phi, theta: c.theta, zoom: c.zoom, mode: 'orthographic' }, cx, cy, scale);
-  }
 
   // ── Computeds ──
   const vs = computed(() => {
@@ -139,7 +132,7 @@ export function useStageViewport(store, container) {
     // Computeds
     vs, ox, oy, stageConfig, is3D, cam3d, proj3DScale, projCx, projCy,
     // 3D projection functions
-    iso, isoRef,
+    iso,
     // Coordinate helpers
     s2c, c2s,
     // Theme

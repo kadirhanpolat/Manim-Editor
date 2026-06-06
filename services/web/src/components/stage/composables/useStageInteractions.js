@@ -87,9 +87,6 @@ export function useStageInteractions(store, deps) {
     return bounds;
   });
 
-  // ── Computed: selectedObjectIds (used internally via store) ──
-  const selectedObjectIds = computed(() => store.selectedObjectIds);
-
   // ── Functions ──
   function onVertexDrag(key, evt) {
     const h = polygonHandles.value; if (!h) return;
