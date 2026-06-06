@@ -124,8 +124,8 @@ describe('counter object', () => {
   });
   it('emits unit="..." only when suffix set', () => {
     const c = store.addObject('counter', 960, 540);
-    c.value = 50; c.numDecimals = 1; c.suffix = '%';
-    expect(generateManimScript(store.project)).toContain('unit="%"');
+    c.value = 50; c.numDecimals = 1; c.suffix = 'kg';
+    expect(generateManimScript(store.project)).toContain('unit="kg"');
   });
   it('round-trips a counter', () => {
     const c = store.addObject('counter', 960, 540);

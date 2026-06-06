@@ -47,6 +47,20 @@ export function safeLatex(s) {
   return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, ' ');
 }
 
+/** Escape a DecimalNumber `unit` string. DecimalNumber renders `unit` through the
+ *  MathTex pipeline, so LaTeX-special chars (`% & # _ $ { }`) must be backslash-
+ *  escaped or they break the render (e.g. `%` starts a LaTeX comment and eats the
+ *  rest). We add the LaTeX escape, then double backslashes + escape quotes for the
+ *  Python string literal. No-op for plain units (e.g. `" u"`) → byte-identical to
+ *  the legacy `safeText`-based output. Inverse: the parser's `unescapeUnit`. */
+export function latexUnit(s) {
+  return String(s == null ? '' : s)
+    .replace(/([%&#_${}])/g, '\\$1')   // LaTeX-escape specials (single backslash)
+    .replace(/\\/g, '\\\\')            // double all backslashes for the .py literal
+    .replace(/"/g, '\\"')
+    .replace(/[\r\n]/g, ' ');
+}
+
 /** Sanitize a Matrix entry to a safe Manim display string (no eval; strips quotes/backslashes/newlines). */
 export function safeMatrixEntry(s) {
   const t = String(s == null ? '' : s).replace(/\\/g, '').replace(/"/g, '').replace(/[\n\r]/g, '').slice(0, 32);

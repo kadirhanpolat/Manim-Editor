@@ -61,4 +61,22 @@ describe('generateScene', () => {
     expect(code).toContain('\n        path_p1.set_points_as_corners(');   // 8 spaces ✓
     expect(code).not.toContain('\n                path_p1.set_points_as_corners(');  // 16 spaces ✗
   });
+
+  // Regression: a counter `suffix` with a LaTeX-special char (e.g. %) must be
+  // escaped — DecimalNumber renders `unit` via MathTex, where `%` starts a comment
+  // and swallows the rest. Plain suffixes stay byte-identical.
+  it('escapes LaTeX-special chars in a counter suffix', () => {
+    const code = generateScene(baseProject({
+      objects: [{ id: 'n1', type: 'counter', x: 960, y: 540, width: 200, height: 80, value: 50, numDecimals: 0, suffix: '%', enterTime: 0, duration: 3 }],
+    }), { resolveAsset });
+    expect(code).toContain('unit="\\\\%"');   // emitted .py has a backslash-escaped % (\\%)
+    expect(code).not.toContain('unit="%"');    // never the bare % that breaks MathTex
+  });
+
+  it('leaves a plain counter suffix byte-identical', () => {
+    const code = generateScene(baseProject({
+      objects: [{ id: 'n1', type: 'counter', x: 960, y: 540, width: 200, height: 80, value: 0, numDecimals: 1, suffix: ' u', enterTime: 0, duration: 3 }],
+    }), { resolveAsset });
+    expect(code).toContain('unit=" u"');
+  });
 });

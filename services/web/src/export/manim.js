@@ -22,6 +22,14 @@ function manimToStage(mx, my, w, h) {
   return { x: (mx / FRAME_WIDTH + 0.5) * w, y: (-my / FRAME_HEIGHT + 0.5) * h };
 }
 
+/** Inverse of @manim/codegen `latexUnit`: restore a DecimalNumber `unit` back to the
+    raw suffix (un-double backslashes, then drop the LaTeX escape before specials). */
+function unescapeUnit(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\\\/g, '\\')
+    .replace(/\\([%&#_${}])/g, '$1');
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // CODEGEN: project → Manim Python (thin wrapper — logic lives in @manim/codegen)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -475,7 +483,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         x: sw / 2, y: sh / 2, width: 120, height: 60,
         fill: '#ffffff', stroke: 'transparent', strokeWidth: 0, opacity: 1, rotation: 0,
         enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
-        value: parseFloat(m[2]), numDecimals: parseInt(m[3], 10), suffix: m[4] || '' };
+        value: parseFloat(m[2]), numDecimals: parseInt(m[3], 10), suffix: unescapeUnit(m[4]) };
       varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
       continue;
     }

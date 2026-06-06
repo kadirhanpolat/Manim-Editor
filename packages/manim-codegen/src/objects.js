@@ -1,5 +1,5 @@
 import {
-  vn, hex, safeNum, safeOpacity, safeText, safeLatex, safeMathExpr,
+  vn, hex, safeNum, safeOpacity, safeText, safeLatex, safeMathExpr, latexUnit,
   safeMatrixEntry, matrixBrackets, fillOpacityExpr, strokeOpacityArg,
   gradientLine, dashedLines, roundCornersLine, shadowLines, stageToManim,
 } from './helpers.js';
@@ -235,7 +235,7 @@ export function objectCode(obj, sw, sh, { resolveAsset }) {
     case 'counter': {
       const val = Number.isFinite(obj.value) ? obj.value : 0;
       const dec = Number.isFinite(obj.numDecimals) ? Math.max(0, Math.trunc(obj.numDecimals)) : 0;
-      const unit = obj.suffix ? `, unit="${safeText(obj.suffix)}"` : '';
+      const unit = obj.suffix ? `, unit="${latexUnit(obj.suffix)}"` : '';
       lines.push(`${n} = DecimalNumber(${val}, num_decimal_places=${dec}${unit})`);
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;

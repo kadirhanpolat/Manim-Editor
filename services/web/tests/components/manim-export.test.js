@@ -364,10 +364,26 @@ describe('generator — counter (DecimalNumber)', () => {
     expect(py).not.toContain('unit=');
   });
 
-  it('value=50, numDecimals=1, suffix="%" → DecimalNumber(50, num_decimal_places=1, unit="%")', () => {
-    const project = makeProject([makeObj('obj1', 'counter', { value: 50, numDecimals: 1, suffix: '%' })], []);
+  it('value=50, numDecimals=1, suffix="u" → DecimalNumber(50, num_decimal_places=1, unit="u")', () => {
+    const project = makeProject([makeObj('obj1', 'counter', { value: 50, numDecimals: 1, suffix: 'u' })], []);
     const py = generateManimScript(project);
-    expect(py).toContain('DecimalNumber(50, num_decimal_places=1, unit="%")');
+    expect(py).toContain('DecimalNumber(50, num_decimal_places=1, unit="u")');
+  });
+
+  it('LaTeX-special suffix "%" is escaped (DecimalNumber unit renders via MathTex)', () => {
+    const project = makeProject([makeObj('obj1', 'counter', { value: 50, numDecimals: 0, suffix: '%' })], []);
+    const py = generateManimScript(project);
+    expect(py).toContain('unit="\\\\%"');   // escaped \\% in the emitted .py
+    expect(py).not.toContain('unit="%"');    // never the bare % that breaks the render
+  });
+
+  it('round-trips a LaTeX-special suffix back to the raw value', () => {
+    const project = makeProject([makeObj('obj1', 'counter', { value: 7, numDecimals: 0, suffix: '%' })], []);
+    const py = generateManimScript(project);
+    const back = parseManimScript(py, SW, SH);
+    const ctr = back.objects.find(o => o.type === 'counter');
+    expect(ctr).toBeTruthy();
+    expect(ctr.suffix).toBe('%');
   });
 });
 
