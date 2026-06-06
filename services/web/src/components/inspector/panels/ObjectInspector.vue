@@ -95,12 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- LaTeX settings -->
-      <Section v-if="obj.type === 'latex'" label="LaTeX Expression">
-        <textarea class="input input-sm resize-none font-mono" rows="2" :value="obj.latex || ''" @input="u('latex', $event.target.value)" placeholder="E = mc^2"></textarea>
-        <p class="text-[8px] text-studio-text-muted/40 mt-1 leading-snug">Raw LaTeX — canvas shows an approximate preview; Manim renders it as MathTex</p>
-      </Section>
-
       <!-- PolarPlane settings -->
       <Section v-if="obj.type === 'polar_plane'" label="PolarPlane">
         <div class="space-y-1.5">
