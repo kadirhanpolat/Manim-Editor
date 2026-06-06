@@ -31,8 +31,9 @@ cd services/web && npm test
 |------|---------|
 | `services/web/src/store/project.js` | Pinia store — all project state, actions, getters (`useProjectStore()`) |
 | `services/web/src/engine/playback.js` | 60fps rAF playback engine — evaluates clips, computes frame state |
-| `services/api/src/compiler/codegen.js` | Generates Python Manim code from project JSON (server-side) |
-| `services/web/src/export/manim.js` | Client-side .py generator + parser (mirrors codegen.js semantics) |
+| `packages/manim-codegen/src/` | **Single source of truth for Manim codegen** — `constants.js`, `helpers.js`, `objects.js`, `objects3d.js`, `clips.js`, `keyframes.js`, `index.js` (`generateScene`) |
+| `services/api/src/compiler/codegen.js` | Thin server wrapper over `@manim/codegen` (supplies server asset paths via `resolveAsset`) |
+| `services/web/src/export/manim.js` | Thin client generator wrapper over `@manim/codegen` + the web-only `.py` **parser** |
 | `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; split viewport for 3D (iso + top); camera preview via vs/ox/oy |
 | `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio, Keyframe, Position3D panels) |
 | `services/web/src/components/inspector/Position3DPanel.vue` | 3D position/rotation editor — x3d/y3d/z3d, rx/ry/rz, resolution, xRange inputs |
@@ -46,6 +47,29 @@ cd services/web && npm test
 | `services/api/src/routes/audio.js` | Audio upload, TTS job, worker callback, delete endpoints |
 | `services/api/src/ws.js` | WebSocket push for render and audio job events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
+
+## Code Generation — single source of truth (v3.14.0)
+
+All Manim Python generation lives in the **`@manim/codegen`** npm-workspace package
+(`packages/manim-codegen/src/`): `constants.js` (EASING_MAP, FRAME_*, *_TYPES),
+`helpers.js` (`vn`, `hex`, `safe*`, `gradientLine`, `shadowLines`, …), `objects.js`
+(`objectCode`), `objects3d.js` (`objectCode3d`), `clips.js` (`transformExpr`,
+`emphasisExpr`), `keyframes.js` (`generateKeyframeSteps`), and `index.js`
+(`generateScene`). Both services consume it:
+
+- `services/api/src/compiler/codegen.js` and the generator half of
+  `services/web/src/export/manim.js` are **thin wrappers** that call
+  `generateScene(project, { resolveAsset })` with a service-specific `resolveAsset`
+  (server file path vs client placeholder — the only intentional divergence).
+- The **`.py` parser** (`parseManimScript`) stays in `services/web/src/export/manim.js`
+  (web-only; the api never parses).
+
+**When adding a new object/clip type, edit the package once** (plus the web parser
+for round-trip). There is no longer any byte-identical duplication to hand-maintain.
+The per-type sections below still say "keep `case X` byte-identical across
+codegen.js/manim.js — guarded by `manim-export.test.js`"; that now means the case
+lives **once** in `@manim/codegen`, and the parity/round-trip tests remain as
+regression guards.
 
 ## Coordinate Systems
 
@@ -125,7 +149,7 @@ Graph expressions (`graph.expression`) must pass the whitelist before use in cod
 if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(expr)) return 'x**2';
 if (/import|eval|exec|open|__/.test(expr)) return 'x**2';
 ```
-This check exists in `codegen.js` (`safeMathExpr`), `manim.js` (`safeMathExpr`), and `StageCanvas.vue` (`axesGraphCurves`). Keep all three in sync.
+This check lives in `@manim/codegen` (`safeMathExpr` in `helpers.js`, used by both the server and client generators) and is duplicated in `StageCanvas.vue` (`axesGraphCurves`). Keep the package helper and the `StageCanvas.vue` copy in sync.
 
 ## Camera Animations
 
@@ -143,7 +167,7 @@ This check exists in `codegen.js` (`safeMathExpr`), `manim.js` (`safeMathExpr`),
 - **Codegen priority**: `MovingCameraScene` > `VoiceoverScene` > `Scene`. Clips with `audio.status === 'ready'` generate `with self.voiceover(audio="...") as tracker_<clipId>:` blocks.
 - **Render lock**: `store.hasPendingAudio` (Pinia property) disables render button in `App.vue`, `RenderPanel.vue`, and `Topbar.vue`.
 - **Coqui TTS** (optional): start with `docker compose --profile coqui up`; the `audio-coqui` service handles `audio:queue:coqui` jobs.
-- **Keep `manim.js` and `codegen.js` in sync** for voiceover logic, same as for all other clip/object types.
+- Voiceover logic lives in `@manim/codegen` (`generateScene`), shared by both services — no hand-syncing needed.
 
 ## Testing Conventions
 
@@ -177,12 +201,16 @@ cd services/api && npm run dev
 
 ## Client-Side Exporter (`manim.js`)
 
-`services/web/src/export/manim.js` supports the same features as `codegen.js`:
-- Generator: `numberplane`, `numberline`, `axes` + `graphs[]`, `AnimationGroup`/`LaggedStart`, `path_move`, `camera_move`, `MovingCameraScene`, `VoiceoverScene` + per-clip `with self.voiceover(...)` blocks
+`services/web/src/export/manim.js` is a thin wrapper: `generateManimScript(project)`
+delegates to `generateScene` in `@manim/codegen` (with a client placeholder
+`resolveAsset`), then the file hosts the web-only **parser**. The generator
+therefore supports exactly the same features as the server (they share one source):
+- Generator (in `@manim/codegen`): `numberplane`, `numberline`, `axes` + `graphs[]`, `AnimationGroup`/`LaggedStart`, `path_move`, `camera_move`, `MovingCameraScene`, `VoiceoverScene` + per-clip `with self.voiceover(...)` blocks
 - **3D**: `ThreeDScene` + `objectCode3d()` for 6 3D types, `set_camera_orientation`, `self.move_camera()`, `Rotate(axis=RIGHT/UP/OUT)`, keyframe `x3d/y3d/z3d → move_to([...])`, `ThreeDScene, VoiceoverScene` mixin
-- Parser: all of the above in reverse (`.py` → project JSON); returns `cameraType` and `cameraTrack`
+- Parser (in `manim.js`): all of the above in reverse (`.py` → project JSON); returns `cameraType` and `cameraTrack`
 
-**Keep `manim.js` and `codegen.js` semantically in sync.** When adding a new object or clip type, update both.
+**When adding a new object or clip type, edit `@manim/codegen` once** (the generator),
+**plus the `manim.js` parser** for round-trip support.
 
 ## 3D Scene Support (Completed — 2026-06-03)
 
@@ -295,7 +323,7 @@ Drag in `KeyframeLane` mutates Pinia state directly (no `commitState()` per pixe
 
 ### Codegen
 
-`generateKeyframeSteps(project, steps, sw, sh)` is called in both `codegen.js` and `manim.js` before camera clips. Outputs per `codegenMode`:
+`generateKeyframeSteps(project, steps, sw, sh)` lives in `@manim/codegen` (`keyframes.js`) and runs inside `generateScene` before camera clips (so both services share it). Outputs per `codegenMode`:
 
 - **`UpdateFromAlphaFunc`** (default): `def _kf_<obj>_<prop>_<i>_fn(mob, alpha)` + `self.play(UpdateFromAlphaFunc(...))`
 - **`animate`**: sequential `self.play(obj.animate.set_x(...), run_time=...)`
@@ -305,12 +333,13 @@ ValueTracker and UpdateFromAlphaFunc skip properties where `_kfUpdater(prop)` re
 
 ## Coordinate Constants (unified — v3.5.0)
 
-Both generators now share the same frame constants and emit identical coordinates:
+Both server and client emit identical coordinates because they share the same
+constants from `@manim/codegen/src/constants.js`:
 `FRAME_WIDTH = 14 + 2/9` (14.222, Manim CE default), `FRAME_HEIGHT = 8`, `FRAME_X_RADIUS = 7.111`, `FRAME_Y_RADIUS = 4`.
 
-- `codegen.js` previously used bare `14` (positions) and `7` (scale-based shapes — square/circle/triangle/star/polygon/dot_grid spacing) — the latter a 2× size divergence vs `manim.js`. All now use `FRAME_WIDTH`. Radius-type values (heart `mw`, `Dot` radius) correctly use `FRAME_X_RADIUS`; heart `mh` uses `FRAME_Y_RADIUS`.
-- `_kfPropSet` x-conversion and camera `set_width` in **both** files now use `FRAME_WIDTH`.
-- **When editing coordinate math, keep `codegen.js` and `manim.js` byte-identical in the multipliers** — they have no shared import (codegen.js can't be imported in Vitest), so parity is maintained by convention + the `manim-export.test.js` invariant tests.
+- The codegen previously used bare `14` (positions) and `7` (scale-based shapes — square/circle/triangle/star/polygon/dot_grid spacing). All now use `FRAME_WIDTH`. Radius-type values (heart `mw`, `Dot` radius) use `FRAME_X_RADIUS`; heart `mh` uses `FRAME_Y_RADIUS`.
+- `_kfPropSet` x-conversion and camera `set_width` use `FRAME_WIDTH`.
+- Coordinate math lives **once** in `@manim/codegen`; the only remaining hand-kept copy of the math whitelist is `StageCanvas.vue` (preview). The `manim-export.test.js` invariant tests still guard the emitted coordinates.
 
 ## 2D Object Effects (Phase 1 — 2026-06-05)
 
