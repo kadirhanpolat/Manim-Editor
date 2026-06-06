@@ -52,4 +52,21 @@ describe('table actions', () => {
     expect(store.objectById(t.id).cellData.length).toBe(2);
     expect(store.objectById(t.id).cellData[0].length).toBe(2);
   });
+
+  it('removeTableRow/Column splice over-length labels to the new size', () => {
+    const t = store.addObject('table', 960, 540);
+    // start 2x2; grow to 4 rows / 4 cols so we can set 4 labels then shrink hard
+    store.addTableRow(t.id); store.addTableRow(t.id);
+    store.addTableColumn(t.id); store.addTableColumn(t.id);
+    store.setTableRowLabels(t.id, ['r1','r2','r3','r4']);
+    store.setTableColLabels(t.id, ['c1','c2','c3','c4']);
+    // shrink rows 4->2 and cols 4->2
+    store.removeTableRow(t.id); store.removeTableRow(t.id);
+    store.removeTableColumn(t.id); store.removeTableColumn(t.id);
+    const re = store.objectById(t.id);
+    expect(re.cellData.length).toBe(2);
+    expect(re.cellData[0].length).toBe(2);
+    expect(re.rowLabels.length).toBeLessThanOrEqual(2);
+    expect(re.colLabels.length).toBeLessThanOrEqual(2);
+  });
 });

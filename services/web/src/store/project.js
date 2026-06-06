@@ -478,7 +478,7 @@ const useProjectStore = defineStore('project', {
     removeTableRow(id) {
       const obj = this.objectById(id);
       if (!obj || !Array.isArray(obj.cellData) || obj.cellData.length <= 1) return;
-      obj.cellData.pop(); if (Array.isArray(obj.rowLabels) && obj.rowLabels.length > obj.cellData.length) obj.rowLabels.pop();
+      obj.cellData.pop(); if (Array.isArray(obj.rowLabels) && obj.rowLabels.length > obj.cellData.length) obj.rowLabels.splice(obj.cellData.length);
       this.isDirty = true; this.commitState();
     },
     addTableColumn(id) {
@@ -489,7 +489,7 @@ const useProjectStore = defineStore('project', {
     removeTableColumn(id) {
       const obj = this.objectById(id);
       if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0] || obj.cellData[0].length <= 1) return;
-      obj.cellData.forEach(row => row.pop()); if (Array.isArray(obj.colLabels) && obj.colLabels.length > obj.cellData[0].length) obj.colLabels.pop();
+      obj.cellData.forEach(row => row.pop()); if (Array.isArray(obj.colLabels) && obj.colLabels.length > obj.cellData[0].length) obj.colLabels.splice(obj.cellData[0].length);
       this.isDirty = true; this.commitState();
     },
     setTableMathMode(id, on) { const o = this.objectById(id); if (!o) return; o.mathMode = !!on; this.isDirty = true; this.commitState(); },
