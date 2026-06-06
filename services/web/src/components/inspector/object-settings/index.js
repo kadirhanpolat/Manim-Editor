@@ -14,6 +14,7 @@ import AngleSettings from './AngleSettings.vue';
 import CounterSettings from './CounterSettings.vue';
 import GraphSettings from './GraphSettings.vue';
 import LatexSettings from './LatexSettings.vue';
+import PolarPlaneSettings from './PolarPlaneSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -31,5 +32,6 @@ const REGISTRY = {
   counter: CounterSettings,
   graph: GraphSettings,
   latex: LatexSettings,
+  polar_plane: PolarPlaneSettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }
