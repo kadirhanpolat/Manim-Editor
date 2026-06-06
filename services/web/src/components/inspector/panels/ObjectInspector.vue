@@ -95,66 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Axes settings -->
-      <Section v-if="obj.type === 'axes'" label="Axes Range">
-        <div class="space-y-1.5">
-          <div class="grid grid-cols-3 gap-1">
-            <Num label="X Min" :value="(obj.xRange||[-5,5,1])[0]" :step="1" @input="uRange('xRange', 0, $event)" />
-            <Num label="X Max" :value="(obj.xRange||[-5,5,1])[1]" :step="1" @input="uRange('xRange', 1, $event)" />
-            <Num label="X Step" :value="(obj.xRange||[-5,5,1])[2]" :min="0.1" :step="0.5" @input="uRange('xRange', 2, $event)" />
-          </div>
-          <div class="grid grid-cols-3 gap-1">
-            <Num label="Y Min" :value="(obj.yRange||[-3,3,1])[0]" :step="1" @input="uRange('yRange', 0, $event)" />
-            <Num label="Y Max" :value="(obj.yRange||[-3,3,1])[1]" :step="1" @input="uRange('yRange', 1, $event)" />
-            <Num label="Y Step" :value="(obj.yRange||[-3,3,1])[2]" :min="0.1" :step="0.5" @input="uRange('yRange', 2, $event)" />
-          </div>
-        </div>
-      </Section>
-
-      <!-- Axes: Graph Functions -->
-      <Section v-if="obj && obj.type === 'axes'" label="Graphs">
-        <div v-for="graph in (obj.graphs || [])" :key="graph.id" class="mb-2 p-2 rounded bg-studio-surface2 border border-studio-border">
-          <div class="flex items-center gap-1 mb-1">
-            <input
-              class="input input-sm flex-1 font-mono text-xs"
-              :value="graph.expression"
-              placeholder="x**2"
-              @change="updateGraph(graph.id, 'expression', $event.target.value)"
-            />
-            <input
-              type="color"
-              class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
-              :value="graph.color"
-              @input="updateGraph(graph.id, 'color', $event.target.value)"
-            />
-            <button class="text-studio-error hover:opacity-80 text-xs px-1" @click="removeGraph(graph.id)">✕</button>
-          </div>
-          <div class="grid grid-cols-2 gap-1">
-            <Num label="x min" :value="graph.xMin" @input="updateGraph(graph.id, 'xMin', $event)" />
-            <Num label="x max" :value="graph.xMax" @input="updateGraph(graph.id, 'xMax', $event)" />
-          </div>
-          <div class="flex items-center gap-2 mt-1">
-            <button data-test="graph-area-toggle" class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.area && graph.area.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphArea(graph)">Area</button>
-            <button class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.riemann && graph.riemann.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphRiemann(graph)">Riemann</button>
-          </div>
-          <div v-if="graph.riemann && graph.riemann.enabled" class="grid grid-cols-2 gap-1.5 mt-1">
-            <Num label="dx" :value="graph.riemann.dx" :min="0.05" :step="0.05" @input="setRiemannField(graph, 'dx', $event)" />
-            <div>
-              <span class="text-[9px] text-studio-text-muted/50">Sample</span>
-              <select class="select text-xs" :value="graph.riemann.type" @change="setRiemannField(graph, 'type', $event.target.value)">
-                <option value="left">left</option>
-                <option value="right">right</option>
-                <option value="center">center</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <button
-          class="w-full mt-1 py-1 text-xs rounded border border-dashed border-studio-accent/50 text-studio-accent hover:bg-studio-accent/10"
-          @click="addGraph"
-        >+ Add Graph</button>
-      </Section>
-
       <!-- Z-Order -->
       <Section label="Layer Order">
         <input class="input input-sm w-16" type="number" min="0" :value="obj.zOrder || 0" @change="u('zOrder', Number($event.target.value))" />
@@ -227,7 +167,7 @@ const enterAnims = ENTER_ANIMS;
 const exitAnims = EXIT_ANIMS;
 
 const obj = computed(() => store.selectedObject);
-const { u, uSize, uRange } = useObjectUpdate(() => obj.value);
+const { u, uSize } = useObjectUpdate(() => obj.value);
 const settingsComp = computed(() => settingsComponentFor(obj.value?.type));
 
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
@@ -266,21 +206,6 @@ const effectiveSize = computed(() => {
   if (!obj.value) return 0;
   return Math.min(obj.value.width || 0, obj.value.height || 0) || 1;
 });
-
-function addGraph() { if (obj.value && obj.value.type === 'axes') store.addGraph(obj.value.id); }
-function removeGraph(graphId) { if (obj.value) store.removeGraph(obj.value.id, graphId); }
-function updateGraph(graphId, key, value) { if (obj.value) store.updateGraph(obj.value.id, graphId, { [key]: value }); }
-function toggleGraphArea(graph) {
-  if (!obj.value) return;
-  const existing = graph.area || {}; const on = !existing.enabled;
-  store.updateGraph(obj.value.id, graph.id, { area: on ? { xMin: graph.xMin, xMax: graph.xMax, opacity: 0.5, color: graph.color, ...existing, enabled: true } : { ...existing, enabled: false } });
-}
-function toggleGraphRiemann(graph) {
-  if (!obj.value) return;
-  const existing = graph.riemann || {}; const on = !existing.enabled;
-  store.updateGraph(obj.value.id, graph.id, { riemann: on ? { xMin: graph.xMin, xMax: graph.xMax, dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10), type: 'left', color: graph.color, ...existing, enabled: true } : { ...existing, enabled: false } });
-}
-function setRiemannField(graph, key, val) { if (obj.value && graph.riemann) store.updateGraph(obj.value.id, graph.id, { riemann: { ...graph.riemann, [key]: val } }); }
 
 function align(anchor) { if (obj.value) store.alignObject(obj.value.id, anchor); }
 function ungroup(groupId) { store.ungroupObjects(groupId); }

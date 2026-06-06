@@ -16,6 +16,7 @@ import GraphSettings from './GraphSettings.vue';
 import LatexSettings from './LatexSettings.vue';
 import PolarPlaneSettings from './PolarPlaneSettings.vue';
 import PlaneRangeSettings from './PlaneRangeSettings.vue';
+import AxesSettings from './AxesSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -36,5 +37,6 @@ const REGISTRY = {
   polar_plane: PolarPlaneSettings,
   numberplane: PlaneRangeSettings,
   complex_plane: PlaneRangeSettings,
+  axes: AxesSettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }
