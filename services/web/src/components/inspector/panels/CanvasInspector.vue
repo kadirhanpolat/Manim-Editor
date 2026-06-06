@@ -108,3 +108,12 @@ function isSel(id) { return store.selectedObjectIds.includes(id); }
 function selObj(id, e) { store.selectObject(id, e.shiftKey || e.ctrlKey); }
 </script>
 
+<style scoped>
+.obj-list-item {
+  @apply flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors;
+  @apply hover:bg-studio-border;
+}
+.obj-list-item.sel {
+  @apply bg-studio-accent/10 text-studio-accent;
+}
+</style>
