@@ -86,6 +86,7 @@ describe('objects3d configs', () => {
   it('torus tube stable', () => { expect(objects3d.torus3dTube(OBJECTS.torus, ctx)).toMatchSnapshot(); });
   it('torus outline stable', () => { expect(objects3d.torusOutline(OBJECTS.torus, ctx)).toMatchSnapshot(); });
   it('axes3d lines stable', () => { expect(objects3d.axes3dLines(OBJECTS.axes3d, ctx)).toMatchSnapshot(); });
+  it('surface mesh stable', () => { expect(objects3d.surface3dMesh(OBJECTS.surface, ctx)).toMatchSnapshot(); });
   it('obj3dCenter stable', () => { expect(objects3d.obj3dCenter(OBJECTS.sphere, ctx)).toMatchSnapshot(); });
 });
 

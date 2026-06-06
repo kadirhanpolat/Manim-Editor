@@ -70,4 +70,5 @@ export const OBJECTS = {
   cylinder:    { id: 'cy1',   type: 'cylinder',  x3d: 0, y3d: 0, z3d: 0, radius: 0.6, height: 1.5, fill: '#8B5CF6', opacity: 1 },
   torus:       { id: 'to1',   type: 'torus',     x3d: 0, y3d: 0, z3d: 0, majorRadius: 1.2, minorRadius: 0.3, fill: '#EF4444', opacity: 1 },
   axes3d:      { id: 'a3d1',  type: 'axes3d',    x3d: 0, y3d: 0, z3d: 0, xRange: [-3, 3, 1], yRange: [-3, 3, 1], zRange: [-3, 3, 1] },
+  surface:     { id: 'sf1',   type: 'surface',   x3d: 0, y3d: 0, z3d: 0, zExpr: 'x**2 - y**2', xRange: [-2, 2], yRange: [-2, 2], fill: '#9b59b6', opacity: 1 },
 };
