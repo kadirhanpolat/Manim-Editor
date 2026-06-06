@@ -317,6 +317,8 @@ import * as dataObjects from './configs/dataObjects.js';
 import * as relational from './configs/relational.js';
 import * as axes from './configs/axes.js';
 import * as objects3d from './configs/objects3d.js';
+import * as chrome from './configs/chrome.js';
+import * as overlays from './configs/overlays.js';
 import { useProjectStore } from '../../store/project.js';
 import { applyOverrides } from '../../engine/blending.js';
 import { project3D, unprojectIso } from '../../engine/projection3d.js';
@@ -423,112 +425,12 @@ const proj3DScale = computed(() => Math.min(stg.value.width, stg.value.height) *
 const projCx = computed(() => ox.value + stg.value.width * vs.value / 2);
 const projCy = computed(() => oy.value + stg.value.height * vs.value / 2);
 
-// Faint reference XYZ axes + XY floor grid. Each segment is geometrically
-// clipped (Liang–Barsky) to its panel rectangle so camera zoom (cam3d.zoom)
-// can never push the gizmo past the panel/canvas edges. (Konva group clip
-// proved unreliable through vue-konva, so we clip the geometry ourselves.)
-const REF_AXIS_LEN = 4;
-const FLOOR_GRID_EXT = 5;
-const AXIS_COLORS = { x: '#f87171', y: '#4ade80', z: '#60a5fa' };
-
-// Clip segment (x0,y0)-(x1,y1) to rect [rx0,ry0,rx1,ry1]; returns trimmed
-// [x0,y0,x1,y1] or null if fully outside.
-function _clipSeg(x0, y0, x1, y1, rx0, ry0, rx1, ry1) {
-  let t0 = 0, t1 = 1;
-  const dx = x1 - x0, dy = y1 - y0;
-  const p = [-dx, dx, -dy, dy], q = [x0 - rx0, rx1 - x0, y0 - ry0, ry1 - y0];
-  for (let i = 0; i < 4; i++) {
-    if (p[i] === 0) { if (q[i] < 0) return null; }
-    else {
-      const r = q[i] / p[i];
-      if (p[i] < 0) { if (r > t1) return null; if (r > t0) t0 = r; }
-      else { if (r < t0) return null; if (r < t1) t1 = r; }
-    }
-  }
-  return [x0 + t0 * dx, y0 + t0 * dy, x0 + t1 * dx, y0 + t1 * dy];
-}
-// Clip rect = the VISIBLE black viewport (bgConfig rect), not the full Konva
-// stage — the backdrop is scaled by vs and offset by ox/oy, so clipping to the
-// full stage would let the gizmo spill into the inset margin around it.
-const isoRect = computed(() => {
-  const w = stg.value.width * vs.value, h = stg.value.height * vs.value;
-  return [ox.value, oy.value, ox.value + w, oy.value + h];
-});
-function _axCfg(a, b, stroke, r) {
-  const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
-  return c ? { points: c, stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false } : null;
-}
-function _gridCfg(a, b, r) {
-  const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
-  return c ? { points: c, stroke: '#64748b', strokeWidth: 1, opacity: 0.1, listening: false } : null;
-}
-function _lblCfg(p, text, fill, r) {
-  if (p.px < r[0] || p.px > r[2] || p.py < r[1] || p.py > r[3]) return null;
-  return { x: p.px + 4, y: p.py - 7, text, fontSize: 12, fontStyle: 'bold', fill, opacity: 0.5, listening: false };
-}
-
-const refAxesIso = computed(() => {
-  if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
-  return [
-    _axCfg(isoRef(-L, 0, 0, cx, cy, s), isoRef(L, 0, 0, cx, cy, s), AXIS_COLORS.x, r),
-    _axCfg(isoRef(0, -L, 0, cx, cy, s), isoRef(0, L, 0, cx, cy, s), AXIS_COLORS.y, r),
-    _axCfg(isoRef(0, 0, -L, cx, cy, s), isoRef(0, 0, L, cx, cy, s), AXIS_COLORS.z, r),
-  ].filter(Boolean);
-});
-const refLabelsIso = computed(() => {
-  if (!is3D.value) return [];
-  const L = REF_AXIS_LEN, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
-  return [
-    _lblCfg(isoRef(L, 0, 0, cx, cy, s), 'X', AXIS_COLORS.x, r),
-    _lblCfg(isoRef(0, L, 0, cx, cy, s), 'Y', AXIS_COLORS.y, r),
-    _lblCfg(isoRef(0, 0, L, cx, cy, s), 'Z', AXIS_COLORS.z, r),
-  ].filter(Boolean);
-});
-const floorGridIso = computed(() => {
-  if (!is3D.value) return [];
-  const G = FLOOR_GRID_EXT, s = proj3DScale.value, cx = projCx.value, cy = projCy.value, r = isoRect.value;
-  const out = [];
-  for (let i = -G; i <= G; i++) {
-    if (i === 0) continue;
-    const a = _gridCfg(isoRef(-G, i, 0, cx, cy, s), isoRef(G, i, 0, cx, cy, s), r); if (a) out.push(a);
-    const b = _gridCfg(isoRef(i, -G, 0, cx, cy, s), isoRef(i, G, 0, cx, cy, s), r); if (b) out.push(b);
-  }
-  return out;
-});
-const bgConfig = computed(() => ({
-  x: ox.value, y: oy.value,
-  width: stg.value.width * vs.value, height: stg.value.height * vs.value,
-  fill: stg.value.backgroundColor || '#000000',
-  opacity: stg.value.backgroundOpacity ?? 1,
-  cornerRadius: 4,
-  shadowColor: '#000', shadowBlur: 40, shadowOpacity: 0.6
-}));
+// Faint reference XYZ axes + XY floor grid — delegated to chrome.js.
 
 const themeAccent = computed(() => getCssVar('--studio-accent') || '#4CEEF9');
 const themeSurface = computed(() => getCssVar('--studio-text') || '#E6EDF3');
 
-const gridLines = computed(() => {
-  const lines = [];
-  const x0 = ox.value, y0 = oy.value, w = stg.value.width * vs.value, h = stg.value.height * vs.value;
-  const gs = stg.value.gridSize || 8;
-  const gridColor = stg.value.gridColor || '#ffffff';
-  const gridOpacity = stg.value.gridOpacity ?? 0.12;
-  for (let i = 1; i < gs; i++) {
-    lines.push({ points: [x0 + w / gs * i, y0, x0 + w / gs * i, y0 + h], stroke: gridColor, strokeWidth: 0.5, opacity: gridOpacity, dash: [4, 8], listening: false });
-    lines.push({ points: [x0, y0 + h / gs * i, x0 + w, y0 + h / gs * i], stroke: gridColor, strokeWidth: 0.5, opacity: gridOpacity, dash: [4, 8], listening: false });
-  }
-  return lines;
-});
-
-const centerH = computed(() => {
-  const gridOpacity = stg.value.gridOpacity ?? 0.12;
-  return { points: [ox.value, oy.value + stg.value.height * vs.value / 2, ox.value + stg.value.width * vs.value, oy.value + stg.value.height * vs.value / 2], stroke: themeAccent.value, strokeWidth: 0.5, opacity: gridOpacity + 0.06, dash: [8, 4], listening: false };
-});
-const centerV = computed(() => {
-  const gridOpacity = stg.value.gridOpacity ?? 0.12;
-  return { points: [ox.value + stg.value.width * vs.value / 2, oy.value, ox.value + stg.value.width * vs.value / 2, oy.value + stg.value.height * vs.value], stroke: themeAccent.value, strokeWidth: 0.5, opacity: gridOpacity + 0.06, dash: [8, 4], listening: false };
-});
+// bgConfig / gridLines / centerH / centerV — delegated to chrome.js (declared after ctx).
 
 const trConfig = computed(() => {
   const accent = themeAccent.value;
@@ -699,48 +601,7 @@ function eff3d(obj) {
   };
 }
 
-// ── Emphasis overlay (circumscribe) ──────────────────────────────────────
-const emphasisOverlays = computed(() => {
-  const out = [];
-  const ovMap = frameState.value.objectOverrides || {};
-  for (const obj of objects.value) {
-    const ov = ovMap[obj.id];
-    const e = ov && ov._emphasis;
-    if (!e || e.kind !== 'circumscribe') continue;
-    const m = eff(obj);
-    const c = s2c(m.x, m.y);
-    const w = (m.width || 100) * 1.25 * vs.value;
-    const h = (m.height || 100) * 1.25 * vs.value;
-    const p = e.progress;
-    const op = e.fadeOut ? Math.sin(Math.PI * p) : Math.min(1, p * 2);
-    const base = { stroke: e.color, strokeWidth: 3, opacity: Math.max(0, op), listening: false, id: obj.id + '-emph' };
-    if (e.shape === 'Circle') {
-      out.push({ ...base, kind: 'ellipse', x: c.x, y: c.y, radiusX: w / 2, radiusY: h / 2 });
-    } else {
-      out.push({ ...base, kind: 'rect', x: c.x - w / 2, y: c.y - h / 2, width: w, height: h });
-    }
-  }
-  return out;
-});
-
-// Draw committed 3D path_move paths as a polyline in the single 3D view (visual only).
-const path3dPolylines = computed(() => {
-  if (!is3D.value) return [];
-  const out = [];
-  for (const track of store.project.tracks || []) {
-    for (const clip of track.clips || []) {
-      if (clip.type !== 'path_move' || !Array.isArray(clip.path)) continue;
-      if (!(clip.path[0] && 'x3d' in clip.path[0])) continue;
-      const pts = [];
-      for (const pt of clip.path) {
-        const i = iso(pt.x3d, pt.y3d ?? 0, pt.z3d, projCx.value, projCy.value, proj3DScale.value);
-        pts.push(i.px, i.py);
-      }
-      out.push({ stroke: '#a855f7', strokeWidth: 1.5, dash: [4, 4], listening: false, opacity: 0.7, points: pts, id: clip.id + '-path3d' });
-    }
-  }
-  return out;
-});
+// emphasisOverlays / path3dPolylines — delegated to overlays.js (declared after ctx).
 
 function isVis(id) {
   const h = frameState.value.hiddenIds;
@@ -883,15 +744,7 @@ function applyEffects(cfg, obj, w, h, centered) {
 }
 
 
-// ── Relational config (Brace, Angle) ──
-
-function morphCfg(m) {
-  if (!m || !m.flatPoints || m.flatPoints.length < 4) return { points: [], closed: true };
-  const p = s2c(m.x, m.y);
-  const sp = [];
-  for (let i = 0; i < m.flatPoints.length; i += 2) { sp.push(m.flatPoints[i] * vs.value); sp.push(m.flatPoints[i + 1] * vs.value); }
-  return { x: p.x, y: p.y, points: sp, closed: true, fill: m.fill || '#fff', stroke: m.stroke || '#fff', strokeWidth: (m.strokeWidth || 2) * vs.value / 2, opacity: m.opacity ?? 1, listening: false };
-}
+// morphCfg — delegated to overlays.js (declared after ctx).
 
 // ── Path draw ──
 function startPathDraw(sourceId) {
@@ -1155,6 +1008,20 @@ const ctx = computed(() => ({
   activeTool: store.activeTool,
   selectedObjectIds: store.selectedObjectIds,
 }));
+
+// ── chrome.js delegating computeds ──
+const bgConfig = computed(() => chrome.bgConfig(ctx.value));
+const gridLines = computed(() => chrome.gridLines(ctx.value));
+const centerH = computed(() => chrome.centerH(ctx.value));
+const centerV = computed(() => chrome.centerV(ctx.value));
+const refAxesIso = computed(() => chrome.refAxesIso(ctx.value));
+const refLabelsIso = computed(() => chrome.refLabelsIso(ctx.value));
+const floorGridIso = computed(() => chrome.floorGridIso(ctx.value));
+
+// ── overlays.js delegating computeds ──
+const emphasisOverlays = computed(() => overlays.emphasisOverlays(objects.value, ctx.value));
+const path3dPolylines = computed(() => overlays.path3dPolylines(store.project.tracks || [], ctx.value));
+const morphCfg = (m) => overlays.morphCfg(m, ctx.value);
 const rectCfg = (o) => shapes2d.rectCfg(o, ctx.value);
 const circleCfg = (o) => shapes2d.circleCfg(o, ctx.value);
 const ellipseCfg = (o) => shapes2d.ellipseCfg(o, ctx.value);

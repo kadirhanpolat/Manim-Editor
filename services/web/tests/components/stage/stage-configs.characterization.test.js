@@ -6,6 +6,8 @@ import * as dataObjects from '../../../src/components/stage/configs/dataObjects.
 import * as relational from '../../../src/components/stage/configs/relational.js';
 import * as axes from '../../../src/components/stage/configs/axes.js';
 import * as objects3d from '../../../src/components/stage/configs/objects3d.js';
+import * as chrome from '../../../src/components/stage/configs/chrome.js';
+import * as overlays from '../../../src/components/stage/configs/overlays.js';
 
 // Each extraction task appends a block here that snapshots its module's builders.
 // Vitest writes/commits the snapshot on first run; later drift fails the test.
@@ -84,4 +86,17 @@ describe('objects3d configs', () => {
   it('torus outline stable', () => { expect(objects3d.torusOutline(OBJECTS.torus, ctx)).toMatchSnapshot(); });
   it('axes3d lines stable', () => { expect(objects3d.axes3dLines(OBJECTS.axes3d, ctx)).toMatchSnapshot(); });
   it('obj3dCenter stable', () => { expect(objects3d.obj3dCenter(OBJECTS.sphere, ctx)).toMatchSnapshot(); });
+});
+
+describe('chrome configs', () => {
+  it('bg config stable', () => { expect(chrome.bgConfig(makeCtx())).toMatchSnapshot(); });
+  it('grid lines stable', () => { expect(chrome.gridLines(makeCtx())).toMatchSnapshot(); });
+  it('ref axes (3D) stable', () => { expect(chrome.refAxesIso(makeCtx({ is3D: true }))).toMatchSnapshot(); });
+  it('floor grid (3D) stable', () => { expect(chrome.floorGridIso(makeCtx({ is3D: true }))).toMatchSnapshot(); });
+});
+
+describe('overlay configs', () => {
+  it('emphasis overlays empty when no overrides', () => {
+    expect(overlays.emphasisOverlays([], makeCtx())).toEqual([]);
+  });
 });

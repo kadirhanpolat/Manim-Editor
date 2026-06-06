@@ -521,6 +521,548 @@ exports[`axes configs > axes x ticks stable 1`] = `
 ]
 `;
 
+exports[`chrome configs > bg config stable 1`] = `
+{
+  "cornerRadius": 4,
+  "fill": "#000000",
+  "height": 432,
+  "opacity": 1,
+  "shadowBlur": 40,
+  "shadowColor": "#000",
+  "shadowOpacity": 0.6,
+  "width": 768,
+  "x": 100,
+  "y": 50,
+}
+`;
+
+exports[`chrome configs > floor grid (3D) stable 1`] = `
+[
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      100,
+      276.42110781596364,
+      484,
+      375.8076211353316,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      100,
+      255.57889218403636,
+      484,
+      156.1923788646684,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      102.16233815926432,
+      255.01923788646684,
+      526.4264068711929,
+      364.82685902179844,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      102.16233815926432,
+      276.98076211353316,
+      526.4264068711929,
+      167.17314097820156,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      144.58874503045723,
+      244.03847577293368,
+      568.8528137423857,
+      353.8460969082653,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      144.58874503045723,
+      287.9615242270663,
+      568.8528137423857,
+      178.15390309173472,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      187.01515190165003,
+      233.05771365940052,
+      611.2792206135786,
+      342.8653347947321,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      187.01515190165003,
+      298.9422863405995,
+      611.2792206135786,
+      189.13466520526788,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      229.4415587728429,
+      222.07695154586736,
+      653.7056274847714,
+      331.88457268119896,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      229.44155877284285,
+      309.92304845413264,
+      653.7056274847714,
+      200.11542731880104,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      314.2943725152286,
+      200.11542731880104,
+      738.5584412271571,
+      309.92304845413264,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      314.2943725152286,
+      331.88457268119896,
+      738.5584412271571,
+      222.07695154586736,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      356.7207793864215,
+      189.13466520526788,
+      780.98484809835,
+      298.9422863405995,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      356.72077938642144,
+      342.8653347947321,
+      780.98484809835,
+      233.05771365940052,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      399.14718625761435,
+      178.15390309173472,
+      823.4112549695428,
+      287.9615242270663,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      399.1471862576143,
+      353.8460969082653,
+      823.4112549695428,
+      244.03847577293368,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      441.57359312880715,
+      167.17314097820156,
+      865.8376618407357,
+      276.98076211353316,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      441.57359312880715,
+      364.82685902179844,
+      865.8376618407357,
+      255.01923788646684,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      484,
+      156.1923788646684,
+      868,
+      255.57889218403636,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+  {
+    "listening": false,
+    "opacity": 0.1,
+    "points": [
+      484,
+      375.8076211353316,
+      868,
+      276.42110781596364,
+    ],
+    "stroke": "#64748b",
+    "strokeWidth": 1,
+  },
+]
+`;
+
+exports[`chrome configs > grid lines stable 1`] = `
+[
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      196,
+      50,
+      196,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      104,
+      868,
+      104,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      292,
+      50,
+      292,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      158,
+      868,
+      158,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      388,
+      50,
+      388,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      212,
+      868,
+      212,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      484,
+      50,
+      484,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      266,
+      868,
+      266,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      580,
+      50,
+      580,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      320,
+      868,
+      320,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      676,
+      50,
+      676,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      374,
+      868,
+      374,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      772,
+      50,
+      772,
+      482,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+  {
+    "dash": [
+      4,
+      8,
+    ],
+    "listening": false,
+    "opacity": 0.12,
+    "points": [
+      100,
+      428,
+      868,
+      428,
+    ],
+    "stroke": "#ffffff",
+    "strokeWidth": 0.5,
+  },
+]
+`;
+
+exports[`chrome configs > ref axes (3D) stable 1`] = `
+[
+  {
+    "dash": [
+      5,
+      5,
+    ],
+    "listening": false,
+    "opacity": 0.3,
+    "points": [
+      314.2943725152286,
+      222.07695154586736,
+      653.7056274847714,
+      309.92304845413264,
+    ],
+    "stroke": "#f87171",
+    "strokeWidth": 1.5,
+  },
+  {
+    "dash": [
+      5,
+      5,
+    ],
+    "listening": false,
+    "opacity": 0.3,
+    "points": [
+      314.2943725152286,
+      309.92304845413264,
+      653.7056274847714,
+      222.07695154586736,
+    ],
+    "stroke": "#4ade80",
+    "strokeWidth": 1.5,
+  },
+  {
+    "dash": [
+      5,
+      5,
+    ],
+    "listening": false,
+    "opacity": 0.3,
+    "points": [
+      484,
+      482,
+      484,
+      50,
+    ],
+    "stroke": "#60a5fa",
+    "strokeWidth": 1.5,
+  },
+]
+`;
+
 exports[`data-object configs > dot_grid dots stable 1`] = `
 [
   {
