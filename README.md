@@ -111,10 +111,12 @@ Open **http://localhost:8080** in your browser. Everything works out of the box 
 
 ### Editor Only (No Docker)
 
+This is an npm-workspaces monorepo (the shared `@manim/codegen` package is consumed
+by both `services/web` and `services/api`), so install from the repo root:
+
 ```bash
-cd services/web
-npm install
-npm run dev
+npm install                       # root install — links the @manim/codegen workspace
+npm --workspace services/web run dev
 ```
 
 Open **http://localhost:5173**. You can build scenes and export Manim scripts. Server features (render, project sync) require Docker.
@@ -386,7 +388,13 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 339 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on, text-math animations: counter/count/typewriter/tex-matching, Phase 4 data objects: table/complex_plane/polar_plane/graph/vector_field)
+npm run test:unit # 402 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, + StageCanvas config-builder characterization snapshots)
+```
+
+The shared codegen package has its own suite (run from the repo root):
+
+```bash
+npm --workspace packages/manim-codegen test   # 6 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape)
 ```
 
 ---
@@ -419,7 +427,16 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.13.0 (current)
+### v3.14.0 (current)
+
+Internal refactors (no user-facing behavior change) + render-path fixes:
+
+- **Shared `@manim/codegen` package**: the hand-maintained byte-identical duplication between the server generator (`codegen.js`) and the client generator half of `manim.js` was extracted into a single npm-workspace package (`packages/manim-codegen/`: `constants`, `helpers`, `objects`, `objects3d`, `clips`, `keyframes`, `generateScene`). Both services are now thin wrappers; the one intentional server↔client difference (asset file paths) is injected via a `resolveAsset` callback. The `.py` parser stays web-only in `manim.js`. Docker build contexts moved to the repo root so the package ships into both images (the api dev `node_modules` volume was renamed `api_node_modules` → `root_node_modules`).
+- **StageCanvas decomposition**: `StageCanvas.vue` (2052 → ~544 lines) was split into pure `(obj, ctx)` config builders (`components/stage/configs/*.js`) + reactive composables (`components/stage/composables/*.js`) + a thin orchestrator. Behavior preserved verbatim, pinned by characterization snapshots.
+- **Render-path bug fixes** (surfaced end-to-end via the renderer): the project validator now accepts `count`/`path_move`/emphasis clip types; the `count`/`path_move` multi-line codegen no longer double-indents (was a Python `IndentationError`); the renderer writes world-writable output so `DELETE /api/projects/:id` no longer fails with `EACCES`; and a `counter` `suffix` with LaTeX-special chars (e.g. `%`) is now escaped so `DecimalNumber(unit=...)` renders correctly.
+- **Tests**: totals now **402 unit + 114 engine** (web) + **6** `@manim/codegen` package tests.
+
+### v3.13.0
 
 Data & Coordinate Objects (Phase 4) — five new 2D object types, all byte-identical across the server (`codegen.js`) and client (`manim.js`) generators and round-tripping through `.py` export/import:
 
