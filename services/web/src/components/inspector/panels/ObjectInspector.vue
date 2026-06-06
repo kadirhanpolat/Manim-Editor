@@ -95,16 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Dot Grid -->
-      <Section v-if="obj.type === 'dot_grid'" label="Grid Settings">
-        <div class="grid grid-cols-2 gap-1.5">
-          <Num label="Columns" :value="obj.gridCols || 5" :min="1" :max="20" @input="u('gridCols', $event)" />
-          <Num label="Rows" :value="obj.gridRows || 5" :min="1" :max="20" @input="u('gridRows', $event)" />
-          <Num label="Spacing" :value="obj.dotSpacing || 40" :min="5" @input="u('dotSpacing', $event)" />
-          <Num label="Radius" :value="obj.dotRadius || 5" :min="1" @input="u('dotRadius', $event)" />
-        </div>
-      </Section>
-
       <!-- Star settings -->
       <Section v-if="obj.type === 'star'" label="Star Settings">
         <div class="grid grid-cols-2 gap-1.5">
