@@ -574,6 +574,13 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       lines.push(`${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
       break;
     }
+    case 'polar_plane': {
+      const rMax = Number.isFinite(obj.radiusMax) ? obj.radiusMax : 4;
+      const rStep = Number.isFinite(obj.radiusStep) ? obj.radiusStep : 1;
+      const az = Number.isFinite(obj.azimuthUnits) ? Math.max(1, Math.trunc(obj.azimuthUnits)) : 12;
+      lines.push(`${n} = PolarPlane(radius_max=${rMax}, radius_step=${rStep}, azimuth_units=${az}, size=${(Math.min(obj.width, obj.height) / sw * FRAME_WIDTH).toFixed(1)})`);
+      break;
+    }
     case 'numberline': {
       const xr = obj.xRange || [-5, 5, 1];
       lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)})`);

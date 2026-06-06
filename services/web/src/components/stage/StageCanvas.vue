@@ -119,6 +119,18 @@
               <v-text :config="{ text: obj.type === 'complex_plane' ? 'ComplexPlane' : 'NumberPlane', x: -40, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
             </v-group>
 
+            <!-- PolarPlane -->
+            <v-group v-if="obj.type === 'polar_plane' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: true }" />
+              <template v-for="(cc, ci) in polarCircleConfigs(obj)" :key="'pc'+ci">
+                <v-circle :config="cc" />
+              </template>
+              <template v-for="(sl, si) in polarSpokeConfigs(obj)" :key="'ps'+si">
+                <v-line :config="sl" />
+              </template>
+              <v-text :config="{ text: 'PolarPlane', x: -30, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
+            </v-group>
+
             <!-- NumberLine -->
             <v-group v-if="obj.type === 'numberline' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
               <v-rect :config="{ x: -obj.width/2 * vs, y: -16, width: obj.width * vs, height: 32, fill: 'rgba(0,0,0,0.01)', listening: true }" />
@@ -1216,6 +1228,36 @@ function tableGridLines(obj) {
   return lines;
 }
 
+// ── PolarPlane config ──
+function polarCircleConfigs(obj) {
+  const rMax = Number.isFinite(obj.radiusMax) ? obj.radiusMax : 4;
+  const rStep = Number.isFinite(obj.radiusStep) && obj.radiusStep > 0 ? obj.radiusStep : 1;
+  const halfSize = Math.min(obj.width || 400, obj.height || 400) / 2 * vs.value;
+  const rings = Math.floor(rMax / rStep);
+  const col = obj.stroke || '#64748b';
+  const sw = Math.max(0.5, vs.value);
+  const configs = [];
+  for (let i = 1; i <= rings; i++) {
+    const r = (i / rings) * halfSize;
+    configs.push({ x: 0, y: 0, radius: r, stroke: col, strokeWidth: sw, fill: 'transparent', opacity: 0.6, listening: false });
+  }
+  return configs;
+}
+function polarSpokeConfigs(obj) {
+  const az = Number.isFinite(obj.azimuthUnits) && obj.azimuthUnits >= 1 ? Math.trunc(obj.azimuthUnits) : 12;
+  const halfSize = Math.min(obj.width || 400, obj.height || 400) / 2 * vs.value;
+  const col = obj.stroke || '#64748b';
+  const sw = Math.max(0.5, vs.value);
+  const configs = [];
+  for (let i = 0; i < az; i++) {
+    const angle = (i / az) * 2 * Math.PI;
+    const ex = Math.cos(angle) * halfSize;
+    const ey = Math.sin(angle) * halfSize;
+    configs.push({ points: [0, 0, ex, ey], stroke: col, strokeWidth: sw, opacity: 0.6, listening: false });
+  }
+  return configs;
+}
+
 // ── Relational config (Brace, Angle) ──
 function relationalHitCfg(obj) {
   const w = (obj.width || 140) * vs.value, h = (obj.height || 140) * vs.value;
@@ -1569,7 +1611,7 @@ function onTransformEnd(id, e) {
   liveTransform.value = null;
 }
 function _isGroupType(type) {
-  return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'complex_plane' || type === 'numberline';
+  return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'complex_plane' || type === 'polar_plane' || type === 'numberline';
 }
 function axesGraphCurves(obj) {
   if (!obj.graphs || obj.graphs.length === 0) return [];

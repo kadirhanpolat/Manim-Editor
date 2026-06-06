@@ -427,6 +427,27 @@
         <p class="text-[8px] text-studio-text-muted/40 mt-1 leading-snug">Raw LaTeX — canvas shows an approximate preview; Manim renders it as MathTex</p>
       </Section>
 
+      <!-- PolarPlane settings -->
+      <Section v-if="obj.type === 'polar_plane'" label="PolarPlane">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-24">Radius Max</span>
+            <input type="number" step="0.5" min="1" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.radiusMax ?? 4" @change="store.setPolarRadiusMax(obj.id, $event.target.value)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-24">Radius Step</span>
+            <input type="number" step="0.5" min="0.1" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.radiusStep ?? 1" @change="store.setPolarRadiusStep(obj.id, $event.target.value)" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-studio-text-muted w-24">Azimuth Units</span>
+            <input type="number" step="1" min="1" class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
+                   :value="obj.azimuthUnits ?? 12" @change="store.setPolarAzimuth(obj.id, $event.target.value)" />
+          </div>
+        </div>
+      </Section>
+
       <!-- NumberPlane / ComplexPlane settings -->
       <Section v-if="obj.type === 'numberplane' || obj.type === 'complex_plane'" :label="obj.type === 'complex_plane' ? 'ComplexPlane Range' : 'NumberPlane Range'">
         <div class="space-y-1.5">

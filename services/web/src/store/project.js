@@ -149,6 +149,7 @@ export const SHAPE_DEFAULTS = {
   axes:     { width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   numberplane:{ width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
   complex_plane:{ width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
+  polar_plane:  { width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
   numberline: { width: 500, height: 60,  fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   sphere:     { width: 120, height: 120, fill: '#e67700', stroke: '#fff', strokeWidth: 2 },
   cube:       { width: 120, height: 120, fill: '#3b5bdb', stroke: '#fff', strokeWidth: 2 },
@@ -175,7 +176,7 @@ export const SHAPE_COLORS = {
   heart: '#ec4899', dot: '#94a3b8', dot_grid: '#a855f7',
   text: '#f472b6', image: '#f59e0b', svg_asset: '#f59e0b',
   latex: '#a855f7', axes: '#10b981',
-  numberplane: '#334155', complex_plane: '#334155', numberline: '#10b981',
+  numberplane: '#334155', complex_plane: '#334155', polar_plane: '#334155', numberline: '#10b981',
   sphere: '#e67700', cube: '#3b5bdb', cone: '#2f9e44',
   cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981',
   annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
@@ -304,7 +305,7 @@ const useProjectStore = defineStore('project', {
         ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
         polygon: 'Polygon', line: 'Line', arrow: 'Arrow', text: 'Text',
         latex: 'LaTeX', axes: 'Axes',
-        numberplane: 'NumberPlane', complex_plane: 'ComplexPlane', numberline: 'NumberLine',
+        numberplane: 'NumberPlane', complex_plane: 'ComplexPlane', polar_plane: 'PolarPlane', numberline: 'NumberLine',
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
         matrix: 'Matrix', table: 'Table', brace: 'Brace', angle: 'Angle', counter: 'Counter',
@@ -350,6 +351,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'axes'        ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
         ...(type === 'numberplane' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 } : {}),
         ...(type === 'complex_plane' ? { xRange: [-3, 3, 1], yRange: [-2, 2, 1] } : {}),
+        ...(type === 'polar_plane' ? { radiusMax: 4, radiusStep: 1, azimuthUnits: 12 } : {}),
         ...(type === 'numberline'  ? { xRange: [-5, 5, 1] } : {}),
         ...extraProps
       };
@@ -590,6 +592,10 @@ const useProjectStore = defineStore('project', {
     setCounterValue(objId, v) { const o = this.objectById(objId); if (!o) return; o.value = Number(v) || 0; this.commitState(); },
     setCounterDecimals(objId, n) { const o = this.objectById(objId); if (!o) return; o.numDecimals = Math.max(0, Math.floor(Number(n) || 0)); this.commitState(); },
     setCounterSuffix(objId, s) { const o = this.objectById(objId); if (!o) return; o.suffix = String(s ?? ''); this.commitState(); },
+
+    setPolarRadiusMax(id, v) { const o = this.objectById(id); if (!o) return; o.radiusMax = Math.max(1, Number(v) || 4); this.isDirty = true; this._debouncedCommit(); },
+    setPolarRadiusStep(id, v) { const o = this.objectById(id); if (!o) return; o.radiusStep = Math.max(0.1, Number(v) || 1); this.isDirty = true; this._debouncedCommit(); },
+    setPolarAzimuth(id, v) { const o = this.objectById(id); if (!o) return; o.azimuthUnits = Math.max(1, Math.trunc(Number(v) || 12)); this.isDirty = true; this._debouncedCommit(); },
 
     deleteObject(id) {
       const idx = this.project.objects.findIndex(o => o.id === id);

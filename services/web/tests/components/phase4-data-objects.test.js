@@ -87,3 +87,25 @@ describe('complex_plane object', () => {
     expect(re.yRange).toEqual([-2,2,1]);
   });
 });
+
+describe('polar_plane object', () => {
+  it('emits PolarPlane', () => {
+    const p = store.addObject('polar_plane', 960, 540);
+    p.radiusMax = 4; p.radiusStep = 1; p.azimuthUnits = 12;
+    const py = generateManimScript(store.project);
+    expect(py).toContain('PolarPlane(radius_max=4, radius_step=1, azimuth_units=12');
+  });
+  it('round-trips polar_plane', () => {
+    const p = store.addObject('polar_plane', 960, 540);
+    p.radiusMax = 5; p.radiusStep = 1; p.azimuthUnits = 8;
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'polar_plane');
+    expect(re.radiusMax).toBe(5); expect(re.azimuthUnits).toBe(8);
+  });
+  it('polar setters mutate', () => {
+    const p = store.addObject('polar_plane', 960, 540);
+    store.setPolarRadiusMax(p.id, 6); store.setPolarAzimuth(p.id, 16);
+    const re = store.objectById(p.id);
+    expect(re.radiusMax).toBe(6); expect(re.azimuthUnits).toBe(16);
+  });
+});

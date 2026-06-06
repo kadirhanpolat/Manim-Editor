@@ -581,6 +581,13 @@ function objCode(obj, sw, sh) {
       lines.push(`${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)}, y_length=${(obj.height / sh * FRAME_HEIGHT).toFixed(1)})`);
       break;
     }
+    case 'polar_plane': {
+      const rMax = Number.isFinite(obj.radiusMax) ? obj.radiusMax : 4;
+      const rStep = Number.isFinite(obj.radiusStep) ? obj.radiusStep : 1;
+      const az = Number.isFinite(obj.azimuthUnits) ? Math.max(1, Math.trunc(obj.azimuthUnits)) : 12;
+      lines.push(`${n} = PolarPlane(radius_max=${rMax}, radius_step=${rStep}, azimuth_units=${az}, size=${(Math.min(obj.width, obj.height) / sw * FRAME_WIDTH).toFixed(1)})`);
+      break;
+    }
     case 'numberline': {
       const xr = obj.xRange || [-5, 5, 1];
       lines.push(`${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(obj.width / sw * FRAME_WIDTH).toFixed(1)})`);
@@ -1783,6 +1790,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
       const obj = { id, type: 'complex_plane', name, x: sw / 2, y: sh / 2, width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // PolarPlane
+    m = line.match(/^(\w+)\s*=\s*PolarPlane\(radius_max=([-\d.]+),\s*radius_step=([-\d.]+),\s*azimuth_units=(\d+)/);
+    if (m) {
+      const [, name, rMax, rStep, az] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'polar_plane', name, x: sw / 2, y: sh / 2, width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1, opacity: 1, rotation: 0, radiusMax: parseFloat(rMax), radiusStep: parseFloat(rStep), azimuthUnits: parseInt(az, 10), enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;
     }
