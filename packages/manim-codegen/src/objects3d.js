@@ -1,4 +1,4 @@
-import { vn, hex, safeOpacity, fmt3d } from './helpers.js';
+import { vn, hex, safeOpacity, fmt3d, safeMathExpr } from './helpers.js';
 
 export function objectCode3d(obj) {
   const n = vn(obj.id);
@@ -48,6 +48,16 @@ export function objectCode3d(obj) {
       if ((obj.x3d ?? 0) !== 0 || (obj.y3d ?? 0) !== 0 || (obj.z3d ?? 0) !== 0) {
         lines.push(`${n}.move_to(${pos()})`);
       }
+      break;
+    }
+    case 'surface': {
+      const z = safeMathExpr(obj.zExpr, 'x**2 - y**2');
+      const xr = obj.xRange ?? [-2, 2];
+      const yr = obj.yRange ?? [-2, 2];
+      lines.push(`${n} = Surface(lambda x, y: np.array([x, y, ${z}]), u_range=[${fmt3d(xr[0])}, ${fmt3d(xr[1])}], v_range=[${fmt3d(yr[0])}, ${fmt3d(yr[1])}], resolution=(${res}, ${res}))`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
       break;
     }
     default:

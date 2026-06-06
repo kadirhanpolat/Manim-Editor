@@ -160,6 +160,7 @@ export const SHAPE_DEFAULTS = {
   cylinder:   { width: 100, height: 120, fill: '#1098ad', stroke: '#fff', strokeWidth: 2 },
   torus:      { width: 130, height: 130, fill: '#ae3ec9', stroke: '#fff', strokeWidth: 2 },
   axes3d:     { width: 400, height: 400, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  surface:    { width: 220, height: 220, fill: '#9b59b6', stroke: '#ffffff', strokeWidth: 2 },
   annulus:  { width: 140, height: 140, fill: '#14b8a6', stroke: '#fff', strokeWidth: 2 },
   arc:      { width: 140, height: 140, fill: 'transparent', stroke: '#f97316', strokeWidth: 4 },
   sector:   { width: 140, height: 140, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
@@ -183,7 +184,7 @@ export const SHAPE_COLORS = {
   latex: '#a855f7', axes: '#10b981',
   numberplane: '#334155', complex_plane: '#334155', polar_plane: '#334155', numberline: '#10b981',
   sphere: '#e67700', cube: '#3b5bdb', cone: '#2f9e44',
-  cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981',
+  cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981', surface: '#9b59b6',
   annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
   polygon_free: '#8b5cf6',
   parametric: '#10b981',
@@ -361,7 +362,7 @@ const useProjectStore = defineStore('project', {
         ...extraProps
       };
 
-      const is3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'].includes(type);
+      const is3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'].includes(type);
       if (is3D) {
         obj.x3d = 0;
         obj.y3d = 0;
@@ -380,6 +381,11 @@ const useProjectStore = defineStore('project', {
         obj.xRange = [-3, 3, 1];
         obj.yRange = [-3, 3, 1];
         obj.zRange = [-3, 3, 1];
+      }
+      if (type === 'surface') {
+        obj.zExpr = 'x**2 - y**2';   // z = f(x, y)
+        obj.xRange = [-2, 2];        // u_range
+        obj.yRange = [-2, 2];        // v_range
       }
 
       this.project.objects.push(obj);

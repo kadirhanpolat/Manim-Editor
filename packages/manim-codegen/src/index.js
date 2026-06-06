@@ -100,7 +100,7 @@ export function generateScene(project, { resolveAsset }) {
   }
 
   // ── Object definitions ──
-  const obj3DTypes = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
+  const obj3DTypes = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'];
   const oMap = {};
   L.push(`${indent}# Objects`);
   for (const o of project.objects) {
