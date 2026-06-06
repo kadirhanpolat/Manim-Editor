@@ -743,6 +743,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // Surface (z = f(x, y))
+    m = line.match(/^(\w+)\s*=\s*Surface\(lambda x, y: np\.array\(\[x, y, (.+?)\]\),\s*u_range=\[([-\d.]+),\s*([-\d.]+)\],\s*v_range=\[([-\d.]+),\s*([-\d.]+)\],\s*resolution=\((\d+),\s*(\d+)\)\)/);
+    if (m) {
+      const [, name, zExpr, ux0, ux1, vy0, vy1, res] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'surface', name, x3d: 0, y3d: 0, z3d: 0, zExpr, xRange: [parseFloat(ux0), parseFloat(ux1)], yRange: [parseFloat(vy0), parseFloat(vy1)], resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
     // obj.move_to([x, y, z]) — handles both 2D (z=0) and 3D objects
     m = line.match(/^(\w+)\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]\)/);
     if (m) {
@@ -751,7 +761,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         const mz = parseFloat(m[4]);
         if (mz !== 0 || objById[id].type === 'sphere' || objById[id].type === 'cube' ||
             objById[id].type === 'cone' || objById[id].type === 'cylinder' ||
-            objById[id].type === 'torus' || objById[id].type === 'axes3d') {
+            objById[id].type === 'torus' || objById[id].type === 'axes3d' ||
+            objById[id].type === 'surface') {
           objById[id].x3d = parseFloat(m[2]);
           objById[id].y3d = parseFloat(m[3]);
           objById[id].z3d = mz;
