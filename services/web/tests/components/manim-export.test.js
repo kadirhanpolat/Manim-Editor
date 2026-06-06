@@ -491,3 +491,87 @@ describe('FRAME_WIDTH unification', () => {
     expect(script).toContain('.set_width(7.111)');
   });
 });
+
+// ── Data & Coordinate Objects — byte-stability invariants (Phase 4) ──────────
+
+describe('generator — table (no labels, text mode)', () => {
+  it('emits Table with cell data', () => {
+    const obj = makeObj('t1', 'table', {
+      cellData: [['1', '2'], ['3', '4']], mathMode: false, rowLabels: [], colLabels: [],
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('Table([["1", "2"], ["3", "4"]])');
+    expect(py).not.toContain('MathTable');
+    expect(py).not.toContain('row_labels');
+  });
+});
+
+describe('generator — table (MathTable + row/col labels)', () => {
+  it('emits MathTable with MathTex row and col labels', () => {
+    const obj = makeObj('t2', 'table', {
+      cellData: [['1', '2'], ['3', '4']], mathMode: true,
+      rowLabels: ['a', 'b'], colLabels: ['x', 'y'],
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('MathTable(');
+    expect(py).toContain('row_labels=[MathTex("a")');
+    expect(py).toContain('col_labels=[MathTex("x")');
+  });
+});
+
+describe('generator — complex_plane', () => {
+  it('emits ComplexPlane with x_range and y_range', () => {
+    const obj = makeObj('cp1', 'complex_plane', {
+      xRange: [-3, 3, 1], yRange: [-2, 2, 1], width: 1200, height: 800,
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('ComplexPlane(x_range=[-3, 3, 1], y_range=[-2, 2, 1]');
+  });
+});
+
+describe('generator — polar_plane', () => {
+  it('emits PolarPlane with radius_max, radius_step, azimuth_units', () => {
+    const obj = makeObj('pp1', 'polar_plane', {
+      radiusMax: 4, radiusStep: 1, azimuthUnits: 12, width: 800, height: 800,
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('PolarPlane(radius_max=4, radius_step=1, azimuth_units=12');
+  });
+});
+
+describe('generator — graph (undirected + labels)', () => {
+  it('emits Graph with vertices, edges, layout and labels=True', () => {
+    const obj = makeObj('g1', 'graph', {
+      vertices: ['A', 'B', 'C'],
+      edges: [['A', 'B'], ['B', 'C']],
+      positions: { A: [-60, 0], B: [0, -40], C: [60, 0] },
+      directed: false, showLabels: true,
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('Graph(["A", "B", "C"], [("A", "B"), ("B", "C")], layout={');
+    expect(py).toContain('labels=True');
+  });
+});
+
+describe('generator — graph (directed)', () => {
+  it('emits DiGraph when directed=true', () => {
+    const obj = makeObj('g2', 'graph', {
+      vertices: ['A', 'B'],
+      edges: [['A', 'B']],
+      positions: { A: [-60, 0], B: [60, 0] },
+      directed: true, showLabels: false,
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('DiGraph(["A"');
+  });
+});
+
+describe('generator — vector_field', () => {
+  it('emits ArrowVectorField with double-lambda form', () => {
+    const obj = makeObj('vf1', 'vector_field', {
+      fx: 'y', fy: '-x', xRange: [-3, 3, 1], yRange: [-2, 2, 1],
+    });
+    const py = generateManimScript(makeProject([obj], []));
+    expect(py).toContain('ArrowVectorField(lambda p: (lambda x, y: np.array([y, -x, 0]))(p[0], p[1])');
+  });
+});

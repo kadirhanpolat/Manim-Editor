@@ -22,6 +22,28 @@
       </div>
     </div>
 
+    <!-- ═══ Data & Coordinates (visual mode only) ═══ -->
+    <div v-if="!isCodeMode" class="p-3 border-b border-studio-border">
+      <h3 class="section-title">Data &amp; Coordinates</h3>
+      <div class="grid grid-cols-3 gap-1.5">
+        <button
+          v-for="s in shapesData"
+          :key="s.type"
+          class="shape-card group"
+          draggable="true"
+          @dragstart="onDragStart(s.type, $event)"
+          @dragend="onDragEnd"
+          @click="addShape(s.type)"
+          :title="'Drag or click to add ' + s.label"
+        >
+          <div class="shape-icon" :style="{ color: s.color }">
+            <span v-html="s.icon"></span>
+          </div>
+          <span class="shape-label">{{ s.label }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ═══ 3D Shapes (visual + 3D mode only) ═══ -->
     <div v-if="!isCodeMode && is3D" class="p-3 border-b border-studio-border">
       <h3 class="section-title">3D Shapes</h3>
@@ -199,6 +221,15 @@ const shapes = [
   { type: 'matrix', label: 'Matrix', color: '#ffffff', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4H5v16h2M17 4h2v16h-2"/><circle cx="10" cy="9" r="0.6" fill="currentColor"/><circle cx="14" cy="9" r="0.6" fill="currentColor"/><circle cx="10" cy="15" r="0.6" fill="currentColor"/><circle cx="14" cy="15" r="0.6" fill="currentColor"/></svg>' },
   { type: 'brace', label: 'Brace', color: '#ffffff', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4c0 4-2 4-2 8s2 4 2 8M19 4c0 4 2 4 2 8s-2 4-2 8"/></svg>' },
   { type: 'angle', label: 'Angle', color: '#fbbf24', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M4 20L18 6"/><path d="M9 20a7 7 0 0 1 3-5"/></svg>' },
+];
+
+// Data & Coordinate shapes — Table, ComplexPlane, PolarPlane, Graph, VectorField
+const shapesData = [
+  { type: 'table',         label: 'Table',         color: '#6366f1', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="1"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg>' },
+  { type: 'complex_plane', label: 'Complex Plane', color: '#22d3ee', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><text x="13" y="8" font-size="7" fill="currentColor" stroke="none">i</text><text x="20" y="14" font-size="7" fill="currentColor" stroke="none">&#x211D;</text></svg>' },
+  { type: 'polar_plane',   label: 'Polar Plane',   color: '#34d399', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>' },
+  { type: 'graph',         label: 'Graph',         color: '#f59e0b', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="2.5" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="2.5" fill="currentColor" stroke="none"/><circle cx="19" cy="19" r="2.5" fill="currentColor" stroke="none"/><line x1="7" y1="11" x2="17" y2="6"/><line x1="7" y1="13" x2="17" y2="18"/></svg>' },
+  { type: 'vector_field',  label: 'Vector Field',  color: '#e879f9', icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="8" y2="2"/><polyline points="7 2 8 2 8 3"/><line x1="12" y1="4" x2="16" y2="2"/><polyline points="15 2 16 2 16 3"/><line x1="4" y1="12" x2="8" y2="10"/><polyline points="7 10 8 10 8 11"/><line x1="12" y1="12" x2="16" y2="10"/><polyline points="15 10 16 10 16 11"/><line x1="4" y1="20" x2="8" y2="18"/><polyline points="7 18 8 18 8 19"/><line x1="12" y1="20" x2="16" y2="18"/><polyline points="15 18 16 18 16 19"/></svg>' },
 ];
 
 // 3D shapes — shown only when sceneType === '3d' (store.addObject sets x3d/y3d/z3d + 3D defaults)

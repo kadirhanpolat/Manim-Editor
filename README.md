@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.12.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.13.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -49,7 +49,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
 - **Light & Dark themes** -- Toggle between warm light and sleek dark palettes via View > Theme; persists across sessions
 - **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
-- **24+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), and **Counter** (animated `DecimalNumber` with configurable decimals and suffix)
+- **29+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), **Counter** (animated `DecimalNumber`), and the Phase 4 set: **Table** (Table/MathTable with row/col labels), **Complex Plane**, **Polar Plane**, **Graph** (Graph/DiGraph with manual vertex layout), **Vector Field** (ArrowVectorField with sampled-arrow preview)
 - **6 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes — available when scene is switched to 3D mode
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
@@ -249,7 +249,7 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
 
@@ -386,7 +386,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 314 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on, text-math animations: counter/count/typewriter/tex-matching)
+npm run test:unit # 339 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe + scaffold/pinned/rescale, manim export + LaTeX round-trip, LaTeX preview, 3D scene, 3D path, 3D projection, 3D camera lerp, Scene3DPanel, 2D object effects, Phase 2 objects: geometry/polygon-free/parametric/area-riemann/matrix + math-expr security, Phase 2.5 relational: brace/angle, Phase 2.6 effects: drop shadow + round corners, emphasis animations: indicate/flash/wiggle/circumscribe/focus_on, text-math animations: counter/count/typewriter/tex-matching, Phase 4 data objects: table/complex_plane/polar_plane/graph/vector_field)
 ```
 
 ---
@@ -419,7 +419,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.12.0 (current)
+### v3.13.0 (current)
+
+Data & Coordinate Objects (Phase 4) — five new 2D object types, all byte-identical across the server (`codegen.js`) and client (`manim.js`) generators and round-tripping through `.py` export/import:
+
+- **Table** (`table` → `Table` / `MathTable`): per-cell grid editor (reuses matrix grid + `safeMatrixEntry`), `mathMode` toggle, and optional `rowLabels`/`colLabels` (emitted as `MathTex` in math mode). Text mode emits `Table([...])`, math mode with labels emits `MathTable([...], row_labels=[MathTex("..."), ...], col_labels=[...])`. Store actions: `setTableCell`, `addTableRow/Column`, `removeTableRow/Column`, `setTableMathMode`, `setTableRowLabels`, `setTableColLabels`.
+- **Complex Plane** (`complex_plane` → `ComplexPlane`): mirrors `numberplane`; configurable `xRange`/`yRange` with grid preview.
+- **Polar Plane** (`polar_plane` → `PolarPlane`): `radiusMax`, `radiusStep`, `azimuthUnits`; canvas preview = concentric rings + radial spokes. Store actions: `setPolarRadiusMax`, `setPolarRadiusStep`, `setPolarAzimuth`.
+- **Graph** (`graph` → `Graph` / `DiGraph`): `vertices`, `edges`, `positions` (manual vertex layout using the `polygon_free` px↔Manim scale with y-sign flip), `directed`, `showLabels`. Draggable vertex handles via the generalized `polygonHandles`. `labels=True` gated on `showLabels`; `fill` is preview/inspector-only. Store actions: `addGraphVertex`, `removeGraphVertex`, `addGraphEdge`, `removeGraphEdge`, `renameGraphVertex`, `setGraphVertexPosition`, `setGraphDirected`, `setGraphShowLabels`.
+- **Vector Field** (`vector_field` → `ArrowVectorField`): `fx`/`fy` expression strings (via `safeMathExpr`, identical whitelist across `codegen.js`/`manim.js`/`StageCanvas.vue`), `xRange`/`yRange`. Emitted as a double-lambda single-line form. 8×8 sampled-arrow canvas preview. Store actions: `setFieldExpr`, `setFieldRange`.
+- **Accepted preview ≈ render divergences**: table label alignment and cell spacing; plane axis labels; graph edge styling; vector-field sparsity (preview 8×8, Manim samples densely). **Known limitation**: `vector_field` expressions with a top-level comma (e.g. `max(x, y)`) do not round-trip cleanly.
+- **Tests**: +7 parity invariant tests in `manim-export.test.js` (byte-stable exact-string assertions for all five new types); totals now **339 unit + 114 engine**.
+
+### v3.12.0
 
 Text & Math Animations (Phase 3) — animated counter object, count clip, Tex-matching morph, and typewriter presets, all byte-identical across the server (`codegen.js`) and client (`manim.js`) generators and round-tripping through `.py` export/import:
 
