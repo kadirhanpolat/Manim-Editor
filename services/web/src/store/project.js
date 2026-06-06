@@ -15,6 +15,9 @@ import api, { connectJobWebSocket } from '../api.js';
 import { presetVertices } from '../engine/polygonVertices.js';
 
 const MAX_HISTORY = 50;
+// Default timeline duration (seconds) for an object with no explicit duration.
+// Single source of truth — matches the value addObject assigns on creation.
+const OBJ_DEFAULT_DURATION = 3;
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
@@ -261,7 +264,7 @@ const useProjectStore = defineStore('project', {
     computedDuration: (state) => {
       let maxEnd = 5;
       for (const obj of state.project.objects) {
-        const end = (obj.enterTime || 0) + (obj.duration || 5);
+        const end = (obj.enterTime || 0) + (obj.duration || OBJ_DEFAULT_DURATION);
         if (end > maxEnd) maxEnd = end;
       }
       for (const track of state.project.tracks) {
@@ -295,7 +298,7 @@ const useProjectStore = defineStore('project', {
         : nextPosition(stage.width, stage.height);
 
       const lastEnd = this.project.objects.reduce((max, o) => {
-        const end = (o.enterTime || 0) + (o.duration || 5);
+        const end = (o.enterTime || 0) + (o.duration || OBJ_DEFAULT_DURATION);
         return end > max ? end : max;
       }, 0);
 
@@ -328,7 +331,7 @@ const useProjectStore = defineStore('project', {
         zOrder: this.project.objects.length,
         visible: true,
         enterTime: this.project.objects.length === 0 ? 0 : Math.round(lastEnd * 10) / 10,
-        duration: 3,
+        duration: OBJ_DEFAULT_DURATION,
         enterAnim: 'fade_in',
         exitAnim: 'fade_out',
         enterAnimDur: 0.5,
@@ -911,7 +914,7 @@ const useProjectStore = defineStore('project', {
       const tgt = this.objectById(targetId);
       if (!src || !tgt) return null;
 
-      const startTime = (src.enterTime || 0) + (src.duration || 3) - 0.5;
+      const startTime = (src.enterTime || 0) + (src.duration || OBJ_DEFAULT_DURATION) - 0.5;
 
       let trackIndex = 0;
       for (let i = 0; i < this.project.tracks.length; i++) {
