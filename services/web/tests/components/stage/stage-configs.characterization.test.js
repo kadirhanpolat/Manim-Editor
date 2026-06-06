@@ -5,6 +5,7 @@ import * as textCfgs from '../../../src/components/stage/configs/text.js';
 import * as dataObjects from '../../../src/components/stage/configs/dataObjects.js';
 import * as relational from '../../../src/components/stage/configs/relational.js';
 import * as axes from '../../../src/components/stage/configs/axes.js';
+import * as objects3d from '../../../src/components/stage/configs/objects3d.js';
 
 // Each extraction task appends a block here that snapshots its module's builders.
 // Vitest writes/commits the snapshot on first run; later drift fails the test.
@@ -71,4 +72,16 @@ describe('axes configs', () => {
   it('axes x ticks stable', () => { expect(axes.axesXTicks(OBJECTS.axes, ctx)).toMatchSnapshot(); });
   it('axes graph curves stable', () => { expect(axes.axesGraphCurves(OBJECTS.axes, ctx)).toMatchSnapshot(); });
   it('axes area/riemann stable', () => { expect(axes.axesAreaRiemann(OBJECTS.axes, ctx)).toMatchSnapshot(); });
+});
+
+describe('objects3d configs', () => {
+  const ctx = makeCtx({ is3D: true });
+  it('sphere config stable', () => { expect(objects3d.sphere3dCfg(OBJECTS.sphere, ctx)).toMatchSnapshot(); });
+  it('cube faces stable', () => { expect(objects3d.cube3dFaces(OBJECTS.cube, ctx)).toMatchSnapshot(); });
+  it('round3dParts cone stable', () => { expect(objects3d.round3dParts(OBJECTS.cone, ctx)).toMatchSnapshot(); });
+  it('round3dParts cylinder stable', () => { expect(objects3d.round3dParts(OBJECTS.cylinder, ctx)).toMatchSnapshot(); });
+  it('torus tube stable', () => { expect(objects3d.torus3dTube(OBJECTS.torus, ctx)).toMatchSnapshot(); });
+  it('torus outline stable', () => { expect(objects3d.torusOutline(OBJECTS.torus, ctx)).toMatchSnapshot(); });
+  it('axes3d lines stable', () => { expect(objects3d.axes3dLines(OBJECTS.axes3d, ctx)).toMatchSnapshot(); });
+  it('obj3dCenter stable', () => { expect(objects3d.obj3dCenter(OBJECTS.sphere, ctx)).toMatchSnapshot(); });
 });

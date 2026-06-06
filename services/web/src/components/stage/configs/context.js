@@ -5,5 +5,5 @@ export const CTX_KEYS = [
   'stg','vs','ox','oy','s2c','c2s','eff','eff3d','live','applyEffects','hexToRgba',
   'themeAccent','themeSurface','imageElements','frameState','is3D','cam3d',
   'proj3DScale','projCx','projCy','iso','measureTextWidth',
-  'activeTool',
+  'activeTool','selectedObjectIds',
 ];

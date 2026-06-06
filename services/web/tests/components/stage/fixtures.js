@@ -63,4 +63,11 @@ export const OBJECTS = {
   brace:       { id: 'br1',   type: 'brace',        x: 960, y: 540, width: 200, height: 60,  fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, p1: [-80, 0], p2: [80, 0], label: 'L' },
   angle:       { id: 'an1',   type: 'angle',        x: 960, y: 540, width: 120, height: 120, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, vertex: [0, 0], point1: [60, 0], point2: [0, -60], rightAngle: false, radius: 40, label: 'θ' },
   axes:        { id: 'ax1',   type: 'axes',         x: 960, y: 540, width: 800, height: 500, stroke: '#9CA3AF', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [{ id: 'g1', expression: 'x**2/4', color: '#F59E0B', xMin: -4, xMax: 4, strokeWidth: 3, area: { enabled: true, xMin: -2, xMax: 2, color: '#F59E0B', opacity: 0.4 }, riemann: { enabled: true, xMin: -2, xMax: 2, dx: 0.5, type: 'left', color: '#10B981' } }] },
+  // 3D objects
+  sphere:      { id: 'sp1',   type: 'sphere',    x3d: 0, y3d: 0, z3d: 0, radius: 1,   fill: '#3B82F6', opacity: 1 },
+  cube:        { id: 'cu1',   type: 'cube',      x3d: 0, y3d: 0, z3d: 0, sideLength: 1.5, fill: '#10B981', opacity: 1 },
+  cone:        { id: 'co1',   type: 'cone',      x3d: 0, y3d: 0, z3d: 0, radius: 0.8, height: 1.5, fill: '#F59E0B', opacity: 1 },
+  cylinder:    { id: 'cy1',   type: 'cylinder',  x3d: 0, y3d: 0, z3d: 0, radius: 0.6, height: 1.5, fill: '#8B5CF6', opacity: 1 },
+  torus:       { id: 'to1',   type: 'torus',     x3d: 0, y3d: 0, z3d: 0, majorRadius: 1.2, minorRadius: 0.3, fill: '#EF4444', opacity: 1 },
+  axes3d:      { id: 'a3d1',  type: 'axes3d',    x3d: 0, y3d: 0, z3d: 0, xRange: [-3, 3, 1], yRange: [-3, 3, 1], zRange: [-3, 3, 1] },
 };
