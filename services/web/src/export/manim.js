@@ -1539,7 +1539,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = uid('obj');
       const obj = { id, type: 'table', name: 'Table', x: sw / 2, y: sh / 2, width: 200, height: 140,
         fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length,
         cellData, mathMode, rowLabels: labelList(m[4]), colLabels: labelList(m[5]) };
       varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
       continue;

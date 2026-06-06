@@ -161,7 +161,7 @@ export const SHAPE_DEFAULTS = {
   double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
   parametric: { width: 160, height: 160, fill: 'transparent', stroke: '#10b981', strokeWidth: 4 },
   matrix: { width: 160, height: 120, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
-  table:  { width: 200, height: 140, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
+  table: { width: 200, height: 140, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
   brace: { width: 160, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
   counter: { width: 120, height: 60, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
