@@ -95,15 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Arc / Sector settings -->
-      <Section v-if="obj.type === 'arc' || obj.type === 'sector'" :label="obj.type === 'arc' ? 'Arc' : 'Sector'">
-        <div class="grid grid-cols-3 gap-1.5">
-          <Num label="Radius" :value="obj.radius || 70" :min="1" @input="u('radius', $event)" />
-          <Num label="Start°" :value="obj.startAngle || 0" @input="u('startAngle', $event)" />
-          <Num label="Sweep°" :value="obj.sweepAngle || 90" @input="u('sweepAngle', $event)" />
-        </div>
-      </Section>
-
       <!-- Parametric settings -->
       <Section v-if="obj.type === 'parametric'" label="Parametric">
         <div class="space-y-1.5">

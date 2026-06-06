@@ -4,11 +4,14 @@ import StarSettings from './StarSettings.vue';
 import PolygonSettings from './PolygonSettings.vue';
 import PolygonFreeSettings from './PolygonFreeSettings.vue';
 import AnnulusSettings from './AnnulusSettings.vue';
+import ArcSectorSettings from './ArcSectorSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
   polygon: PolygonSettings,
   polygon_free: PolygonFreeSettings,
   annulus: AnnulusSettings,
+  arc: ArcSectorSettings,
+  sector: ArcSectorSettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }
