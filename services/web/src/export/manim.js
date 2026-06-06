@@ -8,28 +8,12 @@
  *           line, arrow, heart, dot, dot_grid, text, image, svg_asset, groups
  */
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+import {
+  EASING_MAP, FRAME_WIDTH, FRAME_HEIGHT, FRAME_X_RADIUS, FRAME_Y_RADIUS,
+  GRADIENT_TYPES, DASH_TYPES, SHADOW_TYPES,
+} from '@manim/codegen/src/constants.js';
 
-// NOTE: keep in sync with services/api/src/compiler/codegen.js EASING_MAP
-const EASING_MAP = {
-  linear:            'linear',
-  ease_in:           'rate_functions.ease_in_sine',
-  ease_out:          'rate_functions.ease_out_sine',
-  ease_in_out:       'rate_functions.smooth',
-  ease_in_cubic:     'rate_functions.ease_in_cubic',
-  ease_out_cubic:    'rate_functions.ease_out_cubic',
-  ease_in_out_cubic: 'rate_functions.ease_in_out_cubic',
-  ease_in_quart:     'rate_functions.ease_in_quart',
-  ease_out_quart:    'rate_functions.ease_out_quart',
-  ease_in_out_quart: 'rate_functions.ease_in_out_quart',
-  ease_in_back:      'rate_functions.ease_in_back',
-  ease_out_back:     'rate_functions.ease_out_back',
-  ease_in_out_back:  'rate_functions.ease_in_out_back',
-  ease_out_elastic:  'rate_functions.ease_out_elastic',
-  ease_in_elastic:   'rate_functions.ease_in_elastic',
-  ease_out_bounce:   'rate_functions.ease_out_bounce',
-  spring:            'rate_functions.ease_out_elastic',
-};
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 const EASING_REV = {};
 for (const [k, val] of Object.entries(EASING_MAP)) EASING_REV[val] = k;
@@ -94,16 +78,7 @@ function matrixBrackets(b) {
   return '';
 }
 
-// Manim frame dimensions (matches Manim CE default)
-const FRAME_WIDTH = 14 + 2 / 9;   // 14.22
-const FRAME_HEIGHT = 8;
-const FRAME_X_RADIUS = FRAME_WIDTH / 2;  // 7.11
-const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
-
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/api/src/compiler/codegen.js) ──
-const GRADIENT_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free']);
-const DASH_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'line', 'arrow', 'annulus', 'arc', 'sector', 'double_arrow', 'polygon_free', 'parametric']);
-const SHADOW_TYPES = new Set(['rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon', 'heart', 'annulus', 'sector', 'polygon_free', 'text', 'latex']);
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */
 function fillOpacityExpr(obj, master) {
@@ -2391,5 +2366,5 @@ export function downloadManimScript(project) {
 // Alias for test compatibility and API convenience
 export const generateCode = generateManimScript;
 
-export { EASING_MAP };
+export { EASING_MAP } from '@manim/codegen/src/constants.js';
 export default { generateManimScript, parseManimScript, downloadManimScript, generateCode };
