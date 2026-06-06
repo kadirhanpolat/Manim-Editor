@@ -76,3 +76,26 @@ describe('camera clip undo/redo', () => {
     expect(store.project.cameraTrack).toHaveLength(1);
   });
 });
+
+describe('camera/scene state undo', () => {
+  it('undo reverts cameraType, sceneType and camera3d changes', () => {
+    expect(store.project.cameraType).toBe('static');
+    expect(store.project.sceneType).toBe('2d');
+
+    store.setCameraType('moving');
+    store.setSceneType('3d');
+    store.setCamera3d({ phi: 10 });
+    expect(store.project.cameraType).toBe('moving');
+    expect(store.project.sceneType).toBe('3d');
+    expect(store.project.camera3d.phi).toBe(10);
+
+    store.undo();   // revert camera3d
+    expect(store.project.camera3d.phi).toBe(75);
+
+    store.undo();   // revert sceneType
+    expect(store.project.sceneType).toBe('2d');
+
+    store.undo();   // revert cameraType
+    expect(store.project.cameraType).toBe('static');
+  });
+});

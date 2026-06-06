@@ -1310,7 +1310,10 @@ const useProjectStore = defineStore('project', {
         objects: this.project.objects,
         groups: this.project.groups,
         tracks: this.project.tracks,
-        cameraTrack: this.project.cameraTrack
+        cameraTrack: this.project.cameraTrack,
+        cameraType: this.project.cameraType,
+        sceneType: this.project.sceneType,
+        camera3d: this.project.camera3d
       });
     },
 
@@ -1339,6 +1342,9 @@ const useProjectStore = defineStore('project', {
       this.project.groups = data.groups || [];
       this.project.tracks = data.tracks;
       this.project.cameraTrack = data.cameraTrack || [];
+      this.project.cameraType = data.cameraType ?? this.project.cameraType;
+      this.project.sceneType = data.sceneType ?? this.project.sceneType;
+      if (data.camera3d) this.project.camera3d = data.camera3d;
       this.selectedObjectIds = [];
       this.selectedClipId = null;
       this.isDirty = true;
@@ -1353,6 +1359,9 @@ const useProjectStore = defineStore('project', {
       this.project.groups = data.groups || [];
       this.project.tracks = data.tracks;
       this.project.cameraTrack = data.cameraTrack || [];
+      this.project.cameraType = data.cameraType ?? this.project.cameraType;
+      this.project.sceneType = data.sceneType ?? this.project.sceneType;
+      if (data.camera3d) this.project.camera3d = data.camera3d;
       this.selectedObjectIds = [];
       this.selectedClipId = null;
       this.isDirty = true;
