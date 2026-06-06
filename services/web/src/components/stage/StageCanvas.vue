@@ -310,7 +310,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as shapes2d from './configs/shapes2d.js';
 import * as text from './configs/text.js';
 import * as dataObjects from './configs/dataObjects.js';
@@ -321,19 +321,12 @@ import * as chrome from './configs/chrome.js';
 import * as overlays from './configs/overlays.js';
 import { useProjectStore } from '../../store/project.js';
 import { applyOverrides } from '../../engine/blending.js';
-import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 import { useStageViewport } from './composables/useStageViewport.js';
+import { useStagePathDraw } from './composables/useStagePathDraw.js';
 import { useStageInteractions } from './composables/useStageInteractions.js';
+import { useStageAssets } from './composables/useStageAssets.js';
 
 const store = useProjectStore();
-
-// ── Reactive state ──
-const imageElements = reactive({});
-const isDraggingOver = ref(false);
-const fontLoadKey = ref(0);
-const pathDrawing = ref(false);
-const pathPoints = ref([]);
-const pathSourceId = ref(null);
 
 // ── Non-reactive instance vars ──
 let _ro = null;
@@ -364,6 +357,13 @@ const morphShapes = computed(() => frameState.value.morphShapes || []);
 
 // bgConfig / gridLines / centerH / centerV — delegated to chrome.js (declared after ctx).
 
+// ── Path draw composable ──
+const {
+  pathDrawing, pathPoints, pathSourceId,
+  pathCanvasPoints, pathPreviewLineCfg,
+  startPathDraw, onStageDblClick,
+} = useStagePathDraw(store, { s2c, iso, projCx, projCy, proj3DScale });
+
 // ── Interactions composable ──
 const {
   shiftKey, liveTransform, polygonHandles, groupBounds, trConfig,
@@ -376,28 +376,12 @@ const {
   pathDrawing, pathPoints, pathSourceId,
 });
 
-const pathCanvasPoints = computed(() => {
-  if (!pathPoints.value.length) return [];
-  return pathPoints.value.map(p => {
-    if ('x3d' in p) {
-      const t = iso(p.x3d, p.y3d ?? 0, p.z3d, projCx.value, projCy.value, proj3DScale.value);
-      return { cx: t.px, cy: t.py };   // iso() returns canvas px — no s2c
-    }
-    const cp = s2c(p.x, p.y);
-    return { cx: cp.x, cy: cp.y };
-  });
-});
-const pathPreviewLineCfg = computed(() => {
-  const pts = pathCanvasPoints.value.flatMap(p => [p.cx, p.cy]);
-  return {
-    points: pts,
-    stroke: '#a855f7',
-    strokeWidth: 2,
-    dash: [6, 3],
-    listening: false,
-  };
-});
-
+// ── Assets composable ──
+const {
+  imageElements, isDraggingOver, fontLoadKey,
+  loadNewImages, loadNewFonts,
+  onDragOver, onDragLeave, onDrop,
+} = useStageAssets(store, { objects, c2s, container, objectsLayer });
 
 // ── Watch ──
 watch(() => store.selectedObjectIds, () => {
@@ -452,80 +436,6 @@ function isVis(id) {
   const h = frameState.value.hiddenIds;
   if (h instanceof Set) return !h.has(id);
   return true;
-}
-
-function loadNewImages() {
-  for (const obj of objects.value) {
-    if ((obj.type === 'image' || obj.type === 'svg_asset') && obj.assetId && !imageElements[obj.assetId]) {
-      const asset = store.assetById(obj.assetId);
-      if (asset && asset.dataUrl) {
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.src = asset.dataUrl;
-        img.onload = () => { imageElements[obj.assetId] = img; };
-      }
-    }
-  }
-}
-
-async function loadNewFonts() {
-  for (const obj of objects.value) {
-    if (obj.type === 'text' && obj.fontFamily && !isFontLoaded(obj.fontFamily)) {
-      try {
-        await loadFont(obj.fontFamily);
-        fontLoadKey.value++;
-        nextTick(() => {
-          const layer = objectsLayer.value?.getNode();
-          if (layer) {
-            layer.batchDraw();
-          }
-        });
-      } catch (e) {
-        console.warn('Failed to load font:', obj.fontFamily, e);
-      }
-    }
-  }
-}
-
-// ── Drag and Drop from sidebar ──
-function onDragOver(e) {
-  isDraggingOver.value = true;
-  e.dataTransfer.dropEffect = 'copy';
-}
-function onDragLeave() {
-  isDraggingOver.value = false;
-}
-function onDrop(e) {
-  isDraggingOver.value = false;
-  const containerRect = container.value.getBoundingClientRect();
-  const dropX = e.clientX - containerRect.left;
-  const dropY = e.clientY - containerRect.top;
-
-  const stagePos = c2s(dropX, dropY);
-
-  let sx = stagePos.x, sy = stagePos.y;
-  if (store.project.stage.snapEnabled && store.project.stage.snapToGrid) {
-    const gsX = store.project.stage.width / store.project.stage.gridSize;
-    const gsY = store.project.stage.height / store.project.stage.gridSize;
-    sx = Math.round(sx / gsX) * gsX;
-    sy = Math.round(sy / gsY) * gsY;
-  }
-  if (store.project.stage.snapEnabled && store.project.stage.snapToCenter) {
-    const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
-    if (Math.abs(sx - cx) < 30) sx = cx;
-    if (Math.abs(sy - cy) < 30) sy = cy;
-  }
-
-  const shapeType = e.dataTransfer.getData('application/x-shape-type');
-  const assetId = e.dataTransfer.getData('application/x-asset-id');
-
-  if (shapeType) {
-    const obj = store.addObject(shapeType, Math.round(sx), Math.round(sy));
-    store.selectObject(obj.id);
-  } else if (assetId) {
-    const obj = store.addImageObject(assetId, Math.round(sx), Math.round(sy));
-    if (obj) store.selectObject(obj.id);
-  }
 }
 
 // ── Shape configs ──
@@ -590,23 +500,6 @@ function applyEffects(cfg, obj, w, h, centered) {
 
 
 // morphCfg — delegated to overlays.js (declared after ctx).
-
-// ── Path draw ──
-function startPathDraw(sourceId) {
-  pathDrawing.value = true;
-  pathPoints.value = [];
-  pathSourceId.value = sourceId;
-}
-
-function onStageDblClick(e) {
-  if (!pathDrawing.value) return;
-  if (pathPoints.value.length >= 2) {
-    store.addPathMoveClip(pathSourceId.value, [...pathPoints.value]);
-  }
-  pathDrawing.value = false;
-  pathPoints.value = [];
-  pathSourceId.value = null;
-}
 
 // ── 3D shape config wrappers (delegates to configs/objects3d.js) ──────────
 const sphere3dCfg = (o) => objects3d.sphere3dCfg(o, ctx.value);
