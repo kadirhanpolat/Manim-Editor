@@ -113,9 +113,25 @@ export { generateScene } from './index.js';   // top-level orchestrator
 ```
 
 `generateScene(project, { resolveAsset })` is the shared top-level orchestrator
-that today lives twice as `generatePythonCode` / `generateManimScript` (their
-bodies are the same except asset wiring and the exported name). Each service keeps
-a thin public wrapper with its existing signature for backward compatibility:
+that today lives twice as `generatePythonCode` / `generateManimScript`.
+
+> **Code-audit finding (2026-06-06):** the two generators are **not** line-for-line
+> the same — a normalized diff is ~446 changed lines — but the divergence is **~95%
+> structural, not behavioral**: `manim.js` factored clip codegen into DRY helpers
+> (`singleClipCode(c)` / `animExpr(c)`), while `codegen.js` inlines the identical
+> logic three times. The *emitted Python strings are equivalent*. The **only real
+> behavioral divergences** are: (1) the empty-project guard — `codegen.js` returns
+> early when there are no objects, `manim.js` also renders camera-only projects;
+> (2) the placement of the axes base-curve `axes.add(graph)` line — `manim.js` emits
+> it inside `objCode`, `codegen.js` emits it in the main loop after `objectCode`
+> (output equivalent modulo submobject draw order); (3) the intended image/svg asset
+> path. The shared `generateScene` therefore adopts **`manim.js`'s cleaner DRY
+> structure** as canonical, takes the camera-aware empty-project guard (a strict
+> improvement for `codegen.js`), and emits `axes.add(graph)` from one place. Each of
+> these three is covered by an explicit reconciliation step + test in the plan.
+
+Each service keeps a thin public wrapper with its existing signature for backward
+compatibility:
 
 ```js
 // services/api/src/compiler/codegen.js
