@@ -43,3 +43,36 @@ describe('addCameraMoveClip', () => {
     expect(store.project.cameraTrack).toHaveLength(0);
   });
 });
+
+describe('camera clip undo/redo', () => {
+  it('undo removes a freshly added camera clip; redo restores it', () => {
+    expect(store.project.cameraTrack).toHaveLength(0);
+    store.addCameraMoveClip({ startTime: 0, duration: 2, targetX: 100, zoom: 1.5 });
+    expect(store.project.cameraTrack).toHaveLength(1);
+
+    store.undo();
+    expect(store.project.cameraTrack).toHaveLength(0);
+
+    store.redo();
+    expect(store.project.cameraTrack).toHaveLength(1);
+    expect(store.project.cameraTrack[0].params.zoom).toBe(1.5);
+  });
+
+  it('undo reverts an edit to a camera clip', () => {
+    const clip = store.addCameraMoveClip({ startTime: 0, duration: 2, zoom: 1 });
+    store.updateCameraClip(clip.id, { params: { zoom: 3 } });
+    expect(store.project.cameraTrack[0].params.zoom).toBe(3);
+
+    store.undo();
+    expect(store.project.cameraTrack[0].params.zoom).toBe(1);
+  });
+
+  it('undo restores a deleted camera clip', () => {
+    const clip = store.addCameraMoveClip({ startTime: 0, duration: 2 });
+    store.deleteCameraClip(clip.id);
+    expect(store.project.cameraTrack).toHaveLength(0);
+
+    store.undo();
+    expect(store.project.cameraTrack).toHaveLength(1);
+  });
+});

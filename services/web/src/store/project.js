@@ -1311,7 +1311,8 @@ const useProjectStore = defineStore('project', {
       return JSON.stringify({
         objects: this.project.objects,
         groups: this.project.groups,
-        tracks: this.project.tracks
+        tracks: this.project.tracks,
+        cameraTrack: this.project.cameraTrack
       });
     },
 
@@ -1339,6 +1340,7 @@ const useProjectStore = defineStore('project', {
       this.project.objects = data.objects;
       this.project.groups = data.groups || [];
       this.project.tracks = data.tracks;
+      this.project.cameraTrack = data.cameraTrack || [];
       this.selectedObjectIds = [];
       this.selectedClipId = null;
       this.isDirty = true;
@@ -1352,6 +1354,7 @@ const useProjectStore = defineStore('project', {
       this.project.objects = data.objects;
       this.project.groups = data.groups || [];
       this.project.tracks = data.tracks;
+      this.project.cameraTrack = data.cameraTrack || [];
       this.selectedObjectIds = [];
       this.selectedClipId = null;
       this.isDirty = true;
