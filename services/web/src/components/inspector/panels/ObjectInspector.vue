@@ -95,22 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- NumberPlane / ComplexPlane settings -->
-      <Section v-if="obj.type === 'numberplane' || obj.type === 'complex_plane'" :label="obj.type === 'complex_plane' ? 'ComplexPlane Range' : 'NumberPlane Range'">
-        <div class="space-y-1.5">
-          <div class="grid grid-cols-3 gap-1">
-            <Num label="X Min" :value="(obj.xRange||[-3,3,1])[0]" :step="1" @input="uRange('xRange', 0, $event)" />
-            <Num label="X Max" :value="(obj.xRange||[-3,3,1])[1]" :step="1" @input="uRange('xRange', 1, $event)" />
-            <Num label="X Step" :value="(obj.xRange||[-3,3,1])[2]" :min="0.1" :step="0.5" @input="uRange('xRange', 2, $event)" />
-          </div>
-          <div class="grid grid-cols-3 gap-1">
-            <Num label="Y Min" :value="(obj.yRange||[-2,2,1])[0]" :step="1" @input="uRange('yRange', 0, $event)" />
-            <Num label="Y Max" :value="(obj.yRange||[-2,2,1])[1]" :step="1" @input="uRange('yRange', 1, $event)" />
-            <Num label="Y Step" :value="(obj.yRange||[-2,2,1])[2]" :min="0.1" :step="0.5" @input="uRange('yRange', 2, $event)" />
-          </div>
-        </div>
-      </Section>
-
       <!-- Axes settings -->
       <Section v-if="obj.type === 'axes'" label="Axes Range">
         <div class="space-y-1.5">
