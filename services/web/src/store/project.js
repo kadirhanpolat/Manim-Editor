@@ -278,11 +278,6 @@ const useProjectStore = defineStore('project', {
       const showCount = Math.min(5, Math.max(1, activeCount + 1));
       return all.slice(0, showCount);
     },
-    objectsAtTime: (state) => (time) => state.project.objects.filter(o => {
-      const enter = o.enterTime || 0;
-      const exit = enter + (o.duration || 999);
-      return time >= enter && time < exit;
-    }),
     hasPendingAudio: (state) => state.project.tracks.some(t =>
       t.clips.some(c => c.audio && c.audio.status === 'pending')
     ),
