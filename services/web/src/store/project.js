@@ -594,7 +594,7 @@ const useProjectStore = defineStore('project', {
     setCounterSuffix(objId, s) { const o = this.objectById(objId); if (!o) return; o.suffix = String(s ?? ''); this.commitState(); },
 
     setPolarRadiusMax(id, v) { const o = this.objectById(id); if (!o) return; o.radiusMax = Math.max(1, Number(v) || 4); this.isDirty = true; this._debouncedCommit(); },
-    setPolarRadiusStep(id, v) { const o = this.objectById(id); if (!o) return; o.radiusStep = Math.max(0.1, Number(v) || 1); this.isDirty = true; this._debouncedCommit(); },
+    setPolarRadiusStep(id, v) { const o = this.objectById(id); if (!o) return; const n = Number(v); o.radiusStep = Math.max(0.1, Number.isFinite(n) ? n : 1); this.isDirty = true; this._debouncedCommit(); },
     setPolarAzimuth(id, v) { const o = this.objectById(id); if (!o) return; o.azimuthUnits = Math.max(1, Math.trunc(Number(v) || 12)); this.isDirty = true; this._debouncedCommit(); },
 
     deleteObject(id) {

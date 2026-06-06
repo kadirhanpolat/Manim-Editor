@@ -101,11 +101,15 @@ describe('polar_plane object', () => {
     const parsed = parseManimScript(generateManimScript(store.project));
     const re = parsed.objects.find(o => o.type === 'polar_plane');
     expect(re.radiusMax).toBe(5); expect(re.azimuthUnits).toBe(8);
+    expect(re.radiusStep).toBe(1);
   });
   it('polar setters mutate', () => {
     const p = store.addObject('polar_plane', 960, 540);
     store.setPolarRadiusMax(p.id, 6); store.setPolarAzimuth(p.id, 16);
+    store.setPolarRadiusStep(p.id, 0.5);
     const re = store.objectById(p.id);
     expect(re.radiusMax).toBe(6); expect(re.azimuthUnits).toBe(16);
+    expect(re.radiusStep).toBe(0.5);
+    store.setPolarRadiusStep(p.id, 0); expect(store.objectById(p.id).radiusStep).toBe(0.1);
   });
 });

@@ -1230,7 +1230,7 @@ function tableGridLines(obj) {
 
 // ── PolarPlane config ──
 function polarCircleConfigs(obj) {
-  const rMax = Number.isFinite(obj.radiusMax) ? obj.radiusMax : 4;
+  const rMax = (Number.isFinite(obj.radiusMax) && obj.radiusMax > 0) ? obj.radiusMax : 4;
   const rStep = Number.isFinite(obj.radiusStep) && obj.radiusStep > 0 ? obj.radiusStep : 1;
   const halfSize = Math.min(obj.width || 400, obj.height || 400) / 2 * vs.value;
   const rings = Math.floor(rMax / rStep);
@@ -1238,7 +1238,7 @@ function polarCircleConfigs(obj) {
   const sw = Math.max(0.5, vs.value);
   const configs = [];
   for (let i = 1; i <= rings; i++) {
-    const r = (i / rings) * halfSize;
+    const r = (i * rStep / rMax) * halfSize;
     configs.push({ x: 0, y: 0, radius: r, stroke: col, strokeWidth: sw, fill: 'transparent', opacity: 0.6, listening: false });
   }
   return configs;
