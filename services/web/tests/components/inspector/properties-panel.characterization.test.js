@@ -12,12 +12,21 @@ const OBJECT_TYPES = [
   'complex_plane', 'polar_plane', 'graph', 'vector_field',
 ];
 
-// Strip Vue's scoped-style hash attributes (data-v-xxxxxxxx). They are cosmetic
-// scoping artifacts that change as markup moves between components during this
-// refactor, with no behavioral meaning. Normalizing them keeps the characterization
-// snapshot a true byte-identity guard for real markup/class/value changes.
+// Normalize away rendering noise that this decomposition legitimately churns but
+// which carries NO behavioral meaning, so the snapshot stays a true guard over the
+// real content (elements, classes, attribute values, text):
+//   1. data-v-xxxxxxxx scoped-style hashes — change as markup moves between components.
+//   2. HTML comment nodes — v-if/`<component :is>` placeholders (and decorator comments)
+//      appear/disappear as ~20 `<Section v-if="type===X">` blocks collapse into one
+//      dynamic `<component :is>` slot. Comments mark only ABSENT conditionals; real
+//      content is unaffected.
+//   3. inter-tag whitespace — formatting only.
 function norm(html) {
-  return html.replace(/ data-v-[0-9a-f]+(="")?/g, '');
+  return html
+    .replace(/ data-v-[0-9a-f]+(="")?/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 let store;
