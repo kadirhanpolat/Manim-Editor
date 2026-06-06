@@ -16,6 +16,15 @@ from pathlib import Path
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 
+# The renderer runs as root and writes render output to the shared /data volume.
+# Default umask (022) makes new dirs root:755, so the API container (runs as the
+# unprivileged `node` user) cannot delete render output (DELETE /api/projects/:id
+# → EACCES). umask(0) makes everything the worker + the manim subprocess create
+# world-writable (dirs 777 / files 666), so any container sharing /data can clean
+# it up. The volume is already chmod 777 by the init service, so this only widens
+# the renderer's own output to match.
+os.umask(0o000)
+
 # Connect to Redis
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
