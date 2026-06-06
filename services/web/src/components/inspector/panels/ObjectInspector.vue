@@ -95,16 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Free polygon presets -->
-      <Section v-if="obj.type === 'polygon_free'" label="Polygon">
-        <div class="flex gap-1.5">
-          <button class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="applyPolygonPreset('trapezoid')">Trapezoid</button>
-          <button data-test="preset-parallelogram" class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="applyPolygonPreset('parallelogram')">Parallelogram</button>
-          <button class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="applyPolygonPreset('free')">Free</button>
-        </div>
-        <p class="text-[10px] text-studio-text-muted mt-1.5">{{ (obj.vertices || []).length }} vertices · drag corners on canvas</p>
-      </Section>
-
       <!-- Annulus settings -->
       <Section v-if="obj.type === 'annulus'" label="Annulus">
         <div class="grid grid-cols-2 gap-1.5">
@@ -485,7 +475,6 @@ import { settingsComponentFor } from '../object-settings/index.js';
 import { useProjectStore } from '../../../store/project.js';
 import { ENTER_ANIMS, EXIT_ANIMS } from '../../../store/project.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../../constants/anchors.js';
-import { presetVertices } from '../../../engine/polygonVertices.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
@@ -541,11 +530,6 @@ const effectiveSize = computed(() => {
   if (!obj.value) return 0;
   return Math.min(obj.value.width || 0, obj.value.height || 0) || 1;
 });
-
-function applyPolygonPreset(kind) {
-  if (!obj.value) return;
-  store.setPolygonVertices(obj.value.id, presetVertices(kind, obj.value.width, obj.value.height));
-}
 
 function addGraph() { if (obj.value && obj.value.type === 'axes') store.addGraph(obj.value.id); }
 function removeGraph(graphId) { if (obj.value) store.removeGraph(obj.value.id, graphId); }
