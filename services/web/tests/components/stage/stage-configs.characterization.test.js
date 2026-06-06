@@ -4,6 +4,7 @@ import * as shapes2d from '../../../src/components/stage/configs/shapes2d.js';
 import * as textCfgs from '../../../src/components/stage/configs/text.js';
 import * as dataObjects from '../../../src/components/stage/configs/dataObjects.js';
 import * as relational from '../../../src/components/stage/configs/relational.js';
+import * as axes from '../../../src/components/stage/configs/axes.js';
 
 // Each extraction task appends a block here that snapshots its module's builders.
 // Vitest writes/commits the snapshot on first run; later drift fails the test.
@@ -63,4 +64,11 @@ describe('relational configs', () => {
   it('brace line stable', () => { expect(relational.braceLineCfg(OBJECTS.brace, ctx)).toMatchSnapshot(); });
   it('angle rays stable', () => { expect(relational.angleRayCfgs(OBJECTS.angle, ctx)).toMatchSnapshot(); });
   it('angle arc stable', () => { expect(relational.angleArcCfg(OBJECTS.angle, ctx)).toMatchSnapshot(); });
+});
+
+describe('axes configs', () => {
+  const ctx = makeCtx();
+  it('axes x ticks stable', () => { expect(axes.axesXTicks(OBJECTS.axes, ctx)).toMatchSnapshot(); });
+  it('axes graph curves stable', () => { expect(axes.axesGraphCurves(OBJECTS.axes, ctx)).toMatchSnapshot(); });
+  it('axes area/riemann stable', () => { expect(axes.axesAreaRiemann(OBJECTS.axes, ctx)).toMatchSnapshot(); });
 });
