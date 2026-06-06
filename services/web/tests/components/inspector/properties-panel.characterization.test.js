@@ -12,6 +12,14 @@ const OBJECT_TYPES = [
   'complex_plane', 'polar_plane', 'graph', 'vector_field',
 ];
 
+// Strip Vue's scoped-style hash attributes (data-v-xxxxxxxx). They are cosmetic
+// scoping artifacts that change as markup moves between components during this
+// refactor, with no behavioral meaning. Normalizing them keeps the characterization
+// snapshot a true byte-identity guard for real markup/class/value changes.
+function norm(html) {
+  return html.replace(/ data-v-[0-9a-f]+(="")?/g, '');
+}
+
 let store;
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -26,7 +34,7 @@ describe('PropertiesPanel characterization — object branch', () => {
       const o = store.project.objects[store.project.objects.length - 1];
       store.selectObject(o.id);
       const w = mount(PropertiesPanel);
-      expect(w.html()).toMatchSnapshot();
+      expect(norm(w.html())).toMatchSnapshot();
     });
   }
 });
@@ -34,6 +42,6 @@ describe('PropertiesPanel characterization — object branch', () => {
 describe('PropertiesPanel characterization — canvas branch', () => {
   it('nothing selected (canvas)', () => {
     const w = mount(PropertiesPanel);
-    expect(w.html()).toMatchSnapshot();
+    expect(norm(w.html())).toMatchSnapshot();
   });
 });
