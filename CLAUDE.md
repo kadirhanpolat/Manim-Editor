@@ -194,6 +194,7 @@ This check lives in `@manim/codegen` (`safeMathExpr` in `helpers.js`, used by bo
   });
   ```
 - Engine tests excluded from Vitest: `tests/engine.test.mjs` runs via `npm test` (Node.js)
+- **Codegen Python-validity** (`tests/components/codegen-python-validity.test.js`): generates a Manim script for every object/clip/keyframe/audio/camera combo and asserts each is valid Python via `python -m ast` (helper `tests/helpers/ast_check.py`). Catches render-blocking syntax/indentation bugs that string-match codegen tests miss. **Requires `python` on PATH; self-skips (`describe.skipIf`) otherwise.**
 
 ## Development Workflow
 
