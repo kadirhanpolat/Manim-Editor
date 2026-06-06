@@ -1,0 +1,353 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`shapes2d > annulus config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#6366F1",
+  "hitStrokeWidth": 10,
+  "id": "ann1",
+  "innerRadius": 14,
+  "name": "stageObject",
+  "opacity": 1,
+  "outerRadius": 28,
+  "rotation": 0,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > arc config is stable 1`] = `
+{
+  "draggable": true,
+  "hitStrokeWidth": 12,
+  "id": "arc1",
+  "name": "stageObject",
+  "opacity": 1,
+  "sceneFunc": [Function],
+  "stroke": "#F97316",
+  "strokeWidth": 0.8,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > arrow config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#EF4444",
+  "hitStrokeWidth": 16,
+  "id": "arr1",
+  "name": "stageObject",
+  "opacity": 1,
+  "pointerLength": 2.8000000000000003,
+  "pointerWidth": 2.4000000000000004,
+  "points": [
+    -56,
+    0,
+    56,
+    0,
+  ],
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#EF4444",
+  "strokeWidth": 2,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > circle config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#3B82F6",
+  "hitStrokeWidth": 10,
+  "id": "circ1",
+  "name": "stageObject",
+  "opacity": 1,
+  "radius": 32,
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > dot config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#F59E0B",
+  "hitStrokeWidth": 12,
+  "id": "dot1",
+  "name": "stageObject",
+  "opacity": 1,
+  "radius": 8,
+  "x": 300,
+  "y": 170,
+}
+`;
+
+exports[`shapes2d > double_arrow config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#EF4444",
+  "hitStrokeWidth": 12,
+  "id": "da1",
+  "name": "stageObject",
+  "opacity": 1,
+  "pointerAtBeginning": true,
+  "pointerAtEnding": true,
+  "pointerLength": 2.8000000000000003,
+  "pointerWidth": 2.4000000000000004,
+  "points": [
+    -60,
+    0,
+    60,
+    0,
+  ],
+  "rotation": 0,
+  "stroke": "#EF4444",
+  "strokeWidth": 2.4,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > ellipse config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#8B5CF6",
+  "hitStrokeWidth": 10,
+  "id": "ell1",
+  "name": "stageObject",
+  "opacity": 1,
+  "radiusX": 40,
+  "radiusY": 24,
+  "rotation": 15,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 380,
+  "y": 210,
+}
+`;
+
+exports[`shapes2d > heart config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#EF4444",
+  "hitStrokeWidth": 10,
+  "id": "hrt1",
+  "name": "stageObject",
+  "opacity": 1,
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "sceneFunc": [Function],
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 420,
+  "y": 250,
+}
+`;
+
+exports[`shapes2d > line config is stable 1`] = `
+{
+  "draggable": true,
+  "hitStrokeWidth": 16,
+  "id": "line1",
+  "lineCap": "round",
+  "name": "stageObject",
+  "opacity": 1,
+  "points": [
+    -60,
+    0,
+    60,
+    0,
+  ],
+  "rotation": 0,
+  "stroke": "#94A3B8",
+  "strokeWidth": 2,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > parametric config is stable 1`] = `
+{
+  "draggable": true,
+  "hitStrokeWidth": 12,
+  "id": "par1",
+  "lineCap": "round",
+  "name": "stageObject",
+  "opacity": 1,
+  "points": [],
+  "rotation": 0,
+  "stroke": "#10B981",
+  "strokeWidth": 0.8,
+  "tension": 0.3,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > polygon config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#06B6D4",
+  "hitStrokeWidth": 10,
+  "id": "poly1",
+  "name": "stageObject",
+  "opacity": 1,
+  "radius": 36,
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "sides": 6,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > polygon_free config is stable 1`] = `
+{
+  "closed": true,
+  "draggable": true,
+  "fill": "#84CC16",
+  "hitStrokeWidth": 10,
+  "id": "pf1",
+  "name": "stageObject",
+  "opacity": 1,
+  "points": [
+    -16,
+    16,
+    16,
+    16,
+    0,
+    -20,
+  ],
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > rectangle config is stable 1`] = `
+{
+  "cornerRadius": 6.4,
+  "draggable": true,
+  "fill": "#3B82F6",
+  "height": 48,
+  "hitStrokeWidth": 10,
+  "id": "rect1",
+  "name": "stageObject",
+  "opacity": 1,
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "width": 80,
+  "x": 444,
+  "y": 242,
+}
+`;
+
+exports[`shapes2d > sector config is stable 1`] = `
+{
+  "angle": 120,
+  "draggable": true,
+  "fill": "#EC4899",
+  "hitStrokeWidth": 10,
+  "id": "sec1",
+  "name": "stageObject",
+  "opacity": 1,
+  "radius": 28,
+  "rotation": 0,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 484,
+  "y": 266,
+}
+`;
+
+exports[`shapes2d > square config is stable 1`] = `
+{
+  "cornerRadius": 8,
+  "draggable": true,
+  "fill": "#10B981",
+  "height": 60,
+  "hitStrokeWidth": 10,
+  "id": "sq1",
+  "name": "stageObject",
+  "opacity": 1,
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "width": 60,
+  "x": 230,
+  "y": 140,
+}
+`;
+
+exports[`shapes2d > star config is stable 1`] = `
+{
+  "draggable": true,
+  "fill": "#FBBF24",
+  "hitStrokeWidth": 10,
+  "id": "star1",
+  "innerRadius": 12.8,
+  "name": "stageObject",
+  "numPoints": 5,
+  "opacity": 1,
+  "outerRadius": 32,
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 484,
+  "y": 210,
+}
+`;
+
+exports[`shapes2d > triangle config is stable 1`] = `
+{
+  "closed": true,
+  "draggable": true,
+  "fill": "#F97316",
+  "hitStrokeWidth": 10,
+  "id": "tri1",
+  "name": "stageObject",
+  "opacity": 1,
+  "points": [
+    0,
+    -28,
+    32,
+    28,
+    -32,
+    28,
+  ],
+  "rotation": 0,
+  "scaleX": 1,
+  "scaleY": 1,
+  "stroke": "#FFFFFF",
+  "strokeWidth": 0.4,
+  "x": 340,
+  "y": 210,
+}
+`;

@@ -15,7 +15,7 @@ export function makeCtx(overrides = {}) {
     eff: (obj) => obj,
     eff3d: (obj) => ({ x3d: obj.x3d ?? 0, y3d: obj.y3d ?? 0, z3d: obj.z3d ?? 0 }),
     live: () => null,
-    applyEffects: () => {},
+    applyEffects: (cfg) => cfg,
     hexToRgba: (h, a) => `rgba(${h},${a})`,
     themeAccent: '#4CEEF9', themeSurface: '#E6EDF3',
     imageElements: {},
@@ -25,6 +25,7 @@ export function makeCtx(overrides = {}) {
     proj3DScale: 60, projCx: 484, projCy: 266,
     iso: (x, y, z, cx, cy, s) => ({ px: cx + (x - z) * s * 0.5, py: cy - y * s }),
     measureTextWidth: (t) => (t ? String(t).length * 10 : 0),
+    activeTool: 'select',
     ...overrides,
   };
 }
@@ -32,6 +33,21 @@ export function makeCtx(overrides = {}) {
 // One representative object per supported type. Each extraction task ADDS the
 // entries it needs (one per type in that module).
 export const OBJECTS = {
-  rectangle: { id: 'rect1', type: 'rectangle', x: 960, y: 540, width: 200, height: 120, fill: '#3B82F6', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
-  circle:    { id: 'circ1', type: 'circle', x: 960, y: 540, width: 160, height: 160, fill: '#3B82F6', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
+  rectangle:   { id: 'rect1',   type: 'rectangle',   x: 960, y: 540, width: 200, height: 120, fill: '#3B82F6', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, cornerRadius: 16 },
+  square:      { id: 'sq1',     type: 'square',       x: 400, y: 300, width: 150, height: 150, fill: '#10B981', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, cornerRadius: 20 },
+  circle:      { id: 'circ1',   type: 'circle',       x: 960, y: 540, width: 160, height: 160, fill: '#3B82F6', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
+  ellipse:     { id: 'ell1',    type: 'ellipse',      x: 700, y: 400, width: 200, height: 120, fill: '#8B5CF6', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 15 },
+  dot:         { id: 'dot1',    type: 'dot',          x: 500, y: 300, width: 40,  height: 40,  fill: '#F59E0B', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
+  heart:       { id: 'hrt1',    type: 'heart',        x: 800, y: 500, width: 150, height: 130, fill: '#EF4444', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
+  triangle:    { id: 'tri1',    type: 'triangle',     x: 600, y: 400, width: 160, height: 140, fill: '#F97316', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
+  polygon:     { id: 'poly1',   type: 'polygon',      x: 960, y: 540, width: 180, height: 180, fill: '#06B6D4', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, sides: 6 },
+  polygon_free:{ id: 'pf1',     type: 'polygon_free', x: 960, y: 540, width: 200, height: 200, fill: '#84CC16', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, vertices: [[-40, 40], [40, 40], [0, -50]] },
+  star:        { id: 'star1',   type: 'star',         x: 960, y: 400, width: 160, height: 160, fill: '#FBBF24', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, starArms: 5, innerRatio: 0.4 },
+  line:        { id: 'line1',   type: 'line',         x: 960, y: 540, width: 300, height: 10,  fill: '#94A3B8', stroke: '#94A3B8', strokeWidth: 3, opacity: 1, rotation: 0 },
+  arrow:       { id: 'arr1',    type: 'arrow',        x: 960, y: 540, width: 280, height: 10,  fill: '#EF4444', stroke: '#EF4444', strokeWidth: 2, opacity: 1, rotation: 0 },
+  annulus:     { id: 'ann1',    type: 'annulus',      x: 960, y: 540, width: 180, height: 180, fill: '#6366F1', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, innerRadius: 35, outerRadius: 70 },
+  sector:      { id: 'sec1',    type: 'sector',       x: 960, y: 540, width: 180, height: 180, fill: '#EC4899', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, radius: 70, sweepAngle: 120, startAngle: 0 },
+  arc:         { id: 'arc1',    type: 'arc',          x: 960, y: 540, width: 180, height: 180, fill: '#F97316', stroke: '#F97316', strokeWidth: 4, opacity: 1, rotation: 0, radius: 70, sweepAngle: 180, startAngle: 0 },
+  double_arrow:{ id: 'da1',     type: 'double_arrow', x: 960, y: 540, width: 300, height: 10,  fill: '#EF4444', stroke: '#EF4444', strokeWidth: 2, opacity: 1, rotation: 0 },
+  parametric:  { id: 'par1',    type: 'parametric',   x: 960, y: 540, width: 200, height: 200, fill: '#10B981', stroke: '#10B981', strokeWidth: 4, opacity: 1, rotation: 0, xExpr: 'cos(t)', yExpr: 'sin(t)', tMin: 0, tMax: 6.28 },
 };

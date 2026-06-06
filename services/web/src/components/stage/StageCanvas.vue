@@ -311,6 +311,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import * as shapes2d from './configs/shapes2d.js';
 import { useProjectStore } from '../../store/project.js';
 import { generateDotGridPositions } from '../../engine/geometry.js';
 import { applyOverrides } from '../../engine/blending.js';
@@ -879,160 +880,6 @@ function applyEffects(cfg, obj, w, h, centered) {
     }
   }
   return cfg;
-}
-function rectCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x - e.width / 2, e.y - e.height / 2);
-  const w = L ? L.w : e.width * vs.value, h = L ? L.h : e.height * vs.value, rot = L ? L.rotation : (e.rotation || 0);
-  const crPx = (obj.cornerRadius > 0 ? obj.cornerRadius : (obj.type === 'square' ? 4 : 2)) * vs.value;
-  const cfg = { x: p.x, y: p.y, width: w, height: h, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, cornerRadius: crPx, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, w, h, false);
-}
-function circleCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y); const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value;
-  const rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = { x: p.x, y: p.y, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, r * 2, r * 2, true);
-}
-function ellipseCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  const rx = L ? L.w / 2 : (e.width / 2) * vs.value, ry = L ? L.h / 2 : (e.height / 2) * vs.value, rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = { x: p.x, y: p.y, radiusX: rx, radiusY: ry, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, rx * 2, ry * 2, true);
-}
-function dotCfg(obj) {
-  const e = eff(obj); const p = s2c(e.x, e.y);
-  return { x: p.x, y: p.y, radius: Math.max(4, e.width / 2 * vs.value), fill: e.fill || '#fff', opacity: e.opacity ?? 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12 };
-}
-function heartCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y); const w = L ? L.w : e.width * vs.value; const h = L ? L.h : e.height * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = {
-    x: p.x, y: p.y, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2,
-    opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1,
-    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10,
-    sceneFunc: (ctx, shape) => {
-      const hw = w / 2, hh = h / 2;
-      ctx.beginPath();
-      for (let i = 0; i <= 60; i++) {
-        const t = (i / 60) * 2 * Math.PI;
-        const px = (16 * Math.pow(Math.sin(t), 3) / 16) * hw;
-        const py = -(((13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) / 15)) * hh;
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
-      ctx.closePath(); ctx.fillStrokeShape(shape);
-    }
-  };
-  return applyEffects(cfg, obj, w, h, true);
-}
-function triangleCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  const hw = L ? L.w / 2 : e.width / 2 * vs.value, hh = L ? L.h / 2 : e.height / 2 * vs.value, rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = { x: p.x, y: p.y, points: [0, -hh, hw, hh, -hw, hh], closed: true, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, hw * 2, hh * 2, true);
-}
-function polygonFreeCfg(obj) {
-  const e = eff(obj); const p = s2c(e.x, e.y);
-  const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 3) ? obj.vertices : [[-80, -60], [80, -60], [80, 60], [-80, 60]];
-  const pts = verts.flatMap(([vx, vy]) => [vx * vs.value, vy * vs.value]);
-  const xs = verts.map(v => v[0]), ys = verts.map(v => v[1]);
-  const w = (Math.max(...xs) - Math.min(...xs)) * vs.value, h = (Math.max(...ys) - Math.min(...ys)) * vs.value;
-  const cfg = { x: p.x, y: p.y, points: pts, closed: true, fill: e.fill, stroke: e.stroke,
-    strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: e.rotation || 0,
-    scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, w, h, true);
-}
-function parametricCfg(obj) {
-  const e = eff(obj); const c = s2c(e.x, e.y);
-  const fx = compileExpr(obj.xExpr || 'np.cos(t)', 't');
-  const fy = compileExpr(obj.yExpr || 'np.sin(t)', 't');
-  const t0 = Number.isFinite(obj.tMin) ? obj.tMin : 0;
-  const t1 = Number.isFinite(obj.tMax) ? obj.tMax : 6.283;
-  const unit = (store.project.stage.width / 14.222) * vs.value;   // px per Manim unit
-  const pts = [];
-  if (fx && fy && t1 > t0) {
-    const steps = 120;
-    for (let i = 0; i <= steps; i++) {
-      const t = t0 + (t1 - t0) * (i / steps);
-      const x = fx(t), y = fy(t);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-      pts.push(x * unit, -y * unit);   // y-flip
-    }
-  }
-  const cfg = { x: c.x, y: c.y, points: pts, stroke: e.stroke || '#10b981',
-    strokeWidth: (e.strokeWidth || 4) * vs.value / 2, opacity: e.opacity ?? 1, tension: 0.3,
-    rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12, lineCap: 'round' };
-  let minX = 0, maxX = 0, minY = 0, maxY = 0;
-  for (let i = 0; i < pts.length; i += 2) {
-    if (pts[i] < minX) minX = pts[i]; if (pts[i] > maxX) maxX = pts[i];
-    if (pts[i + 1] < minY) minY = pts[i + 1]; if (pts[i + 1] > maxY) maxY = pts[i + 1];
-  }
-  return applyEffects(cfg, obj, maxX - minX, maxY - minY, true);
-}
-function starCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  const outerRadius = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value;
-  const inner = (obj.innerRatio || 0.4) * outerRadius; const rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = { x: p.x, y: p.y, numPoints: obj.starArms || 5, innerRadius: inner, outerRadius: outerRadius, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, outerRadius * 2, outerRadius * 2, true);
-}
-function polygonCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  const r = L ? Math.min(L.w, L.h) / 2 : Math.min(e.width, e.height) / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = { x: p.x, y: p.y, sides: obj.sides || 6, radius: r, fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1, rotation: rot, scaleX: 1, scaleY: 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  return applyEffects(cfg, obj, r * 2, r * 2, true);
-}
-function lineCfg(obj) {
-  const e = eff(obj); const p = s2c(e.x, e.y);
-  const hw = e.width / 2 * vs.value;
-  const cfg = { x: p.x, y: p.y, points: [-hw, 0, hw, 0], stroke: e.stroke || e.fill || '#94a3b8', strokeWidth: Math.max(2, (e.strokeWidth || 3) * vs.value / 2), opacity: e.opacity ?? 1, rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, lineCap: 'round' };
-  return applyEffects(cfg, obj, hw * 2, 0, false);
-}
-function arrowCfg(obj) {
-  const L = live(obj);
-  const e = eff(obj); const p = L ? { x: L.x, y: L.y } : s2c(e.x, e.y);
-  const hw = L ? L.w / 2 : e.width / 2 * vs.value; const rot = L ? L.rotation : (e.rotation || 0);
-  const cfg = { x: p.x, y: p.y, points: [-hw, 0, hw, 0], fill: e.fill, stroke: e.stroke || e.fill || '#ef4444', strokeWidth: Math.max(2, (e.strokeWidth || 2) * vs.value / 2), opacity: e.opacity ?? 1, rotation: rot, pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 16, scaleX: 1, scaleY: 1 };
-  return applyEffects(cfg, obj, hw * 2, 0, false);
-}
-function annulusCfg(obj) {
-  const e = eff(obj); const c = s2c(e.x, e.y);
-  const cfg = { x: c.x, y: c.y, innerRadius: (obj.innerRadius || 35) * vs.value, outerRadius: (obj.outerRadius || 70) * vs.value,
-    fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1,
-    rotation: e.rotation || 0, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  const d = (obj.outerRadius || 70) * 2 * vs.value;
-  return applyEffects(cfg, obj, d, d, true);
-}
-function sectorCfg(obj) {
-  const e = eff(obj); const c = s2c(e.x, e.y);
-  const cfg = { x: c.x, y: c.y, radius: (obj.radius || 70) * vs.value, angle: obj.sweepAngle || 90, rotation: (obj.startAngle || 0) + (e.rotation || 0),
-    fill: e.fill, stroke: e.stroke, strokeWidth: (e.strokeWidth || 2) * vs.value / 2, opacity: e.opacity ?? 1,
-    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
-  const d = (obj.radius || 70) * 2 * vs.value;
-  return applyEffects(cfg, obj, d, d, true);
-}
-function arcCfg(obj) {
-  const e = eff(obj); const c = s2c(e.x, e.y);
-  const r = (obj.radius || 70) * vs.value;
-  const a0 = (obj.startAngle || 0) * Math.PI / 180;
-  const a1 = ((obj.startAngle || 0) + (obj.sweepAngle || 180)) * Math.PI / 180;
-  const cfg = { x: c.x, y: c.y, stroke: e.stroke || '#f97316', strokeWidth: (e.strokeWidth || 4) * vs.value / 2,
-    opacity: e.opacity ?? 1, draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12,
-    sceneFunc: (ctx, shape) => { ctx.beginPath(); ctx.arc(0, 0, r, -a1, -a0); ctx.strokeShape(shape); } };
-  return applyEffects(cfg, obj, r * 2, r * 2, true);
-}
-function doubleArrowCfg(obj) {
-  const e = eff(obj); const c = s2c(e.x, e.y); const half = (e.width || 200) / 2 * vs.value;
-  const cfg = { x: c.x, y: c.y, points: [-half, 0, half, 0], pointerAtBeginning: true, pointerAtEnding: true,
-    pointerLength: 14 * vs.value / 2, pointerWidth: 12 * vs.value / 2, fill: e.fill || '#ef4444', stroke: e.stroke || e.fill || '#ef4444',
-    strokeWidth: (e.strokeWidth || 2) * vs.value / 2 + 2, opacity: e.opacity ?? 1, rotation: e.rotation || 0,
-    draggable: store.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12 };
-  return applyEffects(cfg, obj, (e.width || 200) * vs.value, 0, false);
 }
 function textCfg(obj) {
   const L = live(obj);
@@ -2046,6 +1893,33 @@ function handleWheel(e) {
   const factor = e.evt.deltaY > 0 ? 0.93 : 1.07;
   zoomLevel.value = Math.max(0.15, Math.min(5, zoomLevel.value * factor));
 }
+
+// ── shapes2d ctx bridge ──
+const ctx = computed(() => ({
+  stg: stg.value, vs: vs.value, ox: ox.value, oy: oy.value, s2c, c2s,
+  eff, eff3d, live, applyEffects, hexToRgba,
+  themeAccent: themeAccent.value, themeSurface: themeSurface.value,
+  imageElements, frameState: frameState.value, is3D: is3D.value, cam3d: cam3d.value,
+  proj3DScale: proj3DScale.value, projCx: projCx.value, projCy: projCy.value,
+  iso, measureTextWidth,
+  activeTool: store.activeTool,
+}));
+const rectCfg = (o) => shapes2d.rectCfg(o, ctx.value);
+const circleCfg = (o) => shapes2d.circleCfg(o, ctx.value);
+const ellipseCfg = (o) => shapes2d.ellipseCfg(o, ctx.value);
+const dotCfg = (o) => shapes2d.dotCfg(o, ctx.value);
+const heartCfg = (o) => shapes2d.heartCfg(o, ctx.value);
+const triangleCfg = (o) => shapes2d.triangleCfg(o, ctx.value);
+const polygonFreeCfg = (o) => shapes2d.polygonFreeCfg(o, ctx.value);
+const parametricCfg = (o) => shapes2d.parametricCfg(o, ctx.value);
+const starCfg = (o) => shapes2d.starCfg(o, ctx.value);
+const polygonCfg = (o) => shapes2d.polygonCfg(o, ctx.value);
+const lineCfg = (o) => shapes2d.lineCfg(o, ctx.value);
+const arrowCfg = (o) => shapes2d.arrowCfg(o, ctx.value);
+const annulusCfg = (o) => shapes2d.annulusCfg(o, ctx.value);
+const sectorCfg = (o) => shapes2d.sectorCfg(o, ctx.value);
+const arcCfg = (o) => shapes2d.arcCfg(o, ctx.value);
+const doubleArrowCfg = (o) => shapes2d.doubleArrowCfg(o, ctx.value);
 
 // ── Expose for parent ref calls ──
 defineExpose({ startPathDraw });
