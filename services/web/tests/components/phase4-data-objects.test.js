@@ -113,3 +113,31 @@ describe('polar_plane object', () => {
     store.setPolarRadiusStep(p.id, 0); expect(store.objectById(p.id).radiusStep).toBe(0.1);
   });
 });
+
+describe('graph object', () => {
+  function g() {
+    const o = store.addObject('graph', 960, 540);
+    o.vertices = ['A','B','C']; o.edges = [['A','B'],['B','C']];
+    o.positions = { A:[-60,0], B:[0,-40], C:[60,0] }; o.directed = false; o.showLabels = true;
+    return o;
+  }
+  it('emits Graph with vertices, edges, layout, labels', () => {
+    g(); const py = generateManimScript(store.project);
+    expect(py).toContain('Graph(["A", "B", "C"], [("A", "B"), ("B", "C")]');
+    expect(py).toContain('layout={');
+    expect(py).toContain('labels=True');
+  });
+  it('emits DiGraph when directed', () => {
+    const o = g(); o.directed = true;
+    expect(generateManimScript(store.project)).toContain('DiGraph(["A", "B", "C"]');
+  });
+  it('round-trips a graph', () => {
+    g(); const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'graph');
+    expect(re.vertices).toEqual(['A','B','C']);
+    expect(re.edges).toEqual([['A','B'],['B','C']]);
+    expect(re.directed).toBe(false);
+    expect(re.showLabels).toBe(true);
+    expect(Object.keys(re.positions).sort()).toEqual(['A','B','C']);
+  });
+});

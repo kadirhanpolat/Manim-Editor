@@ -167,6 +167,7 @@ export const SHAPE_DEFAULTS = {
   brace: { width: 160, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
   counter: { width: 120, height: 60, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
+  graph:   { width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -187,6 +188,7 @@ export const SHAPE_COLORS = {
   brace: '#ffffff',
   angle: '#fbbf24',
   counter: '#38bdf8',
+  graph:   '#22c55e',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -309,6 +311,7 @@ const useProjectStore = defineStore('project', {
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
         matrix: 'Matrix', table: 'Table', brace: 'Brace', angle: 'Angle', counter: 'Counter',
+        graph: 'Graph',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -344,6 +347,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'brace' ? { p1: [-80, 0], p2: [80, 0], label: '' } : {}),
         ...(type === 'angle' ? { vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '' } : {}),
         ...(type === 'counter' ? { value: 0, numDecimals: 0, suffix: '' } : {}),
+        ...(type === 'graph' ? { vertices: ['A','B','C'], edges: [['A','B'],['B','C']], positions: { A:[-60,0], B:[0,-40], C:[60,0] }, directed: false, showLabels: true } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),

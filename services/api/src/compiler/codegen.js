@@ -431,6 +431,18 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
+    case 'graph': {
+      const verts = (Array.isArray(obj.vertices) ? obj.vertices : []).map(v => safeMatrixEntry(v));
+      const vlist = `[${verts.map(v => `"${v}"`).join(', ')}]`;
+      const edges = (Array.isArray(obj.edges) ? obj.edges : []).filter(e => Array.isArray(e) && e.length === 2);
+      const elist = `[${edges.map(([a, b]) => `("${safeMatrixEntry(a)}", "${safeMatrixEntry(b)}")`).join(', ')}]`;
+      const pos = obj.positions || {};
+      const layout = `{${verts.map(v => { const p = pos[v] || [0, 0]; const mx = (p[0] / sw * FRAME_WIDTH); const my = (-(p[1]) / sh * FRAME_HEIGHT); return `"${v}": [${mx.toFixed(3)}, ${my.toFixed(3)}, 0]`; }).join(', ')}}`;
+      const cls = obj.directed ? 'DiGraph' : 'Graph';
+      const lbl = obj.showLabels ? ', labels=True' : '';
+      lines.push(`${n} = ${cls}(${vlist}, ${elist}, layout=${layout}${lbl})`);
+      break;
+    }
     case 'brace': {
       const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
       const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];

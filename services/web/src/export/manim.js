@@ -447,6 +447,18 @@ function objCode(obj, sw, sh) {
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
+    case 'graph': {
+      const verts = (Array.isArray(obj.vertices) ? obj.vertices : []).map(v => safeMatrixEntry(v));
+      const vlist = `[${verts.map(v => `"${v}"`).join(', ')}]`;
+      const edges = (Array.isArray(obj.edges) ? obj.edges : []).filter(e => Array.isArray(e) && e.length === 2);
+      const elist = `[${edges.map(([a, b]) => `("${safeMatrixEntry(a)}", "${safeMatrixEntry(b)}")`).join(', ')}]`;
+      const pos = obj.positions || {};
+      const layout = `{${verts.map(v => { const p = pos[v] || [0, 0]; const mx = (p[0] / sw * FRAME_WIDTH); const my = (-(p[1]) / sh * FRAME_HEIGHT); return `"${v}": [${mx.toFixed(3)}, ${my.toFixed(3)}, 0]`; }).join(', ')}}`;
+      const cls = obj.directed ? 'DiGraph' : 'Graph';
+      const lbl = obj.showLabels ? ', labels=True' : '';
+      lines.push(`${n} = ${cls}(${vlist}, ${elist}, layout=${layout}${lbl})`);
+      break;
+    }
     case 'brace': {
       const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
       const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];
@@ -1539,6 +1551,24 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // Graph / DiGraph (single-line, manual layout)
+    m = line.match(/^(\w+) = (Graph|DiGraph)\(\[(.*?)\], \[(.*?)\], layout=\{(.*?)\}(, labels=True)?\)/);
+    if (m) {
+      const directed = m[2] === 'DiGraph';
+      const vertices = (m[3].match(/"([^"]*)"/g) || []).map(s => s.slice(1, -1));
+      const edges = (m[4].match(/\("([^"]*)", "([^"]*)"\)/g) || []).map(t => { const mm = t.match(/\("([^"]*)", "([^"]*)"\)/); return [mm[1], mm[2]]; });
+      const positions = {};
+      const layoutEntries = m[5].match(/"([^"]*)": \[([-\d.]+), ([-\d.]+), [-\d.]+\]/g) || [];
+      for (const le of layoutEntries) { const e = le.match(/"([^"]*)": \[([-\d.]+), ([-\d.]+),/); positions[e[1]] = [Math.round(parseFloat(e[2]) / FRAME_WIDTH * sw), Math.round(-(parseFloat(e[3])) / FRAME_HEIGHT * sh)]; }
+      const id = uid('obj');
+      const obj = { id, type: 'graph', name: 'Graph',
+        x: sw/2, y: sh/2, width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2,
+        opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length,
+        vertices, edges, positions, directed, showLabels: !!m[6] };
+      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
       continue;
     }
 
