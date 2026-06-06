@@ -969,23 +969,10 @@ import FontSelector from './FontSelector.vue';
 import Position3DPanel from './Position3DPanel.vue';
 import Scene3DPanel from './Scene3DPanel.vue';
 import KeyframePanel from './KeyframePanel.vue';
-
-const Section = {
-  props: ['label'],
-  template: '<div class="px-3 py-2 border-b border-studio-border/50"><label class="text-[10px] text-studio-text-muted/70 uppercase font-bold tracking-wider mb-1 block">{{ label }}</label><slot/></div>'
-};
-
-const Num = {
-  props: { label: String, value: [Number, String], min: { type: Number, default: undefined }, max: { type: Number, default: undefined }, step: { type: Number, default: 1 } },
-  emits: ['input'],
-  template: '<div><span class="text-[9px] text-studio-text-muted/50">{{ label }}</span><input class="input input-sm" type="number" :value="value" :min="min" :max="max" :step="step" @change="$emit(\'input\', Number($event.target.value))" /></div>'
-};
-
-const ColorRow = {
-  props: ['label', 'value'],
-  emits: ['input'],
-  template: `<div class="flex items-center gap-2"><span class="text-[10px] text-studio-text-muted w-12">{{ label }}</span><input type="color" class="color-input" :value="value || '#ffffff'" @input="$emit('input', $event.target.value)" /><input class="input input-sm flex-1" :value="value" @change="$emit('input', $event.target.value)" /></div>`
-};
+import Section from './ui/Section.vue';
+import Num from './ui/Num.vue';
+import ColorRow from './ui/ColorRow.vue';
+import { useObjectUpdate } from './useObjectUpdate.js';
 
 const store = useProjectStore();
 
@@ -996,6 +983,7 @@ const enterAnims = ENTER_ANIMS;
 const exitAnims = EXIT_ANIMS;
 
 const obj = computed(() => store.selectedObject);
+const { u, uSize, uRange } = useObjectUpdate(() => obj.value);
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
 const is3DObject = computed(() => !!obj.value && OBJ_3D_TYPES.includes(obj.value.type));
 function onObj3DUpdate(payload) { if (obj.value) store.updateObject(obj.value.id, payload); }
@@ -1061,8 +1049,6 @@ function delCameraClip() {
   store.deleteCameraClip(cameraClip.value.id);
   store.selectedClipId = null;
 }
-function u(k, v) { if (obj.value) store.updateObject(obj.value.id, { [k]: v }); }
-function uSize(v) { if (obj.value) store.updateObject(obj.value.id, { width: v, height: v }); }
 function applyPolygonPreset(kind) {
   if (!obj.value) return;
   store.setPolygonVertices(obj.value.id, presetVertices(kind, obj.value.width, obj.value.height));
@@ -1108,12 +1094,6 @@ function toggleDash() {
 function setDashField(key, val) {
   const d = obj.value.dash || { numDashes: 12, ratio: 0.5 };
   store.setDash(obj.value.id, { ...d, [key]: Number(val) });
-}
-function uRange(prop, idx, val) {
-  if (!obj.value) return;
-  const arr = [...(obj.value[prop] || (prop === 'xRange' ? [-5,5,1] : [-3,3,1]))];
-  arr[idx] = val;
-  store.updateObject(obj.value.id, { [prop]: arr });
 }
 function uc(k, v) { if (clip.value) store.updateClip(clip.value.id, { [k]: v }); }
 function up(k, v) { if (clip.value) store.updateClip(clip.value.id, { params: { ...(clip.value.params||{}), [k]: v } }); }
