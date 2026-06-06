@@ -95,14 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Star settings -->
-      <Section v-if="obj.type === 'star'" label="Star Settings">
-        <div class="grid grid-cols-2 gap-1.5">
-          <Num label="Arms" :value="obj.starArms || 5" :min="3" :max="20" @input="u('starArms', $event)" />
-          <Num label="Inner Ratio" :value="(obj.innerRatio || 0.4)" :min="0.1" :max="0.9" :step="0.05" @input="u('innerRatio', $event)" />
-        </div>
-      </Section>
-
       <!-- Polygon settings -->
       <Section v-if="obj.type === 'polygon'" label="Polygon Settings">
         <Num label="Sides" :value="obj.sides || 6" :min="3" :max="20" @input="u('sides', $event)" />
