@@ -85,10 +85,7 @@
 
 <script setup>
 import { ref, computed, nextTick, onBeforeUnmount } from 'vue'
-
-const API_BASE = window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
-  : '';
+import { useGoogleFonts } from './useGoogleFonts.js'
 
 const props = defineProps({
   value: {
@@ -102,16 +99,11 @@ const emit = defineEmits(['input'])
 const input = ref(null)
 const fontList = ref(null)
 
-// Reactive state
+// UI state (the data layer lives in useGoogleFonts)
 const isOpen = ref(false)
 const searchQuery = ref('')
-const fonts = ref([])
-const loading = ref(false)
 const highlightedIndex = ref(-1)
 const selectedCategory = ref('all')
-const offset = ref(0)
-const total = ref(0)
-const limit = ref(50)
 const categories = ref([
   { id: 'all', label: 'All' },
   { id: 'sans-serif', label: 'Sans' },
@@ -121,66 +113,14 @@ const categories = ref([
   { id: 'monospace', label: 'Mono' }
 ])
 const debounceTimer = ref(null)
-const previewStylesLoaded = ref(new Set())
 
-// Computed
+// Font data layer (fetch + pagination + preview styles)
+const { fonts, loading, hasMore, load } = useGoogleFonts()
+function reload(reset = true) {
+  load({ search: searchQuery.value, category: selectedCategory.value, reset })
+}
+
 const filteredFonts = computed(() => fonts.value)
-const hasMore = computed(() => offset.value + fonts.value.length < total.value)
-
-// Methods
-async function fetchFonts(reset = false) {
-  if (loading.value) return
-
-  loading.value = true
-
-  try {
-    const params = new URLSearchParams({
-      limit: limit.value,
-      offset: reset ? 0 : offset.value
-    })
-
-    if (searchQuery.value) {
-      params.set('search', searchQuery.value)
-    }
-
-    if (selectedCategory.value !== 'all') {
-      params.set('category', selectedCategory.value)
-    }
-
-    const response = await fetch(`${API_BASE}/api/fonts?${params}`)
-    const data = await response.json()
-
-    if (reset) {
-      fonts.value = data.fonts
-      offset.value = 0
-    } else {
-      fonts.value = [...fonts.value, ...data.fonts]
-    }
-
-    total.value = data.total
-    offset.value = fonts.value.length
-
-    // Load Google Fonts preview styles for visible fonts
-    loadPreviewStyles(data.fonts.slice(0, 20))
-  } catch (error) {
-    console.error('Error fetching fonts:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-function loadPreviewStyles(fontItems) {
-  const fontsToLoad = fontItems.filter(f => !previewStylesLoaded.value.has(f.family))
-  if (fontsToLoad.length === 0) return
-
-  const families = fontsToLoad.map(f => f.family.replace(/ /g, '+')).join('|')
-  const link = document.createElement('link')
-  link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`
-  link.rel = 'stylesheet'
-  document.head.appendChild(link)
-
-  fontsToLoad.forEach(f => previewStylesLoaded.value.add(f.family))
-}
 
 function onInput(event) {
   searchQuery.value = event.target.value
@@ -189,14 +129,14 @@ function onInput(event) {
   // Debounce search
   clearTimeout(debounceTimer.value)
   debounceTimer.value = setTimeout(() => {
-    fetchFonts(true)
+    reload(true)
   }, 300)
 }
 
 function onFocus() {
   isOpen.value = true
   if (fonts.value.length === 0) {
-    fetchFonts(true)
+    reload(true)
   }
 }
 
@@ -259,18 +199,18 @@ function selectFont(family) {
 function selectCategory(category) {
   selectedCategory.value = category
   highlightedIndex.value = -1
-  fetchFonts(true)
+  reload(true)
 }
 
 function clearSearch() {
   searchQuery.value = ''
   highlightedIndex.value = -1
-  fetchFonts(true)
+  reload(true)
   input.value?.focus()
 }
 
 function loadMore() {
-  fetchFonts(false)
+  reload(false)
 }
 
 onBeforeUnmount(() => {
