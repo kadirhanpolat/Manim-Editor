@@ -601,6 +601,42 @@ const useProjectStore = defineStore('project', {
     setPolarRadiusStep(id, v) { const o = this.objectById(id); if (!o) return; const n = Number(v); o.radiusStep = Math.max(0.1, Number.isFinite(n) ? n : 1); this.isDirty = true; this._debouncedCommit(); },
     setPolarAzimuth(id, v) { const o = this.objectById(id); if (!o) return; o.azimuthUnits = Math.max(1, Math.trunc(Number(v) || 12)); this.isDirty = true; this._debouncedCommit(); },
 
+    addGraphVertex(id, name) {
+      const o = this.objectById(id); if (!o) return;
+      const v = String(name || `V${o.vertices.length + 1}`);
+      if (o.vertices.includes(v)) return;
+      o.vertices.push(v); o.positions[v] = [0, 0]; this.isDirty = true; this.commitState();
+    },
+    removeGraphVertex(id, v) {
+      const o = this.objectById(id); if (!o) return;
+      o.vertices = o.vertices.filter(x => x !== v);
+      o.edges = o.edges.filter(e => e[0] !== v && e[1] !== v);
+      delete o.positions[v]; this.isDirty = true; this.commitState();
+    },
+    renameGraphVertex(id, oldV, newV) {
+      const o = this.objectById(id); if (!o) return;
+      const nv = String(newV); if (!nv || o.vertices.includes(nv)) return;
+      o.vertices = o.vertices.map(x => x === oldV ? nv : x);
+      o.edges = o.edges.map(e => [e[0] === oldV ? nv : e[0], e[1] === oldV ? nv : e[1]]);
+      if (o.positions[oldV]) { o.positions[nv] = o.positions[oldV]; delete o.positions[oldV]; }
+      this.isDirty = true; this.commitState();
+    },
+    addGraphEdge(id, a, b) {
+      const o = this.objectById(id); if (!o || !o.vertices.includes(a) || !o.vertices.includes(b)) return;
+      if (o.edges.some(e => e[0] === a && e[1] === b)) return;
+      o.edges.push([a, b]); this.isDirty = true; this.commitState();
+    },
+    removeGraphEdge(id, a, b) {
+      const o = this.objectById(id); if (!o) return;
+      o.edges = o.edges.filter(e => !(e[0] === a && e[1] === b)); this.isDirty = true; this.commitState();
+    },
+    setGraphVertexPosition(id, v, pt) {
+      const o = this.objectById(id); if (!o || !Array.isArray(pt) || pt.length !== 2) return;
+      o.positions[v] = [Math.round(pt[0]), Math.round(pt[1])]; this.isDirty = true; this._debouncedCommit();
+    },
+    setGraphDirected(id, on) { const o = this.objectById(id); if (!o) return; o.directed = !!on; this.isDirty = true; this.commitState(); },
+    setGraphShowLabels(id, on) { const o = this.objectById(id); if (!o) return; o.showLabels = !!on; this.isDirty = true; this.commitState(); },
+
     deleteObject(id) {
       const idx = this.project.objects.findIndex(o => o.id === id);
       if (idx === -1) return;

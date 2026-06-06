@@ -141,3 +141,31 @@ describe('graph object', () => {
     expect(Object.keys(re.positions).sort()).toEqual(['A','B','C']);
   });
 });
+
+describe('graph actions', () => {
+  it('add/remove vertex + edge, rename, position, toggles', () => {
+    const o = store.addObject('graph', 960, 540);
+    o.vertices = ['A','B']; o.edges = [['A','B']]; o.positions = { A:[-50,0], B:[50,0] };
+    store.addGraphVertex(o.id, 'C');
+    store.addGraphEdge(o.id, 'B', 'C');
+    store.setGraphVertexPosition(o.id, 'C', [0, 60]);
+    store.setGraphDirected(o.id, true);
+    store.setGraphShowLabels(o.id, false);
+    let re = store.objectById(o.id);
+    expect(re.vertices).toContain('C');
+    expect(re.edges).toContainEqual(['B','C']);
+    expect(re.positions.C).toEqual([0,60]);
+    expect(re.directed).toBe(true);
+    expect(re.showLabels).toBe(false);
+    store.renameGraphVertex(o.id, 'A', 'Z');
+    re = store.objectById(o.id);
+    expect(re.vertices).toContain('Z');
+    expect(re.edges).toContainEqual(['Z','B']);
+    expect(re.positions.Z).toBeTruthy();
+    store.removeGraphVertex(o.id, 'B');
+    re = store.objectById(o.id);
+    expect(re.vertices).not.toContain('B');
+    expect(re.edges.every(e => !e.includes('B'))).toBe(true);
+    expect(re.positions.B).toBeUndefined();
+  });
+});

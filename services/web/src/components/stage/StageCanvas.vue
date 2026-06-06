@@ -169,6 +169,17 @@
               <v-text v-if="obj.label" :config="relationalLabelCfg(obj, angleLabelAnchor(obj))" />
             </v-group>
 
+            <!-- Graph / DiGraph -->
+            <v-group v-if="obj.type === 'graph' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="graphHitCfg(obj)" />
+              <template v-for="(ecfg, ei) in graphEdgeConfigs(obj)" :key="'ge' + ei">
+                <v-arrow v-if="obj.directed" :config="ecfg" />
+                <v-line v-else :config="ecfg" />
+              </template>
+              <v-circle v-for="(vcfg, vi) in graphVertexConfigs(obj)" :key="'gv' + vi" :config="vcfg" />
+              <v-text v-if="obj.showLabels" v-for="(lcfg, li) in graphLabelConfigs(obj)" :key="'gl' + li" :config="lcfg" />
+            </v-group>
+
             <!-- 3D: Sphere -->
             <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
@@ -558,6 +569,10 @@ const polygonHandles = computed(() => {
     return { id: obj.id, kind: 'relational',
       points: ['vertex', 'point1', 'point2'].map(k => ({ key: k, cx: c.x + obj[k][0] * vs.value, cy: c.y + obj[k][1] * vs.value })) };
   }
+  if (obj.type === 'graph' && obj.positions && typeof obj.positions === 'object') {
+    return { id: obj.id, kind: 'graph',
+      points: Object.keys(obj.positions).map(k => ({ key: k, cx: c.x + obj.positions[k][0] * vs.value, cy: c.y + obj.positions[k][1] * vs.value })) };
+  }
   return null;
 });
 
@@ -569,6 +584,8 @@ function onVertexDrag(key, evt) {
   const nv = canvasToVertex(node.x(), node.y(), c.x, c.y, vs.value);
   if (h.kind === 'vertices') {
     const arr = obj.vertices.slice(); arr[key] = nv; obj.vertices = arr;
+  } else if (h.kind === 'graph') {
+    store.setGraphVertexPosition(obj.id, key, nv);
   } else {
     obj[key] = nv;
   }
@@ -1333,6 +1350,56 @@ function angleLabelAnchor(obj) {
   const mid = (a1 + a2) / 2;
   const r = 34 * z;
   return [v[0] * z + Math.cos(mid) * r, v[1] * z + Math.sin(mid) * r];
+}
+
+// ── Graph / DiGraph config ──
+function graphHitCfg(obj) {
+  const w = (obj.width || 200) * vs.value, h = (obj.height || 200) * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
+}
+function graphEdgeConfigs(obj) {
+  const z = vs.value;
+  const pos = obj.positions || {};
+  const col = obj.stroke || '#94a3b8';
+  const sw = Math.max(1.5, 2 * z);
+  const ptSize = 8 * z;
+  const configs = [];
+  for (const [a, b] of (obj.edges || [])) {
+    const pa = pos[a], pb = pos[b];
+    if (!pa || !pb) continue;
+    const ax = pa[0] * z, ay = pa[1] * z, bx = pb[0] * z, by = pb[1] * z;
+    if (obj.directed) {
+      // shorten end point so arrowhead doesn't overlap the vertex circle
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+      const ex = bx - dx / len * ptSize, ey = by - dy / len * ptSize;
+      configs.push({ points: [ax, ay, ex, ey], stroke: col, strokeWidth: sw, fill: col,
+        pointerLength: 8 * z, pointerWidth: 6 * z, lineCap: 'round', listening: false });
+    } else {
+      configs.push({ points: [ax, ay, bx, by], stroke: col, strokeWidth: sw, lineCap: 'round', listening: false });
+    }
+  }
+  return configs;
+}
+function graphVertexConfigs(obj) {
+  const z = vs.value;
+  const pos = obj.positions || {};
+  const col = obj.fill || '#4ceef9';
+  const strokeCol = obj.stroke || '#94a3b8';
+  const r = 8 * z;
+  return Object.keys(pos).map(k => ({
+    x: pos[k][0] * z, y: pos[k][1] * z, radius: r,
+    fill: col, stroke: strokeCol, strokeWidth: Math.max(1, 1.5 * z), listening: false,
+  }));
+}
+function graphLabelConfigs(obj) {
+  const z = vs.value;
+  const pos = obj.positions || {};
+  const fs = Math.max(10, 13 * z);
+  return Object.keys(pos).map(k => ({
+    x: pos[k][0] * z - 12, y: pos[k][1] * z - 10 - 8 * z,
+    width: 24, text: k, align: 'center',
+    fontSize: fs, fill: obj.fill || '#ffffff', listening: false,
+  }));
 }
 
 // ── Axes config ──
