@@ -2662,6 +2662,34 @@ exports[`data-object configs > vector field hit cfg stable 1`] = `
 }
 `;
 
+exports[`effects > applyEffects no-op when no effect fields 1`] = `
+{
+  "fill": "#3B82F6",
+}
+`;
+
+exports[`effects > applyEffects with gradient mutates cfg 1`] = `
+{
+  "fill": "#3B82F6",
+  "fillLinearGradientColorStops": [
+    0,
+    "#ff0000",
+    1,
+    "#00ff00",
+  ],
+  "fillLinearGradientEndPoint": {
+    "x": 3.061616997868383e-15,
+    "y": 50,
+  },
+  "fillLinearGradientStartPoint": {
+    "x": -3.061616997868383e-15,
+    "y": -50,
+  },
+}
+`;
+
+exports[`effects > hexToRgba converts 1`] = `"rgba(59, 130, 246, 0.5)"`;
+
 exports[`objects3d configs > axes3d lines stable 1`] = `
 [
   {

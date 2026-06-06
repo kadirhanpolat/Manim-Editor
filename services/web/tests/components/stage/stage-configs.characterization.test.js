@@ -8,6 +8,7 @@ import * as axes from '../../../src/components/stage/configs/axes.js';
 import * as objects3d from '../../../src/components/stage/configs/objects3d.js';
 import * as chrome from '../../../src/components/stage/configs/chrome.js';
 import * as overlays from '../../../src/components/stage/configs/overlays.js';
+import * as effects from '../../../src/components/stage/configs/effects.js';
 
 // Each extraction task appends a block here that snapshots its module's builders.
 // Vitest writes/commits the snapshot on first run; later drift fails the test.
@@ -98,5 +99,21 @@ describe('chrome configs', () => {
 describe('overlay configs', () => {
   it('emphasis overlays empty when no overrides', () => {
     expect(overlays.emphasisOverlays([], makeCtx())).toEqual([]);
+  });
+});
+
+describe('effects', () => {
+  it('hexToRgba converts', () => {
+    expect(effects.hexToRgba('#3B82F6', 0.5)).toMatchSnapshot();
+  });
+  it('applyEffects with gradient mutates cfg', () => {
+    const cfg = { fill: '#3B82F6' };
+    effects.applyEffects(cfg, { gradient: { colors: ['#ff0000', '#00ff00'], angle: 90 } }, 100, 100, true);
+    expect(cfg).toMatchSnapshot();
+  });
+  it('applyEffects no-op when no effect fields', () => {
+    const cfg = { fill: '#3B82F6' };
+    effects.applyEffects(cfg, {}, 100, 100, false);
+    expect(cfg).toMatchSnapshot();
   });
 });
