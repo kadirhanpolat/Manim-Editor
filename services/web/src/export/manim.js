@@ -459,6 +459,14 @@ function objCode(obj, sw, sh) {
       lines.push(`${n} = ${cls}(${vlist}, ${elist}, layout=${layout}${lbl})`);
       break;
     }
+    case 'vector_field': {
+      const fx = safeMathExpr(obj.fx, 'y');
+      const fy = safeMathExpr(obj.fy, '-x');
+      const xr = obj.xRange || [-3, 3, 1];
+      const yr = obj.yRange || [-2, 2, 1];
+      lines.push(`${n} = ArrowVectorField(lambda p: (lambda x, y: np.array([${fx}, ${fy}, 0]))(p[0], p[1]), x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}])`);
+      break;
+    }
     case 'brace': {
       const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
       const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];
@@ -1726,6 +1734,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const obj = { id, type: 'dot', name, x: sw / 2, y: sh / 2, width: size, height: size, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
       continue;
+    }
+
+    // ArrowVectorField
+    m = line.match(/^(\w+) = ArrowVectorField\(lambda p: \(lambda x, y: np\.array\(\[(.*?), (.*?), 0\]\)\)\(p\[0\], p\[1\]\), x_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\], y_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\]\)/);
+    if (m) {
+      const obj = { id: uid('obj'), type: 'vector_field', name: 'VectorField',
+        x: sw/2, y: sh/2, width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2,
+        opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length,
+        fx: m[2], fy: m[3], xRange: [parseFloat(m[4]), parseFloat(m[5]), parseFloat(m[6])], yRange: [parseFloat(m[7]), parseFloat(m[8]), parseFloat(m[9])] };
+      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj); continue;
     }
 
     // ParametricFunction (single-line parametric object) — must precede the heart matcher

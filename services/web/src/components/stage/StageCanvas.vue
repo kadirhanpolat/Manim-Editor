@@ -182,6 +182,14 @@
               </template>
             </v-group>
 
+            <!-- Vector Field -->
+            <v-group v-if="obj.type === 'vector_field' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)">
+              <v-rect :config="vectorFieldHitCfg(obj)" />
+              <template v-for="(acfg, ai) in vectorFieldArrows(obj)" :key="'vfa' + ai">
+                <v-arrow :config="acfg" />
+              </template>
+            </v-group>
+
             <!-- 3D: Sphere -->
             <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
@@ -1402,6 +1410,74 @@ function graphLabelConfigs(obj) {
     width: 24, text: k, align: 'center',
     fontSize: fs, fill: obj.fill || '#ffffff', listening: false,
   }));
+}
+
+// ── Vector Field config ──
+function vectorFieldHitCfg(obj) {
+  const w = (obj.width || 600) * vs.value, h = (obj.height || 400) * vs.value;
+  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(56,189,248,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
+}
+function _safeFieldExpr(e, fb) {
+  if (!e || typeof e !== 'string') return fb;
+  const t = e.trim();
+  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(t)) return fb;
+  if (/import|eval|exec|open|__/.test(t)) return fb;
+  return t;
+}
+function _compileField2(expr) {
+  // compile expr(x,y) using the same SCOPE as compileExpr but with two variables
+  const SCOPE2 =
+    'const np={sin:Math.sin,cos:Math.cos,tan:Math.tan,arcsin:Math.asin,arccos:Math.acos,' +
+    'arctan:Math.atan,sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp,log:Math.log,sign:Math.sign,' +
+    'power:Math.pow,floor:Math.floor,ceil:Math.ceil,pi:Math.PI,e:Math.E};' +
+    'const PI=Math.PI,TAU=2*Math.PI,E=Math.E;';
+  try {
+    // eslint-disable-next-line no-new-func
+    const fn = new Function('x', 'y', '"use strict";' + SCOPE2 + 'return (' + expr + ');');
+    const probe = fn(1, 1);
+    if (typeof probe !== 'number') return null;
+    return fn;
+  } catch { return null; }
+}
+function vectorFieldArrows(obj) {
+  const z = vs.value;
+  const xr = Array.isArray(obj.xRange) ? obj.xRange : [-3, 3, 1];
+  const yr = Array.isArray(obj.yRange) ? obj.yRange : [-2, 2, 1];
+  const xMin = xr[0], xMax = xr[1], yMin = yr[0], yMax = yr[1];
+  const fxExpr = _safeFieldExpr(obj.fx, 'y');
+  const fyExpr = _safeFieldExpr(obj.fy, '-x');
+  const fxFn = _compileField2(fxExpr);
+  const fyFn = _compileField2(fyExpr);
+  if (!fxFn || !fyFn) return [];
+  const GRID = 8;
+  // unit: canvas px per Manim unit
+  const unitX = (obj.width || 600) * z / (xMax - xMin || 1);
+  const unitY = (obj.height || 400) * z / (yMax - yMin || 1);
+  const arrowLen = Math.min(unitX, unitY) * 0.55;
+  const configs = [];
+  const col = obj.stroke || '#38bdf8';
+  const sw2 = Math.max(1, (obj.strokeWidth || 2) * z / 2);
+  for (let ix = 0; ix < GRID; ix++) {
+    for (let iy = 0; iy < GRID; iy++) {
+      const gx = xMin + (ix + 0.5) / GRID * (xMax - xMin);
+      const gy = yMin + (iy + 0.5) / GRID * (yMax - yMin);
+      const vx = fxFn(gx, gy), vy = fyFn(gx, gy);
+      if (!Number.isFinite(vx) || !Number.isFinite(vy)) continue;
+      const mag = Math.sqrt(vx * vx + vy * vy);
+      if (mag < 1e-12) continue;
+      const nx = (vx / mag) * arrowLen, ny = (vy / mag) * arrowLen;
+      // canvas coords: x maps right (+), y maps down (flip y)
+      const cx = -(obj.width || 600) * z / 2 + (ix + 0.5) / GRID * (obj.width || 600) * z;
+      const cy = -(obj.height || 400) * z / 2 + (iy + 0.5) / GRID * (obj.height || 400) * z;
+      configs.push({
+        points: [cx - nx / 2, cy + ny / 2, cx + nx / 2, cy - ny / 2],
+        stroke: col, strokeWidth: sw2,
+        fill: col, pointerLength: Math.max(4, arrowLen * 0.3), pointerWidth: Math.max(3, arrowLen * 0.25),
+        opacity: obj.opacity ?? 1, listening: false,
+      });
+    }
+  }
+  return configs;
 }
 
 // ── Axes config ──

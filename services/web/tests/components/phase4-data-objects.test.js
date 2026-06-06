@@ -169,3 +169,33 @@ describe('graph actions', () => {
     expect(re.positions.B).toBeUndefined();
   });
 });
+
+describe('vector_field object', () => {
+  it('emits ArrowVectorField with whitelisted fx/fy', () => {
+    const v = store.addObject('vector_field', 960, 540);
+    v.fx = 'y'; v.fy = '-x'; v.xRange = [-3,3,1]; v.yRange = [-2,2,1];
+    const py = generateManimScript(store.project);
+    expect(py).toContain('ArrowVectorField(lambda p: (lambda x, y: np.array([y, -x, 0]))(p[0], p[1]), x_range=[-3, 3, 1], y_range=[-2, 2, 1])');
+  });
+  it('sanitizes a malicious expression to the fallback', () => {
+    const v = store.addObject('vector_field', 960, 540);
+    v.fx = '__import__("os")'; v.fy = 'x';
+    const py = generateManimScript(store.project);
+    expect(py).not.toContain('__import__');
+  });
+  it('round-trips vector_field', () => {
+    const v = store.addObject('vector_field', 960, 540);
+    v.fx = 'y'; v.fy = '-x'; v.xRange = [-3,3,1]; v.yRange = [-2,2,1];
+    const parsed = parseManimScript(generateManimScript(store.project));
+    const re = parsed.objects.find(o => o.type === 'vector_field');
+    expect(re.fx).toBe('y'); expect(re.fy).toBe('-x');
+    expect(re.xRange).toEqual([-3,3,1]);
+  });
+  it('field setters mutate', () => {
+    const v = store.addObject('vector_field', 960, 540);
+    store.setFieldExpr(v.id, 'fx', 'x*y');
+    store.setFieldRange(v.id, 'xRange', [-5,5,1]);
+    const re = store.objectById(v.id);
+    expect(re.fx).toBe('x*y'); expect(re.xRange).toEqual([-5,5,1]);
+  });
+});

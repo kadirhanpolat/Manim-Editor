@@ -443,6 +443,14 @@ function objectCode(obj, sw, sh, assetsPath, assetMap) {
       lines.push(`${n} = ${cls}(${vlist}, ${elist}, layout=${layout}${lbl})`);
       break;
     }
+    case 'vector_field': {
+      const fx = safeMathExpr(obj.fx, 'y');
+      const fy = safeMathExpr(obj.fy, '-x');
+      const xr = obj.xRange || [-3, 3, 1];
+      const yr = obj.yRange || [-2, 2, 1];
+      lines.push(`${n} = ArrowVectorField(lambda p: (lambda x, y: np.array([${fx}, ${fy}, 0]))(p[0], p[1]), x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}])`);
+      break;
+    }
     case 'brace': {
       const p1 = Array.isArray(obj.p1) ? obj.p1 : [-80, 0];
       const p2 = Array.isArray(obj.p2) ? obj.p2 : [80, 0];

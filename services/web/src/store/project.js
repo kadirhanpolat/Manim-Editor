@@ -168,6 +168,7 @@ export const SHAPE_DEFAULTS = {
   angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
   counter: { width: 120, height: 60, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
   graph:   { width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2 },
+  vector_field: { width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -189,6 +190,7 @@ export const SHAPE_COLORS = {
   angle: '#fbbf24',
   counter: '#38bdf8',
   graph:   '#22c55e',
+  vector_field: '#38bdf8',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -311,7 +313,7 @@ const useProjectStore = defineStore('project', {
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
         matrix: 'Matrix', table: 'Table', brace: 'Brace', angle: 'Angle', counter: 'Counter',
-        graph: 'Graph',
+        graph: 'Graph', vector_field: 'VectorField',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -348,6 +350,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'angle' ? { vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '' } : {}),
         ...(type === 'counter' ? { value: 0, numDecimals: 0, suffix: '' } : {}),
         ...(type === 'graph' ? { vertices: ['A','B','C'], edges: [['A','B'],['B','C']], positions: { A:[-60,0], B:[0,-40], C:[60,0] }, directed: false, showLabels: true } : {}),
+        ...(type === 'vector_field' ? { fx: 'y', fy: '-x', xRange: [-3,3,1], yRange: [-2,2,1] } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),
@@ -637,6 +640,9 @@ const useProjectStore = defineStore('project', {
     },
     setGraphDirected(id, on) { const o = this.objectById(id); if (!o) return; o.directed = !!on; this.isDirty = true; this.commitState(); },
     setGraphShowLabels(id, on) { const o = this.objectById(id); if (!o) return; o.showLabels = !!on; this.isDirty = true; this.commitState(); },
+
+    setFieldExpr(id, axis, expr) { const o = this.objectById(id); if (!o || (axis !== 'fx' && axis !== 'fy')) return; o[axis] = String(expr); this.isDirty = true; this._debouncedCommit(); },
+    setFieldRange(id, axis, range) { const o = this.objectById(id); if (!o || (axis !== 'xRange' && axis !== 'yRange') || !Array.isArray(range)) return; o[axis] = range.map(Number); this.isDirty = true; this._debouncedCommit(); },
 
     deleteObject(id) {
       const idx = this.project.objects.findIndex(o => o.id === id);
