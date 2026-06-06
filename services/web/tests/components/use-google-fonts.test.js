@@ -44,11 +44,22 @@ describe('useGoogleFonts', () => {
     expect(fetchMock.mock.calls[1][0]).not.toContain('category=');
   });
 
-  it('hasMore reflects offset + fonts.length < total (the original formula)', async () => {
-    fetchMock.mockResolvedValue(page([{ family: 'A', category: 'x' }, { family: 'B', category: 'x' }], 5));
+  it('hasMore is true while fewer than total are loaded, false once all are', async () => {
     const g = useGoogleFonts();
+    // Loaded 3 of 5 → more remain. (Regression guard: the old formula
+    // `offset + fonts.length < total` gave 3+3=6 < 5 = false here, hiding "Load more".)
+    fetchMock.mockResolvedValueOnce(page(
+      [{ family: 'A', category: 'x' }, { family: 'B', category: 'x' }, { family: 'C', category: 'x' }], 5));
     await g.load({ reset: true });
-    expect(g.hasMore.value).toBe(true);   // offset(2) + len(2) = 4 < 5
+    expect(g.fonts.value.length).toBe(3);
+    expect(g.hasMore.value).toBe(true);
+
+    // Append the last 2 → all 5 loaded → no more.
+    fetchMock.mockResolvedValueOnce(page(
+      [{ family: 'D', category: 'x' }, { family: 'E', category: 'x' }], 5));
+    await g.load({ reset: false });
+    expect(g.fonts.value.length).toBe(5);
+    expect(g.hasMore.value).toBe(false);
   });
 
   it('injects each preview stylesheet family only once (dedup)', async () => {

@@ -11,10 +11,8 @@ const PAGE2 = [
   { family: 'Merriweather', category: 'serif' },
 ];
 
-// NOTE: the component's hasMore is `offset + fonts.length < total`, and offset is set
-// to fonts.length after each fetch — so it effectively tests `2 * loaded < total`.
-// total=5 keeps the "load more" button visible after page 1 (4 < 5), matching the real
-// (quirky) current behavior we are locking in.
+// hasMore is `fonts.length < total`. total=5 with a 2-font page 1 keeps the "load more"
+// button visible (2 < 5) so the pagination path is exercised.
 function mockFetch() {
   let call = 0;
   return vi.fn(async () => {

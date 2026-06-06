@@ -16,9 +16,10 @@ export function useGoogleFonts() {
   // Dedup cache for injected <link> stylesheets — not reactive (never rendered).
   const previewStylesLoaded = new Set();
 
-  // NOTE: preserved verbatim from the original component, including the quirk that
-  // `offset` is set to `fonts.length` after each fetch (so this reads ~ `2*loaded < total`).
-  const hasMore = computed(() => offset.value + fonts.value.length < total.value);
+  // More remain to load iff we have fewer than the total filtered count. (`offset` is
+  // kept only as the next fetch's start index — using it here double-counted, since it is
+  // set to `fonts.length` after each fetch, which prematurely hid "Load more".)
+  const hasMore = computed(() => fonts.value.length < total.value);
 
   function loadPreviewStyles(fontItems) {
     const fontsToLoad = fontItems.filter(f => !previewStylesLoaded.has(f.family));
