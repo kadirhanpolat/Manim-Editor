@@ -34,7 +34,9 @@ cd services/web && npm test
 | `packages/manim-codegen/src/` | **Single source of truth for Manim codegen** — `constants.js`, `helpers.js`, `objects.js`, `objects3d.js`, `clips.js`, `keyframes.js`, `index.js` (`generateScene`) |
 | `services/api/src/compiler/codegen.js` | Thin server wrapper over `@manim/codegen` (supplies server asset paths via `resolveAsset`) |
 | `services/web/src/export/manim.js` | Thin client generator wrapper over `@manim/codegen` + the web-only `.py` **parser** |
-| `services/web/src/components/stage/StageCanvas.vue` | Konva.js canvas — renders all object types; split viewport for 3D (iso + top); camera preview via vs/ox/oy |
+| `services/web/src/components/stage/StageCanvas.vue` | **Thin orchestrator** (~544 lines) — template + wires the 4 stage composables + builds the `ctx` bundle; renders all object types via the config builders below |
+| `services/web/src/components/stage/configs/*.js` | **Pure** Konva config builders, each `fn(obj, ctx)` (Vue-independent, unit-tested): `context.js` (the `ctx` contract), `shapes2d`, `text`, `dataObjects`, `relational`, `axes`, `objects3d`, `overlays`, `chrome`, `effects` |
+| `services/web/src/components/stage/composables/*.js` | Reactive stage concerns: `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select), `useStagePathDraw`, `useStageAssets` |
 | `services/web/src/components/inspector/Inspector.vue` | Object + clip property editor (Layout, Style, Timing, Animation, Audio, Keyframe, Position3D panels) |
 | `services/web/src/components/inspector/Position3DPanel.vue` | 3D position/rotation editor — x3d/y3d/z3d, rx/ry/rz, resolution, xRange inputs |
 | `services/web/src/components/inspector/AudioPanel.vue` | Per-clip audio: file upload, gTTS/Coqui TTS, sync mode |
@@ -132,6 +134,8 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 ## Object Types
 
+> **Adding a new object type** touches: the generator (once in `@manim/codegen` + the `manim.js` parser for round-trip), the **canvas preview** (a builder `fn(obj, ctx)` in the matching `services/web/src/components/stage/configs/*.js` + a one-line `<template>` branch + a template-compat wrapper in `StageCanvas.vue`; add a snapshot in `tests/components/stage/`), the **store** (`project.js` defaults/actions), and the **inspector** (`PropertiesPanel.vue`). The preview is no longer one giant file — pick the `configs/` module that fits (shapes2d / text / dataObjects / relational / axes / objects3d).
+
 **2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`
 
 `counter` object fields: `value` (number, default 0), `numDecimals` (int ≥ 0, default 0), `suffix` (string, optional). Emits `DecimalNumber(<value>, num_decimal_places=<dec>[, unit="<suffix>"])` — `unit=` only when `suffix` is non-empty. Not in GRADIENT_TYPES or DASH_TYPES. `value` is keyframable via `_kfPropSet`/`_kfUpdater` (`set_value` setter). Store actions: `setCounterValue`, `setCounterDecimals`, `setCounterSuffix`.
@@ -149,7 +153,7 @@ Graph expressions (`graph.expression`) must pass the whitelist before use in cod
 if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(expr)) return 'x**2';
 if (/import|eval|exec|open|__/.test(expr)) return 'x**2';
 ```
-This check lives in `@manim/codegen` (`safeMathExpr` in `helpers.js`, used by both the server and client generators) and is duplicated in `StageCanvas.vue` (`axesGraphCurves`). Keep the package helper and the `StageCanvas.vue` copy in sync.
+This check lives in `@manim/codegen` (`safeMathExpr` in `helpers.js`, used by both the server and client generators) and on the preview side in `engine/mathExpr.js` (`isSafeExpr`/`compileExpr`), which the stage config builders (`configs/axes.js`, `configs/dataObjects.js`) call. Keep the package helper and the `engine/mathExpr.js` whitelist in sync.
 
 ## Camera Animations
 
@@ -352,8 +356,8 @@ Optional object fields, absent ⇒ byte-identical legacy output:
   `VGroup(base, DashedVMobject(_dash_src, ...))`. **Keep codegen.js and manim.js
   helpers (`fillOpacityExpr`, `strokeOpacityArg`, `gradientLine`, `dashedLines`)
   byte-identical** — guarded by `effects-codegen.test.js`.
-- Preview: `StageCanvas.vue` `applyEffects()` (Konva gradient / cornerRadius /
-  rgba alpha / dash).
+- Preview: `configs/effects.js` `applyEffects()` (Konva gradient / cornerRadius /
+  rgba alpha / dash), invoked by the config builders via `ctx.applyEffects`.
 - Inspector: "Effects" section in `PropertiesPanel.vue` (controls gate by shape
   type via `canGradient` / `canDash` / `canRound`).
 - Store actions: `setGradient`, `setCornerRadius`, `setDash` (delete the field on
