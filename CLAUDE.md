@@ -45,6 +45,7 @@ cd services/web && npm test
 | `services/web/src/components/inspector/Position3DPanel.vue` | 3D position/rotation editor — x3d/y3d/z3d, rx/ry/rz, resolution, xRange inputs |
 | `services/web/src/components/inspector/AudioPanel.vue` | Per-clip audio: file upload, gTTS/Coqui TTS, sync mode |
 | `services/web/src/components/inspector/KeyframePanel.vue` | Selected keyframe editor — time (read-only), value, mode, delete |
+| `services/web/src/components/topbar/Topbar.vue` + `MenuBar.vue` / `NewProjectDialog.vue` / `menus.js` | Menubar: thin `Topbar` orchestrator (brand + center name + right controls) + reusable `MenuBar` widget (dropdowns/submenu/hamburger/keyboard nav) + controlled `NewProjectDialog` modal + `buildMenus(ctx)` data factory. **Menu items live in `menus.js`.** |
 | `services/web/src/components/timeline/Timeline.vue` | Multi-track timeline + camera track + keyframe lanes |
 | `services/web/src/components/timeline/KeyframeLanesPanel.vue` | Keyframe lane panel — shown below selected clip, one lane per property |
 | `services/web/src/components/timeline/KeyframeLane.vue` | Single-property keyframe lane — diamond markers, drag, add/remove |
@@ -480,6 +481,6 @@ Five new 2D object types, all emitted byte-identically by both `codegen.js` (ser
 
 ## Build / Environment Gotchas (fixed in v3.3.1)
 
-- **Vue 3 `<template v-for>` keys**: keys must sit on the `<template>` tag, not on child elements — a pure Vue 3 prod build (`npm run build`) errors otherwise. Watch for this when adding new keyed loops in `Topbar.vue` / `StageCanvas.vue`.
+- **Vue 3 `<template v-for>` keys**: keys must sit on the `<template>` tag, not on child elements — a pure Vue 3 prod build (`npm run build`) errors otherwise. Watch for this when adding new keyed loops in `topbar/MenuBar.vue` / `StageCanvas.vue`.
 - **Renderer `setuptools<81` pin**: `manimcommunity/manim:stable` ships setuptools 82 (no `pkg_resources`), but `manim-voiceover` imports `pkg_resources` at load and crashes the whole `manim` CLI. `services/renderer/Dockerfile` pins `setuptools<81`. Revisit if the renderer base image or manim-voiceover drops the `pkg_resources` dependency.
 - **`api_node_modules` named volume**: after adding an api dependency, run `docker volume rm manim_motion_api_node_modules` before `docker compose up` — named volumes don't refresh on image rebuild and will shadow new packages (`ERR_MODULE_NOT_FOUND`, unhealthy api).
