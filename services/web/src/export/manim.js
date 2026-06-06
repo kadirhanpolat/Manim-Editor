@@ -8,21 +8,10 @@
  *           line, arrow, heart, dot, dot_grid, text, image, svg_asset, groups
  */
 
-import {
-  EASING_MAP, FRAME_WIDTH, FRAME_HEIGHT, FRAME_X_RADIUS, FRAME_Y_RADIUS,
-  GRADIENT_TYPES, DASH_TYPES, SHADOW_TYPES,
-} from '@manim/codegen/src/constants.js';
-import {
-  rf, rfOpt, rtOpt, vn, hex, safeNum, safeOpacity, safeMathExpr, safeText,
-  safeLatex, safeMatrixEntry, matrixBrackets, fillOpacityExpr, strokeOpacityArg,
-  gradientLine, dashedLines, roundCornersLine, shadowLines, stageToManim,
-  pathPointsPy, isSystemFont, fmt3d,
-} from '@manim/codegen/src/helpers.js';
-import { objectCode3d } from '@manim/codegen/src/objects3d.js';
-import { generateKeyframeSteps } from '@manim/codegen/src/keyframes.js';
-import { objectCode } from '@manim/codegen/src/objects.js';
+// The generator is a thin wrapper over @manim/codegen (see generateManimScript
+// below). The PARSER (rest of this file) only needs these few shared symbols.
+import { EASING_MAP, FRAME_WIDTH, FRAME_HEIGHT, FRAME_X_RADIUS } from '@manim/codegen/src/constants.js';
 import { generateScene } from '@manim/codegen';
-const v = vn;   // local alias: manim.js's generator AND parser still call v(...)
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
