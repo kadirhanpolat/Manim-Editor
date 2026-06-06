@@ -95,11 +95,6 @@
 
       <component :is="settingsComp" v-if="settingsComp" :obj="obj" />
 
-      <!-- Polygon settings -->
-      <Section v-if="obj.type === 'polygon'" label="Polygon Settings">
-        <Num label="Sides" :value="obj.sides || 6" :min="3" :max="20" @input="u('sides', $event)" />
-      </Section>
-
       <!-- Free polygon presets -->
       <Section v-if="obj.type === 'polygon_free'" label="Polygon">
         <div class="flex gap-1.5">
