@@ -318,7 +318,7 @@ import { project3D, unprojectIso, perspectiveScale } from '../../engine/projecti
 import { loadFont, isFontLoaded } from '../../utils/fontLoader.js';
 import { latexToUnicode } from '../../utils/latexPreview.js';
 import { canvasToVertex } from '../../engine/polygonVertices.js';
-import { compileExpr } from '../../engine/mathExpr.js';
+import { compileExpr, isSafeExpr } from '../../engine/mathExpr.js';
 
 const store = useProjectStore();
 
@@ -1417,13 +1417,6 @@ function vectorFieldHitCfg(obj) {
   const w = (obj.width || 600) * vs.value, h = (obj.height || 400) * vs.value;
   return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(56,189,248,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
 }
-function _safeFieldExpr(e, fb) {
-  if (!e || typeof e !== 'string') return fb;
-  const t = e.trim();
-  if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(t)) return fb;
-  if (/import|eval|exec|open|__/.test(t)) return fb;
-  return t;
-}
 function _compileField2(expr) {
   // compile expr(x,y) using the same SCOPE as compileExpr but with two variables
   const SCOPE2 =
@@ -1444,8 +1437,8 @@ function vectorFieldArrows(obj) {
   const xr = Array.isArray(obj.xRange) ? obj.xRange : [-3, 3, 1];
   const yr = Array.isArray(obj.yRange) ? obj.yRange : [-2, 2, 1];
   const xMin = xr[0], xMax = xr[1], yMin = yr[0], yMax = yr[1];
-  const fxExpr = _safeFieldExpr(obj.fx, 'y');
-  const fyExpr = _safeFieldExpr(obj.fy, '-x');
+  const fxExpr = isSafeExpr(obj.fx) ? String(obj.fx).trim() : 'y';
+  const fyExpr = isSafeExpr(obj.fy) ? String(obj.fy).trim() : '-x';
   const fxFn = _compileField2(fxExpr);
   const fyFn = _compileField2(fyExpr);
   if (!fxFn || !fyFn) return [];
