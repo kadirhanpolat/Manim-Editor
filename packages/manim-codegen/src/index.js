@@ -259,7 +259,7 @@ export function generateScene(project, { resolveAsset }) {
           `${pn} = VMobject()`,
           `${pn}.set_points_as_corners([np.array(p) for p in [${ptsStr}]])`,
           `self.play(MoveAlongPath(${sn}, ${pn})${rtStr}${rfStr})`,
-        ].join(`\n${indent}`);
+        ].join('\n');   // emit loop re-indents every line; joining with indent would double it
         return { code: multiLine, dur };
       }
       case 'count': {
@@ -272,7 +272,7 @@ export function generateScene(project, { resolveAsset }) {
           `${sn}.add_updater(lambda m: m.set_value(${vt}.get_value()))`,
           `self.play(${vt}.animate.set_value(${to})${rtStr}${rfStr})`,
           `${sn}.clear_updaters()`,
-        ].join(`\n${indent}`);
+        ].join('\n');   // emit loop re-indents every line; joining with indent would double it
         return { code: multiLine, dur };
       }
       case 'indicate':

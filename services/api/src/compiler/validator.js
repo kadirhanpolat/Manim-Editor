@@ -53,7 +53,13 @@ const ObjectSchema = z.object({
 
 const ClipSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(['transform', 'move', 'scale', 'fade', 'rotate']).default('transform'),
+  // Keep in sync with the clip types @manim/codegen emits for tracks[].clips:
+  // persistent-target clips, path_move, the transient emphasis set, and count.
+  // (camera_move lives in cameraTrack, not here.)
+  type: z.enum([
+    'transform', 'move', 'scale', 'fade', 'rotate', 'path_move',
+    'indicate', 'flash', 'wiggle', 'circumscribe', 'focus_on', 'count',
+  ]).default('transform'),
   startTime: z.number().min(0).default(0),
   duration: z.number().positive().default(1.5),
   easing: z.string().default('ease_in_out'),
