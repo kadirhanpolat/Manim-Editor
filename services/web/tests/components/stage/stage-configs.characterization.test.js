@@ -3,6 +3,7 @@ import { makeCtx, OBJECTS } from './fixtures.js';
 import * as shapes2d from '../../../src/components/stage/configs/shapes2d.js';
 import * as textCfgs from '../../../src/components/stage/configs/text.js';
 import * as dataObjects from '../../../src/components/stage/configs/dataObjects.js';
+import * as relational from '../../../src/components/stage/configs/relational.js';
 
 // Each extraction task appends a block here that snapshots its module's builders.
 // Vitest writes/commits the snapshot on first run; later drift fails the test.
@@ -55,4 +56,11 @@ describe('data-object configs', () => {
   it('graph labels stable', () => { expect(dataObjects.graphLabelConfigs(OBJECTS.graph, ctx)).toMatchSnapshot(); });
   it('vector field hit cfg stable', () => { expect(dataObjects.vectorFieldHitCfg(OBJECTS.vector_field, ctx)).toMatchSnapshot(); });
   it('vector field arrows stable', () => { expect(dataObjects.vectorFieldArrows(OBJECTS.vector_field, ctx)).toMatchSnapshot(); });
+});
+
+describe('relational configs', () => {
+  const ctx = makeCtx();
+  it('brace line stable', () => { expect(relational.braceLineCfg(OBJECTS.brace, ctx)).toMatchSnapshot(); });
+  it('angle rays stable', () => { expect(relational.angleRayCfgs(OBJECTS.angle, ctx)).toMatchSnapshot(); });
+  it('angle arc stable', () => { expect(relational.angleArcCfg(OBJECTS.angle, ctx)).toMatchSnapshot(); });
 });

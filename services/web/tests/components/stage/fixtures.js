@@ -60,4 +60,6 @@ export const OBJECTS = {
   polar_plane: { id: 'pp1',    type: 'polar_plane',  x: 960, y: 540, width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 2, opacity: 1, rotation: 0, radiusMax: 4, radiusStep: 1, azimuthUnits: 12 },
   graph:       { id: 'gr1',    type: 'graph',        x: 960, y: 540, width: 200, height: 200, fill: '#4ceef9', stroke: '#94a3b8', strokeWidth: 2, opacity: 1, rotation: 0, vertices: ['A', 'B'], edges: [['A', 'B']], positions: { A: [-40, 0], B: [40, 0] }, directed: false, showLabels: true },
   vector_field:{ id: 'vf1',   type: 'vector_field', x: 960, y: 540, width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2, opacity: 1, rotation: 0, fx: 'y', fy: '-x', xRange: [-3, 3, 1], yRange: [-2, 2, 1] },
+  brace:       { id: 'br1',   type: 'brace',        x: 960, y: 540, width: 200, height: 60,  fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, p1: [-80, 0], p2: [80, 0], label: 'L' },
+  angle:       { id: 'an1',   type: 'angle',        x: 960, y: 540, width: 120, height: 120, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, vertex: [0, 0], point1: [60, 0], point2: [0, -60], rightAngle: false, radius: 40, label: 'θ' },
 };

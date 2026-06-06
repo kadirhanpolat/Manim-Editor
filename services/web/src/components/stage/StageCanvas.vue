@@ -314,6 +314,7 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } 
 import * as shapes2d from './configs/shapes2d.js';
 import * as text from './configs/text.js';
 import * as dataObjects from './configs/dataObjects.js';
+import * as relational from './configs/relational.js';
 import { useProjectStore } from '../../store/project.js';
 import { applyOverrides } from '../../engine/blending.js';
 import { project3D, unprojectIso, perspectiveScale } from '../../engine/projection3d.js';
@@ -882,83 +883,6 @@ function applyEffects(cfg, obj, w, h, centered) {
 
 
 // ── Relational config (Brace, Angle) ──
-function relationalHitCfg(obj) {
-  const w = (obj.width || 140) * vs.value, h = (obj.height || 140) * vs.value;
-  return { x: -w / 2, y: -h / 2, width: w, height: h, fill: 'rgba(76,238,249,0.04)', stroke: themeAccent.value, strokeWidth: 1, dash: [6, 4], cornerRadius: 4, listening: true };
-}
-
-function relationalLabelCfg(obj, anchor) {
-  return { x: anchor[0] - 12, y: anchor[1] - 8, width: 24, text: obj.label || '', align: 'center',
-    fontSize: Math.max(11, 16 * vs.value), fill: obj.fill || '#ffffff', fontStyle: 'italic', listening: false };
-}
-
-function braceLineCfg(obj) {
-  const p1 = obj.p1 || [-80, 0], p2 = obj.p2 || [80, 0];
-  const z = vs.value;
-  const ax = p1[0] * z, ay = p1[1] * z, bx = p2[0] * z, by = p2[1] * z;
-  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len, ny = dx / len;
-  const d = 14 * z;
-  const mx = (ax + bx) / 2 + nx * d, my = (ay + by) / 2 + ny * d;
-  return { points: [ax, ay, ax + nx * d, ay + ny * d, mx, my, bx + nx * d, by + ny * d, bx, by],
-    stroke: obj.stroke || '#ffffff', strokeWidth: 2, lineJoin: 'round', tension: 0.4, listening: false };
-}
-function braceLabelAnchor(obj) {
-  const p1 = obj.p1 || [-80, 0], p2 = obj.p2 || [80, 0];
-  const z = vs.value;
-  const ax = p1[0] * z, ay = p1[1] * z, bx = p2[0] * z, by = p2[1] * z;
-  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len, ny = dx / len;
-  return [(ax + bx) / 2 + nx * 26 * z, (ay + by) / 2 + ny * 26 * z];
-}
-
-function angleRayCfgs(obj) {
-  const z = vs.value;
-  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
-  const col = obj.stroke || '#fbbf24';
-  return [
-    { points: [v[0] * z, v[1] * z, p1[0] * z, p1[1] * z], stroke: col, strokeWidth: 2, listening: false },
-    { points: [v[0] * z, v[1] * z, p2[0] * z, p2[1] * z], stroke: col, strokeWidth: 2, listening: false },
-  ];
-}
-function angleArcCfg(obj) {
-  const z = vs.value;
-  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
-  const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
-  const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const r = (obj.radius || 0.6) / 14.222 * (stg.value.width) * z * 0.5;
-  const pts = [];
-  let start = a1, end = a2;
-  if (end < start) end += Math.PI * 2;
-  const steps = 24;
-  for (let i = 0; i <= steps; i++) {
-    const a = start + (end - start) * (i / steps);
-    pts.push(v[0] * z + Math.cos(a) * r, v[1] * z + Math.sin(a) * r);
-  }
-  return { points: pts, stroke: obj.stroke || '#fbbf24', strokeWidth: 2, listening: false };
-}
-function angleSquareCfg(obj) {
-  const z = vs.value;
-  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
-  const u1a = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
-  const u2a = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const r = 16 * z;
-  const c1 = [v[0] * z + Math.cos(u1a) * r, v[1] * z + Math.sin(u1a) * r];
-  const c2 = [v[0] * z + Math.cos(u2a) * r, v[1] * z + Math.sin(u2a) * r];
-  const corner = [c1[0] + (c2[0] - v[0] * z), c1[1] + (c2[1] - v[1] * z)];
-  return { points: [c1[0], c1[1], corner[0], corner[1], c2[0], c2[1]], stroke: obj.stroke || '#fbbf24', strokeWidth: 2, listening: false };
-}
-function angleLabelAnchor(obj) {
-  const z = vs.value;
-  const v = obj.vertex || [-40, 40], p1 = obj.point1 || [80, 40], p2 = obj.point2 || [-40, -60];
-  const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
-  const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const mid = (a1 + a2) / 2;
-  const r = 34 * z;
-  return [v[0] * z + Math.cos(mid) * r, v[1] * z + Math.sin(mid) * r];
-}
-
-
 // ── Axes config ──
 function axesBgCfg(obj) {
   const L = live(obj); const w = L ? L.w : obj.width * vs.value, h = L ? L.h : obj.height * vs.value;
@@ -1582,6 +1506,14 @@ const graphVertexConfigs = (o) => dataObjects.graphVertexConfigs(o, ctx.value);
 const graphLabelConfigs = (o) => dataObjects.graphLabelConfigs(o, ctx.value);
 const vectorFieldHitCfg = (o) => dataObjects.vectorFieldHitCfg(o, ctx.value);
 const vectorFieldArrows = (o) => dataObjects.vectorFieldArrows(o, ctx.value);
+const relationalHitCfg = (o) => relational.relationalHitCfg(o, ctx.value);
+const relationalLabelCfg = (o, anchor) => relational.relationalLabelCfg(o, anchor, ctx.value);
+const braceLineCfg = (o) => relational.braceLineCfg(o, ctx.value);
+const braceLabelAnchor = (o) => relational.braceLabelAnchor(o, ctx.value);
+const angleRayCfgs = (o) => relational.angleRayCfgs(o, ctx.value);
+const angleArcCfg = (o) => relational.angleArcCfg(o, ctx.value);
+const angleSquareCfg = (o) => relational.angleSquareCfg(o, ctx.value);
+const angleLabelAnchor = (o) => relational.angleLabelAnchor(o, ctx.value);
 
 // ── Expose for parent ref calls ──
 defineExpose({ startPathDraw });
