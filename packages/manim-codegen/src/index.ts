@@ -430,7 +430,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
         const phi = p.phi ?? project.camera3d?.phi ?? 75;
         const theta = p.theta ?? project.camera3d?.theta ?? -45;
         const zoom = p.zoom ?? 1.0;
-        code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${(zoom as number).toFixed(2)}, run_time=${dur})`;
+        code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${zoom.toFixed(2)}, run_time=${dur})`;
       } else if (project.cameraType === 'moving') {
         const mp = stageToManim(camClip.params?.targetX || 0, camClip.params?.targetY || 0, sw, sh);
         const zoom = parseFloat(((camClip.params?.zoom as number | undefined || 1)).toFixed(4));

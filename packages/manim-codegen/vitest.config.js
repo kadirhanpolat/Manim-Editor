@@ -1,23 +1,19 @@
 import { defineConfig } from 'vitest/config';
-import { fileURLToPath } from 'url';
+import fs from 'fs';
 import path from 'path';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
     {
       // Remap explicit `.js` imports to `.ts` for NodeNext-style ESM sources.
+      // Existence-checked so non-TS `.js` imports fall through to default resolution.
       name: 'resolve-ts-from-js',
       resolveId(id, importer) {
-        if (importer && id.startsWith('./') && id.endsWith('.js')) {
+        if (importer && (id.startsWith('./') || id.startsWith('../')) && id.endsWith('.js')) {
           const tsPath = path.resolve(path.dirname(importer), id.replace(/\.js$/, '.ts'));
-          return tsPath;
+          if (fs.existsSync(tsPath)) return tsPath;
         }
-        if (importer && id.startsWith('../') && id.endsWith('.js')) {
-          const tsPath = path.resolve(path.dirname(importer), id.replace(/\.js$/, '.ts'));
-          return tsPath;
-        }
+        return null;
       },
     },
   ],

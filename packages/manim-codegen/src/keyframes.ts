@@ -119,7 +119,7 @@ export function generateKeyframeSteps(project: Project, steps: GeneratedStep[], 
         steps.push({
           time: t1,
           order: 0.5,
-          code: `self.play(${n}.animate.move_to([${(tx as number).toFixed(3)}, ${(ty as number).toFixed(3)}, ${(tz as number).toFixed(3)}])${rt})`,
+          code: `self.play(${n}.animate.move_to([${tx.toFixed(3)}, ${ty.toFixed(3)}, ${tz.toFixed(3)}])${rt})`,
           dur,
         });
       }
