@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.13.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.15.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -49,8 +49,8 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
 - **Light & Dark themes** -- Toggle between warm light and sleek dark palettes via View > Theme; persists across sessions
 - **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
-- **29+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), **Counter** (animated `DecimalNumber`), and the Phase 4 set: **Table** (Table/MathTable with row/col labels), **Complex Plane**, **Polar Plane**, **Graph** (Graph/DiGraph with manual vertex layout), **Vector Field** (ArrowVectorField with sampled-arrow preview)
-- **6 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes — available when scene is switched to 3D mode
+- **35+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), **Counter** (animated `DecimalNumber`, with an Integer mode → `Integer` mobject), the Phase 4 set: **Table** (Table/MathTable with row/col labels), **Complex Plane**, **Polar Plane**, **Graph** (Graph/DiGraph with manual vertex layout), **Vector Field** (ArrowVectorField with sampled-arrow preview), and the object-library extensions: **Vector Components** (x/y projection arrows), **Ray** (source dot + direction arrow), **Coord Point** (live `(x, y)` label via `always_redraw`), and **Bezier** (smooth open curve through draggable anchors)
+- **8 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes, **Surface** (`z = f(x, y)` with wireframe preview), and **Prism** (box with per-axis dimensions) — available when scene is switched to 3D mode
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
 - **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
@@ -251,9 +251,9 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`
 
-**Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d` — only when `sceneType: '3d'`
+**Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`, `prism` — only when `sceneType: '3d'`
 
 **Clip types**: `transform` (morph A->B; optional `matchTerms` for `TransformMatchingTex`/`TransformMatchingShapes`), `move`, `scale`, `fade`, `rotate`, `path_move` (MoveAlongPath), `camera_move` (MovingCameraScene / ThreeDScene), `count` (ValueTracker counter animation); **emphasis (transient)**: `indicate`, `flash`, `wiggle`, `circumscribe`, `focus_on`
 
@@ -388,7 +388,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 402 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, + StageCanvas config-builder characterization snapshots)
+npm run test:unit # 495 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, object-library extensions (Surface, Prism, Integer counter, Ray, Coord Point, Vector Components, Bezier, Tangent), codegen→valid-Python checks, + StageCanvas config-builder characterization snapshots)
 ```
 
 The shared codegen package has its own suite (run from the repo root):
@@ -427,7 +427,38 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.14.0 (current)
+### v3.15.0 (current)
+
+Object-library extensions — eight new object types closing the gaps in the visual
+library, each fully integrated (store → byte-identical `@manim/codegen` → `.py`
+parser round-trip → canvas preview → inspector → sidebar) and browser-verified:
+
+- **Surface** (`surface` → `Surface`, 3D): `z = f(x, y)` height map with a
+  `safeMathExpr`-guarded `zExpr` and `xRange`/`yRange` (= u/v range). Preview is an
+  iso-projected wireframe via the now-multivariate `compileExpr(expr, ['x','y'])`.
+- **Prism** (`prism` → `Prism`, 3D): box with per-axis `dimX`/`dimY`/`dimZ` (Manim
+  units); preview shares the `boxFaces()` builder with the cube.
+- **Integer counter** (`counter` `useInteger` toggle → `Integer` mobject): whole-number
+  mode for the existing counter; `numDecimals` is hidden in the inspector when active.
+- **Ray** (`ray` → `Ray`/`Arrow`): a source dot + a direction arrow from one point
+  through another.
+- **Coord Point** (`coord_point`): a `Dot` + an `always_redraw` live `(x, y)`
+  `MathTex` label (format precision via `decimals`) that updates as the dot animates.
+- **Vector Components** (`vector_components`): a `VGroup` of a main arrow + red/green
+  x/y component arrows + dashed projection guides (`vx`/`vy` tip in object-relative px).
+- **Bezier** (`bezier`): a smooth open curve through draggable anchor `vertices`
+  (`VMobject` + `set_points_smoothly`); the parser rebuilds it from the
+  `set_points_smoothly` line so it doesn't collide with `path_move`'s VMobject.
+- **Tangent line** on Axes graphs (`TangentLine`): each `axes.graphs[]` item gains an
+  optional tangent (at-x + length) with a numeric-derivative preview segment.
+- **Codegen→valid-Python guard**: a new test generates a Manim script for every
+  object/clip/keyframe/audio/camera combination and asserts each parses via
+  `python -m ast`, catching render-blocking syntax/indent bugs that string-match
+  tests miss (self-skips when `python` is off PATH).
+- **Tests**: totals now **495 unit + 114 engine** (web) + **6** `@manim/codegen`
+  package tests.
+
+### v3.14.0
 
 Internal refactors (no user-facing behavior change) + render-path fixes:
 

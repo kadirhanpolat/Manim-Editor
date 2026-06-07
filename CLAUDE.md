@@ -16,7 +16,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 ## Running Tests
 
 ```bash
-# Unit tests (store, components, export) — 339 tests
+# Unit tests (store, components, export) — 495 tests
 cd services/web && npm run test:unit
 
 # Engine tests (easing, geometry, transform, keyframe) — 114 tests
