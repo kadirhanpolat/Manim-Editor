@@ -24,14 +24,12 @@ import MotionPicker from '../../src/components/inspector/object-settings/MotionP
 const REGISTERED_TYPES = [
   'dot_grid', 'star', 'polygon', 'polygon_free', 'annulus', 'arc', 'sector',
   'parametric', 'vector_field', 'table', 'matrix', 'brace', 'angle', 'counter',
-  'graph', 'latex', 'polar_plane', 'numberplane', 'complex_plane', 'axes',
-  'vector_components', 'ray', 'coord_point', 'bezier',
+  'graph', 'latex', 'polar_plane', 'numberplane', 'complex_plane', 'numberline',
+  'axes', 'vector_components', 'ray', 'coord_point', 'bezier',
 ];
 
-// Documented import-only / asset-only types — intentionally NOT in the palette.
-//   numberline: store + codegen only, no inspector settings component (F4).
-//   image/svg_asset: added via asset upload, not a shape button.
-const IMPORT_ONLY = ['numberline', 'image', 'svg_asset'];
+// Asset-only types — intentionally NOT a shape button (added via asset upload).
+const IMPORT_ONLY = ['image', 'svg_asset'];
 
 const THREE_D = ['sphere', 'cube', 'prism', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'];
 
@@ -81,7 +79,12 @@ describe('palette reachability', () => {
     expect(new Set(collectPaletteTypes()).has('numberplane')).toBe(true);
   });
 
-  it('IMPORT_ONLY types genuinely have no settings component (documents F4)', () => {
+  it('numberline is reachable and now editable (F4)', () => {
+    expect(new Set(collectPaletteTypes()).has('numberline')).toBe(true);
+    expect(settingsComponentFor('numberline')).toBeTruthy();
+  });
+
+  it('asset-only types have no shape-button settings component', () => {
     for (const t of IMPORT_ONLY) expect(settingsComponentFor(t)).toBe(null);
   });
 });
