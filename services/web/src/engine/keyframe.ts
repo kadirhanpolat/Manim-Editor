@@ -1,20 +1,22 @@
-// services/web/src/engine/keyframe.js
+// services/web/src/engine/keyframe.ts
 
-const PRESET_HANDLES = {
+import type { Keyframe, KeyframeRange } from './types.js';
+
+const PRESET_HANDLES: Record<string, number[]> = {
   linear: [0, 0, 1, 1],
   ease_in: [0.42, 0, 1, 1],
   ease_out: [0, 0, 0.58, 1],
   ease_in_out: [0.42, 0, 0.58, 1],
 };
 
-function cubicBezierY(x1, y1, x2, y2, t) {
-  function bx(u) {
+function cubicBezierY(x1: number, y1: number, x2: number, y2: number, t: number): number {
+  function bx(u: number): number {
     return 3 * u * (1 - u) * (1 - u) * x1 + 3 * u * u * (1 - u) * x2 + u * u * u;
   }
-  function by(u) {
+  function by(u: number): number {
     return 3 * u * (1 - u) * (1 - u) * y1 + 3 * u * u * (1 - u) * y2 + u * u * u;
   }
-  function bxd(u) {
+  function bxd(u: number): number {
     return 3 * (1 - u) * (1 - u) * x1 + 6 * u * (1 - u) * (x2 - x1) + 3 * u * u * (1 - x2);
   }
   let g = t;
@@ -28,7 +30,7 @@ function cubicBezierY(x1, y1, x2, y2, t) {
   return by(Math.max(0, Math.min(1, g)));
 }
 
-export function interpolateKeyframes(keyframes, time) {
+export function interpolateKeyframes(keyframes: Keyframe[] | null | undefined, time: number): number | null {
   if (!keyframes || keyframes.length === 0) return null;
   if (keyframes.length === 1) return keyframes[0].value;
 
@@ -57,7 +59,7 @@ export function interpolateKeyframes(keyframes, time) {
   return k1.value + (k2.value - k1.value) * t;
 }
 
-export function getKeyframeRange(keyframes) {
+export function getKeyframeRange(keyframes: Keyframe[] | null | undefined): KeyframeRange | null {
   if (!keyframes || keyframes.length === 0) return null;
   const sorted = [...keyframes].sort((a, b) => a.time - b.time);
   return { start: sorted[0].time, end: sorted[sorted.length - 1].time };

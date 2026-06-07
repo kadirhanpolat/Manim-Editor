@@ -6,7 +6,9 @@
  * Used for rendering and morph interpolation.
  */
 
-const QUALITY_POINT_COUNTS = { low: 32, medium: 64, high: 128 };
+import type { Point, BoundingBox } from './types.js';
+
+const QUALITY_POINT_COUNTS: Record<string, number> = { low: 32, medium: 64, high: 128 };
 
 /**
  * Generate outline points for a shape.
@@ -16,7 +18,7 @@ const QUALITY_POINT_COUNTS = { low: 32, medium: 64, high: 128 };
  * @param {string} quality - 'low' | 'medium' | 'high'
  * @returns {Array<{x: number, y: number}>}
  */
-export function generateShapePoints(type, width, height, quality = 'medium') {
+export function generateShapePoints(type: string, width: number, height: number, quality = 'medium'): Point[] {
   const n = QUALITY_POINT_COUNTS[quality] || 64;
   switch (type) {
     case 'heart':
@@ -53,8 +55,8 @@ export function generateShapePoints(type, width, height, quality = 'medium') {
 /**
  * Heart shape using parametric equations.
  */
-export function generateHeartPoints(width, height, numPoints) {
-  const raw = [];
+export function generateHeartPoints(width: number, height: number, numPoints: number): Point[] {
+  const raw: Point[] = [];
   for (let i = 0; i < numPoints; i++) {
     const t = (i / numPoints) * 2 * Math.PI;
     const x = 16 * Math.pow(Math.sin(t), 3);
@@ -87,15 +89,16 @@ export function generateHeartPoints(width, height, numPoints) {
 /**
  * Square/Rectangle with points distributed evenly along perimeter.
  */
-export function generateSquarePoints(width, height, numPoints) {
+export function generateSquarePoints(width: number, height: number, numPoints: number): Point[] {
   const w = width;
   const h = height;
   const perimeter = 2 * w + 2 * h;
-  const points = [];
+  const points: Point[] = [];
 
   for (let i = 0; i < numPoints; i++) {
     const d = (i / numPoints) * perimeter;
-    let x, y;
+    let x: number;
+    let y: number;
 
     if (d < w) {
       x = -w / 2 + d;
@@ -119,8 +122,8 @@ export function generateSquarePoints(width, height, numPoints) {
 /**
  * Circle / ellipse points distributed evenly by angle.
  */
-export function generateCirclePoints(width, height, numPoints) {
-  const points = [];
+export function generateCirclePoints(width: number, height: number, numPoints: number): Point[] {
+  const points: Point[] = [];
   for (let i = 0; i < numPoints; i++) {
     const angle = (i / numPoints) * 2 * Math.PI;
     points.push({
@@ -134,18 +137,18 @@ export function generateCirclePoints(width, height, numPoints) {
 /**
  * Equilateral triangle with points distributed along perimeter.
  */
-export function generateTrianglePoints(width, height, numPoints) {
+export function generateTrianglePoints(width: number, height: number, numPoints: number): Point[] {
   const hw = width / 2;
   const hh = height / 2;
   // Three vertices: top-center, bottom-left, bottom-right
-  const verts = [
+  const verts: Point[] = [
     { x: 0, y: -hh },
     { x: hw, y: hh },
     { x: -hw, y: hh },
   ];
 
   // Distribute points evenly along the triangle perimeter
-  const segments = [];
+  const segments: { a: Point; b: Point; len: number }[] = [];
   let totalLen = 0;
   for (let i = 0; i < 3; i++) {
     const a = verts[i];
@@ -157,7 +160,7 @@ export function generateTrianglePoints(width, height, numPoints) {
     totalLen += len;
   }
 
-  const points = [];
+  const points: Point[] = [];
   for (let i = 0; i < numPoints; i++) {
     const targetDist = (i / numPoints) * totalLen;
     let cumLen = 0;
@@ -179,11 +182,11 @@ export function generateTrianglePoints(width, height, numPoints) {
 /**
  * Star shape with n arms and inner radius ratio.
  */
-export function generateStarPoints(width, height, numPoints, arms = 5, innerRatio = 0.4) {
+export function generateStarPoints(width: number, height: number, numPoints: number, arms = 5, innerRatio = 0.4): Point[] {
   const hw = width / 2;
   const hh = height / 2;
   // Generate star vertices (alternating outer and inner)
-  const starVerts = [];
+  const starVerts: Point[] = [];
   for (let i = 0; i < arms * 2; i++) {
     const angle = (i / (arms * 2)) * 2 * Math.PI - Math.PI / 2;
     const r = i % 2 === 0 ? 1 : innerRatio;
@@ -194,7 +197,7 @@ export function generateStarPoints(width, height, numPoints, arms = 5, innerRati
   }
 
   // Distribute numPoints evenly along the star perimeter
-  const segments = [];
+  const segments: { a: Point; b: Point; len: number }[] = [];
   let totalLen = 0;
   for (let i = 0; i < starVerts.length; i++) {
     const a = starVerts[i];
@@ -206,7 +209,7 @@ export function generateStarPoints(width, height, numPoints, arms = 5, innerRati
     totalLen += len;
   }
 
-  const points = [];
+  const points: Point[] = [];
   for (let i = 0; i < numPoints; i++) {
     const targetDist = (i / numPoints) * totalLen;
     let cumLen = 0;
@@ -228,11 +231,11 @@ export function generateStarPoints(width, height, numPoints, arms = 5, innerRati
 /**
  * Regular polygon with n sides.
  */
-export function generatePolygonPoints(width, height, numPoints, sides = 6) {
+export function generatePolygonPoints(width: number, height: number, numPoints: number, sides = 6): Point[] {
   const hw = width / 2;
   const hh = height / 2;
   // Generate polygon vertices
-  const polyVerts = [];
+  const polyVerts: Point[] = [];
   for (let i = 0; i < sides; i++) {
     const angle = (i / sides) * 2 * Math.PI - Math.PI / 2;
     polyVerts.push({
@@ -242,7 +245,7 @@ export function generatePolygonPoints(width, height, numPoints, sides = 6) {
   }
 
   // Distribute numPoints evenly along the polygon perimeter
-  const segments = [];
+  const segments: { a: Point; b: Point; len: number }[] = [];
   let totalLen = 0;
   for (let i = 0; i < polyVerts.length; i++) {
     const a = polyVerts[i];
@@ -254,7 +257,7 @@ export function generatePolygonPoints(width, height, numPoints, sides = 6) {
     totalLen += len;
   }
 
-  const points = [];
+  const points: Point[] = [];
   for (let i = 0; i < numPoints; i++) {
     const targetDist = (i / numPoints) * totalLen;
     let cumLen = 0;
@@ -276,11 +279,11 @@ export function generatePolygonPoints(width, height, numPoints, sides = 6) {
 /**
  * Line as a very thin shape (two parallel paths).
  */
-export function generateLinePoints(width, height, numPoints) {
+export function generateLinePoints(width: number, _height: number, numPoints: number): Point[] {
   const hw = width / 2;
   const thickness = 2;
   const half = numPoints / 2;
-  const points = [];
+  const points: Point[] = [];
   // Top edge left to right
   for (let i = 0; i < half; i++) {
     const frac = i / (half - 1);
@@ -297,7 +300,7 @@ export function generateLinePoints(width, height, numPoints) {
 /**
  * Arrow shape (line with triangular head).
  */
-export function generateArrowPoints(width, height, numPoints) {
+export function generateArrowPoints(width: number, height: number, numPoints: number): Point[] {
   const hw = width / 2;
   const hh = height / 2;
   const headSize = Math.min(width * 0.3, height * 0.5);
@@ -305,7 +308,7 @@ export function generateArrowPoints(width, height, numPoints) {
   const headStart = hw - headSize;
 
   // Arrow polygon: shaft + triangle head
-  const arrowVerts = [
+  const arrowVerts: Point[] = [
     { x: -hw, y: -shaftWidth }, // shaft top-left
     { x: headStart, y: -shaftWidth }, // shaft top-right
     { x: headStart, y: -hh }, // head top
@@ -316,7 +319,7 @@ export function generateArrowPoints(width, height, numPoints) {
   ];
 
   // Distribute numPoints evenly along the arrow perimeter
-  const segments = [];
+  const segments: { a: Point; b: Point; len: number }[] = [];
   let totalLen = 0;
   for (let i = 0; i < arrowVerts.length; i++) {
     const a = arrowVerts[i];
@@ -328,7 +331,7 @@ export function generateArrowPoints(width, height, numPoints) {
     totalLen += len;
   }
 
-  const points = [];
+  const points: Point[] = [];
   for (let i = 0; i < numPoints; i++) {
     const targetDist = (i / numPoints) * totalLen;
     let cumLen = 0;
@@ -350,8 +353,8 @@ export function generateArrowPoints(width, height, numPoints) {
 /**
  * Generate dot grid positions (centers of dots in the grid).
  */
-export function generateDotGridPositions(cols, rows, spacing) {
-  const positions = [];
+export function generateDotGridPositions(cols: number, rows: number, spacing: number): Point[] {
+  const positions: Point[] = [];
   const totalWidth = (cols - 1) * spacing;
   const totalHeight = (rows - 1) * spacing;
 
@@ -369,8 +372,8 @@ export function generateDotGridPositions(cols, rows, spacing) {
 /**
  * Flatten {x,y} array to flat [x1,y1,x2,y2,...] for Konva.
  */
-export function pointsToFlat(points) {
-  const flat = new Array(points.length * 2);
+export function pointsToFlat(points: Point[]): number[] {
+  const flat = new Array<number>(points.length * 2);
   for (let i = 0; i < points.length; i++) {
     flat[i * 2] = points[i].x;
     flat[i * 2 + 1] = points[i].y;
@@ -381,8 +384,8 @@ export function pointsToFlat(points) {
 /**
  * Convert flat [x1,y1,...] to {x,y} array.
  */
-export function flatToPoints(flat) {
-  const points = [];
+export function flatToPoints(flat: number[]): Point[] {
+  const points: Point[] = [];
   for (let i = 0; i < flat.length; i += 2) {
     points.push({ x: flat[i], y: flat[i + 1] });
   }
@@ -392,7 +395,7 @@ export function flatToPoints(flat) {
 /**
  * Compute the total arc length of a point path (closed or open).
  */
-export function pathLength(points, closed = true) {
+export function pathLength(points: Point[], closed = true): number {
   let length = 0;
   const n = points.length;
   if (n < 2) return 0;
@@ -412,7 +415,7 @@ export function pathLength(points, closed = true) {
 /**
  * Compute bounding box of points.
  */
-export function boundingBox(points) {
+export function boundingBox(points: Point[]): BoundingBox {
   let minX = Infinity,
     maxX = -Infinity,
     minY = Infinity,
