@@ -20,6 +20,7 @@ import AxesSettings from './AxesSettings.vue';
 import VectorComponentsSettings from './VectorComponentsSettings.vue';
 import RaySettings from './RaySettings.vue';
 import CoordPointSettings from './CoordPointSettings.vue';
+import BezierSettings from './BezierSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -44,5 +45,6 @@ const REGISTRY = {
   vector_components: VectorComponentsSettings,
   ray: RaySettings,
   coord_point: CoordPointSettings,
+  bezier: BezierSettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }

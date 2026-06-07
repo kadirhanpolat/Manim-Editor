@@ -4965,6 +4965,35 @@ exports[`shapes2d > arrow config is stable 1`] = `
 }
 `;
 
+exports[`shapes2d > bezier config is stable 1`] = `
+{
+  "closed": false,
+  "draggable": true,
+  "hitStrokeWidth": 12,
+  "id": "bz1",
+  "lineCap": "round",
+  "lineJoin": "round",
+  "name": "stageObject",
+  "opacity": 1,
+  "points": [
+    -44,
+    12,
+    -16,
+    -22,
+    16,
+    20,
+    44,
+    -12,
+  ],
+  "rotation": 0,
+  "stroke": "#f472b6",
+  "strokeWidth": 0.6000000000000001,
+  "tension": 0.5,
+  "x": 484,
+  "y": 266,
+}
+`;
+
 exports[`shapes2d > circle config is stable 1`] = `
 {
   "draggable": true,

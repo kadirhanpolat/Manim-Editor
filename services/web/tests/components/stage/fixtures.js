@@ -42,6 +42,7 @@ export const OBJECTS = {
   triangle:    { id: 'tri1',    type: 'triangle',     x: 600, y: 400, width: 160, height: 140, fill: '#F97316', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0 },
   polygon:     { id: 'poly1',   type: 'polygon',      x: 960, y: 540, width: 180, height: 180, fill: '#06B6D4', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, sides: 6 },
   polygon_free:{ id: 'pf1',     type: 'polygon_free', x: 960, y: 540, width: 200, height: 200, fill: '#84CC16', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, vertices: [[-40, 40], [40, 40], [0, -50]] },
+  bezier:      { id: 'bz1',     type: 'bezier',       x: 960, y: 540, width: 220, height: 120, fill: 'transparent', stroke: '#f472b6', strokeWidth: 3, opacity: 1, rotation: 0, vertices: [[-110, 30], [-40, -55], [40, 50], [110, -30]] },
   star:        { id: 'star1',   type: 'star',         x: 960, y: 400, width: 160, height: 160, fill: '#FBBF24', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, starArms: 5, innerRatio: 0.4 },
   line:        { id: 'line1',   type: 'line',         x: 960, y: 540, width: 300, height: 10,  fill: '#94A3B8', stroke: '#94A3B8', strokeWidth: 3, opacity: 1, rotation: 0 },
   arrow:       { id: 'arr1',    type: 'arrow',        x: 960, y: 540, width: 280, height: 10,  fill: '#EF4444', stroke: '#EF4444', strokeWidth: 2, opacity: 1, rotation: 0 },

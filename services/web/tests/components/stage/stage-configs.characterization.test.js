@@ -25,6 +25,7 @@ describe('shapes2d', () => {
     rectangle: shapes2d.rectCfg, square: shapes2d.rectCfg, circle: shapes2d.circleCfg,
     ellipse: shapes2d.ellipseCfg, dot: shapes2d.dotCfg, heart: shapes2d.heartCfg,
     triangle: shapes2d.triangleCfg, polygon: shapes2d.polygonCfg, polygon_free: shapes2d.polygonFreeCfg,
+    bezier: shapes2d.bezierCfg,
     star: shapes2d.starCfg, line: shapes2d.lineCfg, arrow: shapes2d.arrowCfg,
     annulus: shapes2d.annulusCfg, sector: shapes2d.sectorCfg, arc: shapes2d.arcCfg,
     double_arrow: shapes2d.doubleArrowCfg, parametric: shapes2d.parametricCfg,

@@ -68,6 +68,19 @@ export function polygonFreeCfg(obj, ctx) {
     scaleX: 1, scaleY: 1, draggable: ctx.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 10 };
   return ctx.applyEffects(cfg, obj, w, h, true);
 }
+// bezier: a smooth open curve through the anchor vertices (Konva tension).
+export function bezierCfg(obj, ctx) {
+  const e = ctx.eff(obj); const p = ctx.s2c(e.x, e.y);
+  const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 2) ? obj.vertices : [[-110, 30], [-40, -55], [40, 50], [110, -30]];
+  const pts = verts.flatMap(([vx, vy]) => [vx * ctx.vs, vy * ctx.vs]);
+  return {
+    x: p.x, y: p.y, points: pts, closed: false, tension: 0.5,
+    stroke: e.stroke || '#f472b6', strokeWidth: (e.strokeWidth || 3) * ctx.vs / 2,
+    opacity: e.opacity ?? 1, rotation: e.rotation || 0, lineCap: 'round', lineJoin: 'round',
+    draggable: ctx.activeTool === 'select', id: obj.id, name: 'stageObject', hitStrokeWidth: 12,
+  };
+}
+
 export function parametricCfg(obj, ctx) {
   const e = ctx.eff(obj); const c = ctx.s2c(e.x, e.y);
   const fx = compileExpr(obj.xExpr || 'np.cos(t)', 't');

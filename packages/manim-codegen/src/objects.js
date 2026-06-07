@@ -134,6 +134,16 @@ export function objectCode(obj, sw, sh, { resolveAsset }) {
       if (hasStroke) lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
       break;
     }
+    case 'bezier': {
+      const verts = (Array.isArray(obj.vertices) && obj.vertices.length >= 2)
+        ? obj.vertices : [[-110, 30], [-40, -55], [40, 50], [110, -30]];
+      const pts = verts.map(([vx, vy]) =>
+        `[${(vx / sw * FRAME_WIDTH).toFixed(3)}, ${(-vy / sh * FRAME_HEIGHT).toFixed(3)}, 0]`).join(', ');
+      lines.push(`${n} = VMobject()`);
+      lines.push(`${n}.set_points_smoothly([${pts}])`);
+      lines.push(`${n}.set_stroke(color=${stroke || hex(obj.fill) || '"#F472B6"'}, width=${sw2}${strokeOpacityArg(obj, opacity)})`);
+      break;
+    }
     case 'parametric': {
       const xe = safeMathExpr(obj.xExpr, 't');
       const ye = safeMathExpr(obj.yExpr, '0');

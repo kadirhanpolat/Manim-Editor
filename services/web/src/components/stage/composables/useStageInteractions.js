@@ -33,7 +33,7 @@ export function useStageInteractions(store, deps) {
     const obj = store.objectById(store.selectedObjectIds[0]);
     if (!obj) return null;
     const c = s2c(obj.x, obj.y);
-    if (obj.type === 'polygon_free' && Array.isArray(obj.vertices)) {
+    if ((obj.type === 'polygon_free' || obj.type === 'bezier') && Array.isArray(obj.vertices)) {
       return { id: obj.id, kind: 'vertices',
         points: obj.vertices.map(([vx, vy], i) => ({ key: i, cx: c.x + vx * vs.value, cy: c.y + vy * vs.value })) };
     }

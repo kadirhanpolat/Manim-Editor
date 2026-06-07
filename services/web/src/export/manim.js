@@ -338,6 +338,21 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // Bezier — created from <n>.set_points_smoothly([...]). The preceding `<n> = VMobject()`
+    // line is intentionally NOT matched here (it's shared with path_move's path VMobject);
+    // only set_points_smoothly is bezier-specific, so we build the object from that line.
+    m = line.match(/^(\w+)\.set_points_smoothly\(\[(.+)\]\)/);
+    if (m) {
+      const id = uid('obj');
+      const obj = { id, type: 'bezier', name: m[1], x: sw / 2, y: sh / 2, width: 220, height: 120,
+        vertices: [...m[2].matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*0\]/g)]
+          .map(mm => [Math.round(parseFloat(mm[1]) / FRAME_WIDTH * sw), Math.round(-parseFloat(mm[2]) / FRAME_HEIGHT * sh)]),
+        fill: 'transparent', stroke: '#f472b6', strokeWidth: 3, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      continue;
+    }
+
     // Graph / DiGraph (single-line, manual layout)
     m = line.match(/^(\w+) = (Graph|DiGraph)\(\[(.*?)\], \[(.*?)\], layout=\{(.*?)\}(, labels=True)?\)/);
     if (m) {

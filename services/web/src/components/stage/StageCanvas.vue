@@ -50,6 +50,7 @@
 
             <!-- Free Polygon -->
             <v-line v-if="obj.type === 'polygon_free' && isVis(obj.id)" :config="polygonFreeCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-line v-if="obj.type === 'bezier' && isVis(obj.id)" :config="bezierCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
 
             <!-- Parametric Curve -->
             <v-line v-if="obj.type === 'parametric' && isVis(obj.id)" :config="parametricCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
@@ -526,6 +527,7 @@ const dotCfg = (o) => shapes2d.dotCfg(o, ctx.value);
 const heartCfg = (o) => shapes2d.heartCfg(o, ctx.value);
 const triangleCfg = (o) => shapes2d.triangleCfg(o, ctx.value);
 const polygonFreeCfg = (o) => shapes2d.polygonFreeCfg(o, ctx.value);
+const bezierCfg = (o) => shapes2d.bezierCfg(o, ctx.value);
 const parametricCfg = (o) => shapes2d.parametricCfg(o, ctx.value);
 const starCfg = (o) => shapes2d.starCfg(o, ctx.value);
 const polygonCfg = (o) => shapes2d.polygonCfg(o, ctx.value);
