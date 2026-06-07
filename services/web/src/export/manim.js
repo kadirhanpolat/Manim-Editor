@@ -54,6 +54,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const objById = {};
   const graphVarMap = {};
   const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
+  const vcPending = {};    // <prefix> → { vx, vy } for vector_components, resolved on its VGroup line
   const pendingShadow = {};   // base var → { color, opacity, dx, dy } awaiting its VGroup line
   const pendingCount = {};    // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
 
@@ -387,6 +388,24 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
         enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
+    // vector_components: <n>_main Arrow carries vx/vy; absorb the x/y/dash helpers + VGroup.
+    m = line.match(/^(\w+)_main\s*=\s*Arrow\(\[0, 0, 0\], \[([-\d.]+), ([-\d.]+), 0\]/);
+    if (m) {
+      vcPending[m[1]] = { vx: parseFloat(m[2]) / FRAME_WIDTH * sw, vy: -parseFloat(m[3]) / FRAME_HEIGHT * sh };
+      continue;
+    }
+    m = line.match(/^(\w+)_(?:x|y|dx|dy)\s*=\s*(?:Arrow|DashedLine)\(/);
+    if (m && vcPending[m[1]]) continue;
+    m = line.match(/^(\w+)\s*=\s*VGroup\((\w+)_main,/);
+    if (m && m[1] === m[2] && vcPending[m[1]]) {
+      const { vx, vy } = vcPending[m[1]];
+      const id = uid('obj');
+      const obj = { id, type: 'vector_components', name: m[1], x: sw / 2, y: sh / 2, vx: Math.round(vx), vy: Math.round(vy), fill: '#3b82f6', opacity: 1, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      delete vcPending[m[1]];
       continue;
     }
 

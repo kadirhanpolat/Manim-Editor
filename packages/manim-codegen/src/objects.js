@@ -222,6 +222,20 @@ export function objectCode(obj, sw, sh, { resolveAsset }) {
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
     }
+    case 'vector_components': {
+      const tip = (vx, vy) => `[${(vx / sw * FRAME_WIDTH).toFixed(3)}, ${(-vy / sh * FRAME_HEIGHT).toFixed(3)}, 0]`;
+      const vcx = Number.isFinite(obj.vx) ? obj.vx : 120;
+      const vcy = Number.isFinite(obj.vy) ? obj.vy : -80;
+      const V = tip(vcx, vcy), VX0 = tip(vcx, 0), V0Y = tip(0, vcy);
+      const col = hex(obj.fill) || '"#3b82f6"';
+      lines.push(`${n}_main = Arrow([0, 0, 0], ${V}, buff=0, color=${col})`);
+      lines.push(`${n}_x = Arrow([0, 0, 0], ${VX0}, buff=0, color="#ef4444")`);
+      lines.push(`${n}_y = Arrow([0, 0, 0], ${V0Y}, buff=0, color="#22c55e")`);
+      lines.push(`${n}_dx = DashedLine(${V}, ${VX0})`);
+      lines.push(`${n}_dy = DashedLine(${V}, ${V0Y})`);
+      lines.push(`${n} = VGroup(${n}_main, ${n}_x, ${n}_y, ${n}_dx, ${n}_dy)`);
+      break;
+    }
     case 'line':
       lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)})`);
       lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${safeNum(obj.strokeWidth, 3)})`);
