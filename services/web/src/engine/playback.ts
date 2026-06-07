@@ -6,29 +6,30 @@
  * and produces a frame state that the canvas renders.
  */
 
-import { getEasing, evaluateEasing } from './easing.js';
+import { evaluateEasing } from './easing.js';
 import { generateShapePoints, pointsToFlat } from './geometry.js';
 import { resamplePoints, computeMorphState, lerp, interpolateColor } from './transform.js';
-import {
-  blendClipResults,
-  isClipActive,
-  getClipProgress,
-  isClipCompleted,
-  applyOverrides,
-} from './blending.js';
+import { blendClipResults, isClipActive, getClipProgress, isClipCompleted } from './blending.js';
 import { interpolateKeyframes, getKeyframeRange } from './keyframe.js';
-
-/**
- * @typedef {Object} FrameState
- * @property {Object} objectOverrides - Per-object property overrides
- * @property {Array} morphShapes - Active morph shapes to render
- * @property {Set} hiddenIds - Object IDs that should be hidden
- * @property {Object|null} cameraState - Camera pan/zoom state {x, y, zoom} or null
- */
+import type {
+  Point,
+  Point3D,
+  StageObject,
+  Track,
+  Clip,
+  CameraClip,
+  ClipResult,
+  EvaluatedClip,
+  FrameState,
+  Overrides,
+} from './types.js';
 
 // path_move için yay-uzunluğuna göre interpolasyon. 3D nokta (x3d alanı) ya da
 // 2D nokta ({x,y}) kabul eder; aynı şekildeki noktayı döndürür.
-export function interpolatePath(path, t) {
+export function interpolatePath(
+  path: Array<Point | Point3D> | null | undefined,
+  t: number
+): Point | Point3D {
   if (!path || path.length === 0) return { x: 0, y: 0 };
   const is3d = !!(path[0] && 'x3d' in path[0]);
   const clampedT = Math.max(0, Math.min(1, t));
@@ -37,22 +38,31 @@ export function interpolatePath(path, t) {
   for (let k = 1; k < path.length; k++) {
     let len;
     if (is3d) {
-      const dx = path[k].x3d - path[k - 1].x3d;
-      const dy = path[k].y3d - path[k - 1].y3d;
-      const dz = path[k].z3d - path[k - 1].z3d;
+      // Cast to Point3D[] for .x3d/.y3d/.z3d access — TS cannot narrow array elements from `is3d`
+      const p3 = path as Point3D[];
+      const dx = p3[k].x3d - p3[k - 1].x3d;
+      const dy = p3[k].y3d - p3[k - 1].y3d;
+      const dz = p3[k].z3d - p3[k - 1].z3d;
       len = Math.sqrt(dx * dx + dy * dy + dz * dz);
     } else {
-      const dx = path[k].x - path[k - 1].x;
-      const dy = path[k].y - path[k - 1].y;
+      // Cast to Point[] for .x/.y access
+      const p2 = path as Point[];
+      const dx = p2[k].x - p2[k - 1].x;
+      const dy = p2[k].y - p2[k - 1].y;
       len = Math.sqrt(dx * dx + dy * dy);
     }
     segLens.push(len);
     totalLen += len;
   }
-  const at = (i) =>
-    is3d
-      ? { x3d: path[i].x3d, y3d: path[i].y3d, z3d: path[i].z3d }
-      : { x: path[i].x, y: path[i].y };
+  const at = (i: number): Point | Point3D => {
+    if (is3d) {
+      const p3 = path as Point3D[];
+      return { x3d: p3[i].x3d, y3d: p3[i].y3d, z3d: p3[i].z3d };
+    } else {
+      const p2 = path as Point[];
+      return { x: p2[i].x, y: p2[i].y };
+    }
+  };
   if (totalLen === 0) return at(0);
   const target = clampedT * totalLen;
   let cumLen = 0;
@@ -60,13 +70,15 @@ export function interpolatePath(path, t) {
     if (cumLen + segLens[k] >= target) {
       const t2 = segLens[k] === 0 ? 0 : (target - cumLen) / segLens[k];
       if (is3d) {
+        const p3 = path as Point3D[];
         return {
-          x3d: lerp(path[k].x3d, path[k + 1].x3d, t2),
-          y3d: lerp(path[k].y3d, path[k + 1].y3d, t2),
-          z3d: lerp(path[k].z3d, path[k + 1].z3d, t2),
+          x3d: lerp(p3[k].x3d, p3[k + 1].x3d, t2),
+          y3d: lerp(p3[k].y3d, p3[k + 1].y3d, t2),
+          z3d: lerp(p3[k].z3d, p3[k + 1].z3d, t2),
         };
       }
-      return { x: lerp(path[k].x, path[k + 1].x, t2), y: lerp(path[k].y, path[k + 1].y, t2) };
+      const p2 = path as Point[];
+      return { x: lerp(p2[k].x, p2[k + 1].x, t2), y: lerp(p2[k].y, p2[k + 1].y, t2) };
     }
     cumLen += segLens[k];
   }
@@ -74,6 +86,22 @@ export function interpolatePath(path, t) {
 }
 
 export class PlaybackEngine {
+  playing: boolean;
+  currentTime: number;
+  loop: boolean;
+  duration: number;
+  private _frameId: number | null;
+  private _lastTimestamp: number | null;
+  private _onFrame: ((frame: FrameState) => void) | null;
+  private _onTimeUpdate: ((time: number) => void) | null;
+  private _pointsCache: Map<string, Point[]>;
+  private _keyframeDefaults: { mode: string };
+  private _camera3dBase?: { phi: number; theta: number; zoom: number };
+  private _tracks?: Track[];
+  private _objects?: StageObject[];
+  private _cameraTrack?: CameraClip[];
+  private _objectMap?: Map<string, StageObject>;
+
   constructor() {
     this.playing = false;
     this.currentTime = 0;
@@ -94,42 +122,42 @@ export class PlaybackEngine {
   /**
    * Set callback for frame updates.
    */
-  onFrame(callback) {
+  onFrame(callback: (frame: FrameState) => void): void {
     this._onFrame = callback;
   }
 
   /**
    * Set callback for time updates (for UI sync).
    */
-  onTimeUpdate(callback) {
+  onTimeUpdate(callback: (time: number) => void): void {
     this._onTimeUpdate = callback;
   }
 
   /**
    * Clear the points cache (call when objects change).
    */
-  clearCache() {
+  clearCache(): void {
     this._pointsCache.clear();
   }
 
   /**
    * Set keyframe defaults (mode: 'opt-in' | 'additive').
    */
-  setKeyframeDefaults(defaults) {
+  setKeyframeDefaults(defaults: { mode: string } | null | undefined): void {
     this._keyframeDefaults = defaults || { mode: 'opt-in' };
   }
 
   /**
    * Set the baseline 3D camera state used as the "from" for the first camera_move clip.
    */
-  setCamera3dBase(base) {
+  setCamera3dBase(base: { phi: number; theta: number; zoom: number } | null | undefined): void {
     this._camera3dBase = base || { phi: 75, theta: -45, zoom: 1 };
   }
 
   /**
    * Start playback.
    */
-  play(tracks, objects, duration, cameraTrack) {
+  play(tracks: Track[], objects: StageObject[], duration: number, cameraTrack?: CameraClip[]): void {
     if (this.playing) return;
     this.playing = true;
     this.duration = duration || this.duration;
@@ -137,7 +165,7 @@ export class PlaybackEngine {
     this._tracks = tracks;
     this._objects = objects;
     this._cameraTrack = cameraTrack || [];
-    this._objectMap = new Map(objects.map((o) => [o.id, o]));
+    this._objectMap = new Map(objects.map((o): [string, StageObject] => [o.id, o]));
     this._tick = this._tick.bind(this);
     this._frameId = requestAnimationFrame(this._tick);
   }
@@ -145,7 +173,7 @@ export class PlaybackEngine {
   /**
    * Pause playback.
    */
-  pause() {
+  pause(): void {
     this.playing = false;
     if (this._frameId) {
       cancelAnimationFrame(this._frameId);
@@ -157,7 +185,7 @@ export class PlaybackEngine {
   /**
    * Stop and reset to start.
    */
-  stop() {
+  stop(): void {
     this.pause();
     this.currentTime = 0;
     if (this._onTimeUpdate) this._onTimeUpdate(0);
@@ -170,12 +198,12 @@ export class PlaybackEngine {
   /**
    * Seek to a specific time.
    */
-  seekTo(time, tracks, objects, cameraTrack) {
+  seekTo(time: number, tracks?: Track[], objects?: StageObject[], cameraTrack?: CameraClip[]): void {
     this.currentTime = Math.max(0, Math.min(time, this.duration));
     if (tracks) this._tracks = tracks;
     if (objects) {
       this._objects = objects;
-      this._objectMap = new Map(objects.map((o) => [o.id, o]));
+      this._objectMap = new Map(objects.map((o): [string, StageObject] => [o.id, o]));
     }
     if (cameraTrack !== undefined) this._cameraTrack = cameraTrack;
     if (this._onTimeUpdate) this._onTimeUpdate(this.currentTime);
@@ -195,7 +223,7 @@ export class PlaybackEngine {
   /**
    * Internal tick: advance time and compute frame.
    */
-  _tick(timestamp) {
+  private _tick(timestamp: number): void {
     if (!this.playing) return;
 
     if (this._lastTimestamp === null) {
@@ -226,8 +254,8 @@ export class PlaybackEngine {
     // Compute frame
     const frame = this.computeFrame(
       this.currentTime,
-      this._tracks,
-      this._objects,
+      this._tracks!,
+      this._objects!,
       this._cameraTrack
     );
     if (this._onFrame) this._onFrame(frame);
@@ -247,13 +275,13 @@ export class PlaybackEngine {
    * @param {Array} [cameraTrack] - Optional camera clip array
    * @returns {FrameState}
    */
-  computeFrame(time, tracks, objects, cameraTrack) {
+  computeFrame(time: number, tracks: Track[], objects: StageObject[], cameraTrack?: CameraClip[]): FrameState {
     if (!tracks || !objects) {
       return { objectOverrides: {}, morphShapes: [], hiddenIds: new Set(), cameraState: null };
     }
 
-    const objectMap = this._objectMap || new Map(objects.map((o) => [o.id, o]));
-    const evaluatedClips = [];
+    const objectMap = this._objectMap || new Map(objects.map((o): [string, StageObject] => [o.id, o]));
+    const evaluatedClips: EvaluatedClip[] = [];
 
     for (let trackIdx = 0; trackIdx < tracks.length; trackIdx++) {
       const track = tracks[trackIdx];
@@ -267,7 +295,8 @@ export class PlaybackEngine {
       }
     }
 
-    const frame = blendClipResults(evaluatedClips, objectMap);
+    // blendClipResults returns the 3 required FrameState fields; cameraState is set below
+    const frame = blendClipResults(evaluatedClips, objectMap) as FrameState;
 
     // Apply keyframe overrides (per-property interpolation)
     this._applyKeyframeOverrides(frame, time, objects);
@@ -282,8 +311,10 @@ export class PlaybackEngine {
       const sortedCam = [...cameraTrack].sort((a, b) => a.startTime - b.startTime);
       for (let ci = 0; ci < sortedCam.length; ci++) {
         const camClip = sortedCam[ci];
-        if (!isClipActive(camClip, time)) continue;
-        const progress = getClipProgress(camClip, time);
+        // CameraClip has startTime/duration/easing — cast to Clip for the blending helpers
+        // which only read those fields (id/type are not accessed)
+        if (!isClipActive(camClip as unknown as Clip, time)) continue;
+        const progress = getClipProgress(camClip as unknown as Clip, time);
         const easedT = evaluateEasing(progress, camClip.easing || 'ease_in_out', 0, 1);
         // Interpolate FROM the previous clip's target (or default origin for first clip)
         const prev = ci > 0 ? sortedCam[ci - 1].params : null;
@@ -293,9 +324,9 @@ export class PlaybackEngine {
           const fromTheta = prev?.theta ?? base.theta;
           const fromZoom = prev?.zoom ?? base.zoom;
           frame.cameraState = {
-            phi: lerp(fromPhi, camClip.params.phi ?? base.phi, easedT),
-            theta: lerp(fromTheta, camClip.params.theta ?? base.theta, easedT),
-            zoom: lerp(fromZoom, camClip.params.zoom ?? base.zoom, easedT),
+            phi: lerp(fromPhi, camClip.params!.phi ?? base.phi, easedT),
+            theta: lerp(fromTheta, camClip.params!.theta ?? base.theta, easedT),
+            zoom: lerp(fromZoom, camClip.params!.zoom ?? base.zoom, easedT),
             is3d: true,
           };
         } else {
@@ -320,7 +351,7 @@ export class PlaybackEngine {
    * Per-property keyframes that interpolate values over time.
    * Respects mode (opt-in vs additive) and keyframeDefaults.
    */
-  _applyKeyframeOverrides(frame, time, objects) {
+  private _applyKeyframeOverrides(frame: FrameState, time: number, objects: StageObject[]): void {
     if (!frame.objectOverrides) frame.objectOverrides = {};
 
     for (const obj of objects) {
@@ -343,7 +374,7 @@ export class PlaybackEngine {
         const overrides = frame.objectOverrides[obj.id] || {};
         if (mode === 'additive') {
           const base = overrides[prop] !== undefined ? overrides[prop] : obj[prop] || 0;
-          overrides[prop] = base + kfValue;
+          overrides[prop] = (base as number) + kfValue;
         } else {
           overrides[prop] = kfValue;
         }
@@ -357,7 +388,7 @@ export class PlaybackEngine {
    * These are per-object properties (enterAnim, exitAnim) that animate
    * how objects appear and disappear, independent of timeline clips.
    */
-  _applyEnterExitAnims(frame, time, objects) {
+  private _applyEnterExitAnims(frame: FrameState, time: number, objects: StageObject[]): void {
     for (const obj of objects) {
       const enterTime = obj.enterTime || 0;
       const duration = obj.duration || 999;
@@ -522,7 +553,7 @@ export class PlaybackEngine {
   /**
    * Evaluate a single clip at the given time.
    */
-  _evaluateClip(clip, time, objectMap) {
+  private _evaluateClip(clip: Clip, time: number, objectMap: Map<string, StageObject>): ClipResult | null {
     const active = isClipActive(clip, time);
     const completed = isClipCompleted(clip, time);
 
@@ -536,8 +567,9 @@ export class PlaybackEngine {
       if (!objId) return null;
       const p = completed ? 1 : Math.max(0, Math.min(1, getClipProgress(clip, time)));
       const easedT = evaluateEasing(p, clip.easing || 'ease_in_out', 0, 1.0);
-      const from = Number.isFinite(clip.from) ? clip.from : 0;
-      const to = Number.isFinite(clip.to) ? clip.to : 0;
+      // Number.isFinite does not narrow `number | undefined`; use explicit cast
+      const from = Number.isFinite(clip.from) ? (clip.from as number) : 0;
+      const to = Number.isFinite(clip.to) ? (clip.to as number) : 0;
       return {
         objectId: objId,
         overrides: { value: from + (to - from) * easedT },
@@ -554,10 +586,10 @@ export class PlaybackEngine {
       clip.settle || 1.0
     );
 
-    const sourceObj = objectMap.get(clip.sourceId);
+    const sourceObj = objectMap.get(clip.sourceId!);
     if (!sourceObj) return null;
 
-    const overrides = {};
+    const overrides: Overrides = {};
 
     switch (clip.type) {
       case 'move': {
@@ -669,16 +701,16 @@ export class PlaybackEngine {
   /**
    * Evaluate a transform (morph) clip.
    */
-  _evaluateTransformClip(clip, time, active, completed, objectMap) {
-    const sourceObj = objectMap.get(clip.sourceId);
-    const targetObj = objectMap.get(clip.targetId);
+  private _evaluateTransformClip(clip: Clip, time: number, active: boolean, completed: boolean, objectMap: Map<string, StageObject>): ClipResult | null {
+    const sourceObj = objectMap.get(clip.sourceId!);
+    const targetObj = objectMap.get(clip.targetId!);
     if (!sourceObj || !targetObj) return null;
 
     // After completion: source hidden, target visible
     if (completed) {
       return {
         clipId: clip.id,
-        hideIds: [clip.sourceId],
+        hideIds: [clip.sourceId!],
         objectId: clip.sourceId,
         overrides: {},
       };
@@ -709,7 +741,7 @@ export class PlaybackEngine {
         ...morphState,
         flatPoints: pointsToFlat(morphState.points),
       },
-      hideIds: [clip.sourceId, clip.targetId],
+      hideIds: [clip.sourceId!, clip.targetId!],
       objectId: clip.sourceId,
       overrides: {},
     };
@@ -718,13 +750,13 @@ export class PlaybackEngine {
   /**
    * Get resampled points for an object (cached).
    */
-  _getResampledPoints(obj, quality) {
+  private _getResampledPoints(obj: StageObject, quality: string): Point[] {
     const cacheKey = `${obj.id}_${obj.type}_${obj.width}_${obj.height}_${quality}`;
     if (this._pointsCache.has(cacheKey)) {
-      return this._pointsCache.get(cacheKey);
+      return this._pointsCache.get(cacheKey)!;
     }
 
-    const QUALITY_COUNTS = { low: 32, medium: 64, high: 128 };
+    const QUALITY_COUNTS: Record<string, number> = { low: 32, medium: 64, high: 128 };
     const count = QUALITY_COUNTS[quality] || 64;
     const raw = generateShapePoints(obj.type, obj.width, obj.height, quality);
     const resampled = resamplePoints(raw, count);
@@ -735,7 +767,7 @@ export class PlaybackEngine {
   /**
    * Destroy the engine, clean up.
    */
-  destroy() {
+  destroy(): void {
     this.pause();
     this._onFrame = null;
     this._onTimeUpdate = null;
@@ -744,9 +776,9 @@ export class PlaybackEngine {
 }
 
 // Singleton instance
-let _instance = null;
+let _instance: PlaybackEngine | null = null;
 
-export function getPlaybackEngine() {
+export function getPlaybackEngine(): PlaybackEngine {
   if (!_instance) {
     _instance = new PlaybackEngine();
   }
