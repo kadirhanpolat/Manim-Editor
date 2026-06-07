@@ -2,12 +2,12 @@ import { WebSocketServer } from 'ws';
 import { getJobStatus, getAudioJobStatus } from './queue.js';
 
 const DONE_STATUSES = new Set(['completed', 'failed']);
-const AUDIO_DONE    = new Set(['ready', 'error']);
+const AUDIO_DONE = new Set(['ready', 'error']);
 
-const subscriptions      = new Map(); // jobId -> Set<WebSocket>  (render jobs)
+const subscriptions = new Map(); // jobId -> Set<WebSocket>  (render jobs)
 const audioSubscriptions = new Map(); // jobId -> Set<WebSocket>  (audio jobs)
-const activePolls        = new Set();
-const activeAudioPolls   = new Set();
+const activePolls = new Set();
+const activeAudioPolls = new Set();
 
 export function attachWebSocket(server) {
   const wss = new WebSocketServer({ server, path: '/ws' });
@@ -15,7 +15,11 @@ export function attachWebSocket(server) {
   wss.on('connection', (ws) => {
     ws.on('message', (data) => {
       let msg;
-      try { msg = JSON.parse(data.toString()); } catch { return; }
+      try {
+        msg = JSON.parse(data.toString());
+      } catch {
+        return;
+      }
 
       if (msg.type === 'subscribe' && msg.jobId) {
         if (!subscriptions.has(msg.jobId)) subscriptions.set(msg.jobId, new Set());
@@ -72,9 +76,15 @@ async function pollUntilDone(jobId) {
   let errors = 0;
   while (subscriptions.has(jobId)) {
     await new Promise((r) => setTimeout(r, 500));
-    const job = await getJobStatus(jobId).catch(() => { errors++; return null; });
+    const job = await getJobStatus(jobId).catch(() => {
+      errors++;
+      return null;
+    });
     if (!job) {
-      if (errors > 10) { subscriptions.delete(jobId); break; }
+      if (errors > 10) {
+        subscriptions.delete(jobId);
+        break;
+      }
       continue;
     }
     errors = 0;
@@ -84,7 +94,7 @@ async function pollUntilDone(jobId) {
       status: job.status,
       stdout: job.stdout || '',
       stderr: job.stderr || '',
-      error:  job.error  || '',
+      error: job.error || '',
     });
     if (DONE_STATUSES.has(job.status)) {
       subscriptions.delete(jobId);
@@ -97,9 +107,15 @@ async function pollUntilAudioDone(jobId) {
   let errors = 0;
   while (audioSubscriptions.has(jobId)) {
     await new Promise((r) => setTimeout(r, 500));
-    const job = await getAudioJobStatus(jobId).catch(() => { errors++; return null; });
+    const job = await getAudioJobStatus(jobId).catch(() => {
+      errors++;
+      return null;
+    });
     if (!job) {
-      if (errors > 10) { audioSubscriptions.delete(jobId); break; }
+      if (errors > 10) {
+        audioSubscriptions.delete(jobId);
+        break;
+      }
       continue;
     }
     errors = 0;
@@ -110,7 +126,7 @@ async function pollUntilAudioDone(jobId) {
         clipId: job.clipId,
         duration: job.duration ? parseFloat(job.duration) : undefined,
         src: job.status === 'ready' ? `/data/assets/audio/${jobId}.wav` : undefined,
-        error: job.error || undefined
+        error: job.error || undefined,
       });
       break;
     }

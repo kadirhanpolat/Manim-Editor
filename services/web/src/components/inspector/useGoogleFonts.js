@@ -1,8 +1,6 @@
 import { ref, computed } from 'vue';
 
-const API_BASE = window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
-  : '';
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
 
 // Data layer for the font picker: paginated /api/fonts fetch + Google Fonts preview
 // stylesheet injection. UI state (open/search/highlight/category) stays in the component;
@@ -22,16 +20,16 @@ export function useGoogleFonts() {
   const hasMore = computed(() => fonts.value.length < total.value);
 
   function loadPreviewStyles(fontItems) {
-    const fontsToLoad = fontItems.filter(f => !previewStylesLoaded.has(f.family));
+    const fontsToLoad = fontItems.filter((f) => !previewStylesLoaded.has(f.family));
     if (fontsToLoad.length === 0) return;
 
-    const families = fontsToLoad.map(f => f.family.replace(/ /g, '+')).join('|');
+    const families = fontsToLoad.map((f) => f.family.replace(/ /g, '+')).join('|');
     const link = document.createElement('link');
     link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
     link.rel = 'stylesheet';
     document.head.appendChild(link);
 
-    fontsToLoad.forEach(f => previewStylesLoaded.add(f.family));
+    fontsToLoad.forEach((f) => previewStylesLoaded.add(f.family));
   }
 
   async function load({ search = '', category = 'all', reset = false } = {}) {

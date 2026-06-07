@@ -2,7 +2,7 @@
   <div v-if="kf" class="px-4 py-3 border-b border-studio-border">
     <div class="text-xs text-studio-text-muted font-medium mb-2 flex items-center gap-1">
       <svg width="10" height="10" viewBox="-5 -5 10 10">
-        <polygon points="0,-4 4,0 0,4 -4,0" :fill="modeColor" stroke="white" stroke-width="0.8"/>
+        <polygon points="0,-4 4,0 0,4 -4,0" :fill="modeColor" stroke="white" stroke-width="0.8" />
       </svg>
       Keyframe · {{ kf.prop }}
     </div>
@@ -54,24 +54,24 @@ import { useProjectStore } from '../../store/project.js';
 
 const store = useProjectStore();
 const kf = computed(() => store.selectedKeyframeId);
-const obj = computed(() => kf.value ? store.objectById(kf.value.objId) : null);
+const obj = computed(() => (kf.value ? store.objectById(kf.value.objId) : null));
 
 const kfData = computed(() => {
   if (!kf.value || !obj.value?.keyframes?.[kf.value.prop]) return null;
-  return obj.value.keyframes[kf.value.prop].find(
-    k => Math.abs(k.time - kf.value.time) < 0.01
-  ) || null;
+  return (
+    obj.value.keyframes[kf.value.prop].find((k) => Math.abs(k.time - kf.value.time) < 0.01) || null
+  );
 });
 
 const mode = computed(() => {
   if (!kf.value || !obj.value) return 'opt-in';
-  return obj.value.keyframeMode?.[kf.value.prop]
-    || store.project.keyframeDefaults?.mode
-    || 'opt-in';
+  return (
+    obj.value.keyframeMode?.[kf.value.prop] || store.project.keyframeDefaults?.mode || 'opt-in'
+  );
 });
 
-const modeColor = computed(() =>
-  ({ override: '#ffd700', additive: '#ff9d42', 'opt-in': '#60a5fa' }[mode.value] || '#60a5fa')
+const modeColor = computed(
+  () => ({ override: '#ffd700', additive: '#ff9d42', 'opt-in': '#60a5fa' })[mode.value] || '#60a5fa'
 );
 
 function updateValue(val) {

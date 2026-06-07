@@ -1,6 +1,6 @@
 /**
  * Easing Functions Library
- * 
+ *
  * All functions map t ∈ [0,1] → value (usually [0,1] but may overshoot).
  * Includes standard CSS-like easings plus animation-quality overshoot/settle.
  */
@@ -19,9 +19,7 @@ export const EASING_FUNCTIONS = {
   },
 
   ease_in_out(t) {
-    return t < 0.5
-      ? 2 * t * t
-      : -1 + (4 - 2 * t) * t;
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   },
 
   ease_in_cubic(t) {
@@ -34,9 +32,7 @@ export const EASING_FUNCTIONS = {
   },
 
   ease_in_out_cubic(t) {
-    return t < 0.5
-      ? 4 * t * t * t
-      : 1 + (t - 1) * (2 * t - 2) * (2 * t - 2);
+    return t < 0.5 ? 4 * t * t * t : 1 + (t - 1) * (2 * t - 2) * (2 * t - 2);
   },
 
   ease_in_quart(t) {
@@ -49,9 +45,7 @@ export const EASING_FUNCTIONS = {
   },
 
   ease_in_out_quart(t) {
-    return t < 0.5
-      ? 8 * t * t * t * t
-      : 1 - 8 * (t - 1) * (t - 1) * (t - 1) * (t - 1);
+    return t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (t - 1) * (t - 1) * (t - 1) * (t - 1);
   },
 
   ease_in_back(t) {
@@ -103,13 +97,13 @@ export const EASING_FUNCTIONS = {
   spring(t) {
     // Damped spring oscillation: fast snap with single overshoot then settle
     return 1 - Math.exp(-6 * t) * Math.cos(6 * t);
-  }
+  },
 };
 
 /**
  * Apply overshoot-settle easing on top of a base easing.
  * Reaches `overshoot` (e.g. 1.04) at ~70% of duration, then settles to `settle` (e.g. 1.0).
- * 
+ *
  * @param {number} t - Raw progress [0, 1]
  * @param {number} overshoot - Peak value (default 1.04)
  * @param {number} settle - Final value (default 1.0)
@@ -149,7 +143,12 @@ export function getEasing(name) {
  * @param {number} settleValue - Final settle value
  * @returns {number}
  */
-export function evaluateEasing(t, easingName = 'ease_in_out', overshootAmount = 0, settleValue = 1.0) {
+export function evaluateEasing(
+  t,
+  easingName = 'ease_in_out',
+  overshootAmount = 0,
+  settleValue = 1.0
+) {
   const clampedT = Math.max(0, Math.min(1, t));
   const baseEased = getEasing(easingName)(clampedT);
 
@@ -164,23 +163,23 @@ export function evaluateEasing(t, easingName = 'ease_in_out', overshootAmount = 
  * List of all available easing names for UI display.
  */
 export const EASING_LIST = [
-  { value: 'linear',          label: 'Linear' },
-  { value: 'ease_in',         label: 'Ease In' },
-  { value: 'ease_out',        label: 'Ease Out' },
-  { value: 'ease_in_out',     label: 'Ease In/Out' },
-  { value: 'ease_in_cubic',   label: 'Ease In Cubic' },
-  { value: 'ease_out_cubic',  label: 'Ease Out Cubic' },
+  { value: 'linear', label: 'Linear' },
+  { value: 'ease_in', label: 'Ease In' },
+  { value: 'ease_out', label: 'Ease Out' },
+  { value: 'ease_in_out', label: 'Ease In/Out' },
+  { value: 'ease_in_cubic', label: 'Ease In Cubic' },
+  { value: 'ease_out_cubic', label: 'Ease Out Cubic' },
   { value: 'ease_in_out_cubic', label: 'Ease In/Out Cubic' },
-  { value: 'ease_in_quart',   label: 'Ease In Quart' },
-  { value: 'ease_out_quart',  label: 'Ease Out Quart' },
+  { value: 'ease_in_quart', label: 'Ease In Quart' },
+  { value: 'ease_out_quart', label: 'Ease Out Quart' },
   { value: 'ease_in_out_quart', label: 'Ease In/Out Quart' },
-  { value: 'ease_in_back',    label: 'Ease In Back' },
-  { value: 'ease_out_back',   label: 'Ease Out Back' },
+  { value: 'ease_in_back', label: 'Ease In Back' },
+  { value: 'ease_out_back', label: 'Ease Out Back' },
   { value: 'ease_in_out_back', label: 'Ease In/Out Back' },
   { value: 'ease_out_elastic', label: 'Elastic Out' },
   { value: 'ease_in_elastic', label: 'Elastic In' },
   { value: 'ease_out_bounce', label: 'Bounce Out' },
-  { value: 'spring',          label: 'Spring' }
+  { value: 'spring', label: 'Spring' },
 ];
 
 export default {
@@ -188,5 +187,5 @@ export default {
   EASING_LIST,
   getEasing,
   evaluateEasing,
-  overshootSettle
+  overshootSettle,
 };

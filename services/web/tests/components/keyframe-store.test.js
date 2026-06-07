@@ -22,11 +22,11 @@ describe('clampKeyframesToRange', () => {
   it('clamps keyframes outside [enterTime, enterTime+duration] to the boundary', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 1, duration: 3 }); // visible interval [1, 4]
-    store.addKeyframe(obj.id, 'x', 0.2, 100);  // before start → clamps to 1
-    store.addKeyframe(obj.id, 'x', 2.5, 500);  // inside → unchanged
-    store.addKeyframe(obj.id, 'x', 9.0, 900);  // after end → clamps to 4
+    store.addKeyframe(obj.id, 'x', 0.2, 100); // before start → clamps to 1
+    store.addKeyframe(obj.id, 'x', 2.5, 500); // inside → unchanged
+    store.addKeyframe(obj.id, 'x', 9.0, 900); // after end → clamps to 4
     store.clampKeyframesToRange(obj.id);
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(Math.min(...times)).toBeGreaterThanOrEqual(1);
     expect(Math.max(...times)).toBeLessThanOrEqual(4);
     expect(times).toContain(2.5);
@@ -39,9 +39,9 @@ describe('shiftKeyframes', () => {
     store.addKeyframe(obj.id, 'x', 1.0, 100);
     store.addKeyframe(obj.id, 'x', 3.0, 500);
     store.shiftKeyframes(obj.id, 1.5);
-    expect(store.objectById(obj.id).keyframes.x.map(k => k.time)).toEqual([2.5, 4.5]);
+    expect(store.objectById(obj.id).keyframes.x.map((k) => k.time)).toEqual([2.5, 4.5]);
     store.shiftKeyframes(obj.id, -10); // clamps both at 0
-    expect(store.objectById(obj.id).keyframes.x.every(k => k.time >= 0)).toBe(true);
+    expect(store.objectById(obj.id).keyframes.x.every((k) => k.time >= 0)).toBe(true);
   });
 });
 
@@ -80,7 +80,7 @@ describe('addKeyframeScaffold', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 1, duration: 3 }); // visible [1, 4]
     store.addKeyframeScaffold(obj.id, 'x', 2.5);
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([1, 2.5, 4]);
   });
 
@@ -88,7 +88,7 @@ describe('addKeyframeScaffold', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 0, duration: 3 }); // visible [0, 3]
     store.addKeyframeScaffold(obj.id, 'x', 9.0); // past end → clamps to 3 (dedup with seeded end)
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([0, 3]);
   });
 
@@ -97,7 +97,7 @@ describe('addKeyframeScaffold', () => {
     store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // visible [0, 4]
     store.addKeyframeScaffold(obj.id, 'x', 1); // first → seeds 0, 1, 4
     store.addKeyframeScaffold(obj.id, 'x', 2); // not first → just adds 2
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([0, 1, 2, 4]);
   });
 
@@ -116,23 +116,23 @@ describe('clampKeyframesToRange with pinned keyframes', () => {
   it('drags the pinned end keyframe outward when the bar is expanded', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 0, duration: 3 }); // [0, 3]
-    store.addKeyframeScaffold(obj.id, 'x', 1.5);               // 0(start), 1.5, 3(end)
-    store.updateObject(obj.id, { duration: 6 });               // expand to [0, 6]
+    store.addKeyframeScaffold(obj.id, 'x', 1.5); // 0(start), 1.5, 3(end)
+    store.updateObject(obj.id, { duration: 6 }); // expand to [0, 6]
     store.clampKeyframesToRange(obj.id);
     const kfs = store.objectById(obj.id).keyframes.x;
-    expect(kfs.find(k => k.pinned === 'start').time).toBe(0);
-    expect(kfs.find(k => k.pinned === 'end').time).toBe(6);    // followed the new edge
+    expect(kfs.find((k) => k.pinned === 'start').time).toBe(0);
+    expect(kfs.find((k) => k.pinned === 'end').time).toBe(6); // followed the new edge
   });
 
   it('keeps pinned keyframes at the edges when the object is repositioned', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // [0, 4]
-    store.addKeyframeScaffold(obj.id, 'x', 2);                 // 0, 2, 4
-    store.updateObject(obj.id, { enterTime: 2 });              // moved → [2, 6]
+    store.addKeyframeScaffold(obj.id, 'x', 2); // 0, 2, 4
+    store.updateObject(obj.id, { enterTime: 2 }); // moved → [2, 6]
     store.clampKeyframesToRange(obj.id);
     const kfs = store.objectById(obj.id).keyframes.x;
-    expect(kfs.find(k => k.pinned === 'start').time).toBe(2);
-    expect(kfs.find(k => k.pinned === 'end').time).toBe(6);
+    expect(kfs.find((k) => k.pinned === 'start').time).toBe(2);
+    expect(kfs.find((k) => k.pinned === 'end').time).toBe(6);
   });
 });
 
@@ -140,20 +140,20 @@ describe('rescaleKeyframes (proportional resize)', () => {
   it('remaps a middle keyframe proportionally when expanding from the right', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // [0, 4]
-    store.addKeyframeScaffold(obj.id, 'x', 2);                 // 0, 2(50%), 4
+    store.addKeyframeScaffold(obj.id, 'x', 2); // 0, 2(50%), 4
     const orig = JSON.parse(JSON.stringify(store.objectById(obj.id).keyframes));
-    store.rescaleKeyframes(obj.id, orig, 0, 4, 0, 8);          // expand → [0, 8]
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
-    expect(times).toEqual([0, 4, 8]);                          // 50% stays 50%
+    store.rescaleKeyframes(obj.id, orig, 0, 4, 0, 8); // expand → [0, 8]
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
+    expect(times).toEqual([0, 4, 8]); // 50% stays 50%
   });
 
   it('remaps proportionally when the left edge is dragged', () => {
     const obj = store.addObject('rectangle', 960, 540);
     store.updateObject(obj.id, { enterTime: 2, duration: 4 }); // [2, 6]
-    store.addKeyframeScaffold(obj.id, 'x', 4);                 // 2, 4(50%), 6
+    store.addKeyframeScaffold(obj.id, 'x', 4); // 2, 4(50%), 6
     const orig = JSON.parse(JSON.stringify(store.objectById(obj.id).keyframes));
-    store.rescaleKeyframes(obj.id, orig, 2, 6, 0, 6);          // left edge → 0
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    store.rescaleKeyframes(obj.id, orig, 2, 6, 0, 6); // left edge → 0
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([0, 3, 6]);
   });
 
@@ -162,8 +162,8 @@ describe('rescaleKeyframes (proportional resize)', () => {
     store.updateObject(obj.id, { enterTime: 0, duration: 4 }); // [0, 4]
     store.addKeyframeScaffold(obj.id, 'x', 2);
     const orig = JSON.parse(JSON.stringify(store.objectById(obj.id).keyframes));
-    store.rescaleKeyframes(obj.id, orig, 0, 4, 0, 2);          // shrink → [0, 2]
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    store.rescaleKeyframes(obj.id, orig, 0, 4, 0, 2); // shrink → [0, 2]
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([0, 1, 2]);
   });
 });
@@ -174,7 +174,7 @@ describe('deleteKeyframe (pinned-boundary rules)', () => {
     store.updateObject(obj.id, { enterTime: 0, duration: 3 });
     store.addKeyframeScaffold(obj.id, 'x', 1.5); // 0(start), 1.5, 3(end)
     store.deleteKeyframe(obj.id, 'x', 1.5);
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([0, 3]);
   });
 
@@ -183,7 +183,7 @@ describe('deleteKeyframe (pinned-boundary rules)', () => {
     store.updateObject(obj.id, { enterTime: 0, duration: 3 });
     store.addKeyframeScaffold(obj.id, 'x', 1.5); // 0, 1.5, 3
     store.deleteKeyframe(obj.id, 'x', 3); // pinned end — should be blocked
-    const times = store.objectById(obj.id).keyframes.x.map(k => k.time);
+    const times = store.objectById(obj.id).keyframes.x.map((k) => k.time);
     expect(times).toEqual([0, 1.5, 3]);
   });
 
@@ -192,7 +192,7 @@ describe('deleteKeyframe (pinned-boundary rules)', () => {
     store.updateObject(obj.id, { enterTime: 0, duration: 3 });
     store.addKeyframeScaffold(obj.id, 'x', 1.5);
     store.removeKeyframe(obj.id, 'x', 1.5); // drop the middle → only boundaries left
-    store.deleteKeyframe(obj.id, 'x', 0);   // delete one boundary → clears the property
+    store.deleteKeyframe(obj.id, 'x', 0); // delete one boundary → clears the property
     expect(store.objectById(obj.id).keyframes).toBeUndefined();
   });
 });

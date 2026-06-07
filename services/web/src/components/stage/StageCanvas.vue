@@ -1,19 +1,29 @@
 <template>
   <div
     class="stage-canvas h-full flex flex-col"
-    style="min-height: 0;"
+    style="min-height: 0"
     @dragover.prevent="onDragOver"
     @dragleave.prevent="onDragLeave"
     @drop.prevent="onDrop"
   >
-    <div ref="container" class="flex-1 rounded-xl overflow-hidden relative" style="min-height: 0; background: var(--studio-surface2);">
-      <v-stage ref="konvaStage" :config="stageConfig" @mousedown="handleStageMouseDown" @dblclick="onStageDblClick" @wheel="handleWheel">
+    <div
+      ref="container"
+      class="flex-1 rounded-xl overflow-hidden relative"
+      style="min-height: 0; background: var(--studio-surface2)"
+    >
+      <v-stage
+        ref="konvaStage"
+        :config="stageConfig"
+        @mousedown="handleStageMouseDown"
+        @dblclick="onStageDblClick"
+        @wheel="handleWheel"
+      >
         <!-- Background layer -->
         <v-layer>
           <v-rect :config="bgConfig" />
           <!-- Grid lines -->
           <template v-if="gridVisible">
-            <v-line v-for="(l, i) in gridLines" :key="'g'+i" :config="l" />
+            <v-line v-for="(l, i) in gridLines" :key="'g' + i" :config="l" />
             <v-line :config="centerH" />
             <v-line :config="centerV" />
           </template>
@@ -29,184 +39,534 @@
             <v-text v-for="(lb, lbi) in refLabelsIso" :key="'rli' + lbi" :config="lb" />
           </template>
 
-          <template v-for="obj in sortedObjects" :key="obj.id + (obj.type === 'text' ? '-' + fontLoadKey : '')">
+          <template
+            v-for="obj in sortedObjects"
+            :key="obj.id + (obj.type === 'text' ? '-' + fontLoadKey : '')"
+          >
             <!-- Rectangle / Square -->
-            <v-rect v-if="(obj.type === 'square' || obj.type === 'rectangle') && isVis(obj.id)" :config="rectCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-rect
+              v-if="(obj.type === 'square' || obj.type === 'rectangle') && isVis(obj.id)"
+              :config="rectCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Circle -->
-            <v-circle v-if="obj.type === 'circle' && isVis(obj.id)" :config="circleCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-circle
+              v-if="obj.type === 'circle' && isVis(obj.id)"
+              :config="circleCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Ellipse -->
-            <v-ellipse v-if="obj.type === 'ellipse' && isVis(obj.id)" :config="ellipseCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-ellipse
+              v-if="obj.type === 'ellipse' && isVis(obj.id)"
+              :config="ellipseCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Dot -->
-            <v-circle v-if="obj.type === 'dot' && isVis(obj.id)" :config="dotCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-circle
+              v-if="obj.type === 'dot' && isVis(obj.id)"
+              :config="dotCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
 
             <!-- Heart -->
-            <v-shape v-if="obj.type === 'heart' && isVis(obj.id)" :config="heartCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-shape
+              v-if="obj.type === 'heart' && isVis(obj.id)"
+              :config="heartCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Triangle -->
-            <v-line v-if="obj.type === 'triangle' && isVis(obj.id)" :config="triangleCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-line
+              v-if="obj.type === 'triangle' && isVis(obj.id)"
+              :config="triangleCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Free Polygon -->
-            <v-line v-if="obj.type === 'polygon_free' && isVis(obj.id)" :config="polygonFreeCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
-            <v-line v-if="obj.type === 'bezier' && isVis(obj.id)" :config="bezierCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-line
+              v-if="obj.type === 'polygon_free' && isVis(obj.id)"
+              :config="polygonFreeCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
+            <v-line
+              v-if="obj.type === 'bezier' && isVis(obj.id)"
+              :config="bezierCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
 
             <!-- Parametric Curve -->
-            <v-line v-if="obj.type === 'parametric' && isVis(obj.id)" :config="parametricCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-line
+              v-if="obj.type === 'parametric' && isVis(obj.id)"
+              :config="parametricCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
 
             <!-- Star -->
-            <v-star v-if="obj.type === 'star' && isVis(obj.id)" :config="starCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-star
+              v-if="obj.type === 'star' && isVis(obj.id)"
+              :config="starCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Polygon (hexagon) -->
-            <v-regular-polygon v-if="obj.type === 'polygon' && isVis(obj.id)" :config="polygonCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-regular-polygon
+              v-if="obj.type === 'polygon' && isVis(obj.id)"
+              :config="polygonCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Line -->
-            <v-line v-if="obj.type === 'line' && isVis(obj.id)" :config="lineCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-line
+              v-if="obj.type === 'line' && isVis(obj.id)"
+              :config="lineCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
 
             <!-- Arrow -->
-            <v-arrow v-if="obj.type === 'arrow' && isVis(obj.id)" :config="arrowCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-arrow
+              v-if="obj.type === 'arrow' && isVis(obj.id)"
+              :config="arrowCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Annulus / Sector / Arc / DoubleArrow -->
-            <v-ring v-if="obj.type === 'annulus' && isVis(obj.id)" :config="annulusCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
-            <v-wedge v-if="obj.type === 'sector' && isVis(obj.id)" :config="sectorCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
-            <v-shape v-if="obj.type === 'arc' && isVis(obj.id)" :config="arcCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
-            <v-arrow v-if="obj.type === 'double_arrow' && isVis(obj.id)" :config="doubleArrowCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" />
+            <v-ring
+              v-if="obj.type === 'annulus' && isVis(obj.id)"
+              :config="annulusCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
+            <v-wedge
+              v-if="obj.type === 'sector' && isVis(obj.id)"
+              :config="sectorCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
+            <v-shape
+              v-if="obj.type === 'arc' && isVis(obj.id)"
+              :config="arcCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
+            <v-arrow
+              v-if="obj.type === 'double_arrow' && isVis(obj.id)"
+              :config="doubleArrowCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            />
 
             <!-- Dot Grid -->
-            <v-group v-if="obj.type === 'dot_grid' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'dot_grid' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            >
               <v-rect :config="dotGridHitCfg(obj)" />
               <v-circle v-for="(d, di) in dotGridDots(obj)" :key="di" :config="d" />
             </v-group>
 
             <!-- Text -->
-            <v-text v-if="obj.type === 'text' && isVis(obj.id)" :config="textCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" @dblclick="onTextDblClick(obj.id)" />
+            <v-text
+              v-if="obj.type === 'text' && isVis(obj.id)"
+              :config="textCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+              @dblclick="onTextDblClick(obj.id)"
+            />
 
             <!-- Counter (DecimalNumber) -->
-            <v-text v-if="obj.type === 'counter' && isVis(obj.id)" :config="counterCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-text
+              v-if="obj.type === 'counter' && isVis(obj.id)"
+              :config="counterCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- Image / SVG -->
-            <v-image v-if="(obj.type === 'image' || obj.type === 'svg_asset') && isVis(obj.id) && imageElements[obj.assetId]" :config="imageCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)" />
+            <v-image
+              v-if="
+                (obj.type === 'image' || obj.type === 'svg_asset') &&
+                isVis(obj.id) &&
+                imageElements[obj.assetId]
+              "
+              :config="imageCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            />
 
             <!-- LaTeX -->
-            <v-group v-if="obj.type === 'latex' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'latex' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="latexBgCfg(obj)" />
               <v-text :config="latexTextCfg(obj)" />
               <v-text :config="latexBadgeCfg(obj)" />
             </v-group>
 
             <!-- Axes -->
-            <v-group v-if="obj.type === 'axes' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'axes' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="axesBgCfg(obj)" />
               <v-line :config="axesXLineCfg(obj)" />
               <v-line :config="axesYLineCfg(obj)" />
               <v-line :config="axesXArrowCfg(obj)" />
               <v-line :config="axesYArrowCfg(obj)" />
-              <v-line v-for="(tick, ti) in axesXTicks(obj)" :key="'xt'+ti" :config="tick" />
-              <v-line v-for="(tick, ti) in axesYTicks(obj)" :key="'yt'+ti" :config="tick" />
+              <v-line v-for="(tick, ti) in axesXTicks(obj)" :key="'xt' + ti" :config="tick" />
+              <v-line v-for="(tick, ti) in axesYTicks(obj)" :key="'yt' + ti" :config="tick" />
               <v-text :config="axesLabelCfg(obj, 'x')" />
               <v-text :config="axesLabelCfg(obj, 'y')" />
               <!-- Graph curves preview -->
-              <v-line v-for="(ar, ai) in axesAreaRiemann(obj).areas" :key="'ar'+ai" :config="ar" />
-              <v-rect v-for="(rr, ri) in axesAreaRiemann(obj).rects" :key="'rr'+ri" :config="rr" />
-              <v-line v-for="(tg, ti) in axesAreaRiemann(obj).tangents" :key="'tg'+ti" :config="tg" />
-              <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc'+gi" :config="gc" />
+              <v-line
+                v-for="(ar, ai) in axesAreaRiemann(obj).areas"
+                :key="'ar' + ai"
+                :config="ar"
+              />
+              <v-rect
+                v-for="(rr, ri) in axesAreaRiemann(obj).rects"
+                :key="'rr' + ri"
+                :config="rr"
+              />
+              <v-line
+                v-for="(tg, ti) in axesAreaRiemann(obj).tangents"
+                :key="'tg' + ti"
+                :config="tg"
+              />
+              <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc' + gi" :config="gc" />
             </v-group>
 
             <!-- NumberPlane / ComplexPlane -->
-            <v-group v-if="(obj.type === 'numberplane' || obj.type === 'complex_plane') && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
-              <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: true }" />
-              <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
-              <v-line :config="{ points: [0, -obj.height/2 * vs, 0, obj.height/2 * vs], stroke: obj.stroke || '#64748b', strokeWidth: 1.5, listening: false }" />
-              <v-text :config="{ text: obj.type === 'complex_plane' ? 'ComplexPlane' : 'NumberPlane', x: -40, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
+            <v-group
+              v-if="(obj.type === 'numberplane' || obj.type === 'complex_plane') && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
+              <v-rect
+                :config="{
+                  x: (-obj.width / 2) * vs,
+                  y: (-obj.height / 2) * vs,
+                  width: obj.width * vs,
+                  height: obj.height * vs,
+                  fill: obj.fill || '#334155',
+                  opacity: 0.3,
+                  listening: true,
+                }"
+              />
+              <v-line
+                :config="{
+                  points: [(-obj.width / 2) * vs, 0, (obj.width / 2) * vs, 0],
+                  stroke: obj.stroke || '#64748b',
+                  strokeWidth: 1.5,
+                  listening: false,
+                }"
+              />
+              <v-line
+                :config="{
+                  points: [0, (-obj.height / 2) * vs, 0, (obj.height / 2) * vs],
+                  stroke: obj.stroke || '#64748b',
+                  strokeWidth: 1.5,
+                  listening: false,
+                }"
+              />
+              <v-text
+                :config="{
+                  text: obj.type === 'complex_plane' ? 'ComplexPlane' : 'NumberPlane',
+                  x: -40,
+                  y: (-obj.height / 2) * vs + 4,
+                  fontSize: 10,
+                  fill: '#94a3b8',
+                  listening: false,
+                }"
+              />
             </v-group>
 
             <!-- PolarPlane -->
-            <v-group v-if="obj.type === 'polar_plane' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
-              <v-rect :config="{ x: -obj.width/2 * vs, y: -obj.height/2 * vs, width: obj.width * vs, height: obj.height * vs, fill: obj.fill || '#334155', opacity: 0.3, listening: true }" />
-              <template v-for="(cc, ci) in polarCircleConfigs(obj)" :key="'pc'+ci">
+            <v-group
+              v-if="obj.type === 'polar_plane' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
+              <v-rect
+                :config="{
+                  x: (-obj.width / 2) * vs,
+                  y: (-obj.height / 2) * vs,
+                  width: obj.width * vs,
+                  height: obj.height * vs,
+                  fill: obj.fill || '#334155',
+                  opacity: 0.3,
+                  listening: true,
+                }"
+              />
+              <template v-for="(cc, ci) in polarCircleConfigs(obj)" :key="'pc' + ci">
                 <v-circle :config="cc" />
               </template>
-              <template v-for="(sl, si) in polarSpokeConfigs(obj)" :key="'ps'+si">
+              <template v-for="(sl, si) in polarSpokeConfigs(obj)" :key="'ps' + si">
                 <v-line :config="sl" />
               </template>
-              <v-text :config="{ text: 'PolarPlane', x: -30, y: -obj.height/2 * vs + 4, fontSize: 10, fill: '#94a3b8', listening: false }" />
+              <v-text
+                :config="{
+                  text: 'PolarPlane',
+                  x: -30,
+                  y: (-obj.height / 2) * vs + 4,
+                  fontSize: 10,
+                  fill: '#94a3b8',
+                  listening: false,
+                }"
+              />
             </v-group>
 
             <!-- NumberLine -->
-            <v-group v-if="obj.type === 'numberline' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
-              <v-rect :config="{ x: -obj.width/2 * vs, y: -16, width: obj.width * vs, height: 32, fill: 'rgba(0,0,0,0.01)', listening: true }" />
-              <v-line :config="{ points: [-obj.width/2 * vs, 0, obj.width/2 * vs, 0], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
-              <v-line :config="{ points: [obj.width/2 * vs - 8 * vs, -5 * vs, obj.width/2 * vs, 0, obj.width/2 * vs - 8 * vs, 5 * vs], stroke: obj.stroke || '#ffffff', strokeWidth: 2, listening: false }" />
-              <v-text :config="{ text: 'NumberLine', x: -30, y: -16, fontSize: 10, fill: '#94a3b8', listening: false }" />
+            <v-group
+              v-if="obj.type === 'numberline' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
+              <v-rect
+                :config="{
+                  x: (-obj.width / 2) * vs,
+                  y: -16,
+                  width: obj.width * vs,
+                  height: 32,
+                  fill: 'rgba(0,0,0,0.01)',
+                  listening: true,
+                }"
+              />
+              <v-line
+                :config="{
+                  points: [(-obj.width / 2) * vs, 0, (obj.width / 2) * vs, 0],
+                  stroke: obj.stroke || '#ffffff',
+                  strokeWidth: 2,
+                  listening: false,
+                }"
+              />
+              <v-line
+                :config="{
+                  points: [
+                    (obj.width / 2) * vs - 8 * vs,
+                    -5 * vs,
+                    (obj.width / 2) * vs,
+                    0,
+                    (obj.width / 2) * vs - 8 * vs,
+                    5 * vs,
+                  ],
+                  stroke: obj.stroke || '#ffffff',
+                  strokeWidth: 2,
+                  listening: false,
+                }"
+              />
+              <v-text
+                :config="{
+                  text: 'NumberLine',
+                  x: -30,
+                  y: -16,
+                  fontSize: 10,
+                  fill: '#94a3b8',
+                  listening: false,
+                }"
+              />
             </v-group>
 
             <!-- Matrix -->
-            <v-group v-if="obj.type === 'matrix' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'matrix' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="matrixHitCfg(obj)" />
-              <v-line v-for="(b, bi) in matrixBracketConfigs(obj)" :key="'mb'+bi" :config="b" />
-              <v-text v-for="(t, ti) in matrixCellConfigs(obj)" :key="'mc'+ti" :config="t" />
+              <v-line v-for="(b, bi) in matrixBracketConfigs(obj)" :key="'mb' + bi" :config="b" />
+              <v-text v-for="(t, ti) in matrixCellConfigs(obj)" :key="'mc' + ti" :config="t" />
             </v-group>
 
             <!-- Table -->
-            <v-group v-if="obj.type === 'table' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'table' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="tableHitCfg(obj)" />
-              <v-line v-for="(l, li) in tableGridLines(obj)" :key="'tgl'+li" :config="l" />
-              <v-text v-for="(tc, ti) in tableCellConfigs(obj)" :key="'tc'+ti" :config="tc" />
+              <v-line v-for="(l, li) in tableGridLines(obj)" :key="'tgl' + li" :config="l" />
+              <v-text v-for="(tc, ti) in tableCellConfigs(obj)" :key="'tc' + ti" :config="tc" />
             </v-group>
 
             <!-- Brace -->
-            <v-group v-if="obj.type === 'brace' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'brace' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="relationalHitCfg(obj)" />
               <v-line :config="braceLineCfg(obj)" />
               <v-text v-if="obj.label" :config="relationalLabelCfg(obj, braceLabelAnchor(obj))" />
             </v-group>
 
             <!-- Angle -->
-            <v-group v-if="obj.type === 'angle' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'angle' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="relationalHitCfg(obj)" />
-              <v-line v-for="(rc, ri) in angleRayCfgs(obj)" :key="'ar'+ri" :config="rc" />
+              <v-line v-for="(rc, ri) in angleRayCfgs(obj)" :key="'ar' + ri" :config="rc" />
               <v-line v-if="!obj.rightAngle" :config="angleArcCfg(obj)" />
               <v-line v-if="obj.rightAngle" :config="angleSquareCfg(obj)" />
               <v-text v-if="obj.label" :config="relationalLabelCfg(obj, angleLabelAnchor(obj))" />
             </v-group>
 
             <!-- Vector components (main + x/y arrows + dashed guides) -->
-            <v-group v-if="obj.type === 'vector_components' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'vector_components' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="relationalHitCfg(obj)" />
-              <v-line v-for="(d, di) in vectorComponentsCfgs(obj).dashes" :key="'vcd' + di" :config="d" />
-              <v-arrow v-for="(a, ai) in vectorComponentsCfgs(obj).arrows" :key="'vca' + ai" :config="a" />
+              <v-line
+                v-for="(d, di) in vectorComponentsCfgs(obj).dashes"
+                :key="'vcd' + di"
+                :config="d"
+              />
+              <v-arrow
+                v-for="(a, ai) in vectorComponentsCfgs(obj).arrows"
+                :key="'vca' + ai"
+                :config="a"
+              />
             </v-group>
 
             <!-- Ray (source dot + direction arrow) -->
-            <v-group v-if="obj.type === 'ray' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'ray' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="relationalHitCfg(obj)" />
               <v-arrow :config="rayCfgs(obj).arrow" />
               <v-circle :config="rayCfgs(obj).dot" />
             </v-group>
 
             <!-- Coord point (dot + live (x,y) label) -->
-            <v-group v-if="obj.type === 'coord_point' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'coord_point' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="relationalHitCfg(obj)" />
               <v-circle :config="coordPointCfgs(obj).dot" />
               <v-text :config="coordPointCfgs(obj).label" />
             </v-group>
 
             <!-- Graph / DiGraph -->
-            <v-group v-if="obj.type === 'graph' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'graph' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
               <v-rect :config="graphHitCfg(obj)" />
               <template v-for="(ecfg, ei) in graphEdgeConfigs(obj)" :key="'ge' + ei">
                 <v-arrow v-if="obj.directed" :config="ecfg" />
                 <v-line v-else :config="ecfg" />
               </template>
-              <v-circle v-for="(vcfg, vi) in graphVertexConfigs(obj)" :key="'gv' + vi" :config="vcfg" />
+              <v-circle
+                v-for="(vcfg, vi) in graphVertexConfigs(obj)"
+                :key="'gv' + vi"
+                :config="vcfg"
+              />
               <template v-if="obj.showLabels">
-                <v-text v-for="(lcfg, li) in graphLabelConfigs(obj)" :key="'gl' + li" :config="lcfg" />
+                <v-text
+                  v-for="(lcfg, li) in graphLabelConfigs(obj)"
+                  :key="'gl' + li"
+                  :config="lcfg"
+                />
               </template>
             </v-group>
 
             <!-- Vector Field -->
-            <v-group v-if="obj.type === 'vector_field' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)">
+            <v-group
+              v-if="obj.type === 'vector_field' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+            >
               <v-rect :config="vectorFieldHitCfg(obj)" />
               <template v-for="(acfg, ai) in vectorFieldArrows(obj)" :key="'vfa' + ai">
                 <v-arrow :config="acfg" />
@@ -215,33 +575,56 @@
 
             <!-- 3D: Sphere -->
             <template v-if="obj.type === 'sphere' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-circle :config="sphere3dCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)" />
+              <v-circle
+                :config="sphere3dCfg(obj)"
+                @mousedown="onObjDown(obj.id, $event)"
+                @dragend="onDrag3DEnd(obj.id, $event)"
+              />
             </template>
 
             <!-- 3D: Cube (real box — depth-sorted shaded faces) -->
             <template v-if="obj.type === 'cube' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+              <v-group
+                :config="obj3dCenter(obj)"
+                @mousedown="onObjDown(obj.id, $event)"
+                @dragend="onDrag3DEnd(obj.id, $event)"
+              >
                 <v-line v-for="(f, fi) in cube3dFaces(obj)" :key="'cf' + fi" :config="f" />
               </v-group>
             </template>
 
             <!-- 3D: Prism (box with per-axis dimensions) -->
             <template v-if="obj.type === 'prism' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+              <v-group
+                :config="obj3dCenter(obj)"
+                @mousedown="onObjDown(obj.id, $event)"
+                @dragend="onDrag3DEnd(obj.id, $event)"
+              >
                 <v-line v-for="(f, fi) in prism3dFaces(obj)" :key="'pf' + fi" :config="f" />
               </v-group>
             </template>
 
             <!-- 3D: Cone/Cylinder (real silhouettes) -->
-            <template v-if="['cone', 'cylinder'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+            <template
+              v-if="['cone', 'cylinder'].includes(obj.type) && is3D && isVis(obj.id)"
+              :key="obj.id + '-3d'"
+            >
+              <v-group
+                :config="obj3dCenter(obj)"
+                @mousedown="onObjDown(obj.id, $event)"
+                @dragend="onDrag3DEnd(obj.id, $event)"
+              >
                 <v-line v-for="(pt, pi) in round3dParts(obj)" :key="'rp' + pi" :config="pt" />
               </v-group>
             </template>
 
             <!-- 3D: Torus (donut tube) -->
             <template v-if="obj.type === 'torus' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+              <v-group
+                :config="obj3dCenter(obj)"
+                @mousedown="onObjDown(obj.id, $event)"
+                @dragend="onDrag3DEnd(obj.id, $event)"
+              >
                 <v-circle v-for="(seg, si) in torus3dTube(obj)" :key="'tt' + si" :config="seg" />
                 <v-line v-for="(ln, li) in torusOutline(obj)" :key="'tol' + li" :config="ln" />
               </v-group>
@@ -249,7 +632,11 @@
 
             <!-- 3D: Surface (z = f(x,y)) wireframe -->
             <template v-if="obj.type === 'surface' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
-              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+              <v-group
+                :config="obj3dCenter(obj)"
+                @mousedown="onObjDown(obj.id, $event)"
+                @dragend="onDrag3DEnd(obj.id, $event)"
+              >
                 <v-line v-for="(ln, li) in surface3dMesh(obj)" :key="'sf' + li" :config="ln" />
               </v-group>
             </template>
@@ -257,7 +644,11 @@
             <!-- 3D: Axes3D -->
             <template v-if="obj.type === 'axes3d' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-group :config="{ x: 0, y: 0 }" @mousedown="onObjDown(obj.id, $event)">
-                <v-line v-for="(axLine, axIdx) in axes3dLines(obj)" :key="'ax3d' + axIdx" :config="axLine" />
+                <v-line
+                  v-for="(axLine, axIdx) in axes3dLines(obj)"
+                  :key="'ax3d' + axIdx"
+                  :config="axLine"
+                />
               </v-group>
             </template>
           </template>
@@ -276,24 +667,48 @@
 
         <!-- Morph preview layer -->
         <v-layer>
-          <v-line v-for="(m, mi) in morphShapes" :key="'m'+mi" :config="morphCfg(m)" />
+          <v-line v-for="(m, mi) in morphShapes" :key="'m' + mi" :config="morphCfg(m)" />
         </v-layer>
 
         <!-- Path draw preview layer -->
         <v-layer v-if="pathDrawing && pathPoints.length >= 1">
           <v-line v-if="pathPoints.length >= 2" :config="pathPreviewLineCfg" />
-          <v-circle v-for="(pt, pi) in pathCanvasPoints" :key="'pp'+pi" :config="{ x: pt.cx, y: pt.cy, radius: 5, fill: '#a855f7', stroke: '#fff', strokeWidth: 1, listening: false }" />
+          <v-circle
+            v-for="(pt, pi) in pathCanvasPoints"
+            :key="'pp' + pi"
+            :config="{
+              x: pt.cx,
+              y: pt.cy,
+              radius: 5,
+              fill: '#a855f7',
+              stroke: '#fff',
+              strokeWidth: 1,
+              listening: false,
+            }"
+          />
         </v-layer>
 
         <v-layer v-if="polygonHandles">
-          <v-circle v-for="pt in polygonHandles.points" :key="'pv' + pt.key"
-            :config="{ x: pt.cx, y: pt.cy, radius: 6, fill: '#4CEEF9', stroke: '#0b1020', strokeWidth: 1.5, draggable: true }"
-            @dragmove="onVertexDrag(pt.key, $event)" @dragend="onVertexDragEnd" />
+          <v-circle
+            v-for="pt in polygonHandles.points"
+            :key="'pv' + pt.key"
+            :config="{
+              x: pt.cx,
+              y: pt.cy,
+              radius: 6,
+              fill: '#4CEEF9',
+              stroke: '#0b1020',
+              strokeWidth: 1.5,
+              draggable: true,
+            }"
+            @dragmove="onVertexDrag(pt.key, $event)"
+            @dragend="onVertexDragEnd"
+          />
         </v-layer>
 
         <!-- Group bounds layer -->
         <v-layer>
-          <v-rect v-for="gb in groupBounds" :key="'gb-'+gb.id" :config="gb" />
+          <v-rect v-for="gb in groupBounds" :key="'gb-' + gb.id" :config="gb" />
         </v-layer>
 
         <!-- Selection transformer -->
@@ -303,7 +718,7 @@
       </v-stage>
 
       <!-- 3D view selector (overlay, top-left) -->
-      <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay);">
+      <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay)">
         <select
           :value="store.project.camera3d?.view ?? 'perspective'"
           @change="store.setCamera3d({ view: $event.target.value })"
@@ -321,25 +736,46 @@
       </div>
 
       <!-- Drop zone indicator -->
-      <div v-if="isDraggingOver" class="absolute inset-0 pointer-events-none border-2 border-dashed border-studio-accent/50 rounded-xl bg-studio-accent/5 flex items-center justify-center" style="z-index: var(--z-overlay);">
+      <div
+        v-if="isDraggingOver"
+        class="absolute inset-0 pointer-events-none border-2 border-dashed border-studio-accent/50 rounded-xl bg-studio-accent/5 flex items-center justify-center"
+        style="z-index: var(--z-overlay)"
+      >
         <span class="text-studio-accent text-sm font-medium opacity-60">Drop to place</span>
       </div>
 
       <!-- Empty state -->
-      <div v-if="objects.length === 0 && !isDraggingOver" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+      <div
+        v-if="objects.length === 0 && !isDraggingOver"
+        class="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+      >
         <div class="text-center max-w-xs px-6">
-          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-studio-accent/10 border border-studio-accent/20 flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-studio-accent">
-              <path d="M12 5v14M5 12h14"/>
+          <div
+            class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-studio-accent/10 border border-studio-accent/20 flex items-center justify-center"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              class="text-studio-accent"
+            >
+              <path d="M12 5v14M5 12h14" />
             </svg>
           </div>
           <p class="text-sm font-medium text-studio-text/50 mb-1">Empty canvas</p>
-          <p class="text-xs text-studio-text-muted/40 leading-relaxed">Drag a shape from the sidebar, or click to add.</p>
+          <p class="text-xs text-studio-text-muted/40 leading-relaxed">
+            Drag a shape from the sidebar, or click to add.
+          </p>
         </div>
       </div>
 
       <!-- Zoom indicator -->
-      <div class="absolute bottom-2 right-2 text-[10px] text-studio-text-muted/40 font-mono pointer-events-none select-none">
+      <div
+        class="absolute bottom-2 right-2 text-[10px] text-studio-text-muted/40 font-mono pointer-events-none select-none"
+      >
         {{ Math.round(zoomLevel * 100) }}%
       </div>
     </div>
@@ -379,15 +815,36 @@ const transformer = ref(null);
 
 // ── Viewport composable ──
 const {
-  containerWidth, containerHeight, panOffset, zoomLevel, stg,
-  vs, ox, oy, stageConfig, is3D, cam3d, proj3DScale, projCx, projCy,
-  iso, s2c, c2s, themeAccent, themeSurface,
-  updateSize, unprojectView, startPan, handleWheel,
+  containerWidth,
+  containerHeight,
+  panOffset,
+  zoomLevel,
+  stg,
+  vs,
+  ox,
+  oy,
+  stageConfig,
+  is3D,
+  cam3d,
+  proj3DScale,
+  projCx,
+  projCy,
+  iso,
+  s2c,
+  c2s,
+  themeAccent,
+  themeSurface,
+  updateSize,
+  unprojectView,
+  startPan,
+  handleWheel,
 } = useStageViewport(store, container);
 
 // ── Computed ──
 const objects = computed(() => store.project.objects);
-const sortedObjects = computed(() => [...objects.value].sort((a, b) => (a.zOrder || 0) - (b.zOrder || 0)));
+const sortedObjects = computed(() =>
+  [...objects.value].sort((a, b) => (a.zOrder || 0) - (b.zOrder || 0))
+);
 const selectedObjectIds = computed(() => store.selectedObjectIds);
 const gridVisible = computed(() => store.project.stage.gridVisible);
 const frameState = computed(() => store.frameState);
@@ -397,40 +854,80 @@ const morphShapes = computed(() => frameState.value.morphShapes || []);
 
 // ── Path draw composable ──
 const {
-  pathDrawing, pathPoints, pathSourceId,
-  pathCanvasPoints, pathPreviewLineCfg,
-  startPathDraw, onStageDblClick,
+  pathDrawing,
+  pathPoints,
+  pathSourceId,
+  pathCanvasPoints,
+  pathPreviewLineCfg,
+  startPathDraw,
+  onStageDblClick,
 } = useStagePathDraw(store, { s2c, iso, projCx, projCy, proj3DScale });
 
 // ── Interactions composable ──
 const {
-  shiftKey, liveTransform, polygonHandles, groupBounds, trConfig,
-  onVertexDrag, onVertexDragEnd, handleStageMouseDown, onObjDown, onDragEnd,
-  onDrag3DEnd, onTransform, onTransformEnd, onTextDblClick, updateTransformer,
+  shiftKey,
+  liveTransform,
+  polygonHandles,
+  groupBounds,
+  trConfig,
+  onVertexDrag,
+  onVertexDragEnd,
+  handleStageMouseDown,
+  onObjDown,
+  onDragEnd,
+  onDrag3DEnd,
+  onTransform,
+  onTransformEnd,
+  onTextDblClick,
+  updateTransformer,
 } = useStageInteractions(store, {
-  konvaStage, objectsLayer, transformer,
-  vs, ox, oy, s2c, c2s, unprojectView, themeAccent,
-  startPan, is3D,
-  pathDrawing, pathPoints, pathSourceId,
+  konvaStage,
+  objectsLayer,
+  transformer,
+  vs,
+  ox,
+  oy,
+  s2c,
+  c2s,
+  unprojectView,
+  themeAccent,
+  startPan,
+  is3D,
+  pathDrawing,
+  pathPoints,
+  pathSourceId,
 });
 
 // ── Assets composable ──
 const {
-  imageElements, isDraggingOver, fontLoadKey,
-  loadNewImages, loadNewFonts,
-  onDragOver, onDragLeave, onDrop,
+  imageElements,
+  isDraggingOver,
+  fontLoadKey,
+  loadNewImages,
+  loadNewFonts,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 } = useStageAssets(store, { objects, c2s, container, objectsLayer });
 
 // ── Watch ──
-watch(() => store.selectedObjectIds, () => {
-  nextTick(() => updateTransformer());
-}, { deep: true });
+watch(
+  () => store.selectedObjectIds,
+  () => {
+    nextTick(() => updateTransformer());
+  },
+  { deep: true }
+);
 
-watch(() => store.project.objects, () => {
-  nextTick(() => updateTransformer());
-  loadNewImages();
-  loadNewFonts();
-}, { deep: true });
+watch(
+  () => store.project.objects,
+  () => {
+    nextTick(() => updateTransformer());
+    loadNewImages();
+    loadNewFonts();
+  },
+  { deep: true }
+);
 
 // ── Lifecycle ──
 onMounted(() => {
@@ -439,8 +936,12 @@ onMounted(() => {
   _ro.observe(container.value);
   loadNewImages();
   loadNewFonts();
-  _onKeyDown = (e) => { if (e.key === 'Shift') shiftKey.value = true; };
-  _onKeyUp = (e) => { if (e.key === 'Shift') shiftKey.value = false; };
+  _onKeyDown = (e) => {
+    if (e.key === 'Shift') shiftKey.value = true;
+  };
+  _onKeyUp = (e) => {
+    if (e.key === 'Shift') shiftKey.value = false;
+  };
   window.addEventListener('keydown', _onKeyDown);
   window.addEventListener('keyup', _onKeyUp);
 });
@@ -495,14 +996,29 @@ const axes3dLines = (o) => objects3d.axes3dLines(o, ctx.value);
 
 // ── shapes2d ctx bridge ──
 const ctx = computed(() => ({
-  stg: stg.value, vs: vs.value, ox: ox.value, oy: oy.value, s2c, c2s,
-  eff, eff3d, live,
-  applyEffects: (cfg, obj, w, h, centered) => effects.applyEffects(cfg, obj, w, h, centered, vs.value),
+  stg: stg.value,
+  vs: vs.value,
+  ox: ox.value,
+  oy: oy.value,
+  s2c,
+  c2s,
+  eff,
+  eff3d,
+  live,
+  applyEffects: (cfg, obj, w, h, centered) =>
+    effects.applyEffects(cfg, obj, w, h, centered, vs.value),
   hexToRgba: effects.hexToRgba,
-  themeAccent: themeAccent.value, themeSurface: themeSurface.value,
-  imageElements, frameState: frameState.value, is3D: is3D.value, cam3d: cam3d.value,
-  proj3DScale: proj3DScale.value, projCx: projCx.value, projCy: projCy.value,
-  iso, measureTextWidth: text.measureTextWidth,
+  themeAccent: themeAccent.value,
+  themeSurface: themeSurface.value,
+  imageElements,
+  frameState: frameState.value,
+  is3D: is3D.value,
+  cam3d: cam3d.value,
+  proj3DScale: proj3DScale.value,
+  projCx: projCx.value,
+  projCy: projCy.value,
+  iso,
+  measureTextWidth: text.measureTextWidth,
   activeTool: store.activeTool,
   selectedObjectIds: store.selectedObjectIds,
 }));
@@ -518,7 +1034,9 @@ const floorGridIso = computed(() => chrome.floorGridIso(ctx.value));
 
 // ── overlays.js delegating computeds ──
 const emphasisOverlays = computed(() => overlays.emphasisOverlays(objects.value, ctx.value));
-const path3dPolylines = computed(() => overlays.path3dPolylines(store.project.tracks || [], ctx.value));
+const path3dPolylines = computed(() =>
+  overlays.path3dPolylines(store.project.tracks || [], ctx.value)
+);
 const morphCfg = (m) => overlays.morphCfg(m, ctx.value);
 const rectCfg = (o) => shapes2d.rectCfg(o, ctx.value);
 const circleCfg = (o) => shapes2d.circleCfg(o, ctx.value);

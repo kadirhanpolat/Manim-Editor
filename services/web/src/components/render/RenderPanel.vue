@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-3">
       <span class="text-xs text-studio-text-muted uppercase tracking-wider">Render</span>
     </div>
-    
+
     <!-- Quality Selector -->
     <div class="mb-3">
       <label class="block text-xs text-studio-text-muted mb-1">Quality</label>
@@ -13,7 +13,7 @@
         </option>
       </select>
     </div>
-    
+
     <!-- Render Button -->
     <button
       @click="startRender"
@@ -23,15 +23,26 @@
       :title="hasPendingAudio ? 'Waiting for audio generation...' : ''"
     >
       <span v-if="isRendering" class="flex items-center justify-center gap-2">
-        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" stroke-dasharray="45 20"/></svg>
+        <svg
+          class="animate-spin w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="12" cy="12" r="10" stroke-dasharray="45 20" />
+        </svg>
         Rendering...
       </span>
       <span v-else class="flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z" />
+        </svg>
         Render Video
       </span>
     </button>
-    
+
     <!-- Status -->
     <div v-if="renderStatus" class="mb-3 p-3 rounded text-sm" :class="statusClass">
       <div class="flex items-center gap-2">
@@ -44,7 +55,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Logs Toggle + Copy -->
     <div v-if="hasLogs" class="flex items-center gap-3 mb-2">
       <button
@@ -62,13 +73,20 @@
       </button>
     </div>
 
-    <div v-if="showLogs && hasLogs" class="mb-3 p-2 bg-studio-bg rounded text-xs font-mono max-h-32 overflow-y-auto">
-      <pre class="whitespace-pre-wrap text-studio-text-muted select-text" style="user-select: text;">{{ jobLogs }}</pre>
+    <div
+      v-if="showLogs && hasLogs"
+      class="mb-3 p-2 bg-studio-bg rounded text-xs font-mono max-h-32 overflow-y-auto"
+    >
+      <pre
+        class="whitespace-pre-wrap text-studio-text-muted select-text"
+        style="user-select: text"
+        >{{ jobLogs }}</pre
+      >
     </div>
-    
+
     <!-- Video Preview -->
     <VideoPreview v-if="hasRender" :project-id="projectId" :key="renderKey" />
-    
+
     <div v-else-if="!isRendering" class="text-center text-studio-text-muted py-4">
       <div class="text-2xl mb-2 opacity-30">🎥</div>
       <p class="text-xs">No render yet</p>
@@ -96,13 +114,22 @@ async function copyLogs() {
   } catch {
     // Fallback for non-secure contexts / older browsers
     const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } catch { /* ignore */ }
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch {
+      /* ignore */
+    }
     ta.remove();
   }
   copied.value = true;
-  setTimeout(() => { copied.value = false; }, 1500);
+  setTimeout(() => {
+    copied.value = false;
+  }, 1500);
 }
 let pollInterval = null;
 const jobData = ref(null);
@@ -120,7 +147,7 @@ const statusClass = computed(() => {
     queued: 'bg-studio-warning/20 text-studio-warning',
     running: 'bg-studio-accent/20 text-studio-accent',
     completed: 'bg-studio-success/20 text-studio-success',
-    failed: 'bg-studio-error/20 text-studio-error'
+    failed: 'bg-studio-error/20 text-studio-error',
   };
   return classes[renderStatus.value] || 'bg-studio-border';
 });
@@ -140,15 +167,21 @@ watch(renderStatus, (status) => {
   }
 });
 
-onMounted(() => { checkExistingRender(); });
-onBeforeUnmount(() => { stopPolling(); });
+onMounted(() => {
+  checkExistingRender();
+});
+onBeforeUnmount(() => {
+  stopPolling();
+});
 
 async function checkExistingRender() {
   if (!projectId.value) return;
   try {
     const info = await renders.getInfo(projectId.value);
     hasRender.value = info.hasLatest;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 async function startRender() {

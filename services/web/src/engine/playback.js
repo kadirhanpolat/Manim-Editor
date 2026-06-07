@@ -1,6 +1,6 @@
 /**
  * Playback Engine
- * 
+ *
  * Drives 60fps preview playback using requestAnimationFrame.
  * Evaluates all active clips at current time, computes morph states,
  * and produces a frame state that the canvas renders.
@@ -9,7 +9,13 @@
 import { getEasing, evaluateEasing } from './easing.js';
 import { generateShapePoints, pointsToFlat } from './geometry.js';
 import { resamplePoints, computeMorphState, lerp, interpolateColor } from './transform.js';
-import { blendClipResults, isClipActive, getClipProgress, isClipCompleted, applyOverrides } from './blending.js';
+import {
+  blendClipResults,
+  isClipActive,
+  getClipProgress,
+  isClipCompleted,
+  applyOverrides,
+} from './blending.js';
 import { interpolateKeyframes, getKeyframeRange } from './keyframe.js';
 
 /**
@@ -43,9 +49,10 @@ export function interpolatePath(path, t) {
     segLens.push(len);
     totalLen += len;
   }
-  const at = (i) => (is3d
-    ? { x3d: path[i].x3d, y3d: path[i].y3d, z3d: path[i].z3d }
-    : { x: path[i].x, y: path[i].y });
+  const at = (i) =>
+    is3d
+      ? { x3d: path[i].x3d, y3d: path[i].y3d, z3d: path[i].z3d }
+      : { x: path[i].x, y: path[i].y };
   if (totalLen === 0) return at(0);
   const target = clampedT * totalLen;
   let cumLen = 0;
@@ -130,7 +137,7 @@ export class PlaybackEngine {
     this._tracks = tracks;
     this._objects = objects;
     this._cameraTrack = cameraTrack || [];
-    this._objectMap = new Map(objects.map(o => [o.id, o]));
+    this._objectMap = new Map(objects.map((o) => [o.id, o]));
     this._tick = this._tick.bind(this);
     this._frameId = requestAnimationFrame(this._tick);
   }
@@ -168,14 +175,19 @@ export class PlaybackEngine {
     if (tracks) this._tracks = tracks;
     if (objects) {
       this._objects = objects;
-      this._objectMap = new Map(objects.map(o => [o.id, o]));
+      this._objectMap = new Map(objects.map((o) => [o.id, o]));
     }
     if (cameraTrack !== undefined) this._cameraTrack = cameraTrack;
     if (this._onTimeUpdate) this._onTimeUpdate(this.currentTime);
 
     // Compute and emit frame at this time
     if (this._tracks && this._objects) {
-      const frame = this.computeFrame(this.currentTime, this._tracks, this._objects, this._cameraTrack);
+      const frame = this.computeFrame(
+        this.currentTime,
+        this._tracks,
+        this._objects,
+        this._cameraTrack
+      );
       if (this._onFrame) this._onFrame(frame);
     }
   }
@@ -212,7 +224,12 @@ export class PlaybackEngine {
     if (this._onTimeUpdate) this._onTimeUpdate(this.currentTime);
 
     // Compute frame
-    const frame = this.computeFrame(this.currentTime, this._tracks, this._objects, this._cameraTrack);
+    const frame = this.computeFrame(
+      this.currentTime,
+      this._tracks,
+      this._objects,
+      this._cameraTrack
+    );
     if (this._onFrame) this._onFrame(frame);
 
     // Schedule next frame
@@ -235,7 +252,7 @@ export class PlaybackEngine {
       return { objectOverrides: {}, morphShapes: [], hiddenIds: new Set(), cameraState: null };
     }
 
-    const objectMap = this._objectMap || new Map(objects.map(o => [o.id, o]));
+    const objectMap = this._objectMap || new Map(objects.map((o) => [o.id, o]));
     const evaluatedClips = [];
 
     for (let trackIdx = 0; trackIdx < tracks.length; trackIdx++) {
@@ -272,13 +289,13 @@ export class PlaybackEngine {
         const prev = ci > 0 ? sortedCam[ci - 1].params : null;
         const is3d = camClip.params && 'phi' in camClip.params;
         if (is3d) {
-          const fromPhi   = prev?.phi   ?? base.phi;
+          const fromPhi = prev?.phi ?? base.phi;
           const fromTheta = prev?.theta ?? base.theta;
-          const fromZoom  = prev?.zoom  ?? base.zoom;
+          const fromZoom = prev?.zoom ?? base.zoom;
           frame.cameraState = {
-            phi:   lerp(fromPhi,   camClip.params.phi   ?? base.phi,   easedT),
+            phi: lerp(fromPhi, camClip.params.phi ?? base.phi, easedT),
             theta: lerp(fromTheta, camClip.params.theta ?? base.theta, easedT),
-            zoom:  lerp(fromZoom,  camClip.params.zoom  ?? base.zoom,   easedT),
+            zoom: lerp(fromZoom, camClip.params.zoom ?? base.zoom, easedT),
             is3d: true,
           };
         } else {
@@ -312,8 +329,8 @@ export class PlaybackEngine {
       for (const [prop, keyframes] of Object.entries(obj.keyframes)) {
         if (!keyframes || keyframes.length === 0) continue;
 
-        const mode = (obj.keyframeMode && obj.keyframeMode[prop]) ||
-          this._keyframeDefaults.mode || 'opt-in';
+        const mode =
+          (obj.keyframeMode && obj.keyframeMode[prop]) || this._keyframeDefaults.mode || 'opt-in';
 
         if (mode === 'opt-in') {
           const range = getKeyframeRange(keyframes);
@@ -325,7 +342,7 @@ export class PlaybackEngine {
 
         const overrides = frame.objectOverrides[obj.id] || {};
         if (mode === 'additive') {
-          const base = overrides[prop] !== undefined ? overrides[prop] : (obj[prop] || 0);
+          const base = overrides[prop] !== undefined ? overrides[prop] : obj[prop] || 0;
           overrides[prop] = base + kfValue;
         } else {
           overrides[prop] = kfValue;
@@ -521,12 +538,21 @@ export class PlaybackEngine {
       const easedT = evaluateEasing(p, clip.easing || 'ease_in_out', 0, 1.0);
       const from = Number.isFinite(clip.from) ? clip.from : 0;
       const to = Number.isFinite(clip.to) ? clip.to : 0;
-      return { objectId: objId, overrides: { value: from + (to - from) * easedT }, clipId: clip.id };
+      return {
+        objectId: objId,
+        overrides: { value: from + (to - from) * easedT },
+        clipId: clip.id,
+      };
     }
 
     if (!active) return null;
     const progress = getClipProgress(clip, time);
-    const easedT = evaluateEasing(progress, clip.easing || 'ease_in_out', clip.overshoot || 0, clip.settle || 1.0);
+    const easedT = evaluateEasing(
+      progress,
+      clip.easing || 'ease_in_out',
+      clip.overshoot || 0,
+      clip.settle || 1.0
+    );
 
     const sourceObj = objectMap.get(clip.sourceId);
     if (!sourceObj) return null;
@@ -536,8 +562,16 @@ export class PlaybackEngine {
     switch (clip.type) {
       case 'move': {
         const params = clip.params || {};
-        overrides.x = lerp(sourceObj.x, params.targetX !== undefined ? params.targetX : sourceObj.x, easedT);
-        overrides.y = lerp(sourceObj.y, params.targetY !== undefined ? params.targetY : sourceObj.y, easedT);
+        overrides.x = lerp(
+          sourceObj.x,
+          params.targetX !== undefined ? params.targetX : sourceObj.x,
+          easedT
+        );
+        overrides.y = lerp(
+          sourceObj.y,
+          params.targetY !== undefined ? params.targetY : sourceObj.y,
+          easedT
+        );
         break;
       }
       case 'scale': {
@@ -565,7 +599,7 @@ export class PlaybackEngine {
       case 'path_move': {
         if (!clip.path || clip.path.length < 2) break;
         const pos = interpolatePath(clip.path, easedT);
-        Object.assign(overrides, pos);  // 2D: {x,y} · 3D: {x3d,y3d,z3d}
+        Object.assign(overrides, pos); // 2D: {x,y} · 3D: {x3d,y3d,z3d}
         break;
       }
       case 'indicate': {
@@ -574,7 +608,11 @@ export class PlaybackEngine {
         const sf = params.scale_factor !== undefined ? params.scale_factor : 1.2;
         overrides.scaleX = lerp(1, sf, pulse);
         overrides.scaleY = lerp(1, sf, pulse);
-        overrides.fill = interpolateColor(sourceObj.fill || '#ffffff', params.color || '#FFFF00', pulse);
+        overrides.fill = interpolateColor(
+          sourceObj.fill || '#ffffff',
+          params.color || '#FFFF00',
+          pulse
+        );
         break;
       }
       case 'wiggle': {
@@ -591,13 +629,21 @@ export class PlaybackEngine {
       case 'flash': {
         const params = clip.params || {};
         const pulse = Math.sin(Math.PI * progress);
-        overrides.fill = interpolateColor(sourceObj.fill || '#ffffff', params.color || '#FFFF00', pulse);
+        overrides.fill = interpolateColor(
+          sourceObj.fill || '#ffffff',
+          params.color || '#FFFF00',
+          pulse
+        );
         break;
       }
       case 'focus_on': {
         const params = clip.params || {};
         const pulse = Math.sin(Math.PI * progress);
-        overrides.fill = interpolateColor(sourceObj.fill || '#ffffff', params.color || '#FFFF00', pulse * 0.6);
+        overrides.fill = interpolateColor(
+          sourceObj.fill || '#ffffff',
+          params.color || '#FFFF00',
+          pulse * 0.6
+        );
         break;
       }
       case 'circumscribe': {
@@ -616,7 +662,7 @@ export class PlaybackEngine {
     return {
       objectId: clip.sourceId,
       overrides,
-      clipId: clip.id
+      clipId: clip.id,
     };
   }
 
@@ -634,7 +680,7 @@ export class PlaybackEngine {
         clipId: clip.id,
         hideIds: [clip.sourceId],
         objectId: clip.sourceId,
-        overrides: {}
+        overrides: {},
       };
     }
 
@@ -643,7 +689,12 @@ export class PlaybackEngine {
 
     // During: compute morph
     const progress = getClipProgress(clip, time);
-    const easedT = evaluateEasing(progress, clip.easing || 'ease_in_out', clip.overshoot || 0, clip.settle || 1.0);
+    const easedT = evaluateEasing(
+      progress,
+      clip.easing || 'ease_in_out',
+      clip.overshoot || 0,
+      clip.settle || 1.0
+    );
 
     // Get or compute resampled points
     const quality = clip.morphQuality || 'medium';
@@ -656,11 +707,11 @@ export class PlaybackEngine {
       clipId: clip.id,
       morphState: {
         ...morphState,
-        flatPoints: pointsToFlat(morphState.points)
+        flatPoints: pointsToFlat(morphState.points),
       },
       hideIds: [clip.sourceId, clip.targetId],
       objectId: clip.sourceId,
-      overrides: {}
+      overrides: {},
     };
   }
 

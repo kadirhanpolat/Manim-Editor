@@ -4,7 +4,8 @@ import { hex } from './helpers.js';
 // upgrades to TransformMatchingTex (both latex) or TransformMatchingShapes (other
 // VMobjects). Used by all three transform-clip codegen sites + the parallel group.
 export function transformExpr(clip, sn, tn, srcObj, tgtObj) {
-  const hasRaster = ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
+  const hasRaster =
+    ['image', 'svg_asset'].includes(srcObj?.type) || ['image', 'svg_asset'].includes(tgtObj?.type);
   if (hasRaster) return `FadeTransform(${sn}, ${tn})`;
   if (clip.matchTerms) {
     const bothLatex = srcObj?.type === 'latex' && tgtObj?.type === 'latex';

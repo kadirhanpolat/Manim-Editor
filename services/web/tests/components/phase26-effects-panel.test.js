@@ -15,13 +15,15 @@ beforeEach(() => {
 describe('effects panel — shadow + round', () => {
   it('shows the corner-radius control for a triangle', () => {
     store.addObject('triangle', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     expect(mount(PropertiesPanel).find('[data-test="corner-radius"]').exists()).toBe(true);
   });
 
   it('shows a shadow toggle for a circle and enabling writes a shadow', async () => {
     store.addObject('circle', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     const wrapper = mount(PropertiesPanel);
     const toggle = wrapper.find('[data-test="shadow-toggle"]');
     expect(toggle.exists()).toBe(true);

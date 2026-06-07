@@ -21,7 +21,13 @@ export function emphasisOverlays(objects, ctx) {
     const h = (m.height || 100) * 1.25 * ctx.vs;
     const p = e.progress;
     const op = e.fadeOut ? Math.sin(Math.PI * p) : Math.min(1, p * 2);
-    const base = { stroke: e.color, strokeWidth: 3, opacity: Math.max(0, op), listening: false, id: obj.id + '-emph' };
+    const base = {
+      stroke: e.color,
+      strokeWidth: 3,
+      opacity: Math.max(0, op),
+      listening: false,
+      id: obj.id + '-emph',
+    };
     if (e.shape === 'Circle') {
       out.push({ ...base, kind: 'ellipse', x: c.x, y: c.y, radiusX: w / 2, radiusY: h / 2 });
     } else {
@@ -50,7 +56,15 @@ export function path3dPolylines(tracks, ctx) {
         const i = ctx.iso(pt.x3d, pt.y3d ?? 0, pt.z3d, ctx.projCx, ctx.projCy, ctx.proj3DScale);
         pts.push(i.px, i.py);
       }
-      out.push({ stroke: '#a855f7', strokeWidth: 1.5, dash: [4, 4], listening: false, opacity: 0.7, points: pts, id: clip.id + '-path3d' });
+      out.push({
+        stroke: '#a855f7',
+        strokeWidth: 1.5,
+        dash: [4, 4],
+        listening: false,
+        opacity: 0.7,
+        points: pts,
+        id: clip.id + '-path3d',
+      });
     }
   }
   return out;
@@ -66,6 +80,19 @@ export function morphCfg(m, ctx) {
   if (!m || !m.flatPoints || m.flatPoints.length < 4) return { points: [], closed: true };
   const p = ctx.s2c(m.x, m.y);
   const sp = [];
-  for (let i = 0; i < m.flatPoints.length; i += 2) { sp.push(m.flatPoints[i] * ctx.vs); sp.push(m.flatPoints[i + 1] * ctx.vs); }
-  return { x: p.x, y: p.y, points: sp, closed: true, fill: m.fill || '#fff', stroke: m.stroke || '#fff', strokeWidth: (m.strokeWidth || 2) * ctx.vs / 2, opacity: m.opacity ?? 1, listening: false };
+  for (let i = 0; i < m.flatPoints.length; i += 2) {
+    sp.push(m.flatPoints[i] * ctx.vs);
+    sp.push(m.flatPoints[i + 1] * ctx.vs);
+  }
+  return {
+    x: p.x,
+    y: p.y,
+    points: sp,
+    closed: true,
+    fill: m.fill || '#fff',
+    stroke: m.stroke || '#fff',
+    strokeWidth: ((m.strokeWidth || 2) * ctx.vs) / 2,
+    opacity: m.opacity ?? 1,
+    listening: false,
+  };
 }

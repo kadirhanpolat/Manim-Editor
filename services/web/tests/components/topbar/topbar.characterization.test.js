@@ -22,7 +22,14 @@ function setWidth(px) {
 
 let store;
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  );
   setActivePinia(createPinia());
   store = useProjectStore();
   store.newProject('Char', 'visual');
@@ -53,11 +60,11 @@ describe('Topbar characterization', () => {
     const w = mount(Topbar);
     await nextTick(); // flush onMounted reactivity (ensure desktop nav is visible)
     // Click the "File" menu label to open the File dropdown
-    const fileBtn = w.findAll('.menu-label').find(b => b.text().includes('File'));
+    const fileBtn = w.findAll('.menu-label').find((b) => b.text().includes('File'));
     await fileBtn.trigger('click');
     await w.vm.$nextTick();
     // Find and click the "New Project" menu item
-    const newProjectItem = w.findAll('.menu-item').find(b => b.text().includes('New Project'));
+    const newProjectItem = w.findAll('.menu-item').find((b) => b.text().includes('New Project'));
     await newProjectItem.trigger('click');
     await w.vm.$nextTick();
     expect(norm(w.html())).toMatchSnapshot();

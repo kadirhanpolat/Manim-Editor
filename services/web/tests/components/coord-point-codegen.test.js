@@ -30,7 +30,7 @@ describe('coord_point codegen', () => {
     const o = store.addObject('coord_point', 960, 540);
     store.updateObject(o.id, { decimals: 2 });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const cp = parsed.objects.find(x => x.type === 'coord_point');
+    const cp = parsed.objects.find((x) => x.type === 'coord_point');
     expect(cp).toBeTruthy();
     expect(cp.decimals).toBe(2);
   });

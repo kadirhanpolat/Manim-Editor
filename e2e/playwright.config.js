@@ -16,9 +16,7 @@ export default defineConfig({
     baseURL: 'http://localhost:5188',
     trace: 'on-first-retry',
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   // Boot the frontend dev server on a dedicated port. It is fully client-side
   // for object editing (Pinia store + Konva) — no API/Redis needed for the
   // UI-tool smoke tests. A non-default port (5173 is commonly taken by other

@@ -15,12 +15,14 @@ beforeEach(() => {
 describe('phase 2 geometry inspector', () => {
   it('shows inner/outer radius for annulus', () => {
     store.addObject('annulus', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     expect(mount(PropertiesPanel).html()).toContain('Inner radius');
   });
   it('shows sweep angle for sector', () => {
     store.addObject('sector', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     expect(mount(PropertiesPanel).html()).toContain('Sweep');
   });
 });

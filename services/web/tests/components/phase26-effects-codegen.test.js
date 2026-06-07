@@ -1,17 +1,42 @@
 import { describe, it, expect } from 'vitest';
 import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
 
-const SW = 1920, SH = 1080;
+const SW = 1920,
+  SH = 1080;
 function makeObj(type, extra = {}) {
   return {
-    id: 'o1', type, x: SW / 2, y: SH / 2, width: 200, height: 200,
-    fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-    enterTime: 0, duration: 5, enterAnim: 'none', exitAnim: 'none', ...extra,
+    id: 'o1',
+    type,
+    x: SW / 2,
+    y: SH / 2,
+    width: 200,
+    height: 200,
+    fill: '#3b82f6',
+    stroke: '#ffffff',
+    strokeWidth: 2,
+    opacity: 1,
+    rotation: 0,
+    enterTime: 0,
+    duration: 5,
+    enterAnim: 'none',
+    exitAnim: 'none',
+    ...extra,
   };
 }
 function makeProject(objects) {
-  return { name: 'T', sceneType: '2d', stage: { width: SW, height: SH },
-    sceneDuration: 5, fps: 60, background: '#000000', objects, tracks: [], cameraTrack: [], assets: [], groups: [] };
+  return {
+    name: 'T',
+    sceneType: '2d',
+    stage: { width: SW, height: SH },
+    sceneDuration: 5,
+    fps: 60,
+    background: '#000000',
+    objects,
+    tracks: [],
+    cameraTrack: [],
+    assets: [],
+    groups: [],
+  };
 }
 
 describe('round_corners codegen', () => {
@@ -31,8 +56,14 @@ describe('round_corners codegen', () => {
 
 describe('shadow codegen', () => {
   it('emits a shifted dark copy + VGroup for a shadowed circle', () => {
-    const s = generateManimScript(makeProject([makeObj('circle', { shadow: { color: '#000000', opacity: 0.4, dx: 8, dy: 8, blur: 12 } })]));
-    expect(s).toMatch(/_shadow_\w+ = \w+\.copy\(\)\.set_color\("#000000"\)\.set_opacity\(0\.4\)\.shift\(\[0\.059, -0\.059, 0\]\)/);
+    const s = generateManimScript(
+      makeProject([
+        makeObj('circle', { shadow: { color: '#000000', opacity: 0.4, dx: 8, dy: 8, blur: 12 } }),
+      ])
+    );
+    expect(s).toMatch(
+      /_shadow_\w+ = \w+\.copy\(\)\.set_color\("#000000"\)\.set_opacity\(0\.4\)\.shift\(\[0\.059, -0\.059, 0\]\)/
+    );
     expect(s).toMatch(/\w+ = VGroup\(_shadow_\w+, \w+\)/);
   });
   it('emits no shadow lines when shadow is absent (legacy)', () => {
@@ -43,7 +74,9 @@ describe('shadow codegen', () => {
 
 describe('effects round-trip', () => {
   it('round-trips a circle drop shadow', () => {
-    const proj = makeProject([makeObj('circle', { shadow: { color: '#123456', opacity: 0.5, dx: 10, dy: 6, blur: 12 } })]);
+    const proj = makeProject([
+      makeObj('circle', { shadow: { color: '#123456', opacity: 0.5, dx: 10, dy: 6, blur: 12 } }),
+    ]);
     const o = parseManimScript(generateManimScript(proj), SW, SH).objects[0];
     expect(o.shadow).toBeTruthy();
     expect(o.shadow.color.toLowerCase()).toBe('#123456');

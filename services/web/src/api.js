@@ -15,9 +15,9 @@ async function request(endpoint, options = {}) {
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers
+      ...options.headers,
     },
-    ...options
+    ...options,
   });
 
   if (!response.ok) {
@@ -39,29 +39,28 @@ export const projects = {
   create: (name = 'My Animation', editorMode = 'visual') =>
     request('/projects', {
       method: 'POST',
-      body: JSON.stringify({ name, editorMode })
+      body: JSON.stringify({ name, editorMode }),
     }),
 
   update: (id, project) =>
     request(`/projects/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(project)
+      body: JSON.stringify(project),
     }),
 
-  delete: (id) =>
-    request(`/projects/${id}`, { method: 'DELETE' }),
+  delete: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
 
   render: (id, quality = 'high') =>
     request(`/projects/${id}/render`, {
       method: 'POST',
-      body: JSON.stringify({ quality })
+      body: JSON.stringify({ quality }),
     }),
 
   renderCode: (id, { quality = 'high', codeSource, sceneName = 'MainScene' }) =>
     request(`/projects/${id}/render-code`, {
       method: 'POST',
-      body: JSON.stringify({ quality, codeSource, sceneName })
-    })
+      body: JSON.stringify({ quality, codeSource, sceneName }),
+    }),
 };
 
 // ─── Assets ───────────────────────────────────────────────────────────────────
@@ -76,7 +75,7 @@ export const assets = {
 
     const response = await fetch(`${API_BASE}/assets/${projectId}`, {
       method: 'POST',
-      body: formData
+      body: formData,
     });
 
     if (!response.ok) {
@@ -90,26 +89,26 @@ export const assets = {
   uploadBase64: (projectId, { name, type, data }) =>
     request(`/assets/${projectId}/base64`, {
       method: 'POST',
-      body: JSON.stringify({ name, type, data })
+      body: JSON.stringify({ name, type, data }),
     }),
 
   getUrl: (projectId, filename) => `${API_BASE}/assets/${projectId}/${filename}`,
 
   delete: (projectId, filename) =>
-    request(`/assets/${projectId}/${filename}`, { method: 'DELETE' })
+    request(`/assets/${projectId}/${filename}`, { method: 'DELETE' }),
 };
 
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
 
 export const jobs = {
-  get: (jobId) => request(`/jobs/${jobId}`)
+  get: (jobId) => request(`/jobs/${jobId}`),
 };
 
 // ─── Renders ──────────────────────────────────────────────────────────────────
 
 export const renders = {
   getLatestUrl: (projectId) => `${API_BASE}/renders/${projectId}/latest.mp4?t=${Date.now()}`,
-  getInfo:      (projectId) => request(`/renders/${projectId}`),
+  getInfo: (projectId) => request(`/renders/${projectId}`),
 };
 
 // ─── Audio ────────────────────────────────────────────────────────────────────
@@ -123,7 +122,7 @@ export const audio = {
 
     const response = await fetch(`${API_BASE}/audio/upload`, {
       method: 'POST',
-      body: formData
+      body: formData,
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({ error: response.statusText }));
@@ -136,12 +135,11 @@ export const audio = {
   tts: (clipId, type, text, lang = 'tr') =>
     request('/audio/tts', {
       method: 'POST',
-      body: JSON.stringify({ clipId, type, text, lang })
+      body: JSON.stringify({ clipId, type, text, lang }),
     }),
 
   /** Delete an audio file. */
-  delete: (audioId) =>
-    request(`/audio/${audioId}`, { method: 'DELETE' }),
+  delete: (audioId) => request(`/audio/${audioId}`, { method: 'DELETE' }),
 };
 
 // ─── Health ───────────────────────────────────────────────────────────────────
@@ -197,11 +195,22 @@ export function connectAudioWebSocket(jobId, onUpdate) {
         onUpdate(data);
         ws.close();
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
   ws.onerror = () => onUpdate({ event: 'audio_error', error: 'WebSocket error' });
 
   return () => ws.close();
 }
 
-export default { projects, assets, jobs, renders, audio, checkHealth, connectJobWebSocket, connectAudioWebSocket };
+export default {
+  projects,
+  assets,
+  jobs,
+  renders,
+  audio,
+  checkHealth,
+  connectJobWebSocket,
+  connectAudioWebSocket,
+};

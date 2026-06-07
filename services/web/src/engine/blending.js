@@ -1,6 +1,6 @@
 /**
  * Multi-Track Blending Engine
- * 
+ *
  * Defines how overlapping clips from different tracks combine.
  * Rule: higher track index wins per-property (last-write-wins).
  * Each clip produces property overrides for its target object(s).
@@ -8,7 +8,7 @@
 
 /**
  * Blend clip evaluation results from multiple tracks into final object states.
- * 
+ *
  * @param {Array<Object>} evaluatedClips - Array of { trackIndex, clipResult }
  *   where clipResult = { objectId, overrides: { x, y, opacity, ... }, morphState, hideIds }
  * @param {Object} baseObjects - Map of objectId -> base object state
@@ -39,7 +39,7 @@ export function blendClipResults(evaluatedClips, baseObjects) {
       morphShapes.push({
         ...clipResult.morphState,
         trackIndex,
-        clipId: clipResult.clipId
+        clipId: clipResult.clipId,
       });
     }
 
@@ -67,12 +67,17 @@ export function applyOverrides(baseObj, overrides) {
     y: overrides.y !== undefined ? overrides.y : baseObj.y,
     width: overrides.width !== undefined ? overrides.width : baseObj.width,
     height: overrides.height !== undefined ? overrides.height : baseObj.height,
-    rotation: overrides.rotation !== undefined ? overrides.rotation : (baseObj.rotation || 0),
-    opacity: overrides.opacity !== undefined ? overrides.opacity : (baseObj.opacity !== undefined ? baseObj.opacity : 1),
+    rotation: overrides.rotation !== undefined ? overrides.rotation : baseObj.rotation || 0,
+    opacity:
+      overrides.opacity !== undefined
+        ? overrides.opacity
+        : baseObj.opacity !== undefined
+          ? baseObj.opacity
+          : 1,
     fill: overrides.fill !== undefined ? overrides.fill : baseObj.fill,
     stroke: overrides.stroke !== undefined ? overrides.stroke : baseObj.stroke,
     scaleX: overrides.scaleX !== undefined ? overrides.scaleX : 1,
-    scaleY: overrides.scaleY !== undefined ? overrides.scaleY : 1
+    scaleY: overrides.scaleY !== undefined ? overrides.scaleY : 1,
   };
 }
 
@@ -109,5 +114,5 @@ export default {
   applyOverrides,
   isClipActive,
   getClipProgress,
-  isClipCompleted
+  isClipCompleted,
 };

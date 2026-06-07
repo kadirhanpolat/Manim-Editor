@@ -1,5 +1,7 @@
 <template>
-  <aside class="w-72 bg-studio-surface border-l border-studio-border flex flex-col flex-shrink-0 overflow-y-auto">
+  <aside
+    class="w-72 bg-studio-surface border-l border-studio-border flex flex-col flex-shrink-0 overflow-y-auto"
+  >
     <!-- Selected keyframe editor (self-gates on a selected keyframe) -->
     <KeyframePanel />
 
@@ -39,6 +41,6 @@ const obj = computed(() => store.selectedObject);
 const clip = computed(() => store.selectedClip);
 const cameraClip = computed(() => {
   if (!store.selectedClipId) return null;
-  return store.project.cameraTrack?.find(c => c.id === store.selectedClipId) || null;
+  return store.project.cameraTrack?.find((c) => c.id === store.selectedClipId) || null;
 });
 </script>

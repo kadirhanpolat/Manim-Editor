@@ -3,10 +3,21 @@ import { canvasToVertex } from '../../../engine/polygonVertices.js';
 
 export function useStageInteractions(store, deps) {
   const {
-    konvaStage, objectsLayer, transformer,
-    vs, ox, oy, s2c, c2s, unprojectView, themeAccent,
-    startPan, is3D,
-    pathDrawing, pathPoints, pathSourceId,
+    konvaStage,
+    objectsLayer,
+    transformer,
+    vs,
+    ox,
+    oy,
+    s2c,
+    c2s,
+    unprojectView,
+    themeAccent,
+    startPan,
+    is3D,
+    pathDrawing,
+    pathPoints,
+    pathSourceId,
   } = deps;
 
   // ── non-reactive instance var for dblclick guard (path draw) ──
@@ -20,11 +31,17 @@ export function useStageInteractions(store, deps) {
   const trConfig = computed(() => {
     const accent = themeAccent.value;
     return {
-      anchorSize: 8, anchorFill: accent, anchorStroke: '#fff', anchorStrokeWidth: 1.5,
-      borderStroke: accent, borderStrokeWidth: 1.5, borderDash: [6, 4],
-      rotateEnabled: true, keepRatio: shiftKey.value,
+      anchorSize: 8,
+      anchorFill: accent,
+      anchorStroke: '#fff',
+      anchorStrokeWidth: 1.5,
+      borderStroke: accent,
+      borderStrokeWidth: 1.5,
+      borderDash: [6, 4],
+      rotateEnabled: true,
+      keepRatio: shiftKey.value,
       enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      boundBoxFunc: (o, n) => (n.width < 10 || n.height < 10) ? o : n
+      boundBoxFunc: (o, n) => (n.width < 10 || n.height < 10 ? o : n),
     };
   });
 
@@ -34,20 +51,48 @@ export function useStageInteractions(store, deps) {
     if (!obj) return null;
     const c = s2c(obj.x, obj.y);
     if ((obj.type === 'polygon_free' || obj.type === 'bezier') && Array.isArray(obj.vertices)) {
-      return { id: obj.id, kind: 'vertices',
-        points: obj.vertices.map(([vx, vy], i) => ({ key: i, cx: c.x + vx * vs.value, cy: c.y + vy * vs.value })) };
+      return {
+        id: obj.id,
+        kind: 'vertices',
+        points: obj.vertices.map(([vx, vy], i) => ({
+          key: i,
+          cx: c.x + vx * vs.value,
+          cy: c.y + vy * vs.value,
+        })),
+      };
     }
     if (obj.type === 'brace') {
-      return { id: obj.id, kind: 'relational',
-        points: ['p1', 'p2'].map(k => ({ key: k, cx: c.x + obj[k][0] * vs.value, cy: c.y + obj[k][1] * vs.value })) };
+      return {
+        id: obj.id,
+        kind: 'relational',
+        points: ['p1', 'p2'].map((k) => ({
+          key: k,
+          cx: c.x + obj[k][0] * vs.value,
+          cy: c.y + obj[k][1] * vs.value,
+        })),
+      };
     }
     if (obj.type === 'angle') {
-      return { id: obj.id, kind: 'relational',
-        points: ['vertex', 'point1', 'point2'].map(k => ({ key: k, cx: c.x + obj[k][0] * vs.value, cy: c.y + obj[k][1] * vs.value })) };
+      return {
+        id: obj.id,
+        kind: 'relational',
+        points: ['vertex', 'point1', 'point2'].map((k) => ({
+          key: k,
+          cx: c.x + obj[k][0] * vs.value,
+          cy: c.y + obj[k][1] * vs.value,
+        })),
+      };
     }
     if (obj.type === 'graph' && obj.positions && typeof obj.positions === 'object') {
-      return { id: obj.id, kind: 'graph',
-        points: Object.keys(obj.positions).map(k => ({ key: k, cx: c.x + obj.positions[k][0] * vs.value, cy: c.y + obj.positions[k][1] * vs.value })) };
+      return {
+        id: obj.id,
+        kind: 'graph',
+        points: Object.keys(obj.positions).map((k) => ({
+          key: k,
+          cx: c.x + obj.positions[k][0] * vs.value,
+          cy: c.y + obj.positions[k][1] * vs.value,
+        })),
+      };
     }
     return null;
   });
@@ -57,12 +102,15 @@ export function useStageInteractions(store, deps) {
     const bounds = [];
     for (const group of groups) {
       if (!group.childIds || group.childIds.length === 0) continue;
-      const anySelected = group.childIds.some(cid => store.selectedObjectIds.includes(cid));
+      const anySelected = group.childIds.some((cid) => store.selectedObjectIds.includes(cid));
       if (!anySelected) continue;
 
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       for (const cid of group.childIds) {
-        const obj = store.project.objects.find(o => o.id === cid);
+        const obj = store.project.objects.find((o) => o.id === cid);
         if (!obj) continue;
         minX = Math.min(minX, obj.x - obj.width / 2);
         minY = Math.min(minY, obj.y - obj.height / 2);
@@ -78,10 +126,17 @@ export function useStageInteractions(store, deps) {
 
       bounds.push({
         id: group.id,
-        x: p1.x, y: p1.y, width: w, height: h,
+        x: p1.x,
+        y: p1.y,
+        width: w,
+        height: h,
         fill: 'transparent',
-        stroke: themeAccent.value, strokeWidth: 1.5, dash: [6, 4],
-        opacity: 0.5, cornerRadius: 6, listening: false
+        stroke: themeAccent.value,
+        strokeWidth: 1.5,
+        dash: [6, 4],
+        opacity: 0.5,
+        cornerRadius: 6,
+        listening: false,
       });
     }
     return bounds;
@@ -89,13 +144,17 @@ export function useStageInteractions(store, deps) {
 
   // ── Functions ──
   function onVertexDrag(key, evt) {
-    const h = polygonHandles.value; if (!h) return;
-    const obj = store.objectById(h.id); if (!obj) return;
+    const h = polygonHandles.value;
+    if (!h) return;
+    const obj = store.objectById(h.id);
+    if (!obj) return;
     const c = s2c(obj.x, obj.y);
     const node = evt.target;
     const nv = canvasToVertex(node.x(), node.y(), c.x, c.y, vs.value);
     if (h.kind === 'vertices') {
-      const arr = obj.vertices.slice(); arr[key] = nv; obj.vertices = arr;
+      const arr = obj.vertices.slice();
+      arr[key] = nv;
+      obj.vertices = arr;
     } else if (h.kind === 'graph') {
       obj.positions[key] = [Math.round(nv[0]), Math.round(nv[1])];
     } else {
@@ -108,7 +167,15 @@ export function useStageInteractions(store, deps) {
   }
 
   function _isGroupType(type) {
-    return type === 'axes' || type === 'latex' || type === 'dot_grid' || type === 'numberplane' || type === 'complex_plane' || type === 'polar_plane' || type === 'numberline';
+    return (
+      type === 'axes' ||
+      type === 'latex' ||
+      type === 'dot_grid' ||
+      type === 'numberplane' ||
+      type === 'complex_plane' ||
+      type === 'polar_plane' ||
+      type === 'numberline'
+    );
   }
 
   function handleStageMouseDown(e) {
@@ -125,7 +192,10 @@ export function useStageInteractions(store, deps) {
         const srcObj = store.objectById(pathSourceId.value) || {};
         const patch = unprojectView(pos.x, pos.y, srcObj);
         pathPoints.value.push({
-          x3d: srcObj.x3d ?? 0, y3d: srcObj.y3d ?? 0, z3d: srcObj.z3d ?? 0, ...patch,
+          x3d: srcObj.x3d ?? 0,
+          y3d: srcObj.y3d ?? 0,
+          z3d: srcObj.z3d ?? 0,
+          ...patch,
         });
         return;
       }
@@ -133,7 +203,8 @@ export function useStageInteractions(store, deps) {
       pathPoints.value.push({ x: Math.round(sp.x), y: Math.round(sp.y) });
       return;
     }
-    const t = e.target; const s = konvaStage.value?.getNode();
+    const t = e.target;
+    const s = konvaStage.value?.getNode();
     if (!s) return;
     const ev = e.evt;
     const addToSel = ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey);
@@ -170,23 +241,31 @@ export function useStageInteractions(store, deps) {
   }
 
   function onDragEnd(id, e) {
-    const node = e.target; const obj = store.project.objects.find(o => o.id === id); if (!obj) return;
+    const node = e.target;
+    const obj = store.project.objects.find((o) => o.id === id);
+    if (!obj) return;
     let newX, newY;
     // Types that use top-left positioning (text now uses center with offsetX/offsetY)
     const tlTypes = ['square', 'rectangle', 'image', 'svg_asset'];
     if (tlTypes.includes(obj.type)) {
       const sp = c2s(node.x(), node.y());
-      newX = sp.x + obj.width / 2; newY = sp.y + obj.height / 2;
+      newX = sp.x + obj.width / 2;
+      newY = sp.y + obj.height / 2;
     } else {
       const sp = c2s(node.x(), node.y());
-      newX = sp.x; newY = sp.y;
+      newX = sp.x;
+      newY = sp.y;
     }
     if (store.project.stage.snapEnabled) {
       const gs = store.project.stage.width / store.project.stage.gridSize;
       const gs2 = store.project.stage.height / store.project.stage.gridSize;
-      if (store.project.stage.snapToGrid) { newX = Math.round(newX / gs) * gs; newY = Math.round(newY / gs2) * gs2; }
+      if (store.project.stage.snapToGrid) {
+        newX = Math.round(newX / gs) * gs;
+        newY = Math.round(newY / gs2) * gs2;
+      }
       if (store.project.stage.snapToCenter) {
-        const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
+        const cx = store.project.stage.width / 2,
+          cy = store.project.stage.height / 2;
         if (Math.abs(newX - cx) < 30) newX = cx;
         if (Math.abs(newY - cy) < 30) newY = cy;
       }
@@ -196,7 +275,7 @@ export function useStageInteractions(store, deps) {
 
   function onDrag3DEnd(objId, e) {
     const node = e.target;
-    const obj = store.project.objects.find(o => o.id === objId);
+    const obj = store.project.objects.find((o) => o.id === objId);
     const patch = unprojectView(node.x(), node.y(), obj);
     if (patch) store.updateObject(objId, patch);
     store.commitState();
@@ -205,7 +284,7 @@ export function useStageInteractions(store, deps) {
 
   function onTransform(id, e) {
     const node = e.target;
-    const obj = store.project.objects.find(o => o.id === id);
+    const obj = store.project.objects.find((o) => o.id === id);
     if (!obj) return;
     const sx = node.scaleX ? node.scaleX() : 1;
     const sy = node.scaleY ? node.scaleY() : 1;
@@ -229,7 +308,7 @@ export function useStageInteractions(store, deps) {
 
   function onTransformEnd(id, e) {
     const node = e.target;
-    const obj = store.project.objects.find(o => o.id === id);
+    const obj = store.project.objects.find((o) => o.id === id);
     if (!obj) return;
 
     const sx = node.scaleX ? node.scaleX() : 1;
@@ -238,14 +317,14 @@ export function useStageInteractions(store, deps) {
     let cw, ch, cx, cy;
 
     if (obj.type === 'circle') {
-      const r = node.radius ? node.radius() : (node.width ? node.width() / 2 : 20);
+      const r = node.radius ? node.radius() : node.width ? node.width() / 2 : 20;
       cw = r * 2;
       ch = r * 2;
       cx = node.x();
       cy = node.y();
     } else if (obj.type === 'ellipse') {
-      cw = node.radiusX ? node.radiusX() * 2 : (node.width ? node.width() : 40);
-      ch = node.radiusY ? node.radiusY() * 2 : (node.height ? node.height() : 40);
+      cw = node.radiusX ? node.radiusX() * 2 : node.width ? node.width() : 40;
+      ch = node.radiusY ? node.radiusY() * 2 : node.height ? node.height() : 40;
       cx = node.x();
       cy = node.y();
     } else if (_isGroupType(obj.type)) {
@@ -286,9 +365,13 @@ export function useStageInteractions(store, deps) {
   }
 
   function updateTransformer() {
-    const tr = transformer.value; const ol = objectsLayer.value; const ks = konvaStage.value;
+    const tr = transformer.value;
+    const ol = objectsLayer.value;
+    const ks = konvaStage.value;
     if (!tr || !ks) return;
-    const t = tr.getNode(); const stage = ks.getNode(); if (!t || !stage) return;
+    const t = tr.getNode();
+    const stage = ks.getNode();
+    if (!t || !stage) return;
     const layer = ol && ol.getNode ? ol.getNode() : null;
     const findNode = (id) => (layer ? layer.findOne('#' + id) : null) || stage.findOne('#' + id);
     // polygon_free is edited via draggable vertex handles, not the resize/rotate

@@ -18,23 +18,36 @@
         class="absolute right-1 top-1/2 -translate-y-1/2 text-studio-text-muted hover:text-studio-text p-0.5"
         @mousedown.prevent="clearSearch"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6L6 18M6 6l12 12"/>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M18 6L6 18M6 6l12 12" />
         </svg>
       </button>
-      <div v-if="!searchQuery && !isOpen" class="absolute right-1 top-1/2 -translate-y-1/2 text-studio-text-muted pointer-events-none">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 9l6 6 6-6"/>
+      <div
+        v-if="!searchQuery && !isOpen"
+        class="absolute right-1 top-1/2 -translate-y-1/2 text-studio-text-muted pointer-events-none"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M6 9l6 6 6-6" />
         </svg>
       </div>
     </div>
 
     <!-- Dropdown -->
-    <div
-      v-if="isOpen"
-      class="font-dropdown"
-      ref="dropdown"
-    >
+    <div v-if="isOpen" class="font-dropdown" ref="dropdown">
       <!-- Category tabs -->
       <div class="category-tabs">
         <button
@@ -43,7 +56,9 @@
           class="category-tab"
           :class="{ active: selectedCategory === cat.id }"
           @mousedown.prevent="selectCategory(cat.id)"
-        >{{ cat.label }}</button>
+        >
+          {{ cat.label }}
+        </button>
       </div>
 
       <!-- Loading state -->
@@ -65,157 +80,154 @@
           <span
             class="font-preview"
             :style="{ fontFamily: `'${font.family}', ${font.category}` }"
-          >{{ font.family }}</span>
+            >{{ font.family }}</span
+          >
           <span class="font-category">{{ font.category }}</span>
         </div>
-        <div v-if="filteredFonts.length === 0 && !loading" class="font-empty">
-          No fonts found
-        </div>
+        <div v-if="filteredFonts.length === 0 && !loading" class="font-empty">No fonts found</div>
       </div>
 
       <!-- Load more button -->
       <div v-if="hasMore && !loading" class="load-more">
-        <button @mousedown.prevent="loadMore" class="load-more-btn">
-          Load more fonts...
-        </button>
+        <button @mousedown.prevent="loadMore" class="load-more-btn">Load more fonts...</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onBeforeUnmount } from 'vue'
-import { useGoogleFonts } from './useGoogleFonts.js'
+import { ref, computed, nextTick, onBeforeUnmount } from 'vue';
+import { useGoogleFonts } from './useGoogleFonts.js';
 
 const props = defineProps({
   value: {
     type: String,
-    default: 'Roboto'
-  }
-})
-const emit = defineEmits(['input'])
+    default: 'Roboto',
+  },
+});
+const emit = defineEmits(['input']);
 
 // Template refs
-const input = ref(null)
-const fontList = ref(null)
+const input = ref(null);
+const fontList = ref(null);
 
 // UI state (the data layer lives in useGoogleFonts)
-const isOpen = ref(false)
-const searchQuery = ref('')
-const highlightedIndex = ref(-1)
-const selectedCategory = ref('all')
+const isOpen = ref(false);
+const searchQuery = ref('');
+const highlightedIndex = ref(-1);
+const selectedCategory = ref('all');
 const categories = ref([
   { id: 'all', label: 'All' },
   { id: 'sans-serif', label: 'Sans' },
   { id: 'serif', label: 'Serif' },
   { id: 'display', label: 'Display' },
   { id: 'handwriting', label: 'Script' },
-  { id: 'monospace', label: 'Mono' }
-])
-const debounceTimer = ref(null)
+  { id: 'monospace', label: 'Mono' },
+]);
+const debounceTimer = ref(null);
 
 // Font data layer (fetch + pagination + preview styles)
-const { fonts, loading, hasMore, load } = useGoogleFonts()
+const { fonts, loading, hasMore, load } = useGoogleFonts();
 function reload(reset = true) {
-  load({ search: searchQuery.value, category: selectedCategory.value, reset })
+  load({ search: searchQuery.value, category: selectedCategory.value, reset });
 }
 
-const filteredFonts = computed(() => fonts.value)
+const filteredFonts = computed(() => fonts.value);
 
 function onInput(event) {
-  searchQuery.value = event.target.value
-  highlightedIndex.value = -1
+  searchQuery.value = event.target.value;
+  highlightedIndex.value = -1;
 
   // Debounce search
-  clearTimeout(debounceTimer.value)
+  clearTimeout(debounceTimer.value);
   debounceTimer.value = setTimeout(() => {
-    reload(true)
-  }, 300)
+    reload(true);
+  }, 300);
 }
 
 function onFocus() {
-  isOpen.value = true
+  isOpen.value = true;
   if (fonts.value.length === 0) {
-    reload(true)
+    reload(true);
   }
 }
 
 function onBlur() {
   // Delay to allow click on dropdown
   setTimeout(() => {
-    isOpen.value = false
-    searchQuery.value = ''
-    highlightedIndex.value = -1
-  }, 200)
+    isOpen.value = false;
+    searchQuery.value = '';
+    highlightedIndex.value = -1;
+  }, 200);
 }
 
 function onKeydown(event) {
   switch (event.key) {
     case 'ArrowDown':
-      event.preventDefault()
+      event.preventDefault();
       if (highlightedIndex.value < filteredFonts.value.length - 1) {
-        highlightedIndex.value++
-        scrollToHighlighted()
+        highlightedIndex.value++;
+        scrollToHighlighted();
       }
-      break
+      break;
     case 'ArrowUp':
-      event.preventDefault()
+      event.preventDefault();
       if (highlightedIndex.value > 0) {
-        highlightedIndex.value--
-        scrollToHighlighted()
+        highlightedIndex.value--;
+        scrollToHighlighted();
       }
-      break
+      break;
     case 'Enter':
-      event.preventDefault()
+      event.preventDefault();
       if (highlightedIndex.value >= 0 && filteredFonts.value[highlightedIndex.value]) {
-        selectFont(filteredFonts.value[highlightedIndex.value].family)
+        selectFont(filteredFonts.value[highlightedIndex.value].family);
       }
-      break
+      break;
     case 'Escape':
-      event.preventDefault()
-      isOpen.value = false
-      input.value?.blur()
-      break
+      event.preventDefault();
+      isOpen.value = false;
+      input.value?.blur();
+      break;
   }
 }
 
 function scrollToHighlighted() {
   nextTick(() => {
-    const list = fontList.value
-    const item = list?.children[highlightedIndex.value]
+    const list = fontList.value;
+    const item = list?.children[highlightedIndex.value];
     if (item) {
-      item.scrollIntoView({ block: 'nearest' })
+      item.scrollIntoView({ block: 'nearest' });
     }
-  })
+  });
 }
 
 function selectFont(family) {
-  emit('input', family)
-  isOpen.value = false
-  searchQuery.value = ''
-  highlightedIndex.value = -1
+  emit('input', family);
+  isOpen.value = false;
+  searchQuery.value = '';
+  highlightedIndex.value = -1;
 }
 
 function selectCategory(category) {
-  selectedCategory.value = category
-  highlightedIndex.value = -1
-  reload(true)
+  selectedCategory.value = category;
+  highlightedIndex.value = -1;
+  reload(true);
 }
 
 function clearSearch() {
-  searchQuery.value = ''
-  highlightedIndex.value = -1
-  reload(true)
-  input.value?.focus()
+  searchQuery.value = '';
+  highlightedIndex.value = -1;
+  reload(true);
+  input.value?.focus();
 }
 
 function loadMore() {
-  reload(false)
+  reload(false);
 }
 
 onBeforeUnmount(() => {
-  clearTimeout(debounceTimer.value)
-})
+  clearTimeout(debounceTimer.value);
+});
 </script>
 
 <style scoped>
@@ -336,7 +348,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .load-more {

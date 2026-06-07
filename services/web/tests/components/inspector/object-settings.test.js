@@ -88,7 +88,7 @@ describe('TableSettings', () => {
     const obj = makeObj('table');
     const spy = vi.spyOn(store, 'addTableRow');
     const w = mount(TableSettings, { props: { obj } });
-    const addRow = w.findAll('button').find(b => b.text() === '+ Row');
+    const addRow = w.findAll('button').find((b) => b.text() === '+ Row');
     await addRow.trigger('click');
     expect(spy).toHaveBeenCalledWith(obj.id);
   });

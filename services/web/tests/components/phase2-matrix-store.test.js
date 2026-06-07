@@ -15,7 +15,10 @@ describe('matrix store', () => {
     store.addObject('matrix', 960, 540);
     const o = store.project.objects[0];
     expect(o.type).toBe('matrix');
-    expect(o.matrixData).toEqual([['1', '0'], ['0', '1']]);
+    expect(o.matrixData).toEqual([
+      ['1', '0'],
+      ['0', '1'],
+    ]);
     expect(o.bracket).toBe('[');
   });
 

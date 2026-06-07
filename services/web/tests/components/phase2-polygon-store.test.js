@@ -22,9 +22,17 @@ describe('polygon_free store', () => {
   it('setPolygonVertices replaces vertices and ignores < 3', () => {
     store.addObject('polygon_free', 960, 540);
     id = store.project.objects[0].id;
-    store.setPolygonVertices(id, [[-50, -50], [50, -50], [50, 50], [-50, 50]]);
+    store.setPolygonVertices(id, [
+      [-50, -50],
+      [50, -50],
+      [50, 50],
+      [-50, 50],
+    ]);
     expect(store.objectById(id).vertices.length).toBe(4);
-    store.setPolygonVertices(id, [[0, 0], [10, 10]]); // too few — ignored
+    store.setPolygonVertices(id, [
+      [0, 0],
+      [10, 10],
+    ]); // too few — ignored
     expect(store.objectById(id).vertices.length).toBe(4);
   });
 });

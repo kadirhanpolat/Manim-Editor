@@ -34,7 +34,7 @@ describe('counter integer mode', () => {
     const o = store.addObject('counter', 960, 540);
     store.updateObject(o.id, { value: 99, useInteger: true });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const c = parsed.objects.find(x => x.type === 'counter');
+    const c = parsed.objects.find((x) => x.type === 'counter');
     expect(c.useInteger).toBe(true);
     expect(c.value).toBe(99);
   });

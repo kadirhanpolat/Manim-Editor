@@ -49,4 +49,6 @@ const REGISTRY = {
   coord_point: CoordPointSettings,
   bezier: BezierSettings,
 };
-export function settingsComponentFor(type) { return REGISTRY[type] || null; }
+export function settingsComponentFor(type) {
+  return REGISTRY[type] || null;
+}

@@ -20,7 +20,7 @@ import api from '../../api.js';
 
 const props = defineProps({
   element: { type: Object, required: true },
-  config: { type: Object, required: true }
+  config: { type: Object, required: true },
 });
 
 const store = useProjectStore();
@@ -28,7 +28,7 @@ const store = useProjectStore();
 const svgImage = ref(null);
 const svgLoaded = ref(false);
 
-const asset = computed(() => store.project.assets.find(a => a.id === props.element.assetId));
+const asset = computed(() => store.project.assets.find((a) => a.id === props.element.assetId));
 
 const svgUrl = computed(() => {
   if (!asset.value) return null;
@@ -40,7 +40,7 @@ const svgConfig = computed(() => ({
   x: -50,
   y: -50,
   width: 100,
-  height: 100
+  height: 100,
 }));
 
 const placeholderConfig = computed(() => ({
@@ -52,7 +52,7 @@ const placeholderConfig = computed(() => ({
   stroke: props.element.style?.strokeColor || '#6366f1',
   strokeWidth: 2,
   dash: [4, 4],
-  cornerRadius: 4
+  cornerRadius: 4,
 }));
 
 const labelConfig = computed(() => ({
@@ -61,12 +61,16 @@ const labelConfig = computed(() => ({
   y: -10,
   fontSize: 14,
   fill: '#6366f1',
-  fontFamily: 'sans-serif'
+  fontFamily: 'sans-serif',
 }));
 
-watch(svgUrl, (url) => {
-  if (url) loadSvg(url);
-}, { immediate: true });
+watch(
+  svgUrl,
+  (url) => {
+    if (url) loadSvg(url);
+  },
+  { immediate: true }
+);
 
 async function loadSvg(url) {
   try {

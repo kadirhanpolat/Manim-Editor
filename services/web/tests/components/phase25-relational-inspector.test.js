@@ -15,7 +15,8 @@ beforeEach(() => {
 describe('relational inspector', () => {
   it('shows a Brace section with a label input', () => {
     store.addObject('brace', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     const wrapper = mount(PropertiesPanel);
     expect(wrapper.html()).toContain('Brace');
     expect(wrapper.find('[data-test="rel-label"]').exists()).toBe(true);
@@ -23,7 +24,8 @@ describe('relational inspector', () => {
 
   it('typing a label writes through setRelationalLabel', async () => {
     store.addObject('brace', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     const wrapper = mount(PropertiesPanel);
     const input = wrapper.find('[data-test="rel-label"]');
     await input.setValue('x');
@@ -33,7 +35,8 @@ describe('relational inspector', () => {
 
   it('Angle section shows a right-angle toggle that writes through', async () => {
     store.addObject('angle', 960, 540);
-    id = store.project.objects[0].id; store.selectObject(id);
+    id = store.project.objects[0].id;
+    store.selectObject(id);
     const wrapper = mount(PropertiesPanel);
     expect(wrapper.html()).toContain('Angle');
     await wrapper.find('[data-test="angle-right"]').trigger('click');

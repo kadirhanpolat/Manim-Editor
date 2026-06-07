@@ -34,7 +34,7 @@ function createDefaultProject(editorMode = 'visual') {
   return {
     id: null,
     name: 'My Animation',
-    editorMode,          // 'visual' | 'code'
+    editorMode, // 'visual' | 'code'
     codeSource: editorMode === 'code' ? CODE_MODE_TEMPLATE : '',
     stage: {
       width: 1920,
@@ -49,27 +49,25 @@ function createDefaultProject(editorMode = 'visual') {
       snapEnabled: true,
       snapToGrid: true,
       snapToCenter: true,
-      snapToObjects: false
+      snapToObjects: false,
     },
-    assets: [],      // { id, name, type:'image'|'svg', dataUrl, width, height, filename, serverFilename }
+    assets: [], // { id, name, type:'image'|'svg', dataUrl, width, height, filename, serverFilename }
     objects: [],
-    groups: [],       // { id, name, childIds:[], margin:10, collapsed:false }
-    tracks: [
-      { id: 'track_1', name: 'Track 1', clips: [] }
-    ],
+    groups: [], // { id, name, childIds:[], margin:10, collapsed:false }
+    tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
     sceneDuration: 10,
-    cameraType: 'static',   // 'static' | 'moving'
-    cameraTrack: [],         // camera_move clips
+    cameraType: 'static', // 'static' | 'moving'
+    cameraTrack: [], // camera_move clips
     keyframeDefaults: {
       mode: 'opt-in',
-      codegenMode: 'UpdateFromAlphaFunc'
+      codegenMode: 'UpdateFromAlphaFunc',
     },
-    sceneType: '2d',           // '2d' | '3d'
+    sceneType: '2d', // '2d' | '3d'
     camera3d: {
       phi: 75,
       theta: -45,
       zoom: 1.0,
-      view: 'perspective',  // 'perspective' | 'top' | 'bottom' | 'front' | 'back' | 'left' | 'right' — preview-only
+      view: 'perspective', // 'perspective' | 'top' | 'bottom' | 'front' | 'back' | 'left' | 'right' — preview-only
       focalDistance: 8,
     },
   };
@@ -88,9 +86,9 @@ function nextPosition(stageW, stageH) {
   const positions = [
     { x: stageW * 0.35, y: stageH * 0.5 },
     { x: stageW * 0.65, y: stageH * 0.5 },
-    { x: stageW * 0.5,  y: stageH * 0.35 },
-    { x: stageW * 0.5,  y: stageH * 0.65 },
-    { x: stageW * 0.5,  y: stageH * 0.5 },
+    { x: stageW * 0.5, y: stageH * 0.35 },
+    { x: stageW * 0.5, y: stageH * 0.65 },
+    { x: stageW * 0.5, y: stageH * 0.5 },
   ];
   const pos = positions[_objectAddCount % positions.length];
   _objectAddCount++;
@@ -102,70 +100,76 @@ let _pollDisconnect = null;
 // ─── Entrance / Exit animation types ─────────────────────────────────────────
 
 export const ENTER_ANIMS = [
-  { value: 'none',           label: 'None',             icon: '—',  desc: 'Appears instantly' },
-  { value: 'fade_in',        label: 'Fade In',          icon: '◐',  desc: 'Fade from transparent' },
-  { value: 'grow_in',        label: 'Grow In',          icon: '⊕',  desc: 'Scale up from zero' },
-  { value: 'fly_in_left',    label: 'Fly In Left',      icon: '→',  desc: 'Slide in from left' },
-  { value: 'fly_in_right',   label: 'Fly In Right',     icon: '←',  desc: 'Slide in from right' },
-  { value: 'fly_in_top',     label: 'Fly In Top',       icon: '↓',  desc: 'Slide in from top' },
-  { value: 'fly_in_bottom',  label: 'Fly In Bottom',    icon: '↑',  desc: 'Slide in from bottom' },
-  { value: 'draw',           label: 'Draw / Create',    icon: '✎',  desc: 'Outline draws, then fills' },
-  { value: 'write',          label: 'Write',            icon: '✍',  desc: 'Write effect (text/shapes)' },
-  { value: 'spin_in',        label: 'Spin In',          icon: '↻',  desc: 'Rotate in while fading' },
-  { value: 'bounce_in',      label: 'Bounce In',        icon: '⤴',  desc: 'Bounce into place' },
-  { value: 'typewriter',     label: 'Typewriter',       icon: '⌨',  desc: 'Reveal char by char' },
+  { value: 'none', label: 'None', icon: '—', desc: 'Appears instantly' },
+  { value: 'fade_in', label: 'Fade In', icon: '◐', desc: 'Fade from transparent' },
+  { value: 'grow_in', label: 'Grow In', icon: '⊕', desc: 'Scale up from zero' },
+  { value: 'fly_in_left', label: 'Fly In Left', icon: '→', desc: 'Slide in from left' },
+  { value: 'fly_in_right', label: 'Fly In Right', icon: '←', desc: 'Slide in from right' },
+  { value: 'fly_in_top', label: 'Fly In Top', icon: '↓', desc: 'Slide in from top' },
+  { value: 'fly_in_bottom', label: 'Fly In Bottom', icon: '↑', desc: 'Slide in from bottom' },
+  { value: 'draw', label: 'Draw / Create', icon: '✎', desc: 'Outline draws, then fills' },
+  { value: 'write', label: 'Write', icon: '✍', desc: 'Write effect (text/shapes)' },
+  { value: 'spin_in', label: 'Spin In', icon: '↻', desc: 'Rotate in while fading' },
+  { value: 'bounce_in', label: 'Bounce In', icon: '⤴', desc: 'Bounce into place' },
+  { value: 'typewriter', label: 'Typewriter', icon: '⌨', desc: 'Reveal char by char' },
 ];
 
 export const EXIT_ANIMS = [
-  { value: 'none',            label: 'None',             icon: '—',  desc: 'Disappears instantly' },
-  { value: 'fade_out',        label: 'Fade Out',         icon: '◑',  desc: 'Fade to transparent' },
-  { value: 'shrink_out',      label: 'Shrink Out',       icon: '⊖',  desc: 'Scale down to zero' },
-  { value: 'fly_out_left',    label: 'Fly Out Left',     icon: '←',  desc: 'Slide out to left' },
-  { value: 'fly_out_right',   label: 'Fly Out Right',    icon: '→',  desc: 'Slide out to right' },
-  { value: 'fly_out_top',     label: 'Fly Out Top',      icon: '↑',  desc: 'Slide out to top' },
-  { value: 'fly_out_bottom',  label: 'Fly Out Bottom',   icon: '↓',  desc: 'Slide out to bottom' },
-  { value: 'uncreate',        label: 'Uncreate',         icon: '✎',  desc: 'Reverse draw' },
-  { value: 'spin_out',        label: 'Spin Out',         icon: '↻',  desc: 'Rotate out while fading' },
-  { value: 'typewriter_out',  label: 'Typewriter Out',   icon: '⌨',  desc: 'Hide char by char' },
+  { value: 'none', label: 'None', icon: '—', desc: 'Disappears instantly' },
+  { value: 'fade_out', label: 'Fade Out', icon: '◑', desc: 'Fade to transparent' },
+  { value: 'shrink_out', label: 'Shrink Out', icon: '⊖', desc: 'Scale down to zero' },
+  { value: 'fly_out_left', label: 'Fly Out Left', icon: '←', desc: 'Slide out to left' },
+  { value: 'fly_out_right', label: 'Fly Out Right', icon: '→', desc: 'Slide out to right' },
+  { value: 'fly_out_top', label: 'Fly Out Top', icon: '↑', desc: 'Slide out to top' },
+  { value: 'fly_out_bottom', label: 'Fly Out Bottom', icon: '↓', desc: 'Slide out to bottom' },
+  { value: 'uncreate', label: 'Uncreate', icon: '✎', desc: 'Reverse draw' },
+  { value: 'spin_out', label: 'Spin Out', icon: '↻', desc: 'Rotate out while fading' },
+  { value: 'typewriter_out', label: 'Typewriter Out', icon: '⌨', desc: 'Hide char by char' },
 ];
 
 // ─── Shape palette ───────────────────────────────────────────────────────────
 
 export const SHAPE_DEFAULTS = {
-  rectangle:{ width: 160, height: 100, fill: '#3b82f6', stroke: '#fff',  strokeWidth: 2 },
-  square:   { width: 120, height: 120, fill: '#3b82f6', stroke: '#fff',  strokeWidth: 2 },
-  circle:   { width: 120, height: 120, fill: '#22c55e', stroke: '#fff',  strokeWidth: 2 },
-  ellipse:  { width: 160, height: 100, fill: '#06b6d4', stroke: '#fff',  strokeWidth: 2 },
-  triangle: { width: 120, height: 120, fill: '#f59e0b', stroke: '#fff',  strokeWidth: 2 },
-  star:     { width: 120, height: 120, fill: '#eab308', stroke: '#fff',  strokeWidth: 2 },
-  polygon:  { width: 120, height: 120, fill: '#8b5cf6', stroke: '#fff',  strokeWidth: 2 },
+  rectangle: { width: 160, height: 100, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 },
+  square: { width: 120, height: 120, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 },
+  circle: { width: 120, height: 120, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 },
+  ellipse: { width: 160, height: 100, fill: '#06b6d4', stroke: '#fff', strokeWidth: 2 },
+  triangle: { width: 120, height: 120, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
+  star: { width: 120, height: 120, fill: '#eab308', stroke: '#fff', strokeWidth: 2 },
+  polygon: { width: 120, height: 120, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 },
   polygon_free: { width: 160, height: 120, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 },
   bezier: { width: 220, height: 120, fill: 'transparent', stroke: '#f472b6', strokeWidth: 3 },
-  line:     { width: 200, height: 4,   fill: '#94a3b8', stroke: '#94a3b8', strokeWidth: 3 },
-  arrow:    { width: 200, height: 40,  fill: '#ef4444', stroke: '#fff',  strokeWidth: 2 },
-  heart:    { width: 120, height: 120, fill: '#ec4899', stroke: '#fff',  strokeWidth: 2 },
-  dot:      { width: 20,  height: 20,  fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
+  line: { width: 200, height: 4, fill: '#94a3b8', stroke: '#94a3b8', strokeWidth: 3 },
+  arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
+  heart: { width: 120, height: 120, fill: '#ec4899', stroke: '#fff', strokeWidth: 2 },
+  dot: { width: 20, height: 20, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
   dot_grid: { width: 200, height: 200, fill: '#a855f7', stroke: 'transparent', strokeWidth: 0 },
-  text:     { width: 200, height: 50,  fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
-  image:    { width: 200, height: 200, fill: 'transparent', stroke: 'transparent', strokeWidth: 0 },
-  svg_asset:{ width: 200, height: 200, fill: 'transparent', stroke: 'transparent', strokeWidth: 0 },
-  latex:    { width: 200, height: 80,  fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
-  axes:     { width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
-  numberplane:{ width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
-  complex_plane:{ width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
-  polar_plane:  { width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
-  numberline: { width: 500, height: 60,  fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
-  sphere:     { width: 120, height: 120, fill: '#e67700', stroke: '#fff', strokeWidth: 2 },
-  cube:       { width: 120, height: 120, fill: '#3b5bdb', stroke: '#fff', strokeWidth: 2 },
-  prism:      { width: 160, height: 100, fill: '#4263eb', stroke: '#fff', strokeWidth: 2 },
-  cone:       { width: 100, height: 120, fill: '#2f9e44', stroke: '#fff', strokeWidth: 2 },
-  cylinder:   { width: 100, height: 120, fill: '#1098ad', stroke: '#fff', strokeWidth: 2 },
-  torus:      { width: 130, height: 130, fill: '#ae3ec9', stroke: '#fff', strokeWidth: 2 },
-  axes3d:     { width: 400, height: 400, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
-  surface:    { width: 220, height: 220, fill: '#9b59b6', stroke: '#ffffff', strokeWidth: 2 },
-  annulus:  { width: 140, height: 140, fill: '#14b8a6', stroke: '#fff', strokeWidth: 2 },
-  arc:      { width: 140, height: 140, fill: 'transparent', stroke: '#f97316', strokeWidth: 4 },
-  sector:   { width: 140, height: 140, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
+  text: { width: 200, height: 50, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
+  image: { width: 200, height: 200, fill: 'transparent', stroke: 'transparent', strokeWidth: 0 },
+  svg_asset: {
+    width: 200,
+    height: 200,
+    fill: 'transparent',
+    stroke: 'transparent',
+    strokeWidth: 0,
+  },
+  latex: { width: 200, height: 80, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
+  axes: { width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  numberplane: { width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
+  complex_plane: { width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
+  polar_plane: { width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1 },
+  numberline: { width: 500, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  sphere: { width: 120, height: 120, fill: '#e67700', stroke: '#fff', strokeWidth: 2 },
+  cube: { width: 120, height: 120, fill: '#3b5bdb', stroke: '#fff', strokeWidth: 2 },
+  prism: { width: 160, height: 100, fill: '#4263eb', stroke: '#fff', strokeWidth: 2 },
+  cone: { width: 100, height: 120, fill: '#2f9e44', stroke: '#fff', strokeWidth: 2 },
+  cylinder: { width: 100, height: 120, fill: '#1098ad', stroke: '#fff', strokeWidth: 2 },
+  torus: { width: 130, height: 130, fill: '#ae3ec9', stroke: '#fff', strokeWidth: 2 },
+  axes3d: { width: 400, height: 400, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
+  surface: { width: 220, height: 220, fill: '#9b59b6', stroke: '#ffffff', strokeWidth: 2 },
+  annulus: { width: 140, height: 140, fill: '#14b8a6', stroke: '#fff', strokeWidth: 2 },
+  arc: { width: 140, height: 140, fill: 'transparent', stroke: '#f97316', strokeWidth: 4 },
+  sector: { width: 140, height: 140, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 },
   double_arrow: { width: 200, height: 40, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 },
   parametric: { width: 160, height: 160, fill: 'transparent', stroke: '#10b981', strokeWidth: 4 },
   matrix: { width: 160, height: 120, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0 },
@@ -173,33 +177,66 @@ export const SHAPE_DEFAULTS = {
   brace: { width: 160, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
   counter: { width: 120, height: 60, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
-  graph:   { width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2 },
+  graph: { width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2 },
   vector_field: { width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2 },
-  vector_components: { width: 200, height: 200, fill: '#3b82f6', stroke: '#3b82f6', strokeWidth: 2 },
+  vector_components: {
+    width: 200,
+    height: 200,
+    fill: '#3b82f6',
+    stroke: '#3b82f6',
+    strokeWidth: 2,
+  },
   ray: { width: 200, height: 200, fill: '#22d3ee', stroke: '#22d3ee', strokeWidth: 2 },
   coord_point: { width: 60, height: 60, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
-  rectangle: '#3b82f6', square: '#3b82f6', circle: '#22c55e', ellipse: '#06b6d4',
-  triangle: '#f59e0b', star: '#eab308', polygon: '#8b5cf6',
-  line: '#94a3b8', arrow: '#ef4444',
-  heart: '#ec4899', dot: '#94a3b8', dot_grid: '#a855f7',
-  text: '#f472b6', image: '#f59e0b', svg_asset: '#f59e0b',
-  latex: '#a855f7', axes: '#10b981',
-  numberplane: '#334155', complex_plane: '#334155', polar_plane: '#334155', numberline: '#10b981',
-  sphere: '#e67700', cube: '#3b5bdb', prism: '#4263eb', cone: '#2f9e44',
-  cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981', surface: '#9b59b6',
-  annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
-  polygon_free: '#8b5cf6', bezier: '#f472b6',
+  rectangle: '#3b82f6',
+  square: '#3b82f6',
+  circle: '#22c55e',
+  ellipse: '#06b6d4',
+  triangle: '#f59e0b',
+  star: '#eab308',
+  polygon: '#8b5cf6',
+  line: '#94a3b8',
+  arrow: '#ef4444',
+  heart: '#ec4899',
+  dot: '#94a3b8',
+  dot_grid: '#a855f7',
+  text: '#f472b6',
+  image: '#f59e0b',
+  svg_asset: '#f59e0b',
+  latex: '#a855f7',
+  axes: '#10b981',
+  numberplane: '#334155',
+  complex_plane: '#334155',
+  polar_plane: '#334155',
+  numberline: '#10b981',
+  sphere: '#e67700',
+  cube: '#3b5bdb',
+  prism: '#4263eb',
+  cone: '#2f9e44',
+  cylinder: '#1098ad',
+  torus: '#ae3ec9',
+  axes3d: '#10b981',
+  surface: '#9b59b6',
+  annulus: '#14b8a6',
+  arc: '#f97316',
+  sector: '#f59e0b',
+  double_arrow: '#ef4444',
+  polygon_free: '#8b5cf6',
+  bezier: '#f472b6',
   parametric: '#10b981',
   matrix: '#ffffff',
   table: '#ffffff',
   brace: '#ffffff',
   angle: '#fbbf24',
   counter: '#38bdf8',
-  graph:   '#22c55e',
-  vector_field: '#38bdf8', vector_components: '#3b82f6', ray: '#22d3ee', coord_point: '#fbbf24',
+  graph: '#22c55e',
+  vector_field: '#38bdf8',
+  vector_components: '#3b82f6',
+  ray: '#22d3ee',
+  coord_point: '#fbbf24',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -220,7 +257,7 @@ const useProjectStore = defineStore('project', {
     frameState: {
       objectOverrides: {},
       morphShapes: [],
-      hiddenIds: new Set()
+      hiddenIds: new Set(),
     },
     showExportDialog: false,
     exportCode: '',
@@ -240,33 +277,39 @@ const useProjectStore = defineStore('project', {
     error: null,
     loading: false,
     savingToServer: false,
-    theme: (typeof localStorage !== 'undefined' && localStorage.getItem('manim-motion-theme')) || 'light'
+    theme:
+      (typeof localStorage !== 'undefined' && localStorage.getItem('manim-motion-theme')) ||
+      'light',
   }),
   getters: {
-    selectedObjects: (state) => state.selectedObjectIds.map(id => state.project.objects.find(o => o.id === id)).filter(Boolean),
+    selectedObjects: (state) =>
+      state.selectedObjectIds
+        .map((id) => state.project.objects.find((o) => o.id === id))
+        .filter(Boolean),
     selectedObject: (state) => {
       if (state.selectedObjectIds.length !== 1) return null;
-      return state.project.objects.find(o => o.id === state.selectedObjectIds[0]) || null;
+      return state.project.objects.find((o) => o.id === state.selectedObjectIds[0]) || null;
     },
     selectedClip: (state) => {
       if (!state.selectedClipId) return null;
       for (const track of state.project.tracks) {
-        const clip = track.clips.find(c => c.id === state.selectedClipId);
+        const clip = track.clips.find((c) => c.id === state.selectedClipId);
         if (clip) return clip;
       }
       return null;
     },
-    objectById: (state) => (id) => state.project.objects.find(o => o.id === id) || null,
-    assetById: (state) => (id) => state.project.assets.find(a => a.id === id) || null,
+    objectById: (state) => (id) => state.project.objects.find((o) => o.id === id) || null,
+    assetById: (state) => (id) => state.project.assets.find((a) => a.id === id) || null,
     clipById: (state) => (id) => {
       for (const track of state.project.tracks) {
-        const clip = track.clips.find(c => c.id === id);
+        const clip = track.clips.find((c) => c.id === id);
         if (clip) return clip;
       }
       return null;
     },
-    groupById: (state) => (id) => (state.project.groups || []).find(g => g.id === id) || null,
-    objectGroup: (state) => (objId) => (state.project.groups || []).find(g => g.childIds && g.childIds.includes(objId)) || null,
+    groupById: (state) => (id) => (state.project.groups || []).find((g) => g.id === id) || null,
+    objectGroup: (state) => (objId) =>
+      (state.project.groups || []).find((g) => g.childIds && g.childIds.includes(objId)) || null,
     computedDuration: (state) => {
       let maxEnd = 5;
       for (const obj of state.project.objects) {
@@ -283,13 +326,14 @@ const useProjectStore = defineStore('project', {
     },
     visibleTracks: (state) => {
       const all = state.project.tracks;
-      const activeCount = all.filter(t => t.clips.length > 0).length;
+      const activeCount = all.filter((t) => t.clips.length > 0).length;
       const showCount = Math.min(5, Math.max(1, activeCount + 1));
       return all.slice(0, showCount);
     },
-    hasPendingAudio: (state) => state.project.tracks.some(t =>
-      t.clips.some(c => c.audio && c.audio.status === 'pending')
-    ),
+    hasPendingAudio: (state) =>
+      state.project.tracks.some((t) =>
+        t.clips.some((c) => c.audio && c.audio.status === 'pending')
+      ),
   },
   actions: {
     // ══════════════════════════════════════════════════════════════════════════
@@ -299,9 +343,8 @@ const useProjectStore = defineStore('project', {
     addObject(type, x, y, extraProps = {}) {
       const stage = this.project.stage;
       const d = SHAPE_DEFAULTS[type] || SHAPE_DEFAULTS.circle;
-      const pos = (x !== undefined && y !== undefined)
-        ? { x, y }
-        : nextPosition(stage.width, stage.height);
+      const pos =
+        x !== undefined && y !== undefined ? { x, y } : nextPosition(stage.width, stage.height);
 
       const lastEnd = this.project.objects.reduce((max, o) => {
         const end = (o.enterTime || 0) + (o.duration || OBJ_DEFAULT_DURATION);
@@ -309,17 +352,41 @@ const useProjectStore = defineStore('project', {
       }, 0);
 
       const nameMap = {
-        dot_grid: 'Dot Grid', svg_asset: 'SVG', rectangle: 'Rectangle',
-        ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
-        polygon: 'Polygon', line: 'Line', arrow: 'Arrow', text: 'Text',
-        latex: 'LaTeX', axes: 'Axes',
-        numberplane: 'NumberPlane', complex_plane: 'ComplexPlane', polar_plane: 'PolarPlane', numberline: 'NumberLine',
-        annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
-        polygon_free: 'Polygon', parametric: 'Parametric', bezier: 'Bezier',
-        matrix: 'Matrix', table: 'Table', brace: 'Brace', angle: 'Angle', counter: 'Counter',
-        graph: 'Graph', vector_field: 'VectorField', vector_components: 'Vector Comp', ray: 'Ray', coord_point: 'Coord Point',
+        dot_grid: 'Dot Grid',
+        svg_asset: 'SVG',
+        rectangle: 'Rectangle',
+        ellipse: 'Ellipse',
+        triangle: 'Triangle',
+        star: 'Star',
+        polygon: 'Polygon',
+        line: 'Line',
+        arrow: 'Arrow',
+        text: 'Text',
+        latex: 'LaTeX',
+        axes: 'Axes',
+        numberplane: 'NumberPlane',
+        complex_plane: 'ComplexPlane',
+        polar_plane: 'PolarPlane',
+        numberline: 'NumberLine',
+        annulus: 'Annulus',
+        arc: 'Arc',
+        sector: 'Sector',
+        double_arrow: 'Double Arrow',
+        polygon_free: 'Polygon',
+        parametric: 'Parametric',
+        bezier: 'Bezier',
+        matrix: 'Matrix',
+        table: 'Table',
+        brace: 'Brace',
+        angle: 'Angle',
+        counter: 'Counter',
+        graph: 'Graph',
+        vector_field: 'VectorField',
+        vector_components: 'Vector Comp',
+        ray: 'Ray',
+        coord_point: 'Coord Point',
       };
-      const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
+      const displayName = nameMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
 
       const obj = {
         id: uid('obj'),
@@ -343,35 +410,114 @@ const useProjectStore = defineStore('project', {
         enterAnimDur: 0.5,
         exitAnimDur: 0.5,
         ...(type === 'dot_grid' ? { gridCols: 5, gridRows: 5, dotRadius: 5, dotSpacing: 40 } : {}),
-        ...(type === 'text' ? { content: 'Hello World', fontSize: 48, fontFamily: 'Roboto', textAlign: 'center', fontWeight: 'normal', fontStyle: 'normal' } : {}),
+        ...(type === 'text'
+          ? {
+              content: 'Hello World',
+              fontSize: 48,
+              fontFamily: 'Roboto',
+              textAlign: 'center',
+              fontWeight: 'normal',
+              fontStyle: 'normal',
+            }
+          : {}),
         ...(type === 'polygon' ? { sides: 6 } : {}),
         ...(type === 'star' ? { starArms: 5, innerRatio: 0.4 } : {}),
-        ...(type === 'parametric' ? { xExpr: 'np.cos(t)', yExpr: 'np.sin(t)', tMin: 0, tMax: 6.283 } : {}),
-        ...(type === 'polygon_free' ? { vertices: presetVertices('trapezoid', SHAPE_DEFAULTS.polygon_free.width, SHAPE_DEFAULTS.polygon_free.height) } : {}),
-        ...(type === 'bezier' ? { vertices: [[-110, 30], [-40, -55], [40, 50], [110, -30]] } : {}),
-        ...(type === 'matrix' ? { matrixData: [['1', '0'], ['0', '1']], bracket: '[' } : {}),
-        ...(type === 'table' ? { cellData: [['1', '2'], ['3', '4']], mathMode: false, rowLabels: [], colLabels: [] } : {}),
+        ...(type === 'parametric'
+          ? { xExpr: 'np.cos(t)', yExpr: 'np.sin(t)', tMin: 0, tMax: 6.283 }
+          : {}),
+        ...(type === 'polygon_free'
+          ? {
+              vertices: presetVertices(
+                'trapezoid',
+                SHAPE_DEFAULTS.polygon_free.width,
+                SHAPE_DEFAULTS.polygon_free.height
+              ),
+            }
+          : {}),
+        ...(type === 'bezier'
+          ? {
+              vertices: [
+                [-110, 30],
+                [-40, -55],
+                [40, 50],
+                [110, -30],
+              ],
+            }
+          : {}),
+        ...(type === 'matrix'
+          ? {
+              matrixData: [
+                ['1', '0'],
+                ['0', '1'],
+              ],
+              bracket: '[',
+            }
+          : {}),
+        ...(type === 'table'
+          ? {
+              cellData: [
+                ['1', '2'],
+                ['3', '4'],
+              ],
+              mathMode: false,
+              rowLabels: [],
+              colLabels: [],
+            }
+          : {}),
         ...(type === 'brace' ? { p1: [-80, 0], p2: [80, 0], label: '' } : {}),
-        ...(type === 'angle' ? { vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '' } : {}),
+        ...(type === 'angle'
+          ? {
+              vertex: [-40, 40],
+              point1: [80, 40],
+              point2: [-40, -60],
+              rightAngle: false,
+              radius: 0.6,
+              label: '',
+            }
+          : {}),
         ...(type === 'counter' ? { value: 0, numDecimals: 0, suffix: '', useInteger: false } : {}),
-        ...(type === 'graph' ? { vertices: ['A','B','C'], edges: [['A','B'],['B','C']], positions: { A:[-60,0], B:[0,-40], C:[60,0] }, directed: false, showLabels: true } : {}),
-        ...(type === 'vector_field' ? { fx: 'y', fy: '-x', xRange: [-3,3,1], yRange: [-2,2,1] } : {}),
+        ...(type === 'graph'
+          ? {
+              vertices: ['A', 'B', 'C'],
+              edges: [
+                ['A', 'B'],
+                ['B', 'C'],
+              ],
+              positions: { A: [-60, 0], B: [0, -40], C: [60, 0] },
+              directed: false,
+              showLabels: true,
+            }
+          : {}),
+        ...(type === 'vector_field'
+          ? { fx: 'y', fy: '-x', xRange: [-3, 3, 1], yRange: [-2, 2, 1] }
+          : {}),
         ...(type === 'vector_components' ? { vx: 120, vy: -80 } : {}),
         ...(type === 'ray' ? { angle: 30, length: 200 } : {}),
         ...(type === 'coord_point' ? { decimals: 1 } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
-        ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
+        ...(type === 'arc' ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),
         ...(type === 'latex' ? { latex: 'E = mc^2' } : {}),
-        ...(type === 'axes'        ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
-        ...(type === 'numberplane' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 } : {}),
+        ...(type === 'axes' ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [] } : {}),
+        ...(type === 'numberplane'
+          ? { xRange: [-5, 5, 1], yRange: [-3, 3, 1], xStep: 1, yStep: 1 }
+          : {}),
         ...(type === 'complex_plane' ? { xRange: [-3, 3, 1], yRange: [-2, 2, 1] } : {}),
         ...(type === 'polar_plane' ? { radiusMax: 4, radiusStep: 1, azimuthUnits: 12 } : {}),
-        ...(type === 'numberline'  ? { xRange: [-5, 5, 1] } : {}),
-        ...extraProps
+        ...(type === 'numberline' ? { xRange: [-5, 5, 1] } : {}),
+        ...extraProps,
       };
 
-      const is3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'].includes(type);
+      const is3D = [
+        'sphere',
+        'cube',
+        'cone',
+        'cylinder',
+        'torus',
+        'axes3d',
+        'surface',
+        'prism',
+      ].includes(type);
       if (is3D) {
         obj.x3d = 0;
         obj.y3d = 0;
@@ -380,11 +526,11 @@ const useProjectStore = defineStore('project', {
         obj.ry = 0;
         obj.rz = 0;
         obj.resolution = 20;
-        obj.sideLength = 1.0;    // cube
-        obj.radius = 0.5;        // sphere/cone/cylinder/torus
-        obj.height = 1.5;        // cone/cylinder
-        obj.majorRadius = 1.0;   // torus
-        obj.minorRadius = 0.3;   // torus
+        obj.sideLength = 1.0; // cube
+        obj.radius = 0.5; // sphere/cone/cylinder/torus
+        obj.height = 1.5; // cone/cylinder
+        obj.majorRadius = 1.0; // torus
+        obj.minorRadius = 0.3; // torus
       }
       if (type === 'axes3d') {
         obj.xRange = [-3, 3, 1];
@@ -392,9 +538,9 @@ const useProjectStore = defineStore('project', {
         obj.zRange = [-3, 3, 1];
       }
       if (type === 'surface') {
-        obj.zExpr = 'x**2 - y**2';   // z = f(x, y)
-        obj.xRange = [-2, 2];        // u_range
-        obj.yRange = [-2, 2];        // v_range
+        obj.zExpr = 'x**2 - y**2'; // z = f(x, y)
+        obj.xRange = [-2, 2]; // u_range
+        obj.yRange = [-2, 2]; // v_range
       }
       if (type === 'prism') {
         obj.dimX = 2;
@@ -409,11 +555,11 @@ const useProjectStore = defineStore('project', {
     },
 
     addImageObject(assetId, x, y) {
-      const asset = this.project.assets.find(a => a.id === assetId);
+      const asset = this.project.assets.find((a) => a.id === assetId);
       if (!asset) return null;
 
       const type = asset.type === 'svg' ? 'svg_asset' : 'image';
-      const aspectRatio = (asset.width && asset.height) ? asset.width / asset.height : 1;
+      const aspectRatio = asset.width && asset.height ? asset.width / asset.height : 1;
       const height = 200;
       const width = Math.round(height * aspectRatio);
 
@@ -423,12 +569,12 @@ const useProjectStore = defineStore('project', {
         width,
         height,
         naturalWidth: asset.width || width,
-        naturalHeight: asset.height || height
+        naturalHeight: asset.height || height,
       });
     },
 
     updateObject(id, updates) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       for (const key of Object.keys(updates)) {
         obj[key] = updates[key];
@@ -438,7 +584,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setPolygonVertices(id, vertices) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(vertices) || vertices.length < 3) return;
       obj.vertices = vertices.map(([x, y]) => [Math.round(x), Math.round(y)]);
       this.isDirty = true;
@@ -446,7 +592,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setMatrixCell(id, r, c, value) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(obj.matrixData)) return;
       if (!obj.matrixData[r] || obj.matrixData[r][c] === undefined) return;
       obj.matrixData[r][c] = String(value);
@@ -455,7 +601,7 @@ const useProjectStore = defineStore('project', {
     },
 
     addMatrixRow(id) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(obj.matrixData) || !obj.matrixData[0]) return;
       obj.matrixData.push(new Array(obj.matrixData[0].length).fill('0'));
       this.isDirty = true;
@@ -463,7 +609,7 @@ const useProjectStore = defineStore('project', {
     },
 
     removeMatrixRow(id) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(obj.matrixData) || obj.matrixData.length <= 1) return;
       obj.matrixData.pop();
       this.isDirty = true;
@@ -471,23 +617,29 @@ const useProjectStore = defineStore('project', {
     },
 
     addMatrixColumn(id) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(obj.matrixData)) return;
-      obj.matrixData.forEach(row => row.push('0'));
+      obj.matrixData.forEach((row) => row.push('0'));
       this.isDirty = true;
       this.commitState();
     },
 
     removeMatrixColumn(id) {
-      const obj = this.project.objects.find(o => o.id === id);
-      if (!obj || !Array.isArray(obj.matrixData) || !obj.matrixData[0] || obj.matrixData[0].length <= 1) return;
-      obj.matrixData.forEach(row => row.pop());
+      const obj = this.project.objects.find((o) => o.id === id);
+      if (
+        !obj ||
+        !Array.isArray(obj.matrixData) ||
+        !obj.matrixData[0] ||
+        obj.matrixData[0].length <= 1
+      )
+        return;
+      obj.matrixData.forEach((row) => row.pop());
       this.isDirty = true;
       this.commitState();
     },
 
     setMatrixBracket(id, bracket) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !['[', '(', '|'].includes(bracket)) return;
       obj.bracket = bracket;
       this.isDirty = true;
@@ -496,37 +648,74 @@ const useProjectStore = defineStore('project', {
 
     setTableCell(id, r, c, value) {
       const obj = this.objectById(id);
-      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[r] || obj.cellData[r][c] === undefined) return;
-      obj.cellData[r][c] = String(value); this.isDirty = true; this._debouncedCommit();
+      if (
+        !obj ||
+        !Array.isArray(obj.cellData) ||
+        !obj.cellData[r] ||
+        obj.cellData[r][c] === undefined
+      )
+        return;
+      obj.cellData[r][c] = String(value);
+      this.isDirty = true;
+      this._debouncedCommit();
     },
     addTableRow(id) {
       const obj = this.objectById(id);
       if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0]) return;
-      obj.cellData.push(new Array(obj.cellData[0].length).fill('0')); this.isDirty = true; this.commitState();
+      obj.cellData.push(new Array(obj.cellData[0].length).fill('0'));
+      this.isDirty = true;
+      this.commitState();
     },
     removeTableRow(id) {
       const obj = this.objectById(id);
       if (!obj || !Array.isArray(obj.cellData) || obj.cellData.length <= 1) return;
-      obj.cellData.pop(); if (Array.isArray(obj.rowLabels) && obj.rowLabels.length > obj.cellData.length) obj.rowLabels.splice(obj.cellData.length);
-      this.isDirty = true; this.commitState();
+      obj.cellData.pop();
+      if (Array.isArray(obj.rowLabels) && obj.rowLabels.length > obj.cellData.length)
+        obj.rowLabels.splice(obj.cellData.length);
+      this.isDirty = true;
+      this.commitState();
     },
     addTableColumn(id) {
       const obj = this.objectById(id);
       if (!obj || !Array.isArray(obj.cellData)) return;
-      obj.cellData.forEach(row => row.push('0')); this.isDirty = true; this.commitState();
+      obj.cellData.forEach((row) => row.push('0'));
+      this.isDirty = true;
+      this.commitState();
     },
     removeTableColumn(id) {
       const obj = this.objectById(id);
-      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0] || obj.cellData[0].length <= 1) return;
-      obj.cellData.forEach(row => row.pop()); if (Array.isArray(obj.colLabels) && obj.colLabels.length > obj.cellData[0].length) obj.colLabels.splice(obj.cellData[0].length);
-      this.isDirty = true; this.commitState();
+      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0] || obj.cellData[0].length <= 1)
+        return;
+      obj.cellData.forEach((row) => row.pop());
+      if (Array.isArray(obj.colLabels) && obj.colLabels.length > obj.cellData[0].length)
+        obj.colLabels.splice(obj.cellData[0].length);
+      this.isDirty = true;
+      this.commitState();
     },
-    setTableMathMode(id, on) { const o = this.objectById(id); if (!o) return; o.mathMode = !!on; this.isDirty = true; this.commitState(); },
-    setTableRowLabels(id, arr) { const o = this.objectById(id); if (!o || !Array.isArray(arr)) return; o.rowLabels = arr.map(s => String(s)); this.isDirty = true; this._debouncedCommit(); },
-    setTableColLabels(id, arr) { const o = this.objectById(id); if (!o || !Array.isArray(arr)) return; o.colLabels = arr.map(s => String(s)); this.isDirty = true; this._debouncedCommit(); },
+    setTableMathMode(id, on) {
+      const o = this.objectById(id);
+      if (!o) return;
+      o.mathMode = !!on;
+      this.isDirty = true;
+      this.commitState();
+    },
+    setTableRowLabels(id, arr) {
+      const o = this.objectById(id);
+      if (!o || !Array.isArray(arr)) return;
+      o.rowLabels = arr.map((s) => String(s));
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+    setTableColLabels(id, arr) {
+      const o = this.objectById(id);
+      if (!o || !Array.isArray(arr)) return;
+      o.colLabels = arr.map((s) => String(s));
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
 
     setRelationalPoint(id, key, pt) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !['p1', 'p2', 'vertex', 'point1', 'point2'].includes(key)) return;
       if (obj[key] === undefined || !Array.isArray(pt) || pt.length !== 2) return;
       obj[key] = [Math.round(pt[0]), Math.round(pt[1])];
@@ -535,7 +724,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setAngleRightMode(id, on) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || obj.type !== 'angle') return;
       obj.rightAngle = !!on;
       this.isDirty = true;
@@ -543,7 +732,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setAngleRadius(id, r) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || obj.type !== 'angle') return;
       const v = Number(r);
       if (!Number.isFinite(v) || v <= 0) return;
@@ -553,7 +742,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setRelationalLabel(id, label) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       obj.label = String(label == null ? '' : label);
       this.isDirty = true;
@@ -561,7 +750,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setGradient(id, gradient) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (gradient && Array.isArray(gradient.colors) && gradient.colors.length >= 2) {
         obj.gradient = { colors: [...gradient.colors], angle: gradient.angle ?? 135 };
@@ -573,7 +762,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setCornerRadius(id, px) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       const r = Number(px);
       if (Number.isFinite(r) && r > 0) obj.cornerRadius = r;
@@ -583,7 +772,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setDash(id, dash) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (dash) {
         const numDashes = Math.max(2, Math.round(Number(dash.numDashes) || 12));
@@ -597,7 +786,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setShadow(id, shadow) {
-      const obj = this.project.objects.find(o => o.id === id);
+      const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (shadow) {
         obj.shadow = {
@@ -614,72 +803,159 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setCounterValue(objId, v) { const o = this.objectById(objId); if (!o) return; o.value = Number(v) || 0; this.commitState(); },
-    setCounterDecimals(objId, n) { const o = this.objectById(objId); if (!o) return; o.numDecimals = Math.max(0, Math.floor(Number(n) || 0)); this.commitState(); },
-    setCounterSuffix(objId, s) { const o = this.objectById(objId); if (!o) return; o.suffix = String(s ?? ''); this.commitState(); },
-    setCounterInteger(objId, on) { const o = this.objectById(objId); if (!o) return; o.useInteger = !!on; this.commitState(); },
+    setCounterValue(objId, v) {
+      const o = this.objectById(objId);
+      if (!o) return;
+      o.value = Number(v) || 0;
+      this.commitState();
+    },
+    setCounterDecimals(objId, n) {
+      const o = this.objectById(objId);
+      if (!o) return;
+      o.numDecimals = Math.max(0, Math.floor(Number(n) || 0));
+      this.commitState();
+    },
+    setCounterSuffix(objId, s) {
+      const o = this.objectById(objId);
+      if (!o) return;
+      o.suffix = String(s ?? '');
+      this.commitState();
+    },
+    setCounterInteger(objId, on) {
+      const o = this.objectById(objId);
+      if (!o) return;
+      o.useInteger = !!on;
+      this.commitState();
+    },
 
-    setPolarRadiusMax(id, v) { const o = this.objectById(id); if (!o) return; o.radiusMax = Math.max(1, Number(v) || 4); this.isDirty = true; this._debouncedCommit(); },
-    setPolarRadiusStep(id, v) { const o = this.objectById(id); if (!o) return; const n = Number(v); o.radiusStep = Math.max(0.1, Number.isFinite(n) ? n : 1); this.isDirty = true; this._debouncedCommit(); },
-    setPolarAzimuth(id, v) { const o = this.objectById(id); if (!o) return; o.azimuthUnits = Math.max(1, Math.trunc(Number(v) || 12)); this.isDirty = true; this._debouncedCommit(); },
+    setPolarRadiusMax(id, v) {
+      const o = this.objectById(id);
+      if (!o) return;
+      o.radiusMax = Math.max(1, Number(v) || 4);
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+    setPolarRadiusStep(id, v) {
+      const o = this.objectById(id);
+      if (!o) return;
+      const n = Number(v);
+      o.radiusStep = Math.max(0.1, Number.isFinite(n) ? n : 1);
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+    setPolarAzimuth(id, v) {
+      const o = this.objectById(id);
+      if (!o) return;
+      o.azimuthUnits = Math.max(1, Math.trunc(Number(v) || 12));
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
 
     addGraphVertex(id, name) {
-      const o = this.objectById(id); if (!o) return;
+      const o = this.objectById(id);
+      if (!o) return;
       const v = String(name || `V${o.vertices.length + 1}`);
       if (o.vertices.includes(v)) return;
-      o.vertices.push(v); o.positions[v] = [0, 0]; this.isDirty = true; this.commitState();
+      o.vertices.push(v);
+      o.positions[v] = [0, 0];
+      this.isDirty = true;
+      this.commitState();
     },
     removeGraphVertex(id, v) {
-      const o = this.objectById(id); if (!o) return;
-      o.vertices = o.vertices.filter(x => x !== v);
-      o.edges = o.edges.filter(e => e[0] !== v && e[1] !== v);
-      delete o.positions[v]; this.isDirty = true; this.commitState();
+      const o = this.objectById(id);
+      if (!o) return;
+      o.vertices = o.vertices.filter((x) => x !== v);
+      o.edges = o.edges.filter((e) => e[0] !== v && e[1] !== v);
+      delete o.positions[v];
+      this.isDirty = true;
+      this.commitState();
     },
     renameGraphVertex(id, oldV, newV) {
-      const o = this.objectById(id); if (!o) return;
-      const nv = String(newV); if (!nv || o.vertices.includes(nv)) return;
-      o.vertices = o.vertices.map(x => x === oldV ? nv : x);
-      o.edges = o.edges.map(e => [e[0] === oldV ? nv : e[0], e[1] === oldV ? nv : e[1]]);
-      if (o.positions[oldV]) { o.positions[nv] = o.positions[oldV]; delete o.positions[oldV]; }
-      this.isDirty = true; this.commitState();
+      const o = this.objectById(id);
+      if (!o) return;
+      const nv = String(newV);
+      if (!nv || o.vertices.includes(nv)) return;
+      o.vertices = o.vertices.map((x) => (x === oldV ? nv : x));
+      o.edges = o.edges.map((e) => [e[0] === oldV ? nv : e[0], e[1] === oldV ? nv : e[1]]);
+      if (o.positions[oldV]) {
+        o.positions[nv] = o.positions[oldV];
+        delete o.positions[oldV];
+      }
+      this.isDirty = true;
+      this.commitState();
     },
     addGraphEdge(id, a, b) {
-      const o = this.objectById(id); if (!o || !o.vertices.includes(a) || !o.vertices.includes(b)) return;
+      const o = this.objectById(id);
+      if (!o || !o.vertices.includes(a) || !o.vertices.includes(b)) return;
       if (a === b) return;
-      if (o.edges.some(e => e[0] === a && e[1] === b)) return;
-      o.edges.push([a, b]); this.isDirty = true; this.commitState();
+      if (o.edges.some((e) => e[0] === a && e[1] === b)) return;
+      o.edges.push([a, b]);
+      this.isDirty = true;
+      this.commitState();
     },
     removeGraphEdge(id, a, b) {
-      const o = this.objectById(id); if (!o) return;
-      o.edges = o.edges.filter(e => !(e[0] === a && e[1] === b)); this.isDirty = true; this.commitState();
+      const o = this.objectById(id);
+      if (!o) return;
+      o.edges = o.edges.filter((e) => !(e[0] === a && e[1] === b));
+      this.isDirty = true;
+      this.commitState();
     },
     setGraphVertexPosition(id, v, pt) {
-      const o = this.objectById(id); if (!o || !Array.isArray(pt) || pt.length !== 2) return;
-      o.positions[v] = [Math.round(pt[0]), Math.round(pt[1])]; this.isDirty = true; this._debouncedCommit();
+      const o = this.objectById(id);
+      if (!o || !Array.isArray(pt) || pt.length !== 2) return;
+      o.positions[v] = [Math.round(pt[0]), Math.round(pt[1])];
+      this.isDirty = true;
+      this._debouncedCommit();
     },
-    setGraphDirected(id, on) { const o = this.objectById(id); if (!o) return; o.directed = !!on; this.isDirty = true; this.commitState(); },
-    setGraphShowLabels(id, on) { const o = this.objectById(id); if (!o) return; o.showLabels = !!on; this.isDirty = true; this.commitState(); },
+    setGraphDirected(id, on) {
+      const o = this.objectById(id);
+      if (!o) return;
+      o.directed = !!on;
+      this.isDirty = true;
+      this.commitState();
+    },
+    setGraphShowLabels(id, on) {
+      const o = this.objectById(id);
+      if (!o) return;
+      o.showLabels = !!on;
+      this.isDirty = true;
+      this.commitState();
+    },
 
-    setFieldExpr(id, axis, expr) { const o = this.objectById(id); if (!o || (axis !== 'fx' && axis !== 'fy')) return; o[axis] = String(expr); this.isDirty = true; this._debouncedCommit(); },
-    setFieldRange(id, axis, range) { const o = this.objectById(id); if (!o || (axis !== 'xRange' && axis !== 'yRange') || !Array.isArray(range)) return; o[axis] = range.map(Number); this.isDirty = true; this._debouncedCommit(); },
+    setFieldExpr(id, axis, expr) {
+      const o = this.objectById(id);
+      if (!o || (axis !== 'fx' && axis !== 'fy')) return;
+      o[axis] = String(expr);
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
+    setFieldRange(id, axis, range) {
+      const o = this.objectById(id);
+      if (!o || (axis !== 'xRange' && axis !== 'yRange') || !Array.isArray(range)) return;
+      o[axis] = range.map(Number);
+      this.isDirty = true;
+      this._debouncedCommit();
+    },
 
     deleteObject(id) {
-      const idx = this.project.objects.findIndex(o => o.id === id);
+      const idx = this.project.objects.findIndex((o) => o.id === id);
       if (idx === -1) return;
       this.project.objects.splice(idx, 1);
       const selIdx = this.selectedObjectIds.indexOf(id);
       if (selIdx !== -1) this.selectedObjectIds.splice(selIdx, 1);
       for (const track of this.project.tracks) {
-        track.clips = track.clips.filter(c => c.sourceId !== id && c.targetId !== id);
+        track.clips = track.clips.filter((c) => c.sourceId !== id && c.targetId !== id);
       }
       // Remove from any group
-      for (const group of (this.project.groups || [])) {
+      for (const group of this.project.groups || []) {
         const gIdx = (group.childIds || []).indexOf(id);
         if (gIdx !== -1) group.childIds.splice(gIdx, 1);
       }
       // Remove empty groups
       if (this.project.groups) {
-        this.project.groups = this.project.groups.filter(g => g.childIds && g.childIds.length > 0);
+        this.project.groups = this.project.groups.filter(
+          (g) => g.childIds && g.childIds.length > 0
+        );
       }
       this.isDirty = true;
       this.commitState();
@@ -695,19 +971,19 @@ const useProjectStore = defineStore('project', {
         return null;
       }
       // Remove these objects from existing groups
-      for (const group of (this.project.groups || [])) {
-        group.childIds = (group.childIds || []).filter(cid => !ids.includes(cid));
+      for (const group of this.project.groups || []) {
+        group.childIds = (group.childIds || []).filter((cid) => !ids.includes(cid));
       }
       // Clean empty groups
       if (!this.project.groups) this.project.groups = [];
-      this.project.groups = this.project.groups.filter(g => g.childIds && g.childIds.length > 0);
+      this.project.groups = this.project.groups.filter((g) => g.childIds && g.childIds.length > 0);
 
       const group = {
         id: uid('group'),
         name: `Group ${(this.project.groups || []).length + 1}`,
         childIds: [...ids],
         margin: 10,
-        collapsed: false
+        collapsed: false,
       };
       this.project.groups.push(group);
       this.isDirty = true;
@@ -717,7 +993,7 @@ const useProjectStore = defineStore('project', {
 
     ungroupObjects(groupId) {
       if (!this.project.groups) return;
-      const idx = this.project.groups.findIndex(g => g.id === groupId);
+      const idx = this.project.groups.findIndex((g) => g.id === groupId);
       if (idx !== -1) {
         this.project.groups.splice(idx, 1);
         this.isDirty = true;
@@ -726,7 +1002,7 @@ const useProjectStore = defineStore('project', {
     },
 
     updateGroup(groupId, updates) {
-      const group = (this.project.groups || []).find(g => g.id === groupId);
+      const group = (this.project.groups || []).find((g) => g.id === groupId);
       if (!group) return;
       for (const key of Object.keys(updates)) {
         group[key] = updates[key];
@@ -753,7 +1029,7 @@ const useProjectStore = defineStore('project', {
               dataUrl,
               width: img.naturalWidth,
               height: img.naturalHeight,
-              serverFilename: null
+              serverFilename: null,
             };
             this.project.assets.push(asset);
             this.isDirty = true;
@@ -768,7 +1044,7 @@ const useProjectStore = defineStore('project', {
     },
 
     removeAsset(id) {
-      const idx = this.project.assets.findIndex(a => a.id === id);
+      const idx = this.project.assets.findIndex((a) => a.id === id);
       if (idx !== -1) {
         this.project.assets.splice(idx, 1);
         this.isDirty = true;
@@ -780,7 +1056,11 @@ const useProjectStore = defineStore('project', {
     // ══════════════════════════════════════════════════════════════════════════
 
     selectObject(id, addToSelection = false) {
-      if (!id) { this.selectedObjectIds = []; this.selectedClipId = null; return; }
+      if (!id) {
+        this.selectedObjectIds = [];
+        this.selectedClipId = null;
+        return;
+      }
       if (addToSelection) {
         const idx = this.selectedObjectIds.indexOf(id);
         if (idx !== -1) this.selectedObjectIds.splice(idx, 1);
@@ -801,7 +1081,9 @@ const useProjectStore = defineStore('project', {
       this.selectedClipId = null;
     },
 
-    setActiveTool(tool) { this.activeTool = tool; },
+    setActiveTool(tool) {
+      this.activeTool = tool;
+    },
 
     // ══════════════════════════════════════════════════════════════════════════
     // Clips
@@ -815,8 +1097,8 @@ const useProjectStore = defineStore('project', {
         id: uid('graph'),
         expression: graphData.expression || 'x**2',
         color: graphData.color || '#f59e0b',
-        xMin: graphData.xMin ?? (obj.xRange?.[0] ?? -5),
-        xMax: graphData.xMax ?? (obj.xRange?.[1] ?? 5),
+        xMin: graphData.xMin ?? obj.xRange?.[0] ?? -5,
+        xMax: graphData.xMax ?? obj.xRange?.[1] ?? 5,
         strokeWidth: graphData.strokeWidth || 3,
       };
       obj.graphs.push(graph);
@@ -828,7 +1110,7 @@ const useProjectStore = defineStore('project', {
     removeGraph(objId, graphId) {
       const obj = this.objectById(objId);
       if (!obj || !obj.graphs) return;
-      const idx = obj.graphs.findIndex(g => g.id === graphId);
+      const idx = obj.graphs.findIndex((g) => g.id === graphId);
       if (idx !== -1) {
         obj.graphs.splice(idx, 1);
         this.isDirty = true;
@@ -839,7 +1121,7 @@ const useProjectStore = defineStore('project', {
     updateGraph(objId, graphId, updates) {
       const obj = this.objectById(objId);
       if (!obj || !obj.graphs) return;
-      const graph = obj.graphs.find(g => g.id === graphId);
+      const graph = obj.graphs.find((g) => g.id === graphId);
       if (!graph) return;
       for (const key of Object.keys(updates)) graph[key] = updates[key];
       this.isDirty = true;
@@ -851,22 +1133,31 @@ const useProjectStore = defineStore('project', {
         this.project.tracks.push({
           id: `track_${this.project.tracks.length + 1}`,
           name: `Track ${this.project.tracks.length + 1}`,
-          clips: []
+          clips: [],
         });
       }
       while (this.project.tracks.length < 5) {
         this.project.tracks.push({
           id: `track_${this.project.tracks.length + 1}`,
           name: `Track ${this.project.tracks.length + 1}`,
-          clips: []
+          clips: [],
         });
       }
       const clip = {
-        id: uid('clip'), type: 'transform', startTime: 0, duration: 1.5,
-        easing: 'ease_in_out', sourceId: null, targetId: null, params: {},
-        overshoot: 0, settle: 1.0, morphQuality: 'medium',
-        parallel: false, lag_ratio: 0,
-        ...clipData
+        id: uid('clip'),
+        type: 'transform',
+        startTime: 0,
+        duration: 1.5,
+        easing: 'ease_in_out',
+        sourceId: null,
+        targetId: null,
+        params: {},
+        overshoot: 0,
+        settle: 1.0,
+        morphQuality: 'medium',
+        parallel: false,
+        lag_ratio: 0,
+        ...clipData,
       };
       this.project.tracks[trackIndex].clips.push(clip);
       this.isDirty = true;
@@ -876,7 +1167,7 @@ const useProjectStore = defineStore('project', {
 
     updateClip(clipId, updates) {
       for (const track of this.project.tracks) {
-        const clip = track.clips.find(c => c.id === clipId);
+        const clip = track.clips.find((c) => c.id === clipId);
         if (clip) {
           for (const key of Object.keys(updates)) clip[key] = updates[key];
           this.isDirty = true;
@@ -887,7 +1178,7 @@ const useProjectStore = defineStore('project', {
 
     deleteClip(clipId) {
       for (const track of this.project.tracks) {
-        const idx = track.clips.findIndex(c => c.id === clipId);
+        const idx = track.clips.findIndex((c) => c.id === clipId);
         if (idx !== -1) {
           track.clips.splice(idx, 1);
           if (this.selectedClipId === clipId) this.selectedClipId = null;
@@ -900,10 +1191,14 @@ const useProjectStore = defineStore('project', {
 
     setClipAudio(clipId, audioData) {
       for (const track of this.project.tracks) {
-        const clip = track.clips.find(c => c.id === clipId);
+        const clip = track.clips.find((c) => c.id === clipId);
         if (clip) {
           clip.audio = { ...audioData };
-          if (audioData.syncMode === 'auto' && audioData.status === 'ready' && audioData.duration != null) {
+          if (
+            audioData.syncMode === 'auto' &&
+            audioData.status === 'ready' &&
+            audioData.duration != null
+          ) {
             clip.duration = audioData.duration;
           }
           this.isDirty = true;
@@ -915,7 +1210,7 @@ const useProjectStore = defineStore('project', {
 
     removeClipAudio(clipId) {
       for (const track of this.project.tracks) {
-        const clip = track.clips.find(c => c.id === clipId);
+        const clip = track.clips.find((c) => c.id === clipId);
         if (clip && clip.audio) {
           delete clip.audio;
           this.isDirty = true;
@@ -939,14 +1234,22 @@ const useProjectStore = defineStore('project', {
 
       let trackIndex = 0;
       for (let i = 0; i < this.project.tracks.length; i++) {
-        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        if (this.project.tracks[i].clips.length === 0) {
+          trackIndex = i;
+          break;
+        }
         trackIndex = i + 1;
       }
       trackIndex = Math.min(trackIndex, 4);
 
       const clip = this.addClip(trackIndex, {
-        type: 'transform', startTime: Math.max(0, startTime), duration: 1.5,
-        easing: 'ease_in_out_cubic', sourceId, targetId, morphQuality: 'medium'
+        type: 'transform',
+        startTime: Math.max(0, startTime),
+        duration: 1.5,
+        easing: 'ease_in_out_cubic',
+        sourceId,
+        targetId,
+        morphQuality: 'medium',
       });
       this.selectedClipId = clip.id;
       this.selectedObjectIds = [];
@@ -968,17 +1271,25 @@ const useProjectStore = defineStore('project', {
       }
       const sourceId = this.selectedObjectIds[0];
       const src = this.objectById(sourceId);
-      const startTime = src ? (src.enterTime || 0) : 0;
+      const startTime = src ? src.enterTime || 0 : 0;
 
       let trackIndex = 0;
       for (let i = 0; i < this.project.tracks.length; i++) {
-        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        if (this.project.tracks[i].clips.length === 0) {
+          trackIndex = i;
+          break;
+        }
         trackIndex = i + 1;
       }
       trackIndex = Math.min(trackIndex, 4);
 
       const clip = this.addClip(trackIndex, {
-        type, startTime, duration: 1.0, easing: 'ease_in_out', sourceId, params
+        type,
+        startTime,
+        duration: 1.0,
+        easing: 'ease_in_out',
+        sourceId,
+        params,
       });
       this.selectedClipId = clip.id;
       return clip;
@@ -989,21 +1300,24 @@ const useProjectStore = defineStore('project', {
     // ══════════════════════════════════════════════════════════════════════════
 
     alignObject(objId, anchor) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       const stage = this.project.stage;
       const pad = 50;
 
       const positions = {
-        'TOP_LEFT':     { x: pad + obj.width / 2, y: pad + obj.height / 2 },
-        'TOP':          { x: stage.width / 2, y: pad + obj.height / 2 },
-        'TOP_RIGHT':    { x: stage.width - pad - obj.width / 2, y: pad + obj.height / 2 },
-        'LEFT':         { x: pad + obj.width / 2, y: stage.height / 2 },
-        'CENTER':       { x: stage.width / 2, y: stage.height / 2 },
-        'RIGHT':        { x: stage.width - pad - obj.width / 2, y: stage.height / 2 },
-        'BOTTOM_LEFT':  { x: pad + obj.width / 2, y: stage.height - pad - obj.height / 2 },
-        'BOTTOM':       { x: stage.width / 2, y: stage.height - pad - obj.height / 2 },
-        'BOTTOM_RIGHT': { x: stage.width - pad - obj.width / 2, y: stage.height - pad - obj.height / 2 }
+        TOP_LEFT: { x: pad + obj.width / 2, y: pad + obj.height / 2 },
+        TOP: { x: stage.width / 2, y: pad + obj.height / 2 },
+        TOP_RIGHT: { x: stage.width - pad - obj.width / 2, y: pad + obj.height / 2 },
+        LEFT: { x: pad + obj.width / 2, y: stage.height / 2 },
+        CENTER: { x: stage.width / 2, y: stage.height / 2 },
+        RIGHT: { x: stage.width - pad - obj.width / 2, y: stage.height / 2 },
+        BOTTOM_LEFT: { x: pad + obj.width / 2, y: stage.height - pad - obj.height / 2 },
+        BOTTOM: { x: stage.width / 2, y: stage.height - pad - obj.height / 2 },
+        BOTTOM_RIGHT: {
+          x: stage.width - pad - obj.width / 2,
+          y: stage.height - pad - obj.height / 2,
+        },
       };
 
       const pos = positions[anchor];
@@ -1016,23 +1330,38 @@ const useProjectStore = defineStore('project', {
     // Playback
     // ══════════════════════════════════════════════════════════════════════════
 
-    setPlaybackTime(t) { this.playbackTime = t; },
-    setPlaybackPlaying(p) { this.playbackPlaying = p; },
-    setFrameState(s) { this.frameState = s; },
+    setPlaybackTime(t) {
+      this.playbackTime = t;
+    },
+    setPlaybackPlaying(p) {
+      this.playbackPlaying = p;
+    },
+    setFrameState(s) {
+      this.frameState = s;
+    },
 
     // ══════════════════════════════════════════════════════════════════════════
     // Stage
     // ══════════════════════════════════════════════════════════════════════════
 
-    updateStage(u) { for (const k of Object.keys(u)) this.project.stage[k] = u[k]; this.isDirty = true; },
-    toggleGrid() { this.project.stage.gridVisible = !this.project.stage.gridVisible; },
-    toggleSnap() { this.project.stage.snapEnabled = !this.project.stage.snapEnabled; },
+    updateStage(u) {
+      for (const k of Object.keys(u)) this.project.stage[k] = u[k];
+      this.isDirty = true;
+    },
+    toggleGrid() {
+      this.project.stage.gridVisible = !this.project.stage.gridVisible;
+    },
+    toggleSnap() {
+      this.project.stage.snapEnabled = !this.project.stage.snapEnabled;
+    },
 
     // ══════════════════════════════════════════════════════════════════════════
     // Local Project I/O  (file-based, existing behaviour)
     // ══════════════════════════════════════════════════════════════════════════
 
-    exportJSON() { return JSON.stringify(JSON.parse(JSON.stringify(this.project)), null, 2); },
+    exportJSON() {
+      return JSON.stringify(JSON.parse(JSON.stringify(this.project)), null, 2);
+    },
 
     importJSON(jsonStr) {
       try {
@@ -1079,10 +1408,16 @@ const useProjectStore = defineStore('project', {
         input.accept = '.json';
         input.onchange = (e) => {
           const file = e.target.files[0];
-          if (!file) { resolve(false); return; }
+          if (!file) {
+            resolve(false);
+            return;
+          }
           const reader = new FileReader();
           reader.onload = (ev) => resolve(this.importJSON(ev.target.result));
-          reader.onerror = () => { this.error = 'Failed to read file'; resolve(false); };
+          reader.onerror = () => {
+            this.error = 'Failed to read file';
+            resolve(false);
+          };
           reader.readAsText(file);
         };
         input.click();
@@ -1150,7 +1485,7 @@ const useProjectStore = defineStore('project', {
               const result = await api.assets.uploadBase64(projectId, {
                 name: asset.filename || asset.name || 'asset',
                 type: asset.type,
-                data: asset.dataUrl
+                data: asset.dataUrl,
               });
               asset.serverFilename = result.filename;
             } catch (err) {
@@ -1244,7 +1579,7 @@ const useProjectStore = defineStore('project', {
      */
     async deleteServerProject(id) {
       await api.projects.delete(id);
-      this.serverProjects = this.serverProjects.filter(p => p.id !== id);
+      this.serverProjects = this.serverProjects.filter((p) => p.id !== id);
       if (this.project.id === id) {
         this.project.id = null;
       }
@@ -1276,7 +1611,7 @@ const useProjectStore = defineStore('project', {
           result = await api.projects.renderCode(projectId, {
             quality,
             codeSource: this.project.codeSource,
-            sceneName: 'MainScene'
+            sceneName: 'MainScene',
           });
         } else {
           result = await api.projects.render(projectId, quality);
@@ -1285,7 +1620,6 @@ const useProjectStore = defineStore('project', {
 
         // 3. Start polling
         this._startPollRender(result.jobId, projectId);
-
       } catch (err) {
         this.renderStatus = 'failed';
         this.renderError = err.message;
@@ -1334,7 +1668,7 @@ const useProjectStore = defineStore('project', {
         cameraTrack: this.project.cameraTrack,
         cameraType: this.project.cameraType,
         sceneType: this.project.sceneType,
-        camera3d: this.project.camera3d
+        camera3d: this.project.camera3d,
       });
     },
 
@@ -1347,7 +1681,7 @@ const useProjectStore = defineStore('project', {
 
     _debouncedCommit: (() => {
       let timer = null;
-      return function() {
+      return function () {
         clearTimeout(timer);
         timer = setTimeout(() => this.commitState(), 400);
       };
@@ -1394,7 +1728,7 @@ const useProjectStore = defineStore('project', {
 
     copySelection() {
       const selected = this.selectedObjectIds
-        .map(id => this.project.objects.find(o => o.id === id))
+        .map((id) => this.project.objects.find((o) => o.id === id))
         .filter(Boolean);
       if (selected.length === 0) return;
       this.clipboard = JSON.parse(JSON.stringify(selected));
@@ -1423,16 +1757,22 @@ const useProjectStore = defineStore('project', {
     // UI helpers
     // ══════════════════════════════════════════════════════════════════════════
 
-    clearError() { this.error = null; },
+    clearError() {
+      this.error = null;
+    },
     setError(msg) {
       this.error = msg;
-      setTimeout(() => { if (this.error === msg) this.error = null; }, 4000);
+      setTimeout(() => {
+        if (this.error === msg) this.error = null;
+      }, 4000);
     },
 
     setTheme(id) {
       this.theme = id;
       document.documentElement.setAttribute('data-theme', id);
-      try { localStorage.setItem('manim-motion-theme', id); } catch {}
+      try {
+        localStorage.setItem('manim-motion-theme', id);
+      } catch {}
     },
 
     addPathMoveClip(sourceId, pathPoints) {
@@ -1440,7 +1780,10 @@ const useProjectStore = defineStore('project', {
       // Find first empty track
       let trackIndex = 0;
       for (let i = 0; i < this.project.tracks.length; i++) {
-        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        if (this.project.tracks[i].clips.length === 0) {
+          trackIndex = i;
+          break;
+        }
         trackIndex = i + 1;
       }
       trackIndex = Math.min(trackIndex, 4);
@@ -1450,24 +1793,38 @@ const useProjectStore = defineStore('project', {
         startTime: this.playbackTime || 0,
         duration: 2.0,
         easing: 'ease_in_out',
-        path: pathPoints,   // [{x,y},...] (2D) or [{x3d,y3d,z3d},...] (3D)
+        path: pathPoints, // [{x,y},...] (2D) or [{x3d,y3d,z3d},...] (3D)
         params: {},
       });
       return clip;
     },
 
     createCount(from = 0, to = 100) {
-      if (this.selectedObjectIds.length !== 1) { this.setError('Select 1 counter to animate'); return null; }
+      if (this.selectedObjectIds.length !== 1) {
+        this.setError('Select 1 counter to animate');
+        return null;
+      }
       const objectId = this.selectedObjectIds[0];
       const src = this.objectById(objectId);
-      const startTime = src ? (src.enterTime || 0) : 0;
+      const startTime = src ? src.enterTime || 0 : 0;
       let trackIndex = 0;
       for (let i = 0; i < this.project.tracks.length; i++) {
-        if (this.project.tracks[i].clips.length === 0) { trackIndex = i; break; }
+        if (this.project.tracks[i].clips.length === 0) {
+          trackIndex = i;
+          break;
+        }
         trackIndex = i + 1;
       }
       trackIndex = Math.min(trackIndex, 4);
-      const clip = this.addClip(trackIndex, { type: 'count', objectId, from, to, startTime, duration: 2, easing: 'ease_in_out_cubic' });
+      const clip = this.addClip(trackIndex, {
+        type: 'count',
+        objectId,
+        from,
+        to,
+        startTime,
+        duration: 2,
+        easing: 'ease_in_out_cubic',
+      });
       this.selectedClipId = clip.id;
       return clip;
     },
@@ -1516,12 +1873,12 @@ const useProjectStore = defineStore('project', {
     },
 
     updateCameraClip(clipId, updates) {
-      const clip = this.project.cameraTrack?.find(c => c.id === clipId);
+      const clip = this.project.cameraTrack?.find((c) => c.id === clipId);
       if (!clip) return;
       if (updates.params) {
         for (const k of Object.keys(updates.params)) clip.params[k] = updates.params[k];
       }
-      const topLevel = Object.keys(updates).filter(k => k !== 'params');
+      const topLevel = Object.keys(updates).filter((k) => k !== 'params');
       for (const k of topLevel) clip[k] = updates[k];
       this.isDirty = true;
       this.commitState();
@@ -1529,7 +1886,7 @@ const useProjectStore = defineStore('project', {
 
     deleteCameraClip(clipId) {
       if (!this.project.cameraTrack) return;
-      const idx = this.project.cameraTrack.findIndex(c => c.id === clipId);
+      const idx = this.project.cameraTrack.findIndex((c) => c.id === clipId);
       if (idx !== -1) {
         this.project.cameraTrack.splice(idx, 1);
         this.isDirty = true;
@@ -1542,11 +1899,11 @@ const useProjectStore = defineStore('project', {
     // ══════════════════════════════════════════════════════════════════════════
 
     addKeyframe(objId, prop, time, value) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframes) obj.keyframes = {};
       if (!obj.keyframes[prop]) obj.keyframes[prop] = [];
-      const existing = obj.keyframes[prop].findIndex(k => Math.abs(k.time - time) < 0.01);
+      const existing = obj.keyframes[prop].findIndex((k) => Math.abs(k.time - time) < 0.01);
       if (existing >= 0) {
         obj.keyframes[prop][existing].value = value;
       } else {
@@ -1563,7 +1920,7 @@ const useProjectStore = defineStore('project', {
     // baseline to animate from. `time` is clamped to the visible interval and
     // every insert is upserted within 0.01s tolerance. One commit for the lot.
     addKeyframeScaffold(objId, prop, time) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       const val = obj[prop] ?? 0;
       const start = obj.enterTime || 0;
@@ -1576,11 +1933,22 @@ const useProjectStore = defineStore('project', {
       // `pinned: 'start'|'end'` marks the boundary keyframes — they are locked to
       // the object's edges (not draggable) and follow them on move/resize.
       const upsert = (tt, pinned) => {
-        const i = arr.findIndex(k => Math.abs(k.time - tt) < 0.01);
-        if (i >= 0) { arr[i].value = val; if (pinned) arr[i].pinned = pinned; }
-        else arr.push({ time: tt, value: val, easing: { type: 'linear' }, ...(pinned ? { pinned } : {}) });
+        const i = arr.findIndex((k) => Math.abs(k.time - tt) < 0.01);
+        if (i >= 0) {
+          arr[i].value = val;
+          if (pinned) arr[i].pinned = pinned;
+        } else
+          arr.push({
+            time: tt,
+            value: val,
+            easing: { type: 'linear' },
+            ...(pinned ? { pinned } : {}),
+          });
       };
-      if (isFirst) { upsert(start, 'start'); upsert(end, 'end'); }
+      if (isFirst) {
+        upsert(start, 'start');
+        upsert(end, 'end');
+      }
       upsert(t);
       arr.sort((a, b) => a.time - b.time);
       this.isDirty = true;
@@ -1588,9 +1956,9 @@ const useProjectStore = defineStore('project', {
     },
 
     removeKeyframe(objId, prop, time) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj?.keyframes?.[prop]) return;
-      obj.keyframes[prop] = obj.keyframes[prop].filter(k => Math.abs(k.time - time) >= 0.01);
+      obj.keyframes[prop] = obj.keyframes[prop].filter((k) => Math.abs(k.time - time) >= 0.01);
       if (obj.keyframes[prop].length === 0) delete obj.keyframes[prop];
       if (obj.keyframes && Object.keys(obj.keyframes).length === 0) delete obj.keyframes;
       this.isDirty = true;
@@ -1604,13 +1972,16 @@ const useProjectStore = defineStore('project', {
     // - if ONLY the two pinned boundaries are left, deleting either clears the
     //   whole property (both boundaries go together).
     deleteKeyframe(objId, prop, time) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       const arr = obj?.keyframes?.[prop];
       if (!arr) return;
-      const kf = arr.find(k => Math.abs(k.time - time) < 0.01);
+      const kf = arr.find((k) => Math.abs(k.time - time) < 0.01);
       if (!kf) return;
-      if (!kf.pinned) { this.removeKeyframe(objId, prop, time); return; }
-      if (arr.some(k => !k.pinned)) return; // middle keyframes still present → block
+      if (!kf.pinned) {
+        this.removeKeyframe(objId, prop, time);
+        return;
+      }
+      if (arr.some((k) => !k.pinned)) return; // middle keyframes still present → block
       // only the boundaries remain → drop the property entirely
       delete obj.keyframes[prop];
       if (obj.keyframes && Object.keys(obj.keyframes).length === 0) delete obj.keyframes;
@@ -1624,7 +1995,7 @@ const useProjectStore = defineStore('project', {
     // keyframes travel with the object bar when it is dragged left/right.
     shiftKeyframes(objId, delta) {
       if (!delta) return;
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj?.keyframes) return;
       for (const prop of Object.keys(obj.keyframes)) {
         for (const kf of obj.keyframes[prop]) {
@@ -1642,7 +2013,7 @@ const useProjectStore = defineStore('project', {
     // inward, so expanding the bar drags them back out to the new edge. Regular
     // keyframes are clamped inside the interval.
     clampKeyframesToRange(objId) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj?.keyframes) return;
       const start = obj.enterTime || 0;
       const end = start + (obj.duration ?? 3);
@@ -1650,23 +2021,33 @@ const useProjectStore = defineStore('project', {
       for (const prop of Object.keys(obj.keyframes)) {
         const seen = [];
         const next = [...obj.keyframes[prop]]
-          .map(kf => {
-            const target = kf.pinned === 'start' ? start
-              : kf.pinned === 'end' ? end
-              : Math.max(start, Math.min(end, kf.time));
+          .map((kf) => {
+            const target =
+              kf.pinned === 'start'
+                ? start
+                : kf.pinned === 'end'
+                  ? end
+                  : Math.max(start, Math.min(end, kf.time));
             const t = Math.round(target * 100) / 100;
             if (t !== kf.time) changed = true;
             return { ...kf, time: t };
           })
           // At equal time, keep the pinned keyframe and drop the colliding regular one.
-          .sort((a, b) => (a.time - b.time) || ((b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)))
-          .filter(kf => {
-            if (seen.some(t => Math.abs(t - kf.time) < 0.01)) { changed = true; return false; }
-            seen.push(kf.time); return true;
+          .sort((a, b) => a.time - b.time || (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+          .filter((kf) => {
+            if (seen.some((t) => Math.abs(t - kf.time) < 0.01)) {
+              changed = true;
+              return false;
+            }
+            seen.push(kf.time);
+            return true;
           });
         obj.keyframes[prop] = next;
       }
-      if (changed) { this.isDirty = true; this.commitState(); }
+      if (changed) {
+        this.isDirty = true;
+        this.commitState();
+      }
     },
 
     // Proportionally remap a property's keyframes when the object's interval
@@ -1676,18 +2057,20 @@ const useProjectStore = defineStore('project', {
     // the new edges. `origKeyframes` is a snapshot taken before the resize began
     // so repeated calls during a drag remap from the original (no compounding).
     rescaleKeyframes(objId, origKeyframes, oldStart, oldEnd, newStart, newEnd) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj || !origKeyframes) return;
-      const oldSpan = (oldEnd - oldStart) || 1;
+      const oldSpan = oldEnd - oldStart || 1;
       const map = (t) => newStart + ((t - oldStart) / oldSpan) * (newEnd - newStart);
       if (!obj.keyframes) obj.keyframes = {};
       for (const prop of Object.keys(origKeyframes)) {
         obj.keyframes[prop] = origKeyframes[prop]
-          .map(kf => {
-            const target = kf.pinned === 'start' ? newStart
-              : kf.pinned === 'end' ? newEnd
-              : map(kf.time);
-            return { ...kf, time: Math.round(Math.max(newStart, Math.min(newEnd, target)) * 100) / 100 };
+          .map((kf) => {
+            const target =
+              kf.pinned === 'start' ? newStart : kf.pinned === 'end' ? newEnd : map(kf.time);
+            return {
+              ...kf,
+              time: Math.round(Math.max(newStart, Math.min(newEnd, target)) * 100) / 100,
+            };
           })
           .sort((a, b) => a.time - b.time);
       }
@@ -1696,8 +2079,8 @@ const useProjectStore = defineStore('project', {
     },
 
     updateKeyframeValue(objId, prop, time, value) {
-      const obj = this.project.objects.find(o => o.id === objId);
-      const kf = obj?.keyframes?.[prop]?.find(k => Math.abs(k.time - time) < 0.01);
+      const obj = this.project.objects.find((o) => o.id === objId);
+      const kf = obj?.keyframes?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
       if (!kf) return;
       kf.value = value;
       this.isDirty = true;
@@ -1705,8 +2088,8 @@ const useProjectStore = defineStore('project', {
     },
 
     updateKeyframeEasing(objId, prop, time, easing) {
-      const obj = this.project.objects.find(o => o.id === objId);
-      const kf = obj?.keyframes?.[prop]?.find(k => Math.abs(k.time - time) < 0.01);
+      const obj = this.project.objects.find((o) => o.id === objId);
+      const kf = obj?.keyframes?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
       if (!kf) return;
       kf.easing = easing;
       this.isDirty = true;
@@ -1714,7 +2097,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setKeyframeMode(objId, prop, mode) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframeMode) obj.keyframeMode = {};
       obj.keyframeMode[prop] = mode;
@@ -1723,7 +2106,7 @@ const useProjectStore = defineStore('project', {
     },
 
     setKeyframeCodegen(objId, prop, codegenMode) {
-      const obj = this.project.objects.find(o => o.id === objId);
+      const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframeCodegen) obj.keyframeCodegen = {};
       obj.keyframeCodegen[prop] = codegenMode;
@@ -1732,12 +2115,10 @@ const useProjectStore = defineStore('project', {
     },
 
     selectKeyframe(objId, prop, time) {
-      this.selectedKeyframeId = (objId && prop != null && time != null)
-        ? { objId, prop, time }
-        : null;
+      this.selectedKeyframeId =
+        objId && prop != null && time != null ? { objId, prop, time } : null;
     },
-  }
+  },
 });
 
 export { useProjectStore };
-

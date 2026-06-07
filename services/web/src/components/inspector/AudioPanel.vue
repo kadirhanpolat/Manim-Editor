@@ -10,11 +10,15 @@
           v-for="opt in sourceOptions"
           :key="opt.value"
           class="px-2 py-1 text-xs rounded border transition-colors"
-          :class="localType === opt.value
-            ? 'border-studio-accent bg-studio-accent/10 text-studio-accent'
-            : 'border-studio-border text-studio-text-muted hover:border-studio-accent/50'"
+          :class="
+            localType === opt.value
+              ? 'border-studio-accent bg-studio-accent/10 text-studio-accent'
+              : 'border-studio-border text-studio-text-muted hover:border-studio-accent/50'
+          "
           @click="localType = opt.value"
-        >{{ opt.label }}</button>
+        >
+          {{ opt.label }}
+        </button>
       </div>
     </div>
 
@@ -63,7 +67,10 @@
       <div v-if="hasAudio && audio.status === 'ready'" class="mt-2 text-xs text-studio-accent">
         &#10003; Ready ({{ formattedDuration }})
       </div>
-      <div v-if="hasAudio && audio.status === 'pending'" class="mt-2 text-xs text-studio-text-muted">
+      <div
+        v-if="hasAudio && audio.status === 'pending'"
+        class="mt-2 text-xs text-studio-text-muted"
+      >
         &#8987; Generating...
       </div>
       <div v-if="hasAudio && audio.status === 'error'" class="mt-2 text-xs text-studio-error">
@@ -79,11 +86,18 @@
           v-for="opt in syncOptions"
           :key="opt.value"
           class="px-2 py-1 text-xs rounded border transition-colors"
-          :class="localSyncMode === opt.value
-            ? 'border-studio-accent bg-studio-accent/10 text-studio-accent'
-            : 'border-studio-border text-studio-text-muted hover:border-studio-accent/50'"
-          @click="localSyncMode = opt.value; onSyncModeChange()"
-        >{{ opt.label }}</button>
+          :class="
+            localSyncMode === opt.value
+              ? 'border-studio-accent bg-studio-accent/10 text-studio-accent'
+              : 'border-studio-border text-studio-text-muted hover:border-studio-accent/50'
+          "
+          @click="
+            localSyncMode = opt.value;
+            onSyncModeChange();
+          "
+        >
+          {{ opt.label }}
+        </button>
       </div>
       <div v-if="localSyncMode === 'manual'" class="mt-2">
         <label class="block text-xs text-studio-text-muted mb-1">Offset (s)</label>
@@ -100,40 +114,39 @@
 
     <!-- Remove button -->
     <div v-if="hasAudio" class="mt-2">
-      <button
-        class="text-xs text-studio-error hover:underline"
-        @click="removeAudio"
-      >Remove audio</button>
+      <button class="text-xs text-studio-error hover:underline" @click="removeAudio">
+        Remove audio
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
-import { useProjectStore } from '../../store/project.js'
-import api, { connectAudioWebSocket } from '../../api.js'
+import { ref, computed, onBeforeUnmount } from 'vue';
+import { useProjectStore } from '../../store/project.js';
+import api, { connectAudioWebSocket } from '../../api.js';
 
-const props = defineProps({ clip: { type: Object, required: true } })
+const props = defineProps({ clip: { type: Object, required: true } });
 
-const store = useProjectStore()
+const store = useProjectStore();
 
-const localType = ref(props.clip.audio?.type || 'file')
-const localText = ref(props.clip.audio?.text || '')
-const localLang = ref(props.clip.audio?.lang || 'tr')
-const localSyncMode = ref(props.clip.audio?.syncMode || 'auto')
-const localOffset = ref(props.clip.audio?.offset || 0)
-const ttsLoading = ref(false)
-const wsDisconnect = ref(null)
+const localType = ref(props.clip.audio?.type || 'file');
+const localText = ref(props.clip.audio?.text || '');
+const localLang = ref(props.clip.audio?.lang || 'tr');
+const localSyncMode = ref(props.clip.audio?.syncMode || 'auto');
+const localOffset = ref(props.clip.audio?.offset || 0);
+const ttsLoading = ref(false);
+const wsDisconnect = ref(null);
 
 const sourceOptions = [
   { value: 'file', label: 'File' },
   { value: 'gtts', label: 'gTTS' },
   { value: 'coqui', label: 'Coqui' },
-]
+];
 const syncOptions = [
   { value: 'auto', label: 'Auto' },
   { value: 'manual', label: 'Manual' },
-]
+];
 const langs = [
   { code: 'tr', label: 'Turkish' },
   { code: 'en', label: 'English' },
@@ -141,40 +154,40 @@ const langs = [
   { code: 'fr', label: 'French' },
   { code: 'es', label: 'Spanish' },
   { code: 'ja', label: 'Japanese' },
-]
+];
 
-const audio = computed(() => props.clip.audio)
-const hasAudio = computed(() => !!props.clip.audio)
+const audio = computed(() => props.clip.audio);
+const hasAudio = computed(() => !!props.clip.audio);
 const audioFilename = computed(() => {
-  if (!audio.value?.src) return ''
-  return audio.value.src.split('/').pop()
-})
+  if (!audio.value?.src) return '';
+  return audio.value.src.split('/').pop();
+});
 const formattedDuration = computed(() => {
-  if (audio.value?.duration == null) return ''
-  return `${parseFloat(audio.value.duration).toFixed(1)}s`
-})
+  if (audio.value?.duration == null) return '';
+  return `${parseFloat(audio.value.duration).toFixed(1)}s`;
+});
 
 async function onFileChange(e) {
-  const file = e.target.files[0]
-  if (!file) return
+  const file = e.target.files[0];
+  if (!file) return;
   try {
-    const result = await api.audio.upload(file, props.clip.id)
+    const result = await api.audio.upload(file, props.clip.id);
     store.setClipAudio(props.clip.id, {
       type: 'file',
       src: result.src,
       duration: result.duration,
       syncMode: localSyncMode.value,
       offset: localOffset.value,
-      status: 'ready'
-    })
+      status: 'ready',
+    });
   } catch (err) {
-    console.error('[AudioPanel] Upload failed:', err)
+    console.error('[AudioPanel] Upload failed:', err);
   }
 }
 
 async function generateTTS() {
-  if (!localText.value.trim() || ttsLoading.value) return
-  ttsLoading.value = true
+  if (!localText.value.trim() || ttsLoading.value) return;
+  ttsLoading.value = true;
   try {
     store.setClipAudio(props.clip.id, {
       type: localType.value,
@@ -182,12 +195,15 @@ async function generateTTS() {
       lang: localLang.value,
       syncMode: localSyncMode.value,
       offset: localOffset.value,
-      status: 'pending'
-    })
+      status: 'pending',
+    });
 
     const { jobId } = await api.audio.tts(
-      props.clip.id, localType.value, localText.value, localLang.value
-    )
+      props.clip.id,
+      localType.value,
+      localText.value,
+      localLang.value
+    );
 
     wsDisconnect.value = connectAudioWebSocket(jobId, (data) => {
       if (data.event === 'audio_ready') {
@@ -199,44 +215,44 @@ async function generateTTS() {
           offset: localOffset.value,
           src: data.src,
           duration: data.duration,
-          status: 'ready'
-        })
+          status: 'ready',
+        });
       } else {
         store.setClipAudio(props.clip.id, {
           ...(props.clip.audio || {}),
-          status: 'error'
-        })
+          status: 'error',
+        });
       }
-      wsDisconnect.value = null
-      ttsLoading.value = false
-    })
+      wsDisconnect.value = null;
+      ttsLoading.value = false;
+    });
   } catch (err) {
-    store.setClipAudio(props.clip.id, { ...(props.clip.audio || {}), status: 'error' })
-    ttsLoading.value = false
+    store.setClipAudio(props.clip.id, { ...(props.clip.audio || {}), status: 'error' });
+    ttsLoading.value = false;
   }
 }
 
 function onSyncModeChange() {
-  if (!hasAudio.value) return
-  store.setClipAudio(props.clip.id, { ...props.clip.audio, syncMode: localSyncMode.value })
+  if (!hasAudio.value) return;
+  store.setClipAudio(props.clip.id, { ...props.clip.audio, syncMode: localSyncMode.value });
 }
 
 function onOffsetChange() {
-  if (!hasAudio.value) return
-  store.setClipAudio(props.clip.id, { ...props.clip.audio, offset: localOffset.value })
+  if (!hasAudio.value) return;
+  store.setClipAudio(props.clip.id, { ...props.clip.audio, offset: localOffset.value });
 }
 
 function removeAudio() {
-  store.removeClipAudio(props.clip.id)
-  localType.value = 'file'
-  localText.value = ''
-  ttsLoading.value = false
+  store.removeClipAudio(props.clip.id);
+  localType.value = 'file';
+  localText.value = '';
+  ttsLoading.value = false;
 }
 
 onBeforeUnmount(() => {
   if (wsDisconnect.value) {
-    wsDisconnect.value()
-    wsDisconnect.value = null
+    wsDisconnect.value();
+    wsDisconnect.value = null;
   }
-})
+});
 </script>

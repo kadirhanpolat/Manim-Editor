@@ -32,7 +32,7 @@ const audioStorage = multer.diskStorage({
   filename: (req, file, cb) => {
     const ext = ALLOWED_AUDIO[file.mimetype] || 'wav';
     cb(null, `${uuidv4().replace(/-/g, '')}.${ext}`);
-  }
+  },
 });
 
 const audioUpload = multer({
@@ -41,7 +41,7 @@ const audioUpload = multer({
     if (ALLOWED_AUDIO[file.mimetype]) cb(null, true);
     else cb(new Error(`Audio type not allowed: ${file.mimetype}`), false);
   },
-  limits: { fileSize: 100 * 1024 * 1024 }
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
 /**
@@ -58,10 +58,15 @@ router.post('/upload', audioUpload.single('file'), async (req, res, next) => {
 
     try {
       const { stdout } = await execFileAsync('ffprobe', [
-        '-v', 'quiet', '-print_format', 'json', '-show_streams', filePath
+        '-v',
+        'quiet',
+        '-print_format',
+        'json',
+        '-show_streams',
+        filePath,
       ]);
       const data = JSON.parse(stdout);
-      for (const stream of (data.streams || [])) {
+      for (const stream of data.streams || []) {
         if (stream.codec_type === 'audio') {
           duration = parseFloat(stream.duration || 0);
           break;
@@ -75,7 +80,7 @@ router.post('/upload', audioUpload.single('file'), async (req, res, next) => {
       audioId: path.basename(filePath),
       src: `/data/assets/audio/${path.basename(filePath)}`,
       duration,
-      status: 'ready'
+      status: 'ready',
     });
   } catch (err) {
     next(err);
@@ -92,7 +97,8 @@ router.post('/tts', async (req, res, next) => {
     const { clipId, type, text, lang } = req.body;
     if (!clipId) return res.status(400).json({ error: 'clipId required' });
     if (!text || !text.trim()) return res.status(400).json({ error: 'text required' });
-    if (!['gtts', 'coqui'].includes(type)) return res.status(400).json({ error: 'type must be gtts or coqui' });
+    if (!['gtts', 'coqui'].includes(type))
+      return res.status(400).json({ error: 'type must be gtts or coqui' });
 
     const jobId = uuidv4().replace(/-/g, '');
     await enqueueAudioJob({ jobId, clipId, type, text: text.trim(), lang: lang || 'tr' });
@@ -128,7 +134,7 @@ router.post('/:jobId/complete', async (req, res, next) => {
         clipId,
         duration: duration != null ? parseFloat(duration) : undefined,
         src: status === 'ready' ? audioSrc : undefined,
-        error: error || undefined
+        error: error || undefined,
       });
     } catch (e) {
       console.error('[audio] broadcastAudioEvent not available yet:', e.message);

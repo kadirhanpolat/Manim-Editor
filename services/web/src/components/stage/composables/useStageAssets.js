@@ -12,13 +12,19 @@ export function useStageAssets(store, deps) {
   // ── Image loading ──
   function loadNewImages() {
     for (const obj of objects.value) {
-      if ((obj.type === 'image' || obj.type === 'svg_asset') && obj.assetId && !imageElements[obj.assetId]) {
+      if (
+        (obj.type === 'image' || obj.type === 'svg_asset') &&
+        obj.assetId &&
+        !imageElements[obj.assetId]
+      ) {
         const asset = store.assetById(obj.assetId);
         if (asset && asset.dataUrl) {
           const img = new window.Image();
           img.crossOrigin = 'anonymous';
           img.src = asset.dataUrl;
-          img.onload = () => { imageElements[obj.assetId] = img; };
+          img.onload = () => {
+            imageElements[obj.assetId] = img;
+          };
         }
       }
     }
@@ -62,7 +68,8 @@ export function useStageAssets(store, deps) {
 
     const stagePos = c2s(dropX, dropY);
 
-    let sx = stagePos.x, sy = stagePos.y;
+    let sx = stagePos.x,
+      sy = stagePos.y;
     if (store.project.stage.snapEnabled && store.project.stage.snapToGrid) {
       const gsX = store.project.stage.width / store.project.stage.gridSize;
       const gsY = store.project.stage.height / store.project.stage.gridSize;
@@ -70,7 +77,8 @@ export function useStageAssets(store, deps) {
       sy = Math.round(sy / gsY) * gsY;
     }
     if (store.project.stage.snapEnabled && store.project.stage.snapToCenter) {
-      const cx = store.project.stage.width / 2, cy = store.project.stage.height / 2;
+      const cx = store.project.stage.width / 2,
+        cy = store.project.stage.height / 2;
       if (Math.abs(sx - cx) < 30) sx = cx;
       if (Math.abs(sy - cy) < 30) sy = cy;
     }
@@ -88,8 +96,13 @@ export function useStageAssets(store, deps) {
   }
 
   return {
-    imageElements, isDraggingOver, fontLoadKey,
-    loadNewImages, loadNewFonts,
-    onDragOver, onDragLeave, onDrop,
+    imageElements,
+    isDraggingOver,
+    fontLoadKey,
+    loadNewImages,
+    loadNewFonts,
+    onDragOver,
+    onDragLeave,
+    onDrop,
   };
 }

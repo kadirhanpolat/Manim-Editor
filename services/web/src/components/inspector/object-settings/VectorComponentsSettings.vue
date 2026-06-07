@@ -4,7 +4,9 @@
       <Num label="Vx" :value="obj.vx ?? 120" @input="u('vx', $event)" />
       <Num label="Vy" :value="obj.vy ?? -80" @input="u('vy', $event)" />
     </div>
-    <p class="text-[10px] text-studio-text-muted mt-1.5">Object-relative px; Vy &lt; 0 points up. x/y components shown red/green.</p>
+    <p class="text-[10px] text-studio-text-muted mt-1.5">
+      Object-relative px; Vy &lt; 0 points up. x/y components shown red/green.
+    </p>
   </Section>
 </template>
 

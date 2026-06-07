@@ -7,9 +7,7 @@ const PAGE1 = [
   { family: 'Roboto', category: 'sans-serif' },
   { family: 'Lato', category: 'sans-serif' },
 ];
-const PAGE2 = [
-  { family: 'Merriweather', category: 'serif' },
-];
+const PAGE2 = [{ family: 'Merriweather', category: 'serif' }];
 
 // hasMore is `fonts.length < total`. total=5 with a 2-font page 1 keeps the "load more"
 // button visible (2 < 5) so the pagination path is exercised.

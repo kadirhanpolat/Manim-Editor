@@ -1,6 +1,6 @@
 /**
  * Font Loader Utility
- * 
+ *
  * Dynamically loads Google Fonts for canvas preview.
  * Uses the Google Fonts CSS2 API and FontFace API for reliable loading.
  */
@@ -11,10 +11,25 @@ const loadingFonts = new Map(); // font -> Promise
 
 // System fonts that don't need to be loaded
 const SYSTEM_FONTS = [
-  'arial', 'helvetica', 'times new roman', 'times', 'georgia',
-  'courier new', 'courier', 'verdana', 'tahoma', 'trebuchet ms',
-  'impact', 'comic sans ms', 'lucida console', 'monaco',
-  'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy'
+  'arial',
+  'helvetica',
+  'times new roman',
+  'times',
+  'georgia',
+  'courier new',
+  'courier',
+  'verdana',
+  'tahoma',
+  'trebuchet ms',
+  'impact',
+  'comic sans ms',
+  'lucida console',
+  'monaco',
+  'sans-serif',
+  'serif',
+  'monospace',
+  'cursive',
+  'fantasy',
 ];
 
 /**
@@ -59,7 +74,7 @@ export async function loadFont(fontFamily) {
       // Create the Google Fonts link
       const encodedFamily = fontFamily.replace(/ /g, '+');
       const linkId = `google-font-${encodedFamily}`;
-      
+
       // Check if link already exists
       if (document.getElementById(linkId)) {
         loadedFonts.add(fontFamily);
@@ -109,9 +124,9 @@ export async function loadFont(fontFamily) {
  */
 export async function loadFonts(fontFamilies) {
   const promises = fontFamilies
-    .filter(f => f && !isSystemFont(f))
-    .map(f => loadFont(f).catch(() => false));
-  
+    .filter((f) => f && !isSystemFont(f))
+    .map((f) => loadFont(f).catch(() => false));
+
   return Promise.all(promises);
 }
 
@@ -120,7 +135,7 @@ export async function loadFonts(fontFamilies) {
  */
 export async function preloadProjectFonts(objects) {
   const fonts = new Set();
-  
+
   for (const obj of objects || []) {
     if (obj.type === 'text' && obj.fontFamily) {
       fonts.add(obj.fontFamily);
@@ -137,5 +152,5 @@ export default {
   loadFonts,
   isFontLoaded,
   isSystemFont,
-  preloadProjectFonts
+  preloadProjectFonts,
 };

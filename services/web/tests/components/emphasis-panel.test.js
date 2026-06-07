@@ -21,7 +21,7 @@ describe('emphasis inspector', () => {
     const btn = wrapper.find('[data-test="anim-indicate"]');
     expect(btn.exists()).toBe(true);
     await btn.trigger('click');
-    const clip = store.project.tracks.flatMap(t => t.clips).find(c => c.type === 'indicate');
+    const clip = store.project.tracks.flatMap((t) => t.clips).find((c) => c.type === 'indicate');
     expect(clip).toBeTruthy();
     expect(clip.params.scale_factor).toBe(1.2);
     expect(clip.params.color).toBe('#FFFF00');
@@ -31,7 +31,7 @@ describe('emphasis inspector', () => {
     store.addObject('circle', 960, 540);
     store.selectObject(store.project.objects[0].id);
     store.createAnimation('indicate', { color: '#FFFF00', scale_factor: 1.2 });
-    const clipId = store.project.tracks.flatMap(t => t.clips)[0].id;
+    const clipId = store.project.tracks.flatMap((t) => t.clips)[0].id;
     store.selectClip(clipId);
     const wrapper = mount(PropertiesPanel);
     expect(wrapper.find('[data-test="emph-scale-factor"]').exists()).toBe(true);

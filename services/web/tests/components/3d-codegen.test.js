@@ -40,11 +40,17 @@ describe('ThreeDScene base class', () => {
 describe('sphere codegen', () => {
   it('generates Sphere with correct radius and position', () => {
     const sphere = {
-      id: 'sp1', type: 'sphere',
-      x3d: 1, y3d: 0, z3d: 0,
-      radius: 0.5, resolution: 20,
-      fill: '#e67700', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'sp1',
+      type: 'sphere',
+      x3d: 1,
+      y3d: 0,
+      z3d: 0,
+      radius: 0.5,
+      resolution: 20,
+      fill: '#e67700',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject([sphere]);
@@ -59,11 +65,16 @@ describe('sphere codegen', () => {
 describe('cube codegen', () => {
   it('generates Cube with side_length and position', () => {
     const cube = {
-      id: 'cu1', type: 'cube',
-      x3d: 0, y3d: 0, z3d: 0,
+      id: 'cu1',
+      type: 'cube',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
       sideLength: 1.0,
-      fill: '#3b5bdb', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      fill: '#3b5bdb',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject([cube]);
@@ -76,11 +87,18 @@ describe('cube codegen', () => {
 describe('axes3d codegen', () => {
   it('generates ThreeDAxes with ranges', () => {
     const ax = {
-      id: 'ax1', type: 'axes3d',
-      x3d: 0, y3d: 0, z3d: 0,
-      xRange: [-3, 3, 1], yRange: [-3, 3, 1], zRange: [-3, 3, 1],
-      fill: '#ffffff', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'ax1',
+      type: 'axes3d',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      xRange: [-3, 3, 1],
+      yRange: [-3, 3, 1],
+      zRange: [-3, 3, 1],
+      fill: '#ffffff',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject([ax]);
@@ -93,11 +111,18 @@ describe('axes3d codegen', () => {
 describe('cone / cylinder / torus codegen', () => {
   it('generates Cone with base_radius and height', () => {
     const cone = {
-      id: 'c1', type: 'cone',
-      x3d: 0, y3d: 0, z3d: 0,
-      radius: 0.5, height: 1.0, resolution: 20,
-      fill: '#2f9e44', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'c1',
+      type: 'cone',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      radius: 0.5,
+      height: 1.0,
+      resolution: 20,
+      fill: '#2f9e44',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject([cone]);
@@ -108,11 +133,18 @@ describe('cone / cylinder / torus codegen', () => {
 
   it('generates Cylinder', () => {
     const cyl = {
-      id: 'cy1', type: 'cylinder',
-      x3d: 0, y3d: 0, z3d: 0,
-      radius: 0.5, height: 1.5, resolution: 20,
-      fill: '#1098ad', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'cy1',
+      type: 'cylinder',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      radius: 0.5,
+      height: 1.5,
+      resolution: 20,
+      fill: '#1098ad',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject([cyl]);
@@ -123,11 +155,18 @@ describe('cone / cylinder / torus codegen', () => {
 
   it('generates Torus', () => {
     const tor = {
-      id: 't1', type: 'torus',
-      x3d: 0, y3d: 0, z3d: 0,
-      majorRadius: 1.0, minorRadius: 0.3, resolution: 20,
-      fill: '#ae3ec9', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 't1',
+      type: 'torus',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      majorRadius: 1.0,
+      minorRadius: 0.3,
+      resolution: 20,
+      fill: '#ae3ec9',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject([tor]);

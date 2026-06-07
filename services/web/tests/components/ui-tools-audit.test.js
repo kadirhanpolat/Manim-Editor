@@ -22,10 +22,31 @@ import MotionPicker from '../../src/components/inspector/object-settings/MotionP
 // Every type that has a dedicated inspector settings component. If a type is
 // editable, a user must also be able to ADD it from the palette.
 const REGISTERED_TYPES = [
-  'dot_grid', 'star', 'polygon', 'polygon_free', 'annulus', 'arc', 'sector',
-  'parametric', 'vector_field', 'table', 'matrix', 'brace', 'angle', 'counter',
-  'graph', 'latex', 'polar_plane', 'numberplane', 'complex_plane', 'numberline',
-  'axes', 'vector_components', 'ray', 'coord_point', 'bezier',
+  'dot_grid',
+  'star',
+  'polygon',
+  'polygon_free',
+  'annulus',
+  'arc',
+  'sector',
+  'parametric',
+  'vector_field',
+  'table',
+  'matrix',
+  'brace',
+  'angle',
+  'counter',
+  'graph',
+  'latex',
+  'polar_plane',
+  'numberplane',
+  'complex_plane',
+  'numberline',
+  'axes',
+  'vector_components',
+  'ray',
+  'coord_point',
+  'bezier',
 ];
 
 // Asset-only types — intentionally NOT a shape button (added via asset upload).
@@ -48,10 +69,10 @@ function collectPaletteTypes() {
   const w = mount(AssetSidebar);
   for (const c of w.findAll('.shape-card')) c.trigger('click');
   // The "Add Text" button is not a .shape-card.
-  const textBtn = w.findAll('button').find(b => /add text/i.test(b.attributes('title') || ''));
+  const textBtn = w.findAll('button').find((b) => /add text/i.test(b.attributes('title') || ''));
   if (textBtn) textBtn.trigger('click');
   w.unmount();
-  const types = spy.mock.calls.map(c => c[0]);
+  const types = spy.mock.calls.map((c) => c[0]);
   spy.mockRestore();
   return types;
 }
@@ -60,15 +81,27 @@ describe('palette reachability', () => {
   it('AssetSidebar adds an object for every shape/data/3D card + text', () => {
     const types = collectPaletteTypes();
     expect(types.length).toBeGreaterThan(30);
-    for (const t of ['rectangle', 'bezier', 'table', 'graph', 'counter', 'numberplane', 'surface', 'prism', 'text']) {
+    for (const t of [
+      'rectangle',
+      'bezier',
+      'table',
+      'graph',
+      'counter',
+      'numberplane',
+      'surface',
+      'prism',
+      'text',
+    ]) {
       expect(types, `palette should offer ${t}`).toContain(t);
     }
   });
 
   it('every inspector-registered type is reachable from the palette (F1/F3 guard)', () => {
     const reachable = new Set(collectPaletteTypes());
-    const orphaned = REGISTERED_TYPES.filter(t => !reachable.has(t));
-    expect(orphaned, `types with an inspector but no add button: ${orphaned.join(', ')}`).toEqual([]);
+    const orphaned = REGISTERED_TYPES.filter((t) => !reachable.has(t));
+    expect(orphaned, `types with an inspector but no add button: ${orphaned.join(', ')}`).toEqual(
+      []
+    );
   });
 
   it('counter is reachable so the count clip is usable (F1)', () => {
@@ -140,7 +173,7 @@ describe('MotionPicker clip tools', () => {
     expect(btn.exists()).toBe(true);
     await btn.trigger('click');
     expect(spy).toHaveBeenCalled();
-    const counts = store.project.tracks.flatMap(tr => tr.clips).filter(c => c.type === 'count');
+    const counts = store.project.tracks.flatMap((tr) => tr.clips).filter((c) => c.type === 'count');
     expect(counts.length).toBe(1);
   });
 });
@@ -155,11 +188,11 @@ describe('interaction tools + transform', () => {
 
   it('AssetSidebar Transform button is gated on exactly 2 selected objects', async () => {
     const w = mount(AssetSidebar);
-    const transformBtn = w.findAll('button').find(b => b.classes('btn-transform'));
+    const transformBtn = w.findAll('button').find((b) => b.classes('btn-transform'));
     expect(transformBtn.attributes('disabled')).toBeDefined();
     store.addObject('circle', 100, 100);
     store.addObject('square', 200, 200);
-    store.selectedObjectIds = store.project.objects.map(o => o.id);
+    store.selectedObjectIds = store.project.objects.map((o) => o.id);
     await w.vm.$nextTick();
     expect(transformBtn.attributes('disabled')).toBeUndefined();
   });

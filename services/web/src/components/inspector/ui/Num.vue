@@ -1,8 +1,15 @@
 <template>
   <div>
     <span class="text-[9px] text-studio-text-muted/50">{{ label }}</span>
-    <input class="input input-sm" type="number" :value="value" :min="min" :max="max" :step="step"
-           @change="$emit('input', Number($event.target.value))" />
+    <input
+      class="input input-sm"
+      type="number"
+      :value="value"
+      :min="min"
+      :max="max"
+      :step="step"
+      @change="$emit('input', Number($event.target.value))"
+    />
   </div>
 </template>
 

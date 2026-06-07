@@ -17,10 +17,17 @@ function makeProject3DKeyframe(objects = []) {
 
 function makeSphere(withKeyframes = false) {
   const sphere = {
-    id: 'sp1', type: 'sphere',
-    x3d: 0, y3d: 0, z3d: 0, radius: 0.5, resolution: 20,
-    fill: '#e67700', opacity: 1,
-    enterTime: 0, exitTime: 5,
+    id: 'sp1',
+    type: 'sphere',
+    x3d: 0,
+    y3d: 0,
+    z3d: 0,
+    radius: 0.5,
+    resolution: 20,
+    fill: '#e67700',
+    opacity: 1,
+    enterTime: 0,
+    exitTime: 5,
     anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
   };
   if (withKeyframes) {
@@ -48,10 +55,17 @@ describe('keyframe x3d codegen (animate mode)', () => {
 describe('simultaneous x3d + y3d keyframes', () => {
   it('combines x3d and y3d into a single move_to call', () => {
     const sphere = {
-      id: 'sp1', type: 'sphere',
-      x3d: 0, y3d: 0, z3d: 0, radius: 0.5, resolution: 20,
-      fill: '#e67700', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'sp1',
+      type: 'sphere',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      radius: 0.5,
+      resolution: 20,
+      fill: '#e67700',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
       keyframes: {
         x3d: [
@@ -86,10 +100,17 @@ describe('simultaneous x3d + y3d keyframes', () => {
 describe('staggered 3D keyframe times carry over per-axis last-known value', () => {
   it('emits one move_to per segment, holding each axis at its latest value', () => {
     const sphere = {
-      id: 'sp1', type: 'sphere',
-      x3d: 0, y3d: 0, z3d: 0, radius: 0.5, resolution: 20,
-      fill: '#e67700', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'sp1',
+      type: 'sphere',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      radius: 0.5,
+      resolution: 20,
+      fill: '#e67700',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
       keyframes: {
         // x3d moves on every beat; y3d only changes at t=2
@@ -121,10 +142,17 @@ describe('staggered 3D keyframe times carry over per-axis last-known value', () 
 describe('mixed codegen mode does not silently drop a 3D axis', () => {
   it('folds a non-animate y3d into the combined move_to (regression: footgun #2)', () => {
     const sphere = {
-      id: 'sp1', type: 'sphere',
-      x3d: 0, y3d: 0, z3d: 0, radius: 0.5, resolution: 20,
-      fill: '#e67700', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'sp1',
+      type: 'sphere',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      radius: 0.5,
+      resolution: 20,
+      fill: '#e67700',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
       keyframes: {
         x3d: [
@@ -154,14 +182,23 @@ describe('voiceover + ThreeDScene mixin', () => {
   it('uses ThreeDScene, VoiceoverScene when 3D and audio', () => {
     const sphere = makeSphere();
     const clipWithAudio = {
-      id: 'cl1', type: 'move',
-      objectId: 'sp1', startTime: 0, duration: 1,
-      toX: 960, toY: 540,
-      easing: 'linear', parallel: false,
+      id: 'cl1',
+      type: 'move',
+      objectId: 'sp1',
+      startTime: 0,
+      duration: 1,
+      toX: 960,
+      toY: 540,
+      easing: 'linear',
+      parallel: false,
       audio: {
-        type: 'gtts', src: '/data/assets/audio/a1.wav',
-        status: 'ready', duration: 1.0,
-        syncMode: 'auto', lang: 'tr', text: 'merhaba',
+        type: 'gtts',
+        src: '/data/assets/audio/a1.wav',
+        status: 'ready',
+        duration: 1.0,
+        syncMode: 'auto',
+        lang: 'tr',
+        text: 'merhaba',
       },
     };
     const project = {

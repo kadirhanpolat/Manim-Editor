@@ -12,7 +12,7 @@ import { computed } from 'vue';
 
 const props = defineProps({
   element: { type: Object, required: true },
-  config: { type: Object, required: true }
+  config: { type: Object, required: true },
 });
 
 const textConfig = computed(() => ({
@@ -25,6 +25,6 @@ const textConfig = computed(() => ({
   verticalAlign: 'middle',
   // Reset scale since we applied it to fontSize
   scaleX: 1,
-  scaleY: 1
+  scaleY: 1,
 }));
 </script>

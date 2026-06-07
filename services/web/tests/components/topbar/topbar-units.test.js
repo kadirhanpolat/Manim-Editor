@@ -17,17 +17,32 @@ describe('buildMenus', () => {
     const loadProject = vi.fn();
     const canGroup = ref(false);
     const menus = buildMenus({
-      mod: 'Ctrl+', isMac: false, store: {},
-      isSaving: ref(false), canGroup, gridVisible: ref(true), snapEnabled: ref(false), currentTheme: ref('dark'),
-      newProject: vi.fn(), loadProject, saveProject: vi.fn(), saveToServer: vi.fn(), browseServer: vi.fn(),
-      openExport: vi.fn(), openRender: vi.fn(), showShortcuts: vi.fn(), showAbout: vi.fn(),
-      toggleGrid: vi.fn(), toggleSnap: vi.fn(), groupSelected: vi.fn(),
+      mod: 'Ctrl+',
+      isMac: false,
+      store: {},
+      isSaving: ref(false),
+      canGroup,
+      gridVisible: ref(true),
+      snapEnabled: ref(false),
+      currentTheme: ref('dark'),
+      newProject: vi.fn(),
+      loadProject,
+      saveProject: vi.fn(),
+      saveToServer: vi.fn(),
+      browseServer: vi.fn(),
+      openExport: vi.fn(),
+      openRender: vi.fn(),
+      showShortcuts: vi.fn(),
+      showAbout: vi.fn(),
+      toggleGrid: vi.fn(),
+      toggleSnap: vi.fn(),
+      groupSelected: vi.fn(),
     });
-    expect(menus.map(m => m.id)).toEqual(['file', 'edit', 'view', 'tools', 'help']);
-    const open = menus[0].items.find(i => i.id === 'f-open');
+    expect(menus.map((m) => m.id)).toEqual(['file', 'edit', 'view', 'tools', 'help']);
+    const open = menus[0].items.find((i) => i.id === 'f-open');
     open.action();
     expect(loadProject).toHaveBeenCalled();
-    const group = menus[1].items.find(i => i.id === 'e-group');
+    const group = menus[1].items.find((i) => i.id === 'e-group');
     expect(group.disabled()).toBe(true);
     canGroup.value = true;
     expect(group.disabled()).toBe(false);

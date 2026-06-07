@@ -1,6 +1,6 @@
 /**
  * Transform / Morph Engine
- * 
+ *
  * Point resampling, interpolation, and color blending for smooth morphing.
  */
 
@@ -9,7 +9,7 @@ import { pathLength } from './geometry.js';
 /**
  * Resample a closed point path to have exactly `targetCount` evenly-spaced points.
  * Uses linear interpolation along the path arc length.
- * 
+ *
  * @param {Array<{x: number, y: number}>} points - Source points
  * @param {number} targetCount - Desired number of output points
  * @returns {Array<{x: number, y: number}>}
@@ -20,7 +20,7 @@ export function resamplePoints(points, targetCount) {
     return Array.from({ length: targetCount }, () => ({ ...points[0] }));
   }
   if (points.length === targetCount) {
-    return points.map(p => ({ ...p }));
+    return points.map((p) => ({ ...p }));
   }
 
   // Compute cumulative arc lengths (closed path)
@@ -44,7 +44,8 @@ export function resamplePoints(points, targetCount) {
     const targetDist = (i / targetCount) * totalLen;
 
     // Binary search for the segment containing targetDist
-    let lo = 0, hi = n;
+    let lo = 0,
+      hi = n;
     while (lo < hi - 1) {
       const mid = (lo + hi) >> 1;
       if (cumLen[mid] <= targetDist) lo = mid;
@@ -61,7 +62,7 @@ export function resamplePoints(points, targetCount) {
       const frac = (targetDist - cumLen[lo]) / segLen;
       result.push({
         x: points[segStart].x + (points[segEnd].x - points[segStart].x) * frac,
-        y: points[segStart].y + (points[segEnd].y - points[segStart].y) * frac
+        y: points[segStart].y + (points[segEnd].y - points[segStart].y) * frac,
       });
     }
   }
@@ -82,7 +83,7 @@ export function interpolatePoints(a, b, t) {
   for (let i = 0; i < len; i++) {
     result[i] = {
       x: a[i].x + (b[i].x - a[i].x) * t,
-      y: a[i].y + (b[i].y - a[i].y) * t
+      y: a[i].y + (b[i].y - a[i].y) * t,
     };
   }
   return result;
@@ -99,7 +100,7 @@ export function parseHex(hex) {
   return {
     r: parseInt(hex.substring(0, 2), 16),
     g: parseInt(hex.substring(2, 4), 16),
-    b: parseInt(hex.substring(4, 6), 16)
+    b: parseInt(hex.substring(4, 6), 16),
   };
 }
 
@@ -123,7 +124,7 @@ export function interpolateColor(colorA, colorB, t) {
   return toHex({
     r: a.r + (b.r - a.r) * t,
     g: a.g + (b.g - a.g) * t,
-    b: a.b + (b.b - a.b) * t
+    b: a.b + (b.b - a.b) * t,
   });
 }
 
@@ -137,7 +138,7 @@ export function lerp(a, b, t) {
 /**
  * Compute a full morph state between two objects at progress t.
  * Both objects must have outline points pre-computed.
- * 
+ *
  * @param {Object} sourceObj - Source stage object
  * @param {Object} targetObj - Target stage object
  * @param {Array} sourcePoints - Pre-resampled source points
@@ -162,7 +163,7 @@ export function computeMorphState(sourceObj, targetObj, sourcePoints, targetPoin
       sourceObj.opacity !== undefined ? sourceObj.opacity : 1,
       targetObj.opacity !== undefined ? targetObj.opacity : 1,
       t
-    )
+    ),
   };
 }
 
@@ -181,7 +182,7 @@ export function createMotionGhosts(prevState, currentState, numGhosts = 3) {
       fill: currentState.fill,
       stroke: currentState.stroke,
       strokeWidth: currentState.strokeWidth,
-      opacity: currentState.opacity * (1 - gt) * 0.3
+      opacity: currentState.opacity * (1 - gt) * 0.3,
     });
   }
   return ghosts;
@@ -195,5 +196,5 @@ export default {
   computeMorphState,
   createMotionGhosts,
   parseHex,
-  toHex
+  toHex,
 };

@@ -30,7 +30,13 @@ describe('setCameraType', () => {
 describe('addCameraMoveClip', () => {
   it('adds a camera_move clip to cameraTrack', () => {
     store.setCameraType('moving');
-    const clip = store.addCameraMoveClip({ startTime: 1, duration: 2, targetX: 100, targetY: 50, zoom: 1.5 });
+    const clip = store.addCameraMoveClip({
+      startTime: 1,
+      duration: 2,
+      targetX: 100,
+      targetY: 50,
+      zoom: 1.5,
+    });
     expect(clip.type).toBe('camera_move');
     expect(store.project.cameraTrack).toHaveLength(1);
     expect(store.project.cameraTrack[0].params.zoom).toBe(1.5);
@@ -89,13 +95,13 @@ describe('camera/scene state undo', () => {
     expect(store.project.sceneType).toBe('3d');
     expect(store.project.camera3d.phi).toBe(10);
 
-    store.undo();   // revert camera3d
+    store.undo(); // revert camera3d
     expect(store.project.camera3d.phi).toBe(75);
 
-    store.undo();   // revert sceneType
+    store.undo(); // revert sceneType
     expect(store.project.sceneType).toBe('2d');
 
-    store.undo();   // revert cameraType
+    store.undo(); // revert cameraType
     expect(store.project.cameraType).toBe('static');
   });
 });

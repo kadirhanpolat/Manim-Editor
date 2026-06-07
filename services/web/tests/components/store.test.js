@@ -79,8 +79,24 @@ describe('TEMPLATES', () => {
   });
 
   it('each non-blank template returns a valid project with required object fields', () => {
-    const REQUIRED_FIELDS = ['id', 'type', 'x', 'y', 'width', 'height', 'rotation', 'fill', 'stroke', 'opacity', 'zOrder', 'enterTime', 'duration', 'enterAnim', 'exitAnim'];
-    for (const tpl of TEMPLATES.filter(t => t.project !== null)) {
+    const REQUIRED_FIELDS = [
+      'id',
+      'type',
+      'x',
+      'y',
+      'width',
+      'height',
+      'rotation',
+      'fill',
+      'stroke',
+      'opacity',
+      'zOrder',
+      'enterTime',
+      'duration',
+      'enterAnim',
+      'exitAnim',
+    ];
+    for (const tpl of TEMPLATES.filter((t) => t.project !== null)) {
       const p = tpl.project();
       expect(p.objects.length).toBeGreaterThan(0);
       expect(p.stage).toBeDefined();

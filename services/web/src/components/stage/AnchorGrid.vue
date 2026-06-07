@@ -1,10 +1,6 @@
 <template>
   <div class="anchor-grid">
-    <div 
-      v-for="(row, rowIndex) in grid" 
-      :key="rowIndex" 
-      class="anchor-row"
-    >
+    <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="anchor-row">
       <button
         v-for="anchor in row"
         :key="anchor"
@@ -22,7 +18,7 @@
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
 
 const props = defineProps({
-  value: { type: String, default: 'CENTER' }
+  value: { type: String, default: 'CENTER' },
 });
 
 const grid = ANCHOR_GRID;

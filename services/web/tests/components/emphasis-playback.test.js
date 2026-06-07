@@ -17,8 +17,12 @@ function overridesAt(clip, t) {
 describe('emphasis playback', () => {
   it('Indicate peaks at mid and returns to base', () => {
     const c = {
-      id: 'c1', type: 'indicate', sourceId: objId,
-      startTime: 0, duration: 1, easing: 'linear',
+      id: 'c1',
+      type: 'indicate',
+      sourceId: objId,
+      startTime: 0,
+      duration: 1,
+      easing: 'linear',
       params: { color: '#FFFF00', scale_factor: 1.4 },
     };
     const mid = overridesAt(c, 0.5);
@@ -29,8 +33,12 @@ describe('emphasis playback', () => {
 
   it('Wiggle rotation oscillates (sign flips across the period)', () => {
     const c = {
-      id: 'c2', type: 'wiggle', sourceId: objId,
-      startTime: 0, duration: 1, easing: 'linear',
+      id: 'c2',
+      type: 'wiggle',
+      sourceId: objId,
+      startTime: 0,
+      duration: 1,
+      easing: 'linear',
       params: { scale_value: 1.1, rotation_angle: 10, n_wiggles: 2 },
     };
     const base = obj.rotation || 0;
@@ -41,8 +49,12 @@ describe('emphasis playback', () => {
 
   it('Circumscribe sets an _emphasis overlay descriptor', () => {
     const c = {
-      id: 'c3', type: 'circumscribe', sourceId: objId,
-      startTime: 0, duration: 1, easing: 'linear',
+      id: 'c3',
+      type: 'circumscribe',
+      sourceId: objId,
+      startTime: 0,
+      duration: 1,
+      easing: 'linear',
       params: { color: '#00FF00', shape: 'Rectangle', fade_out: false, time_width: 0.3 },
     };
     const ov = overridesAt(c, 0.5);

@@ -16,7 +16,12 @@ export function isSafeExpr(expr) {
   if (!e) return false;
   if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(e)) return false;
   if (/import|eval|exec|open|__/.test(e)) return false;
-  if (/\b(fetch|XMLHttpRequest|WebSocket|setTimeout|setInterval|clearTimeout|clearInterval|requestAnimationFrame|require|process|globalThis|window|document|console|alert|prompt|Function|constructor|prototype|random|Date|localStorage|sessionStorage|navigator|location|Reflect|Proxy|Symbol)\b/.test(e)) return false;
+  if (
+    /\b(fetch|XMLHttpRequest|WebSocket|setTimeout|setInterval|clearTimeout|clearInterval|requestAnimationFrame|require|process|globalThis|window|document|console|alert|prompt|Function|constructor|prototype|random|Date|localStorage|sessionStorage|navigator|location|Reflect|Proxy|Symbol)\b/.test(
+      e
+    )
+  )
+    return false;
   return true;
 }
 
@@ -27,7 +32,7 @@ export function isSafeExpr(expr) {
  */
 export function compileExpr(expr, varName = 'x') {
   const names = Array.isArray(varName) ? varName : [varName];
-  if (!names.every(v => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(v))) return null;
+  if (!names.every((v) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(v))) return null;
   if (!isSafeExpr(expr)) return null;
   try {
     // eslint-disable-next-line no-new-func

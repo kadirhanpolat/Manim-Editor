@@ -17,7 +17,7 @@ import api from '../../api.js';
 
 const props = defineProps({
   element: { type: Object, required: true },
-  config: { type: Object, required: true }
+  config: { type: Object, required: true },
 });
 
 const store = useProjectStore();
@@ -25,7 +25,7 @@ const store = useProjectStore();
 const image = ref(null);
 const imageLoaded = ref(false);
 
-const asset = computed(() => store.project.assets.find(a => a.id === props.element.assetId));
+const asset = computed(() => store.project.assets.find((a) => a.id === props.element.assetId));
 
 const imageUrl = computed(() => {
   if (!asset.value) return null;
@@ -38,7 +38,7 @@ const imageConfig = computed(() => ({
   y: -50,
   width: 100,
   height: 100,
-  opacity: props.element.style?.opacity ?? 1
+  opacity: props.element.style?.opacity ?? 1,
 }));
 
 const placeholderConfig = computed(() => ({
@@ -47,12 +47,16 @@ const placeholderConfig = computed(() => ({
   width: 100,
   height: 100,
   fill: '#2e2e3e',
-  cornerRadius: 4
+  cornerRadius: 4,
 }));
 
-watch(imageUrl, (url) => {
-  if (url) loadImage(url);
-}, { immediate: true });
+watch(
+  imageUrl,
+  (url) => {
+    if (url) loadImage(url);
+  },
+  { immediate: true }
+);
 
 function loadImage(url) {
   const img = new Image();

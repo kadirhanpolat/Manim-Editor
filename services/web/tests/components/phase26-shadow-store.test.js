@@ -15,7 +15,13 @@ beforeEach(() => {
 describe('setShadow', () => {
   it('sets a shadow object with normalized fields', () => {
     store.setShadow(id, { color: '#101010', opacity: 0.5, dx: 10, dy: 6, blur: 20 });
-    expect(store.project.objects[0].shadow).toEqual({ color: '#101010', opacity: 0.5, dx: 10, dy: 6, blur: 20 });
+    expect(store.project.objects[0].shadow).toEqual({
+      color: '#101010',
+      opacity: 0.5,
+      dx: 10,
+      dy: 6,
+      blur: 20,
+    });
   });
 
   it('deletes the field on null (byte-identical legacy)', () => {
@@ -26,6 +32,12 @@ describe('setShadow', () => {
 
   it('fills defaults for missing fields', () => {
     store.setShadow(id, { dx: 4 });
-    expect(store.project.objects[0].shadow).toEqual({ color: '#000000', opacity: 0.4, dx: 4, dy: 8, blur: 12 });
+    expect(store.project.objects[0].shadow).toEqual({
+      color: '#000000',
+      opacity: 0.4,
+      dx: 4,
+      dy: 8,
+      blur: 12,
+    });
   });
 });

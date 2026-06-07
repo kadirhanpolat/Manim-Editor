@@ -28,18 +28,18 @@ export async function getRedisClient() {
  */
 export async function enqueueRenderJob(job) {
   const redis = await getRedisClient();
-  
+
   // Create job record
   await redis.hSet(`render:job:${job.jobId}`, {
     status: 'queued',
     projectId: job.projectId,
     quality: job.quality || 'medium',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   });
-  
+
   // Add to queue
   await redis.rPush('render:queue', JSON.stringify(job));
-  
+
   return job.jobId;
 }
 
@@ -80,7 +80,7 @@ export async function enqueueAudioJob(job) {
     type: job.type,
     text: job.text || '',
     lang: job.lang || 'tr',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   });
 
   // Add to appropriate queue based on type

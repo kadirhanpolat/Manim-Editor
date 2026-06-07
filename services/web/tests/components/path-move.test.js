@@ -13,7 +13,11 @@ beforeEach(() => {
 describe('addPathMoveClip', () => {
   it('creates a path_move clip with given points', () => {
     const obj = store.addObject('circle', 960, 540);
-    const pts = [{ x: 100, y: 100 }, { x: 500, y: 300 }, { x: 900, y: 100 }];
+    const pts = [
+      { x: 100, y: 100 },
+      { x: 500, y: 300 },
+      { x: 900, y: 100 },
+    ];
     const clip = store.addPathMoveClip(obj.id, pts);
     expect(clip).not.toBeNull();
     expect(clip.type).toBe('path_move');
@@ -28,7 +32,10 @@ describe('addPathMoveClip', () => {
   });
 
   it('returns null for missing sourceId', () => {
-    const result = store.addPathMoveClip(null, [{ x: 0, y: 0 }, { x: 100, y: 100 }]);
+    const result = store.addPathMoveClip(null, [
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+    ]);
     expect(result).toBeNull();
   });
 });

@@ -40,9 +40,14 @@ describe('surface (3D Surface) codegen', () => {
 
   it('round-trips zExpr + ranges + resolution through the .py parser', () => {
     const o = store.addObject('surface', 0, 0);
-    store.updateObject(o.id, { zExpr: 'np.sin(x) - np.cos(y)', xRange: [-3, 3], yRange: [-1, 1], resolution: 24 });
+    store.updateObject(o.id, {
+      zExpr: 'np.sin(x) - np.cos(y)',
+      xRange: [-3, 3],
+      yRange: [-1, 1],
+      resolution: 24,
+    });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const surf = parsed.objects.find(x => x.type === 'surface');
+    const surf = parsed.objects.find((x) => x.type === 'surface');
     expect(surf).toBeTruthy();
     expect(surf.zExpr).toBe('np.sin(x) - np.cos(y)');
     expect(surf.xRange).toEqual([-3, 3]);

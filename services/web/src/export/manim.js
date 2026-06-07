@@ -10,7 +10,12 @@
 
 // The generator is a thin wrapper over @manim/codegen (see generateManimScript
 // below). The PARSER (rest of this file) only needs these few shared symbols.
-import { EASING_MAP, FRAME_WIDTH, FRAME_HEIGHT, FRAME_X_RADIUS } from '@manim/codegen/src/constants.js';
+import {
+  EASING_MAP,
+  FRAME_WIDTH,
+  FRAME_HEIGHT,
+  FRAME_X_RADIUS,
+} from '@manim/codegen/src/constants.js';
 import { generateScene } from '@manim/codegen';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -47,18 +52,18 @@ export function generateManimScript(project) {
  * Parse Manim Python code back into project objects, tracks, and stage.
  */
 export function parseManimScript(code, sw = 1920, sh = 1080) {
-  const lines = code.split('\n').map(l => l.trim());
+  const lines = code.split('\n').map((l) => l.trim());
   const objects = [];
-  const clips   = [];
-  const varMap  = {};
+  const clips = [];
+  const varMap = {};
   const objById = {};
   const graphVarMap = {};
-  const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
-  const vcPending = {};    // <prefix> → { vx, vy } for vector_components, resolved on its VGroup line
-  const rayPending = {};   // <prefix> → { angle, length } for ray, resolved on its VGroup line
+  const relLineMap = {}; // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
+  const vcPending = {}; // <prefix> → { vx, vy } for vector_components, resolved on its VGroup line
+  const rayPending = {}; // <prefix> → { angle, length } for ray, resolved on its VGroup line
   const coordPending = {}; // <prefix> → { decimals } for coord_point, resolved on its VGroup line
-  const pendingShadow = {};   // base var → { color, opacity, dx, dy } awaiting its VGroup line
-  const pendingCount = {};    // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
+  const pendingShadow = {}; // base var → { color, opacity, dx, dy } awaiting its VGroup line
+  const pendingCount = {}; // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
 
   let bgColor = '#000000';
   let cameraType = 'static';
@@ -66,11 +71,11 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const cameraTrack = [];
   let ct = 0;
   let clipIdx = 0;
-  let objIdx  = 0;
+  let objIdx = 0;
 
   const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${(objIdx++).toString(36)}`;
 
-  const pendingPaths = {};  // varName → [{ mx, my, mz }]
+  const pendingPaths = {}; // varName → [{ mx, my, mz }]
 
   function parseAnimExpr(expr) {
     expr = expr.trim();
@@ -81,14 +86,22 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m2[1]];
       if (!id) return null;
       const sp = manimToStage(parseFloat(m2[2]), parseFloat(m2[3]), sw, sh);
-      return { type: 'move', sourceId: id, params: { targetX: Math.round(sp.x), targetY: Math.round(sp.y) } };
+      return {
+        type: 'move',
+        sourceId: id,
+        params: { targetX: Math.round(sp.x), targetY: Math.round(sp.y) },
+      };
     }
     // obj.animate.scale(s)
     m2 = expr.match(/^(\w+)\.animate\.scale\(([\d.]+)\)/);
     if (m2) {
       const id = varMap[m2[1]];
       if (!id) return null;
-      return { type: 'scale', sourceId: id, params: { targetScaleX: parseFloat(m2[2]), targetScaleY: parseFloat(m2[2]) } };
+      return {
+        type: 'scale',
+        sourceId: id,
+        params: { targetScaleX: parseFloat(m2[2]), targetScaleY: parseFloat(m2[2]) },
+      };
     }
     // obj.animate.set_opacity(o)
     m2 = expr.match(/^(\w+)\.animate\.set_opacity\(([\d.]+)\)/);
@@ -109,46 +122,99 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m2) {
       const id = varMap[m2[1]];
       if (!id) return null;
-      return { type: 'rotate', sourceId: id, params: { targetRotation: Math.round(parseFloat(m2[2]) * 180 / Math.PI) } };
+      return {
+        type: 'rotate',
+        sourceId: id,
+        params: { targetRotation: Math.round((parseFloat(m2[2]) * 180) / Math.PI) },
+      };
     }
     // Indicate(obj, color="#hex", scale_factor=f)
     m2 = expr.match(/^Indicate\((\w+),\s*color="([^"]+)",\s*scale_factor=([\d.]+)\)/);
     if (m2) {
-      const id = varMap[m2[1]]; if (!id) return null;
-      return { type: 'indicate', sourceId: id, params: { color: m2[2], scale_factor: parseFloat(m2[3]) } };
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return {
+        type: 'indicate',
+        sourceId: id,
+        params: { color: m2[2], scale_factor: parseFloat(m2[3]) },
+      };
     }
     // Flash(obj, color=, flash_radius=, line_length=, num_lines=)
-    m2 = expr.match(/^Flash\((\w+),\s*color="([^"]+)",\s*flash_radius=([\d.]+),\s*line_length=([\d.]+),\s*num_lines=(\d+)\)/);
+    m2 = expr.match(
+      /^Flash\((\w+),\s*color="([^"]+)",\s*flash_radius=([\d.]+),\s*line_length=([\d.]+),\s*num_lines=(\d+)\)/
+    );
     if (m2) {
-      const id = varMap[m2[1]]; if (!id) return null;
-      return { type: 'flash', sourceId: id, params: { color: m2[2], flash_radius: parseFloat(m2[3]), line_length: parseFloat(m2[4]), num_lines: parseInt(m2[5], 10) } };
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return {
+        type: 'flash',
+        sourceId: id,
+        params: {
+          color: m2[2],
+          flash_radius: parseFloat(m2[3]),
+          line_length: parseFloat(m2[4]),
+          num_lines: parseInt(m2[5], 10),
+        },
+      };
     }
     // Wiggle(obj, scale_value=, rotation_angle=d * DEGREES, n_wiggles=)
-    m2 = expr.match(/^Wiggle\((\w+),\s*scale_value=([\d.]+),\s*rotation_angle=([\d.]+) \* DEGREES,\s*n_wiggles=(\d+)\)/);
+    m2 = expr.match(
+      /^Wiggle\((\w+),\s*scale_value=([\d.]+),\s*rotation_angle=([\d.]+) \* DEGREES,\s*n_wiggles=(\d+)\)/
+    );
     if (m2) {
-      const id = varMap[m2[1]]; if (!id) return null;
-      return { type: 'wiggle', sourceId: id, params: { scale_value: parseFloat(m2[2]), rotation_angle: parseFloat(m2[3]), n_wiggles: parseInt(m2[4], 10) } };
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return {
+        type: 'wiggle',
+        sourceId: id,
+        params: {
+          scale_value: parseFloat(m2[2]),
+          rotation_angle: parseFloat(m2[3]),
+          n_wiggles: parseInt(m2[4], 10),
+        },
+      };
     }
     // Circumscribe(obj, color=, shape=Class, fade_out=Bool, time_width=)
-    m2 = expr.match(/^Circumscribe\((\w+),\s*color="([^"]+)",\s*shape=(Rectangle|Circle),\s*fade_out=(True|False),\s*time_width=([\d.]+)\)/);
+    m2 = expr.match(
+      /^Circumscribe\((\w+),\s*color="([^"]+)",\s*shape=(Rectangle|Circle),\s*fade_out=(True|False),\s*time_width=([\d.]+)\)/
+    );
     if (m2) {
-      const id = varMap[m2[1]]; if (!id) return null;
-      return { type: 'circumscribe', sourceId: id, params: { color: m2[2], shape: m2[3], fade_out: m2[4] === 'True', time_width: parseFloat(m2[5]) } };
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return {
+        type: 'circumscribe',
+        sourceId: id,
+        params: {
+          color: m2[2],
+          shape: m2[3],
+          fade_out: m2[4] === 'True',
+          time_width: parseFloat(m2[5]),
+        },
+      };
     }
     // FocusOn(obj, color=, opacity=)
     m2 = expr.match(/^FocusOn\((\w+),\s*color="([^"]+)",\s*opacity=([\d.]+)\)/);
     if (m2) {
-      const id = varMap[m2[1]]; if (!id) return null;
-      return { type: 'focus_on', sourceId: id, params: { color: m2[2], opacity: parseFloat(m2[3]) } };
+      const id = varMap[m2[1]];
+      if (!id) return null;
+      return {
+        type: 'focus_on',
+        sourceId: id,
+        params: { color: m2[2], opacity: parseFloat(m2[3]) },
+      };
     }
     // ReplacementTransform / FadeTransform / TransformMatchingTex / TransformMatchingShapes
-    m2 = expr.match(/^(ReplacementTransform|FadeTransform|Transform|TransformMatchingTex|TransformMatchingShapes)\((\w+),\s*(\w+)\)/);
+    m2 = expr.match(
+      /^(ReplacementTransform|FadeTransform|Transform|TransformMatchingTex|TransformMatchingShapes)\((\w+),\s*(\w+)\)/
+    );
     if (m2) {
       const animName = m2[1];
-      const srcId = varMap[m2[2]], tgtId = varMap[m2[3]];
+      const srcId = varMap[m2[2]],
+        tgtId = varMap[m2[3]];
       if (!srcId || !tgtId) return null;
       const clip = { type: 'transform', sourceId: srcId, targetId: tgtId };
-      if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes') clip.matchTerms = true;
+      if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes')
+        clip.matchTerms = true;
       return clip;
     }
     return null;
@@ -159,40 +225,89 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
     // MovingCameraScene
     m = line.match(/^class\s+\w+\(MovingCameraScene\)/);
-    if (m) { cameraType = 'moving'; continue; }
+    if (m) {
+      cameraType = 'moving';
+      continue;
+    }
 
     // ThreeDScene → 3D sahne
     m = line.match(/^class\s+\w+\(ThreeDScene/);
-    if (m) { sceneType = '3d'; continue; }
+    if (m) {
+      sceneType = '3d';
+      continue;
+    }
 
     // Background
     m = line.match(/self\.camera\.background_color\s*=\s*["']([^"']+)["']/);
-    if (m) { bgColor = m[1]; continue; }
+    if (m) {
+      bgColor = m[1];
+      continue;
+    }
 
     // Square
     m = line.match(/^(\w+)\s*=\s*Square\(side_length=([\d.]+)\)/);
     if (m) {
       const [, name, sl] = m;
-      const size = Math.round(parseFloat(sl) / FRAME_WIDTH * sw);
+      const size = Math.round((parseFloat(sl) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'square', name, x: sw / 2, y: sh / 2, width: size, height: size, fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'square',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // RoundedRectangle (rectangle/square with cornerRadius)
-    m = line.match(/^(\w+)\s*=\s*RoundedRectangle\(corner_radius=([\d.]+),\s*width=([\d.]+),\s*height=([\d.]+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*RoundedRectangle\(corner_radius=([\d.]+),\s*width=([\d.]+),\s*height=([\d.]+)\)/
+    );
     if (m) {
       const [, name, cr, w, h] = m;
-      const width = Math.round(parseFloat(w) / FRAME_WIDTH * sw);
-      const height = Math.round(parseFloat(h) / FRAME_HEIGHT * sh);
+      const width = Math.round((parseFloat(w) / FRAME_WIDTH) * sw);
+      const height = Math.round((parseFloat(h) / FRAME_HEIGHT) * sh);
       const type = Math.abs(parseFloat(w) - parseFloat(h)) < 0.01 ? 'square' : 'rectangle';
       const id = uid('obj');
-      const obj = { id, type, name, x: sw / 2, y: sh / 2, width, height,
-        cornerRadius: Math.round(parseFloat(cr) / FRAME_WIDTH * sw),
-        fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type,
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height,
+        cornerRadius: Math.round((parseFloat(cr) / FRAME_WIDTH) * sw),
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -201,8 +316,28 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, w, h] = m;
       const id = uid('obj');
-      const obj = { id, type: 'rectangle', name, x: sw / 2, y: sh / 2, width: Math.round(parseFloat(w) / FRAME_WIDTH * sw), height: Math.round(parseFloat(h) / FRAME_HEIGHT * sh), fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'rectangle',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: Math.round((parseFloat(w) / FRAME_WIDTH) * sw),
+        height: Math.round((parseFloat(h) / FRAME_HEIGHT) * sh),
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -210,10 +345,30 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*Circle\(radius=([\d.]+)\)/);
     if (m) {
       const [, name, r] = m;
-      const size = Math.round(parseFloat(r) * 2 / FRAME_WIDTH * sw);
+      const size = Math.round(((parseFloat(r) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'circle', name, x: sw / 2, y: sh / 2, width: size, height: size, fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'circle',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -221,54 +376,138 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*Annulus\(inner_radius=([\d.]+),\s*outer_radius=([\d.]+)\)/);
     if (m) {
       const [, name, ri, ro] = m;
-      const innerRadius = Math.round(parseFloat(ri) / FRAME_WIDTH * sw);
-      const outerRadius = Math.round(parseFloat(ro) / FRAME_WIDTH * sw);
+      const innerRadius = Math.round((parseFloat(ri) / FRAME_WIDTH) * sw);
+      const outerRadius = Math.round((parseFloat(ro) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'annulus', name, x: sw / 2, y: sh / 2, width: outerRadius * 2, height: outerRadius * 2,
-        innerRadius, outerRadius, fill: '#14b8a6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'annulus',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: outerRadius * 2,
+        height: outerRadius * 2,
+        innerRadius,
+        outerRadius,
+        fill: '#14b8a6',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Arc
-    m = line.match(/^(\w+)\s*=\s*Arc\(radius=([\d.]+),\s*start_angle=([-\d.]+) \* DEGREES,\s*angle=([-\d.]+) \* DEGREES\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Arc\(radius=([\d.]+),\s*start_angle=([-\d.]+) \* DEGREES,\s*angle=([-\d.]+) \* DEGREES\)/
+    );
     if (m) {
       const [, name, r, a0, sw_] = m;
-      const radius = Math.round(parseFloat(r) / FRAME_WIDTH * sw);
+      const radius = Math.round((parseFloat(r) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'arc', name, x: sw / 2, y: sh / 2, width: radius * 2, height: radius * 2,
-        radius, startAngle: parseFloat(a0), sweepAngle: parseFloat(sw_),
-        fill: 'transparent', stroke: '#f97316', strokeWidth: 4, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'arc',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: radius * 2,
+        height: radius * 2,
+        radius,
+        startAngle: parseFloat(a0),
+        sweepAngle: parseFloat(sw_),
+        fill: 'transparent',
+        stroke: '#f97316',
+        strokeWidth: 4,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Sector
-    m = line.match(/^(\w+)\s*=\s*Sector\(radius=([\d.]+),\s*start_angle=([-\d.]+) \* DEGREES,\s*angle=([-\d.]+) \* DEGREES\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Sector\(radius=([\d.]+),\s*start_angle=([-\d.]+) \* DEGREES,\s*angle=([-\d.]+) \* DEGREES\)/
+    );
     if (m) {
       const [, name, r, a0, sw_] = m;
-      const radius = Math.round(parseFloat(r) / FRAME_WIDTH * sw);
+      const radius = Math.round((parseFloat(r) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'sector', name, x: sw / 2, y: sh / 2, width: radius * 2, height: radius * 2,
-        radius, startAngle: parseFloat(a0), sweepAngle: parseFloat(sw_),
-        fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'sector',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: radius * 2,
+        height: radius * 2,
+        radius,
+        startAngle: parseFloat(a0),
+        sweepAngle: parseFloat(sw_),
+        fill: '#f59e0b',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // DoubleArrow
-    m = line.match(/^(\w+)\s*=\s*DoubleArrow\(start=LEFT \* ([\d.]+), end=RIGHT \* ([\d.]+), color=["']([^"']+)["']/);
+    m = line.match(
+      /^(\w+)\s*=\s*DoubleArrow\(start=LEFT \* ([\d.]+), end=RIGHT \* ([\d.]+), color=["']([^"']+)["']/
+    );
     if (m) {
       const [, name, half, , color] = m;
-      const width = Math.round(parseFloat(half) * 2 / FRAME_WIDTH * sw);
+      const width = Math.round(((parseFloat(half) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'double_arrow', name, x: sw / 2, y: sh / 2, width, height: 40,
-        fill: color, stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'double_arrow',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height: 40,
+        fill: color,
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -277,8 +516,28 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, w, h] = m;
       const id = uid('obj');
-      const obj = { id, type: 'ellipse', name, x: sw / 2, y: sh / 2, width: Math.round(parseFloat(w) / FRAME_WIDTH * sw), height: Math.round(parseFloat(h) / FRAME_HEIGHT * sh), fill: '#ffffff', stroke: 'transparent', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'ellipse',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: Math.round((parseFloat(w) / FRAME_WIDTH) * sw),
+        height: Math.round((parseFloat(h) / FRAME_HEIGHT) * sh),
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -286,21 +545,65 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*Triangle\(\)\.scale\(([\d.]+)\)/);
     if (m) {
       const [, name, sc] = m;
-      const size = Math.round(parseFloat(sc) / FRAME_WIDTH * sw);
+      const size = Math.round((parseFloat(sc) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'triangle', name, x: sw / 2, y: sh / 2, width: size, height: size, fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'triangle',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        fill: '#f59e0b',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Star
-    m = line.match(/^(\w+)\s*=\s*Star\(n=(\d+),\s*outer_radius=([\d.]+),\s*inner_radius=([\d.]+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Star\(n=(\d+),\s*outer_radius=([\d.]+),\s*inner_radius=([\d.]+)\)/
+    );
     if (m) {
       const [, name, arms, outerR, innerR] = m;
-      const size = Math.round(parseFloat(outerR) * 2 / FRAME_WIDTH * sw);
+      const size = Math.round(((parseFloat(outerR) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'star', name, x: sw / 2, y: sh / 2, width: size, height: size, starArms: parseInt(arms), innerRatio: parseFloat(innerR) / parseFloat(outerR), fill: '#eab308', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'star',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        starArms: parseInt(arms),
+        innerRatio: parseFloat(innerR) / parseFloat(outerR),
+        fill: '#eab308',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -308,15 +611,38 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*RegularPolygon\(n=(\d+)\)\.scale\(([\d.]+)\)/);
     if (m) {
       const [, name, sides, sc] = m;
-      const size = Math.round(parseFloat(sc) * 2 / FRAME_WIDTH * sw);
+      const size = Math.round(((parseFloat(sc) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = { id, type: 'polygon', name, x: sw / 2, y: sh / 2, width: size, height: size, sides: parseInt(sides), fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'polygon',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        sides: parseInt(sides),
+        fill: '#8b5cf6',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Polygon (free-vertex)
-    m = line.match(/^(\w+)\s*=\s*Polygon\((\[[-\d.]+,\s*[-\d.]+,\s*0\](?:,\s*\[[-\d.]+,\s*[-\d.]+,\s*0\])+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Polygon\((\[[-\d.]+,\s*[-\d.]+,\s*0\](?:,\s*\[[-\d.]+,\s*[-\d.]+,\s*0\])+)\)/
+    );
     if (m) {
       const [, name, body] = m;
       const verts = [];
@@ -324,17 +650,38 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       let v;
       while ((v = re.exec(body)) !== null) {
         verts.push([
-          Math.round(parseFloat(v[1]) / FRAME_WIDTH * sw),
-          Math.round(-parseFloat(v[2]) / FRAME_HEIGHT * sh),
+          Math.round((parseFloat(v[1]) / FRAME_WIDTH) * sw),
+          Math.round((-parseFloat(v[2]) / FRAME_HEIGHT) * sh),
         ]);
       }
-      const xs = verts.map(p => p[0]), ys = verts.map(p => p[1]);
-      const width = Math.max(...xs) - Math.min(...xs), height = Math.max(...ys) - Math.min(...ys);
+      const xs = verts.map((p) => p[0]),
+        ys = verts.map((p) => p[1]);
+      const width = Math.max(...xs) - Math.min(...xs),
+        height = Math.max(...ys) - Math.min(...ys);
       const id = uid('obj');
-      const obj = { id, type: 'polygon_free', name, x: sw / 2, y: sh / 2, width, height, vertices: verts,
-        fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'polygon_free',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height,
+        vertices: verts,
+        fill: '#8b5cf6',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -344,51 +691,132 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\.set_points_smoothly\(\[(.+)\]\)/);
     if (m) {
       const id = uid('obj');
-      const obj = { id, type: 'bezier', name: m[1], x: sw / 2, y: sh / 2, width: 220, height: 120,
-        vertices: [...m[2].matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*0\]/g)]
-          .map(mm => [Math.round(parseFloat(mm[1]) / FRAME_WIDTH * sw), Math.round(-parseFloat(mm[2]) / FRAME_HEIGHT * sh)]),
-        fill: 'transparent', stroke: '#f472b6', strokeWidth: 3, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'bezier',
+        name: m[1],
+        x: sw / 2,
+        y: sh / 2,
+        width: 220,
+        height: 120,
+        vertices: [...m[2].matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*0\]/g)].map((mm) => [
+          Math.round((parseFloat(mm[1]) / FRAME_WIDTH) * sw),
+          Math.round((-parseFloat(mm[2]) / FRAME_HEIGHT) * sh),
+        ]),
+        fill: 'transparent',
+        stroke: '#f472b6',
+        strokeWidth: 3,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[m[1]] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Graph / DiGraph (single-line, manual layout)
-    m = line.match(/^(\w+) = (Graph|DiGraph)\(\[(.*?)\], \[(.*?)\], layout=\{(.*?)\}(, labels=True)?\)/);
+    m = line.match(
+      /^(\w+) = (Graph|DiGraph)\(\[(.*?)\], \[(.*?)\], layout=\{(.*?)\}(, labels=True)?\)/
+    );
     if (m) {
       const directed = m[2] === 'DiGraph';
-      const vertices = (m[3].match(/"([^"]*)"/g) || []).map(s => s.slice(1, -1));
-      const edges = (m[4].match(/\("([^"]*)", "([^"]*)"\)/g) || []).map(t => { const mm = t.match(/\("([^"]*)", "([^"]*)"\)/); return [mm[1], mm[2]]; });
+      const vertices = (m[3].match(/"([^"]*)"/g) || []).map((s) => s.slice(1, -1));
+      const edges = (m[4].match(/\("([^"]*)", "([^"]*)"\)/g) || []).map((t) => {
+        const mm = t.match(/\("([^"]*)", "([^"]*)"\)/);
+        return [mm[1], mm[2]];
+      });
       const positions = {};
       const layoutEntries = m[5].match(/"([^"]*)": \[([-\d.]+), ([-\d.]+), [-\d.]+\]/g) || [];
-      for (const le of layoutEntries) { const e = le.match(/"([^"]*)": \[([-\d.]+), ([-\d.]+),/); positions[e[1]] = [Math.round(parseFloat(e[2]) / FRAME_WIDTH * sw), Math.round(-(parseFloat(e[3])) / FRAME_HEIGHT * sh)]; }
+      for (const le of layoutEntries) {
+        const e = le.match(/"([^"]*)": \[([-\d.]+), ([-\d.]+),/);
+        positions[e[1]] = [
+          Math.round((parseFloat(e[2]) / FRAME_WIDTH) * sw),
+          Math.round((-parseFloat(e[3]) / FRAME_HEIGHT) * sh),
+        ];
+      }
       const id = uid('obj');
-      const obj = { id, type: 'graph', name: 'Graph',
-        x: sw/2, y: sh/2, width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2,
-        opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length,
-        vertices, edges, positions, directed, showLabels: !!m[6] };
-      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
+      const obj = {
+        id,
+        type: 'graph',
+        name: 'Graph',
+        x: sw / 2,
+        y: sh / 2,
+        width: 200,
+        height: 200,
+        fill: '#22c55e',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+        vertices,
+        edges,
+        positions,
+        directed,
+        showLabels: !!m[6],
+      };
+      varMap[m[1]] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
       continue;
     }
 
     // Table / MathTable (single-line)
-    m = line.match(/^(\w+) = (MathTable|Table)\(\[(\[.*\])\](?:, row_labels=\[(.*?)\])?(?:, col_labels=\[(.*?)\])?\)/);
+    m = line.match(
+      /^(\w+) = (MathTable|Table)\(\[(\[.*\])\](?:, row_labels=\[(.*?)\])?(?:, col_labels=\[(.*?)\])?\)/
+    );
     if (m) {
       const mathMode = m[2] === 'MathTable';
       const rowStrs = m[3].match(/\[[^\]]*\]/g) || [];
-      const cellData = rowStrs.map(r => (r.match(/"([^"]*)"/g) || []).map(q => q.slice(1, -1)));
-      const labelList = (s) => s ? (s.match(/(?:MathTex|Text)\("([^"]*)"\)/g) || []).map(x => x.match(/"([^"]*)"/)[1]) : [];
+      const cellData = rowStrs.map((r) => (r.match(/"([^"]*)"/g) || []).map((q) => q.slice(1, -1)));
+      const labelList = (s) =>
+        s
+          ? (s.match(/(?:MathTex|Text)\("([^"]*)"\)/g) || []).map((x) => x.match(/"([^"]*)"/)[1])
+          : [];
       const id = uid('obj');
-      const obj = { id, type: 'table', name: 'Table', x: sw / 2, y: sh / 2, width: 200, height: 140,
-        fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length,
-        cellData, mathMode, rowLabels: labelList(m[4]), colLabels: labelList(m[5]) };
-      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
+      const obj = {
+        id,
+        type: 'table',
+        name: 'Table',
+        x: sw / 2,
+        y: sh / 2,
+        width: 200,
+        height: 140,
+        fill: '#ffffff',
+        stroke: '#ffffff',
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+        cellData,
+        mathMode,
+        rowLabels: labelList(m[4]),
+        colLabels: labelList(m[5]),
+      };
+      varMap[m[1]] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
       continue;
     }
 
     // Matrix (single-line) — Matrix([["a","b"],...], left_bracket=..., right_bracket=...)
-    m = line.match(/^(\w+)\s*=\s*Matrix\(\[(\[.+\])\](?:, left_bracket="([^"]*)", right_bracket="[^"]*")?\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Matrix\(\[(\[.+\])\](?:, left_bracket="([^"]*)", right_bracket="[^"]*")?\)/
+    );
     if (m) {
       const [, name, body, leftBracket] = m;
       const rows = [];
@@ -396,22 +824,49 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       let rm;
       while ((rm = rowRe.exec(body))) {
         const cells = rm[1].match(/"([^"]*)"/g);
-        rows.push(cells ? cells.map(c => c.slice(1, -1)) : []);
+        rows.push(cells ? cells.map((c) => c.slice(1, -1)) : []);
       }
       const bracket = leftBracket === '(' ? '(' : leftBracket === '|' ? '|' : '[';
       const id = uid('obj');
-      const obj = { id, type: 'matrix', name, x: sw / 2, y: sh / 2, width: 160, height: 120,
-        matrixData: rows.length ? rows : [['1', '0'], ['0', '1']], bracket,
-        fill: '#ffffff', stroke: '#ffffff', strokeWidth: 0, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'matrix',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 160,
+        height: 120,
+        matrixData: rows.length
+          ? rows
+          : [
+              ['1', '0'],
+              ['0', '1'],
+            ],
+        bracket,
+        fill: '#ffffff',
+        stroke: '#ffffff',
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // vector_components: <n>_main Arrow carries vx/vy; absorb the x/y/dash helpers + VGroup.
     m = line.match(/^(\w+)_main\s*=\s*Arrow\(\[0, 0, 0\], \[([-\d.]+), ([-\d.]+), 0\]/);
     if (m) {
-      vcPending[m[1]] = { vx: parseFloat(m[2]) / FRAME_WIDTH * sw, vy: -parseFloat(m[3]) / FRAME_HEIGHT * sh };
+      vcPending[m[1]] = {
+        vx: (parseFloat(m[2]) / FRAME_WIDTH) * sw,
+        vy: (-parseFloat(m[3]) / FRAME_HEIGHT) * sh,
+      };
       continue;
     }
     m = line.match(/^(\w+)_(?:x|y|dx|dy)\s*=\s*(?:Arrow|DashedLine)\(/);
@@ -420,8 +875,25 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m && m[1] === m[2] && vcPending[m[1]]) {
       const { vx, vy } = vcPending[m[1]];
       const id = uid('obj');
-      const obj = { id, type: 'vector_components', name: m[1], x: sw / 2, y: sh / 2, vx: Math.round(vx), vy: Math.round(vy), fill: '#3b82f6', opacity: 1, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'vector_components',
+        name: m[1],
+        x: sw / 2,
+        y: sh / 2,
+        vx: Math.round(vx),
+        vy: Math.round(vy),
+        fill: '#3b82f6',
+        opacity: 1,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[m[1]] = id;
+      objById[id] = obj;
       delete vcPending[m[1]];
       continue;
     }
@@ -429,9 +901,12 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     // ray: <n>_ray Arrow carries angle/length; absorb <n>_dot + VGroup.
     m = line.match(/^(\w+)_ray\s*=\s*Arrow\(\[0, 0, 0\], \[([-\d.]+), ([-\d.]+), 0\]/);
     if (m) {
-      const tipX = parseFloat(m[2]) / FRAME_WIDTH * sw;
-      const tipY = parseFloat(m[3]) / FRAME_HEIGHT * sh;
-      rayPending[m[1]] = { length: Math.round(Math.hypot(tipX, tipY)), angle: Math.round(Math.atan2(tipY, tipX) * 180 / Math.PI) };
+      const tipX = (parseFloat(m[2]) / FRAME_WIDTH) * sw;
+      const tipY = (parseFloat(m[3]) / FRAME_HEIGHT) * sh;
+      rayPending[m[1]] = {
+        length: Math.round(Math.hypot(tipX, tipY)),
+        angle: Math.round((Math.atan2(tipY, tipX) * 180) / Math.PI),
+      };
       continue;
     }
     m = line.match(/^(\w+)_dot\s*=\s*Dot\(/);
@@ -440,8 +915,25 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m && m[1] === m[2] && rayPending[m[1]]) {
       const { length, angle } = rayPending[m[1]];
       const id = uid('obj');
-      const obj = { id, type: 'ray', name: m[1], x: sw / 2, y: sh / 2, angle, length, fill: '#22d3ee', opacity: 1, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'ray',
+        name: m[1],
+        x: sw / 2,
+        y: sh / 2,
+        angle,
+        length,
+        fill: '#22d3ee',
+        opacity: 1,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[m[1]] = id;
+      objById[id] = obj;
       delete rayPending[m[1]];
       continue;
     }
@@ -455,30 +947,78 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*VGroup\((\w+)_dot, \2_label\)/);
     if (m && m[1] === m[2] && coordPending[m[1]]) {
       const id = uid('obj');
-      const obj = { id, type: 'coord_point', name: m[1], x: sw / 2, y: sh / 2, decimals: coordPending[m[1]].decimals, fill: '#fbbf24', opacity: 1, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'coord_point',
+        name: m[1],
+        x: sw / 2,
+        y: sh / 2,
+        decimals: coordPending[m[1]].decimals,
+        fill: '#fbbf24',
+        opacity: 1,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[m[1]] = id;
+      objById[id] = obj;
       delete coordPending[m[1]];
       continue;
     }
 
     // Angle helper Lines (our naming) — captured into relLineMap, not turned into objects
-    m = line.match(/^(\w+_l[12])\s*=\s*Line\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/);
+    m = line.match(
+      /^(\w+_l[12])\s*=\s*Line\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/
+    );
     if (m) {
-      relLineMap[m[1]] = { start: [parseFloat(m[2]), parseFloat(m[3])], end: [parseFloat(m[4]), parseFloat(m[5])] };
+      relLineMap[m[1]] = {
+        start: [parseFloat(m[2]), parseFloat(m[3])],
+        end: [parseFloat(m[4]), parseFloat(m[5])],
+      };
       continue;
     }
 
     // Brace — BraceBetweenPoints([..],[..]); the geometry name may be <n> or <n>_brace
-    m = line.match(/^(\w+)\s*=\s*BraceBetweenPoints\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*BraceBetweenPoints\(\[([-\d.]+), ([-\d.]+), 0\], \[([-\d.]+), ([-\d.]+), 0\]\)/
+    );
     if (m) {
       const [, name, x1, y1, x2, y2] = m;
       const id = uid('obj');
-      const obj = { id, type: 'brace', name, x: sw / 2, y: sh / 2, width: 160, height: 60,
-        p1: [Math.round(parseFloat(x1) / FRAME_WIDTH * sw), Math.round(-parseFloat(y1) / FRAME_HEIGHT * sh)],
-        p2: [Math.round(parseFloat(x2) / FRAME_WIDTH * sw), Math.round(-parseFloat(y2) / FRAME_HEIGHT * sh)],
-        label: '', fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'brace',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 160,
+        height: 60,
+        p1: [
+          Math.round((parseFloat(x1) / FRAME_WIDTH) * sw),
+          Math.round((-parseFloat(y1) / FRAME_HEIGHT) * sh),
+        ],
+        p2: [
+          Math.round((parseFloat(x2) / FRAME_WIDTH) * sw),
+          Math.round((-parseFloat(y2) / FRAME_HEIGHT) * sh),
+        ],
+        label: '',
+        fill: '#ffffff',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -486,16 +1026,42 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*(Angle|RightAngle)\((\w+_l1), (\w+_l2)(?:, radius=([-\d.]+))?\)/);
     if (m) {
       const [, name, ctor, l1, l2, rad] = m;
-      const L1 = relLineMap[l1], L2 = relLineMap[l2];
+      const L1 = relLineMap[l1],
+        L2 = relLineMap[l2];
       if (L1 && L2) {
-        const toPx = (mp) => [Math.round(mp[0] / FRAME_WIDTH * sw), Math.round(-mp[1] / FRAME_HEIGHT * sh)];
+        const toPx = (mp) => [
+          Math.round((mp[0] / FRAME_WIDTH) * sw),
+          Math.round((-mp[1] / FRAME_HEIGHT) * sh),
+        ];
         const id = uid('obj');
-        const obj = { id, type: 'angle', name, x: sw / 2, y: sh / 2, width: 140, height: 140,
-          vertex: toPx(L1.start), point1: toPx(L1.end), point2: toPx(L2.end),
-          rightAngle: ctor === 'RightAngle', radius: rad ? parseFloat(rad) : 0.6, label: '',
-          fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2, opacity: 1, rotation: 0,
-          enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-        objects.push(obj); varMap[name] = id; objById[id] = obj;
+        const obj = {
+          id,
+          type: 'angle',
+          name,
+          x: sw / 2,
+          y: sh / 2,
+          width: 140,
+          height: 140,
+          vertex: toPx(L1.start),
+          point1: toPx(L1.end),
+          point2: toPx(L2.end),
+          rightAngle: ctor === 'RightAngle',
+          radius: rad ? parseFloat(rad) : 0.6,
+          label: '',
+          fill: '#fbbf24',
+          stroke: '#fbbf24',
+          strokeWidth: 2,
+          opacity: 1,
+          rotation: 0,
+          enterTime: 0,
+          duration: 10,
+          enterAnim: 'fade_in',
+          exitAnim: 'fade_out',
+          zOrder: objects.length,
+        };
+        objects.push(obj);
+        varMap[name] = id;
+        objById[id] = obj;
         continue;
       }
     }
@@ -520,18 +1086,21 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const t = objById[varMap[m[1]]];
       if (t && ['polygon', 'triangle', 'star'].includes(t.type)) {
-        t.cornerRadius = Math.round(parseFloat(m[2]) / FRAME_WIDTH * sw);
+        t.cornerRadius = Math.round((parseFloat(m[2]) / FRAME_WIDTH) * sw);
       }
       continue;
     }
 
     // Drop-shadow copy line → stash by base var
-    m = line.match(/^_shadow_(\w+)\s*=\s*\w+\.copy\(\)\.set_color\("([^"]+)"\)\.set_opacity\(([-\d.]+)\)\.shift\(\[([-\d.]+), ([-\d.]+), 0\]\)/);
+    m = line.match(
+      /^_shadow_(\w+)\s*=\s*\w+\.copy\(\)\.set_color\("([^"]+)"\)\.set_opacity\(([-\d.]+)\)\.shift\(\[([-\d.]+), ([-\d.]+), 0\]\)/
+    );
     if (m) {
       pendingShadow[m[1]] = {
-        color: m[2], opacity: parseFloat(m[3]),
-        dx: Math.round(parseFloat(m[4]) / FRAME_WIDTH * sw),
-        dy: Math.round(-parseFloat(m[5]) / FRAME_HEIGHT * sh),
+        color: m[2],
+        opacity: parseFloat(m[3]),
+        dx: Math.round((parseFloat(m[4]) / FRAME_WIDTH) * sw),
+        dy: Math.round((-parseFloat(m[5]) / FRAME_HEIGHT) * sh),
       };
       continue;
     }
@@ -541,43 +1110,110 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const ps = pendingShadow[m[2]];
       const t = objById[varMap[m[2]]];
-      if (ps && t) { t.shadow = { ...ps, blur: 12 }; delete pendingShadow[m[2]]; }
+      if (ps && t) {
+        t.shadow = { ...ps, blur: 12 };
+        delete pendingShadow[m[2]];
+      }
       continue;
     }
 
     // Counter (Integer)
     m = line.match(/^(\w+) = Integer\((-?\d+)(?:, unit="([^"]*)")?\)/);
     if (m) {
-      const obj = { id: m[1], type: 'counter', name: 'Counter',
-        x: sw / 2, y: sh / 2, width: 120, height: 60,
-        fill: '#ffffff', stroke: 'transparent', strokeWidth: 0, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
-        value: parseInt(m[2], 10), numDecimals: 0, suffix: unescapeUnit(m[3]), useInteger: true };
-      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
+      const obj = {
+        id: m[1],
+        type: 'counter',
+        name: 'Counter',
+        x: sw / 2,
+        y: sh / 2,
+        width: 120,
+        height: 60,
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 5,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+        value: parseInt(m[2], 10),
+        numDecimals: 0,
+        suffix: unescapeUnit(m[3]),
+        useInteger: true,
+      };
+      varMap[m[1]] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
       continue;
     }
 
     // Counter (DecimalNumber)
-    m = line.match(/^(\w+) = DecimalNumber\((-?[\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/);
+    m = line.match(
+      /^(\w+) = DecimalNumber\((-?[\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/
+    );
     if (m) {
       // Use the variable name as the object id so count clip objectId round-trips correctly
       // (v(id) === id for obj_ ids since they only contain [a-z0-9_])
-      const obj = { id: m[1], type: 'counter', name: 'Counter',
-        x: sw / 2, y: sh / 2, width: 120, height: 60,
-        fill: '#ffffff', stroke: 'transparent', strokeWidth: 0, opacity: 1, rotation: 0,
-        enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
-        value: parseFloat(m[2]), numDecimals: parseInt(m[3], 10), suffix: unescapeUnit(m[4]) };
-      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
+      const obj = {
+        id: m[1],
+        type: 'counter',
+        name: 'Counter',
+        x: sw / 2,
+        y: sh / 2,
+        width: 120,
+        height: 60,
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 5,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+        value: parseFloat(m[2]),
+        numDecimals: parseInt(m[3], 10),
+        suffix: unescapeUnit(m[4]),
+      };
+      varMap[m[1]] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
       continue;
     }
 
     // Text
-    m = line.match(/^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?(?:,\s*font="([^"]*)")?\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?(?:,\s*font="([^"]*)")?\)/
+    );
     if (m) {
       const [, name, content, fontSize, color, fontFamily] = m;
       const id = uid('obj');
-      const obj = { id, type: 'text', name, content, fontSize: parseInt(fontSize), fontFamily: fontFamily || 'Roboto', x: sw / 2, y: sh / 2, width: 200, height: 50, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'text',
+        name,
+        content,
+        fontSize: parseInt(fontSize),
+        fontFamily: fontFamily || 'Roboto',
+        x: sw / 2,
+        y: sh / 2,
+        width: 200,
+        height: 50,
+        fill: color || '#ffffff',
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -585,43 +1221,112 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*Dot\((?:radius=([\d.]+))?[^)]*(?:color=["']([^"']+)["'])?\)/);
     if (m) {
       const [, name, r, color] = m;
-      const size = r ? Math.round(parseFloat(r) * 2 / FRAME_X_RADIUS * sw) : 20;
+      const size = r ? Math.round(((parseFloat(r) * 2) / FRAME_X_RADIUS) * sw) : 20;
       const id = uid('obj');
-      const obj = { id, type: 'dot', name, x: sw / 2, y: sh / 2, width: size, height: size, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'dot',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        fill: color || '#ffffff',
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // ArrowVectorField
-    m = line.match(/^(\w+) = ArrowVectorField\(lambda p: \(lambda x, y: np\.array\(\[(.*?), (.*?), 0\]\)\)\(p\[0\], p\[1\]\), x_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\], y_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\]\)/);
+    m = line.match(
+      /^(\w+) = ArrowVectorField\(lambda p: \(lambda x, y: np\.array\(\[(.*?), (.*?), 0\]\)\)\(p\[0\], p\[1\]\), x_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\], y_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\]\)/
+    );
     if (m) {
-      const obj = { id: uid('obj'), type: 'vector_field', name: 'VectorField',
-        x: sw/2, y: sh/2, width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2,
-        opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length,
-        fx: m[2], fy: m[3], xRange: [parseFloat(m[4]), parseFloat(m[5]), parseFloat(m[6])], yRange: [parseFloat(m[7]), parseFloat(m[8]), parseFloat(m[9])] };
-      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj); continue;
+      const obj = {
+        id: uid('obj'),
+        type: 'vector_field',
+        name: 'VectorField',
+        x: sw / 2,
+        y: sh / 2,
+        width: 600,
+        height: 400,
+        fill: '#38bdf8',
+        stroke: '#38bdf8',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+        fx: m[2],
+        fy: m[3],
+        xRange: [parseFloat(m[4]), parseFloat(m[5]), parseFloat(m[6])],
+        yRange: [parseFloat(m[7]), parseFloat(m[8]), parseFloat(m[9])],
+      };
+      varMap[m[1]] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
+      continue;
     }
 
     // ParametricFunction (single-line parametric object) — must precede the heart matcher
-    m = line.match(/^(\w+)\s*=\s*ParametricFunction\(lambda t: np\.array\(\[(.+), 0\]\), t_range=\[([-\d.]+), ([-\d.]+)\], color=["']([^"']+)["'], stroke_width=([\d.]+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*ParametricFunction\(lambda t: np\.array\(\[(.+), 0\]\), t_range=\[([-\d.]+), ([-\d.]+)\], color=["']([^"']+)["'], stroke_width=([\d.]+)\)/
+    );
     if (m) {
       const [, name, body, t0, t1, color, sw_] = m;
       // split "xExpr, yExpr" on the top-level (paren-depth 0) comma
-      let depth = 0, splitAt = -1;
+      let depth = 0,
+        splitAt = -1;
       for (let i = 0; i < body.length; i++) {
         const ch = body[i];
         if (ch === '(') depth++;
         else if (ch === ')') depth--;
-        else if (ch === ',' && depth === 0) { splitAt = i; break; }
+        else if (ch === ',' && depth === 0) {
+          splitAt = i;
+          break;
+        }
       }
       const xe = (splitAt >= 0 ? body.slice(0, splitAt) : body).trim();
       const ye = (splitAt >= 0 ? body.slice(splitAt + 1) : '0').trim();
       const id = uid('obj');
-      const obj = { id, type: 'parametric', name, x: sw / 2, y: sh / 2, width: 160, height: 160,
-        xExpr: xe, yExpr: ye, tMin: parseFloat(t0), tMax: parseFloat(t1),
-        fill: 'transparent', stroke: color, strokeWidth: parseFloat(sw_), opacity: 1, rotation: 0,
-        enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'parametric',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 160,
+        height: 160,
+        xExpr: xe,
+        yExpr: ye,
+        tMin: parseFloat(t0),
+        tMax: parseFloat(t1),
+        fill: 'transparent',
+        stroke: color,
+        strokeWidth: parseFloat(sw_),
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -629,30 +1334,90 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*ParametricFunction\(/);
     if (m) {
       const id = uid('obj');
-      const obj = { id, type: 'heart', name: m[1], x: sw / 2, y: sh / 2, width: 120, height: 120, fill: '#ef4444', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'heart',
+        name: m[1],
+        x: sw / 2,
+        y: sh / 2,
+        width: 120,
+        height: 120,
+        fill: '#ef4444',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[m[1]] = id;
+      objById[id] = obj;
       continue;
     }
 
     // ImageMobject
-    m = line.match(/^(\w+)\s*=\s*ImageMobject\(["']([^"']+)["']\)(?:\.scale_to_fit_width\(([\d.]+)\))?/);
+    m = line.match(
+      /^(\w+)\s*=\s*ImageMobject\(["']([^"']+)["']\)(?:\.scale_to_fit_width\(([\d.]+)\))?/
+    );
     if (m) {
       const [, name, path, w] = m;
-      const width = w ? Math.round(parseFloat(w) / FRAME_WIDTH * sw) : 200;
+      const width = w ? Math.round((parseFloat(w) / FRAME_WIDTH) * sw) : 200;
       const id = uid('obj');
-      const obj = { id, type: 'image', name, x: sw / 2, y: sh / 2, width, height: Math.round(width * 0.75), fill: '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'image',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height: Math.round(width * 0.75),
+        fill: '#ffffff',
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // SVGMobject
-    m = line.match(/^(\w+)\s*=\s*SVGMobject\(["']([^"']+)["']\)(?:\.scale_to_fit_width\(([\d.]+)\))?/);
+    m = line.match(
+      /^(\w+)\s*=\s*SVGMobject\(["']([^"']+)["']\)(?:\.scale_to_fit_width\(([\d.]+)\))?/
+    );
     if (m) {
       const [, name, path, w] = m;
-      const width = w ? Math.round(parseFloat(w) / FRAME_WIDTH * sw) : 200;
+      const width = w ? Math.round((parseFloat(w) / FRAME_WIDTH) * sw) : 200;
       const id = uid('obj');
-      const obj = { id, type: 'svg_asset', name, x: sw / 2, y: sh / 2, width, height: Math.round(width * 0.75), fill: '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'svg_asset',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height: Math.round(width * 0.75),
+        fill: '#ffffff',
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -663,48 +1428,166 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, rawLatex, color] = m;
       const latex = rawLatex.replace(/\\([\\"])/g, '$1');
       const id = uid('obj');
-      const obj = { id, type: 'latex', name, latex, x: sw / 2, y: sh / 2, width: 200, height: 80, fill: color || '#ffffff', opacity: 1, rotation: 0, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'latex',
+        name,
+        latex,
+        x: sw / 2,
+        y: sh / 2,
+        width: 200,
+        height: 80,
+        fill: color || '#ffffff',
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Axes
-    m = line.match(/^(\w+)\s*=\s*Axes\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+    m = line.match(
+      /^(\w+)\s*=\s*Axes\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/
+    );
     if (m) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
-      const obj = { id, type: 'axes', name, x: sw / 2, y: sh / 2, width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'axes',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 400,
+        height: 300,
+        fill: '#ffffff',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)],
+        yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)],
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // NumberPlane
-    m = line.match(/^(\w+)\s*=\s*NumberPlane\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+    m = line.match(
+      /^(\w+)\s*=\s*NumberPlane\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/
+    );
     if (m) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
-      const obj = { id, type: 'numberplane', name, x: sw / 2, y: sh / 2, width: 400, height: 300, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], xStep: parseFloat(xs), yStep: parseFloat(ys), enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'numberplane',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 400,
+        height: 300,
+        fill: '#ffffff',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)],
+        yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)],
+        xStep: parseFloat(xs),
+        yStep: parseFloat(ys),
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // ComplexPlane
-    m = line.match(/^(\w+)\s*=\s*ComplexPlane\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
+    m = line.match(
+      /^(\w+)\s*=\s*ComplexPlane\(x_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\],\s*y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/
+    );
     if (m) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
-      const obj = { id, type: 'complex_plane', name, x: sw / 2, y: sh / 2, width: 600, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)], enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'complex_plane',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 600,
+        height: 400,
+        fill: '#334155',
+        stroke: '#64748b',
+        strokeWidth: 1,
+        opacity: 1,
+        rotation: 0,
+        xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)],
+        yRange: [parseFloat(y0), parseFloat(y1), parseFloat(ys)],
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // PolarPlane
-    m = line.match(/^(\w+)\s*=\s*PolarPlane\(radius_max=([-\d.]+),\s*radius_step=([-\d.]+),\s*azimuth_units=(\d+)/);
+    m = line.match(
+      /^(\w+)\s*=\s*PolarPlane\(radius_max=([-\d.]+),\s*radius_step=([-\d.]+),\s*azimuth_units=(\d+)/
+    );
     if (m) {
       const [, name, rMax, rStep, az] = m;
       const id = uid('obj');
-      const obj = { id, type: 'polar_plane', name, x: sw / 2, y: sh / 2, width: 400, height: 400, fill: '#334155', stroke: '#64748b', strokeWidth: 1, opacity: 1, rotation: 0, radiusMax: parseFloat(rMax), radiusStep: parseFloat(rStep), azimuthUnits: parseInt(az, 10), enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'polar_plane',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 400,
+        height: 400,
+        fill: '#334155',
+        stroke: '#64748b',
+        strokeWidth: 1,
+        opacity: 1,
+        rotation: 0,
+        radiusMax: parseFloat(rMax),
+        radiusStep: parseFloat(rStep),
+        azimuthUnits: parseInt(az, 10),
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -713,13 +1596,36 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, x0, x1, xs] = m;
       const id = uid('obj');
-      const obj = { id, type: 'numberline', name, x: sw / 2, y: sh / 2, width: 400, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)], enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'numberline',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: 400,
+        height: 60,
+        fill: '#ffffff',
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        xRange: [parseFloat(x0), parseFloat(x1), parseFloat(xs)],
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // axes.plot() — adds a graph to the axes object referenced by axesVar
-    m = line.match(/^(\w+)\s*=\s*(\w+)\.plot\(lambda x:\s*([^,]+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\](?:,\s*color=["']([^"']+)["'])?(?:,\s*stroke_width=([\d.]+))?\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*(\w+)\.plot\(lambda x:\s*([^,]+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\](?:,\s*color=["']([^"']+)["'])?(?:,\s*stroke_width=([\d.]+))?\)/
+    );
     if (m) {
       const [, graphVar, axesVar, expr, xMin, xMax, color, sw2] = m;
       const axesId = varMap[axesVar];
@@ -740,28 +1646,54 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // axes.get_area(graphVar, ...)
-    m = line.match(/^\w+\s*=\s*\w+\.get_area\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\](?:,\s*color=["']([^"']+)["'])?(?:,\s*opacity=([\d.]+))?\)/);
+    m = line.match(
+      /^\w+\s*=\s*\w+\.get_area\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\](?:,\s*color=["']([^"']+)["'])?(?:,\s*opacity=([\d.]+))?\)/
+    );
     if (m) {
       const g = graphVarMap[m[1]];
-      if (g) g.area = { enabled: true, xMin: parseFloat(m[2]), xMax: parseFloat(m[3]), color: m[4] || g.color, opacity: m[5] !== undefined ? parseFloat(m[5]) : 0.5 };
+      if (g)
+        g.area = {
+          enabled: true,
+          xMin: parseFloat(m[2]),
+          xMax: parseFloat(m[3]),
+          color: m[4] || g.color,
+          opacity: m[5] !== undefined ? parseFloat(m[5]) : 0.5,
+        };
       continue;
     }
     // axes.get_riemann_rectangles(graphVar, ...)
-    m = line.match(/^\w+\s*=\s*\w+\.get_riemann_rectangles\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\],\s*dx=([\d.]+),\s*input_sample_type=["'](\w+)["'](?:,\s*color=["']([^"']+)["'])?\)/);
+    m = line.match(
+      /^\w+\s*=\s*\w+\.get_riemann_rectangles\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\],\s*dx=([\d.]+),\s*input_sample_type=["'](\w+)["'](?:,\s*color=["']([^"']+)["'])?\)/
+    );
     if (m) {
       const g = graphVarMap[m[1]];
-      if (g) g.riemann = { enabled: true, xMin: parseFloat(m[2]), xMax: parseFloat(m[3]), dx: parseFloat(m[4]), type: m[5], color: m[6] || g.color };
+      if (g)
+        g.riemann = {
+          enabled: true,
+          xMin: parseFloat(m[2]),
+          xMax: parseFloat(m[3]),
+          dx: parseFloat(m[4]),
+          type: m[5],
+          color: m[6] || g.color,
+        };
       continue;
     }
     // TangentLine(graphVar, alpha=..., length=..., color=...)
-    m = line.match(/^\w+\s*=\s*TangentLine\((\w+),\s*alpha=([\d.]+),\s*length=([\d.]+)(?:,\s*color=["']([^"']+)["'])?\)/);
+    m = line.match(
+      /^\w+\s*=\s*TangentLine\((\w+),\s*alpha=([\d.]+),\s*length=([\d.]+)(?:,\s*color=["']([^"']+)["'])?\)/
+    );
     if (m) {
       const g = graphVarMap[m[1]];
       if (g) {
         const alpha = parseFloat(m[2]);
         const gxMin = Number.isFinite(g.xMin) ? g.xMin : -5;
         const gxMax = Number.isFinite(g.xMax) ? g.xMax : 5;
-        g.tangent = { enabled: true, x: gxMin + alpha * (gxMax - gxMin), length: parseFloat(m[3]), color: m[4] || g.color };
+        g.tangent = {
+          enabled: true,
+          x: gxMin + alpha * (gxMax - gxMin),
+          length: parseFloat(m[3]),
+          color: m[4] || g.color,
+        };
       }
       continue;
     }
@@ -773,8 +1705,25 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, r, res] = m;
       const id = uid('obj');
-      const obj = { id, type: 'sphere', name, x3d: 0, y3d: 0, z3d: 0, radius: parseFloat(r), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'sphere',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        radius: parseFloat(r),
+        resolution: parseInt(res),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -783,8 +1732,24 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, sl] = m;
       const id = uid('obj');
-      const obj = { id, type: 'cube', name, x3d: 0, y3d: 0, z3d: 0, sideLength: parseFloat(sl), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'cube',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        sideLength: parseFloat(sl),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -793,38 +1758,116 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, dx, dy, dz] = m;
       const id = uid('obj');
-      const obj = { id, type: 'prism', name, x3d: 0, y3d: 0, z3d: 0, dimX: parseFloat(dx), dimY: parseFloat(dy), dimZ: parseFloat(dz), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'prism',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        dimX: parseFloat(dx),
+        dimY: parseFloat(dy),
+        dimZ: parseFloat(dz),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Cone
-    m = line.match(/^(\w+)\s*=\s*Cone\(base_radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Cone\(base_radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/
+    );
     if (m) {
       const [, name, r, h, res] = m;
       const id = uid('obj');
-      const obj = { id, type: 'cone', name, x3d: 0, y3d: 0, z3d: 0, radius: parseFloat(r), height: parseFloat(h), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'cone',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        radius: parseFloat(r),
+        height: parseFloat(h),
+        resolution: parseInt(res),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Cylinder
-    m = line.match(/^(\w+)\s*=\s*Cylinder\(radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Cylinder\(radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/
+    );
     if (m) {
       const [, name, r, h, res] = m;
       const id = uid('obj');
-      const obj = { id, type: 'cylinder', name, x3d: 0, y3d: 0, z3d: 0, radius: parseFloat(r), height: parseFloat(h), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'cylinder',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        radius: parseFloat(r),
+        height: parseFloat(h),
+        resolution: parseInt(res),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Torus
-    m = line.match(/^(\w+)\s*=\s*Torus\(major_radius=([\d.]+),\s*minor_radius=([\d.]+),\s*resolution=(\d+)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Torus\(major_radius=([\d.]+),\s*minor_radius=([\d.]+),\s*resolution=(\d+)\)/
+    );
     if (m) {
       const [, name, mr, mnr, res] = m;
       const id = uid('obj');
-      const obj = { id, type: 'torus', name, x3d: 0, y3d: 0, z3d: 0, majorRadius: parseFloat(mr), minorRadius: parseFloat(mnr), resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'torus',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        majorRadius: parseFloat(mr),
+        minorRadius: parseFloat(mnr),
+        resolution: parseInt(res),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -837,24 +1880,56 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const zrm = line.match(/z_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
       const id = uid('obj');
       const obj = {
-        id, type: 'axes3d', name, x3d: 0, y3d: 0, z3d: 0,
+        id,
+        type: 'axes3d',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
         xRange: xrm ? [parseFloat(xrm[1]), parseFloat(xrm[2]), parseFloat(xrm[3])] : [-3, 3, 1],
         yRange: yrm ? [parseFloat(yrm[1]), parseFloat(yrm[2]), parseFloat(yrm[3])] : [-3, 3, 1],
         zRange: zrm ? [parseFloat(zrm[1]), parseFloat(zrm[2]), parseFloat(zrm[3])] : [-3, 3, 1],
-        fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10,
-        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length,
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
       };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
     // Surface (z = f(x, y))
-    m = line.match(/^(\w+)\s*=\s*Surface\(lambda x, y: np\.array\(\[x, y, (.+?)\]\),\s*u_range=\[([-\d.]+),\s*([-\d.]+)\],\s*v_range=\[([-\d.]+),\s*([-\d.]+)\],\s*resolution=\((\d+),\s*(\d+)\)\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*Surface\(lambda x, y: np\.array\(\[x, y, (.+?)\]\),\s*u_range=\[([-\d.]+),\s*([-\d.]+)\],\s*v_range=\[([-\d.]+),\s*([-\d.]+)\],\s*resolution=\((\d+),\s*(\d+)\)\)/
+    );
     if (m) {
       const [, name, zExpr, ux0, ux1, vy0, vy1, res] = m;
       const id = uid('obj');
-      const obj = { id, type: 'surface', name, x3d: 0, y3d: 0, z3d: 0, zExpr, xRange: [parseFloat(ux0), parseFloat(ux1)], yRange: [parseFloat(vy0), parseFloat(vy1)], resolution: parseInt(res), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
-      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      const obj = {
+        id,
+        type: 'surface',
+        name,
+        x3d: 0,
+        y3d: 0,
+        z3d: 0,
+        zExpr,
+        xRange: [parseFloat(ux0), parseFloat(ux1)],
+        yRange: [parseFloat(vy0), parseFloat(vy1)],
+        resolution: parseInt(res),
+        fill: '#ffffff',
+        opacity: 1,
+        enterTime: 0,
+        exitTime: 10,
+        anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
       continue;
     }
 
@@ -864,10 +1939,17 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m[1]];
       if (id && objById[id]) {
         const mz = parseFloat(m[4]);
-        if (mz !== 0 || objById[id].type === 'sphere' || objById[id].type === 'cube' ||
-            objById[id].type === 'cone' || objById[id].type === 'cylinder' ||
-            objById[id].type === 'torus' || objById[id].type === 'axes3d' ||
-            objById[id].type === 'surface' || objById[id].type === 'prism') {
+        if (
+          mz !== 0 ||
+          objById[id].type === 'sphere' ||
+          objById[id].type === 'cube' ||
+          objById[id].type === 'cone' ||
+          objById[id].type === 'cylinder' ||
+          objById[id].type === 'torus' ||
+          objById[id].type === 'axes3d' ||
+          objById[id].type === 'surface' ||
+          objById[id].type === 'prism'
+        ) {
           objById[id].x3d = parseFloat(m[2]);
           objById[id].y3d = parseFloat(m[3]);
           objById[id].z3d = mz;
@@ -886,7 +1968,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id && objById[id]) {
-        const colors = m[2].split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+        const colors = m[2]
+          .split(',')
+          .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+          .filter(Boolean);
         if (colors.length >= 2) objById[id].gradient = { colors, angle: 135 };
       }
       continue;
@@ -900,13 +1985,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         if (m[3] !== undefined) {
           const op = parseFloat(m[3]);
           const master = objById[id].opacity ?? 1;
-          if (master > 0 && Math.abs(op - master) > 0.001) objById[id].fillOpacity = +(op / master).toFixed(3);
+          if (master > 0 && Math.abs(op - master) > 0.001)
+            objById[id].fillOpacity = +(op / master).toFixed(3);
         }
       }
       continue;
     }
 
-    m = line.match(/^(\w+)\.set_stroke\(color=["']([^"']+)["'](?:,\s*width=([\d.]+))?(?:,\s*opacity=([\d.]+))?\)/);
+    m = line.match(
+      /^(\w+)\.set_stroke\(color=["']([^"']+)["'](?:,\s*width=([\d.]+))?(?:,\s*opacity=([\d.]+))?\)/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id && objById[id]) {
@@ -921,10 +2009,13 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
-    m = line.match(/^\w+\s*=\s*VGroup\((\w+),\s*DashedVMobject\([^,]+,\s*num_dashes=(\d+),\s*dashed_ratio=([\d.]+)\)\)/);
+    m = line.match(
+      /^\w+\s*=\s*VGroup\((\w+),\s*DashedVMobject\([^,]+,\s*num_dashes=(\d+),\s*dashed_ratio=([\d.]+)\)\)/
+    );
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) objById[id].dash = { numDashes: parseInt(m[2]), ratio: parseFloat(m[3]) };
+      if (id && objById[id])
+        objById[id].dash = { numDashes: parseInt(m[2]), ratio: parseFloat(m[3]) };
       continue;
     }
 
@@ -938,7 +2029,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\.rotate\(([-\d.]+)\)/);
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) objById[id].rotation = Math.round(parseFloat(m[2]) * 180 / Math.PI * 10) / 10;
+      if (id && objById[id])
+        objById[id].rotation = Math.round(((parseFloat(m[2]) * 180) / Math.PI) * 10) / 10;
       continue;
     }
 
@@ -955,7 +2047,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
       // Extract inner content by bracket matching starting after "AnimationGroup(" or "LaggedStart("
       const fnStart = line.indexOf(fn + '(') + fn.length + 1;
-      let depth = 1, end = fnStart;
+      let depth = 1,
+        end = fnStart;
       while (end < line.length && depth > 0) {
         if (line[end] === '(' || line[end] === '[') depth++;
         else if (line[end] === ')' || line[end] === ']') depth--;
@@ -965,7 +2058,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
       // Split inner content by ',' respecting bracket depth
       const exprs = [];
-      let cur = '', d = 0;
+      let cur = '',
+        d = 0;
       for (const ch of inner) {
         if (ch === '(' || ch === '[') d++;
         else if (ch === ')' || ch === ']') d--;
@@ -973,25 +2067,43 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
           const t = cur.trim();
           if (t && !/^(lag_ratio|run_time|rate_func)/.test(t)) exprs.push(t);
           cur = '';
-        } else { cur += ch; }
+        } else {
+          cur += ch;
+        }
       }
       if (cur.trim() && !/^(lag_ratio|run_time|rate_func)/.test(cur.trim())) exprs.push(cur.trim());
 
-      const parsedClips = exprs.map(e => parseAnimExpr(e)).filter(Boolean);
+      const parsedClips = exprs.map((e) => parseAnimExpr(e)).filter(Boolean);
       for (const pc of parsedClips) {
-        clips.push({ id: `clip_${clipIdx++}`, type: pc.type, sourceId: pc.sourceId, startTime: ct, duration: dur, easing: 'ease_in_out', parallel: true, lag_ratio: lagRatio, params: pc.params });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: pc.type,
+          sourceId: pc.sourceId,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          parallel: true,
+          lag_ratio: lagRatio,
+          params: pc.params,
+        });
       }
       if (parsedClips.length > 0) ct += dur;
       continue;
     }
 
     m = line.match(/^self\.wait\(([\d.]+)\)/);
-    if (m) { ct += parseFloat(m[1]); continue; }
+    if (m) {
+      ct += parseFloat(m[1]);
+      continue;
+    }
 
     m = line.match(/^self\.play\(FadeIn\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) { objById[id].enterTime = ct; objById[id].enterAnim = 'fade_in'; }
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'fade_in';
+      }
       ct += parseFloat(m[2] || 0.5);
       continue;
     }
@@ -999,7 +2111,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^self\.play\(Create\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) { objById[id].enterTime = ct; objById[id].enterAnim = 'none'; }
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'none';
+      }
       ct += parseFloat(m[2] || 1);
       continue;
     }
@@ -1007,7 +2122,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^self\.play\(AddTextLetterByLetter\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) { objById[id].enterTime = ct; objById[id].enterAnim = 'typewriter'; }
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'typewriter';
+      }
       ct += parseFloat(m[2] || 0.5);
       continue;
     }
@@ -1015,20 +2133,34 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^self\.play\(RemoveTextLetterByLetter\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) { objById[id].exitAnim = 'typewriter_out'; }
+      if (id && objById[id]) {
+        objById[id].exitAnim = 'typewriter_out';
+      }
       ct += parseFloat(m[2] || 0.5);
       continue;
     }
 
-    m = line.match(/^self\.play\((ReplacementTransform|FadeTransform|Transform|TransformMatchingTex|TransformMatchingShapes)\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
+    m = line.match(
+      /^self\.play\((ReplacementTransform|FadeTransform|Transform|TransformMatchingTex|TransformMatchingShapes)\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/
+    );
     if (m) {
       const animName = m[1];
-      const srcId = varMap[m[2]], tgtId = varMap[m[3]];
+      const srcId = varMap[m[2]],
+        tgtId = varMap[m[3]];
       if (srcId && tgtId) {
         const dur = parseFloat(m[4] || 1);
-        const easing = m[5] ? (EASING_REV[m[5]] || 'ease_in_out') : 'ease_in_out';
-        const clip = { id: `clip_${clipIdx++}`, type: 'transform', sourceId: srcId, targetId: tgtId, startTime: ct, duration: dur, easing };
-        if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes') clip.matchTerms = true;
+        const easing = m[5] ? EASING_REV[m[5]] || 'ease_in_out' : 'ease_in_out';
+        const clip = {
+          id: `clip_${clipIdx++}`,
+          type: 'transform',
+          sourceId: srcId,
+          targetId: tgtId,
+          startTime: ct,
+          duration: dur,
+          easing,
+        };
+        if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes')
+          clip.matchTerms = true;
         clips.push(clip);
         ct += dur;
       }
@@ -1040,62 +2172,134 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[3] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'rotate', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { targetRotation: Math.round(parseFloat(m[2]) * 180 / Math.PI) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'rotate',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: { targetRotation: Math.round((parseFloat(m[2]) * 180) / Math.PI) },
+        });
         ct += dur;
       }
       continue;
     }
 
-    m = line.match(/^self\.play\(Indicate\((\w+),\s*color="([^"]+)",\s*scale_factor=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\(Indicate\((\w+),\s*color="([^"]+)",\s*scale_factor=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[4] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'indicate', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], scale_factor: parseFloat(m[3]) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'indicate',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: { color: m[2], scale_factor: parseFloat(m[3]) },
+        });
         ct += dur;
       }
       continue;
     }
 
-    m = line.match(/^self\.play\(Flash\((\w+),\s*color="([^"]+)",\s*flash_radius=([\d.]+),\s*line_length=([\d.]+),\s*num_lines=(\d+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\(Flash\((\w+),\s*color="([^"]+)",\s*flash_radius=([\d.]+),\s*line_length=([\d.]+),\s*num_lines=(\d+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[6] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'flash', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], flash_radius: parseFloat(m[3]), line_length: parseFloat(m[4]), num_lines: parseInt(m[5], 10) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'flash',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: {
+            color: m[2],
+            flash_radius: parseFloat(m[3]),
+            line_length: parseFloat(m[4]),
+            num_lines: parseInt(m[5], 10),
+          },
+        });
         ct += dur;
       }
       continue;
     }
 
-    m = line.match(/^self\.play\(Wiggle\((\w+),\s*scale_value=([\d.]+),\s*rotation_angle=([\d.]+) \* DEGREES,\s*n_wiggles=(\d+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\(Wiggle\((\w+),\s*scale_value=([\d.]+),\s*rotation_angle=([\d.]+) \* DEGREES,\s*n_wiggles=(\d+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[5] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'wiggle', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { scale_value: parseFloat(m[2]), rotation_angle: parseFloat(m[3]), n_wiggles: parseInt(m[4], 10) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'wiggle',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: {
+            scale_value: parseFloat(m[2]),
+            rotation_angle: parseFloat(m[3]),
+            n_wiggles: parseInt(m[4], 10),
+          },
+        });
         ct += dur;
       }
       continue;
     }
 
-    m = line.match(/^self\.play\(Circumscribe\((\w+),\s*color="([^"]+)",\s*shape=(Rectangle|Circle),\s*fade_out=(True|False),\s*time_width=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\(Circumscribe\((\w+),\s*color="([^"]+)",\s*shape=(Rectangle|Circle),\s*fade_out=(True|False),\s*time_width=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[6] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'circumscribe', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], shape: m[3], fade_out: m[4] === 'True', time_width: parseFloat(m[5]) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'circumscribe',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: {
+            color: m[2],
+            shape: m[3],
+            fade_out: m[4] === 'True',
+            time_width: parseFloat(m[5]),
+          },
+        });
         ct += dur;
       }
       continue;
     }
 
-    m = line.match(/^self\.play\(FocusOn\((\w+),\s*color="([^"]+)",\s*opacity=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\(FocusOn\((\w+),\s*color="([^"]+)",\s*opacity=([\d.]+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[4] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'focus_on', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { color: m[2], opacity: parseFloat(m[3]) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'focus_on',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: { color: m[2], opacity: parseFloat(m[3]) },
+        });
         ct += dur;
       }
       continue;
@@ -1104,18 +2308,31 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^self\.play\(FadeOut\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
-      if (id && objById[id]) { objById[id].exitAnim = 'fade_out'; objById[id].duration = ct - (objById[id].enterTime || 0) + parseFloat(m[2] || 0.5); }
+      if (id && objById[id]) {
+        objById[id].exitAnim = 'fade_out';
+        objById[id].duration = ct - (objById[id].enterTime || 0) + parseFloat(m[2] || 0.5);
+      }
       ct += parseFloat(m[2] || 0.5);
       continue;
     }
 
-    m = line.match(/^self\.play\((\w+)\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\((\w+)\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const sp = manimToStage(parseFloat(m[2]), parseFloat(m[3]), sw, sh);
         const dur = parseFloat(m[4] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'move', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { targetX: Math.round(sp.x), targetY: Math.round(sp.y) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'move',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: { targetX: Math.round(sp.x), targetY: Math.round(sp.y) },
+        });
         ct += dur;
       }
       continue;
@@ -1126,25 +2343,45 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[3] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'scale', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { targetScaleX: parseFloat(m[2]), targetScaleY: parseFloat(m[2]) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'scale',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: { targetScaleX: parseFloat(m[2]), targetScaleY: parseFloat(m[2]) },
+        });
         ct += dur;
       }
       continue;
     }
 
-    m = line.match(/^self\.play\((\w+)\.animate\.set_opacity\(([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\((\w+)\.animate\.set_opacity\(([\d.]+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const id = varMap[m[1]];
       if (id) {
         const dur = parseFloat(m[3] || 1);
-        clips.push({ id: `clip_${clipIdx++}`, type: 'fade', sourceId: id, startTime: ct, duration: dur, easing: 'ease_in_out', params: { targetOpacity: parseFloat(m[2]) } });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'fade',
+          sourceId: id,
+          startTime: ct,
+          duration: dur,
+          easing: 'ease_in_out',
+          params: { targetOpacity: parseFloat(m[2]) },
+        });
         ct += dur;
       }
       continue;
     }
 
     // self.camera.frame.animate.move_to([x,y,0]).set_width(w)
-    m = line.match(/^self\.play\(self\.camera\.frame\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)\.set_width\(([\d.]+)\)(?:,\s*run_time=([\d.]+))?/);
+    m = line.match(
+      /^self\.play\(self\.camera\.frame\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)\.set_width\(([\d.]+)\)(?:,\s*run_time=([\d.]+))?/
+    );
     if (m) {
       const [, mx, my, fw, rtStr] = m;
       const dur = parseFloat(rtStr || 1);
@@ -1178,7 +2415,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // self.play(_count_<cn>.animate.set_value(<to>)...) — completes the count clip
-    m = line.match(/^self\.play\((_count_\w+)\.animate\.set_value\((-?[\d.]+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
+    m = line.match(
+      /^self\.play\((_count_\w+)\.animate\.set_value\((-?[\d.]+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/
+    );
     if (m) {
       const vtVar = m[1];
       const pc = pendingCount[vtVar];
@@ -1186,9 +2425,18 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         const objectId = varMap[pc.objVar];
         const to = parseFloat(m[2]);
         const dur = parseFloat(m[3] || 1);
-        const easing = m[4] ? (EASING_REV[m[4]] || 'linear') : 'linear';
+        const easing = m[4] ? EASING_REV[m[4]] || 'linear' : 'linear';
         if (objectId) {
-          clips.push({ id: `clip_${clipIdx++}`, type: 'count', objectId, from: pc.from, to, startTime: ct, duration: dur, easing });
+          clips.push({
+            id: `clip_${clipIdx++}`,
+            type: 'count',
+            objectId,
+            from: pc.from,
+            to,
+            startTime: ct,
+            duration: dur,
+            easing,
+          });
           ct += dur;
         }
         delete pendingCount[vtVar];
@@ -1198,7 +2446,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
     // <sn>.clear_updaters() — tail of count block (consumed, ct already advanced)
     m = line.match(/^(\w+)\.clear_updaters\(\)/);
-    if (m) { continue; }
+    if (m) {
+      continue;
+    }
 
     // VMobject() — start of a path definition
     m = line.match(/^(\w+)\s*=\s*VMobject\(\)/);
@@ -1213,7 +2463,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, pathVar, pointsStr] = m;
       if (pendingPaths[pathVar] !== undefined) {
         const pointMatches = [...pointsStr.matchAll(/\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/g)];
-        pendingPaths[pathVar] = pointMatches.map(pm => ({
+        pendingPaths[pathVar] = pointMatches.map((pm) => ({
           mx: parseFloat(pm[1]),
           my: parseFloat(pm[2]),
           mz: parseFloat(pm[3]),
@@ -1223,22 +2473,34 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     }
 
     // MoveAlongPath — create path_move clip from pending path
-    m = line.match(/^self\.play\(MoveAlongPath\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/);
+    m = line.match(
+      /^self\.play\(MoveAlongPath\((\w+),\s*(\w+)\)(?:,\s*run_time=([\d.]+))?(?:,\s*rate_func=([^\s)]+))?\)/
+    );
     if (m) {
       const [, objVar, pathVar, rtStr, rfStr] = m;
       const objId = varMap[objVar];
       const pathPoints = pendingPaths[pathVar];
       if (objId && pathPoints && pathPoints.length >= 2) {
         const dur = parseFloat(rtStr || 1);
-        const easing = rfStr ? (EASING_REV[rfStr] || 'linear') : 'linear';
-        const path = pathPoints.map(p => {
+        const easing = rfStr ? EASING_REV[rfStr] || 'linear' : 'linear';
+        const path = pathPoints.map((p) => {
           if (sceneType === '3d') {
             return { x3d: p.mx, y3d: p.my, z3d: p.mz };
           }
           const sp = manimToStage(p.mx, p.my, sw, sh);
           return { x: Math.round(sp.x), y: Math.round(sp.y) };
         });
-        clips.push({ id: `clip_${clipIdx++}`, type: 'path_move', sourceId: objId, startTime: ct, duration: dur, easing, parallel: false, lag_ratio: 0, path });
+        clips.push({
+          id: `clip_${clipIdx++}`,
+          type: 'path_move',
+          sourceId: objId,
+          startTime: ct,
+          duration: dur,
+          easing,
+          parallel: false,
+          lag_ratio: 0,
+          path,
+        });
         ct += dur;
       }
       delete pendingPaths[pathVar];
@@ -1270,7 +2532,9 @@ export function downloadManimScript(project) {
   const blob = new Blob([script], { type: 'text/x-python' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'scene.py'; a.click();
+  a.href = url;
+  a.download = 'scene.py';
+  a.click();
   URL.revokeObjectURL(url);
   return script;
 }

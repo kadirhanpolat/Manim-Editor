@@ -16,16 +16,29 @@ function makeProject3D(objects, tracks) {
 }
 
 const sphere = {
-  id: 'sp1', type: 'sphere',
-  x3d: 0, y3d: 1, z3d: 0, radius: 0.5, resolution: 20,
-  fill: '#e67700', opacity: 1,
-  enterTime: 0, exitTime: 5,
+  id: 'sp1',
+  type: 'sphere',
+  x3d: 0,
+  y3d: 1,
+  z3d: 0,
+  radius: 0.5,
+  resolution: 20,
+  fill: '#e67700',
+  opacity: 1,
+  enterTime: 0,
+  exitTime: 5,
   anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
 };
 
 const pathClip = {
-  id: 'clip_p1', type: 'path_move', sourceId: 'sp1',
-  startTime: 0, duration: 2, easing: 'linear', parallel: false, lag_ratio: 0,
+  id: 'clip_p1',
+  type: 'path_move',
+  sourceId: 'sp1',
+  startTime: 0,
+  duration: 2,
+  easing: 'linear',
+  parallel: false,
+  lag_ratio: 0,
   path: [
     { x3d: 0, y3d: 1, z3d: 0 },
     { x3d: 2, y3d: 1, z3d: 3 },
@@ -50,7 +63,7 @@ describe('3D path_move round-trip', () => {
     const code = generateCode(project, '/data/assets');
     const parsed = parseManimScript(code);
     expect(parsed.sceneType).toBe('3d');
-    const clip = parsed.tracks[0].clips.find(c => c.type === 'path_move');
+    const clip = parsed.tracks[0].clips.find((c) => c.type === 'path_move');
     expect(clip).toBeTruthy();
     expect(clip.path[1]).toMatchObject({ x3d: 2, y3d: 1, z3d: 3 });
     expect(clip.path[2]).toMatchObject({ x3d: -1, y3d: 1, z3d: -2 });
@@ -60,26 +73,48 @@ describe('3D path_move round-trip', () => {
 describe('2D path_move regression', () => {
   it('2D path still emits z=0 and parses to {x,y}', () => {
     const obj2d = {
-      id: 'r1', type: 'rectangle', x: 960, y: 540, width: 100, height: 100,
-      fill: '#ffffff', opacity: 1, rotation: 0,
-      enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'fade_out',
+      id: 'r1',
+      type: 'rectangle',
+      x: 960,
+      y: 540,
+      width: 100,
+      height: 100,
+      fill: '#ffffff',
+      opacity: 1,
+      rotation: 0,
+      enterTime: 0,
+      duration: 5,
+      enterAnim: 'fade_in',
+      exitAnim: 'fade_out',
     };
     const clip2d = {
-      id: 'clip_q1', type: 'path_move', sourceId: 'r1',
-      startTime: 0, duration: 2, easing: 'linear', parallel: false, lag_ratio: 0,
-      path: [{ x: 480, y: 540 }, { x: 1440, y: 540 }],
+      id: 'clip_q1',
+      type: 'path_move',
+      sourceId: 'r1',
+      startTime: 0,
+      duration: 2,
+      easing: 'linear',
+      parallel: false,
+      lag_ratio: 0,
+      path: [
+        { x: 480, y: 540 },
+        { x: 1440, y: 540 },
+      ],
     };
     const project = {
-      name: 'T2D', sceneType: '2d',
+      name: 'T2D',
+      sceneType: '2d',
       stage: { width: 1920, height: 1080, backgroundColor: '#000000' },
-      objects: [obj2d], tracks: [{ id: 't1', clips: [clip2d] }],
-      cameraType: 'static', cameraTrack: [],
+      objects: [obj2d],
+      tracks: [{ id: 't1', clips: [clip2d] }],
+      cameraType: 'static',
+      cameraTrack: [],
       keyframeDefaults: { mode: 'opt-in', codegenMode: 'UpdateFromAlphaFunc' },
     };
     const code = generateCode(project, '/data/assets');
     expect(code).toContain(', 0]');
     const parsed = parseManimScript(code);
-    const clip = parsed.tracks[0].clips.find(c => c.type === 'path_move');
+    const clip = parsed.tracks[0].clips.find((c) => c.type === 'path_move');
     expect(clip.path[0]).toHaveProperty('x');
     expect(clip.path[0]).not.toHaveProperty('x3d');
   });
@@ -88,10 +123,18 @@ describe('2D path_move regression', () => {
 describe('axes3d range codegen (regression guard for editor)', () => {
   it('emits custom y_range and z_range', () => {
     const ax = {
-      id: 'ax1', type: 'axes3d', x3d: 0, y3d: 0, z3d: 0,
-      xRange: [-3, 3, 1], yRange: [-5, 5, 1], zRange: [-2, 2, 1],
-      fill: '#ffffff', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'ax1',
+      type: 'axes3d',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      xRange: [-3, 3, 1],
+      yRange: [-5, 5, 1],
+      zRange: [-2, 2, 1],
+      fill: '#ffffff',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject3D([ax], [{ id: 't1', clips: [] }]);
@@ -104,16 +147,24 @@ describe('axes3d range codegen (regression guard for editor)', () => {
 describe('axes3d range round-trip', () => {
   it('parser reconstructs custom y/z ranges from generated code', () => {
     const ax = {
-      id: 'ax1', type: 'axes3d', x3d: 0, y3d: 0, z3d: 0,
-      xRange: [-3, 3, 1], yRange: [-5, 5, 1], zRange: [-2, 2, 1],
-      fill: '#ffffff', opacity: 1,
-      enterTime: 0, exitTime: 5,
+      id: 'ax1',
+      type: 'axes3d',
+      x3d: 0,
+      y3d: 0,
+      z3d: 0,
+      xRange: [-3, 3, 1],
+      yRange: [-5, 5, 1],
+      zRange: [-2, 2, 1],
+      fill: '#ffffff',
+      opacity: 1,
+      enterTime: 0,
+      exitTime: 5,
       anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } },
     };
     const project = makeProject3D([ax], [{ id: 't1', clips: [] }]);
     const code = generateCode(project, '/data/assets');
     const parsed = parseManimScript(code);
-    const pax = parsed.objects.find(o => o.type === 'axes3d');
+    const pax = parsed.objects.find((o) => o.type === 'axes3d');
     expect(pax).toBeTruthy();
     expect(pax.xRange).toEqual([-3, 3, 1]);
     expect(pax.yRange).toEqual([-5, 5, 1]);

@@ -3,29 +3,46 @@ import { project3D, unprojectIso, perspectiveScale } from '../../src/engine/proj
 
 describe('perspectiveScale', () => {
   it('is 1 in orthographic mode', () => {
-    expect(perspectiveScale({ x3d: 4, y3d: 0, z3d: 0 }, { phi: 90, theta: 0, mode: 'orthographic', focalDistance: 8 })).toBe(1);
+    expect(
+      perspectiveScale(
+        { x3d: 4, y3d: 0, z3d: 0 },
+        { phi: 90, theta: 0, mode: 'orthographic', focalDistance: 8 }
+      )
+    ).toBe(1);
   });
   it('magnifies nearer the camera and shrinks farther (phi=90,theta=0 -> n=+X)', () => {
     const cam = { phi: 90, theta: 0, mode: 'perspective', focalDistance: 8 };
-    expect(perspectiveScale({ x3d: 4, y3d: 0, z3d: 0 }, cam)).toBeCloseTo(2, 3);       // d=4 -> 8/(8-4)
+    expect(perspectiveScale({ x3d: 4, y3d: 0, z3d: 0 }, cam)).toBeCloseTo(2, 3); // d=4 -> 8/(8-4)
     expect(perspectiveScale({ x3d: -4, y3d: 0, z3d: 0 }, cam)).toBeCloseTo(8 / 12, 3); // d=-4 -> 8/12
-    expect(perspectiveScale({ x3d: 0, y3d: 0, z3d: 0 }, cam)).toBe(1);                 // origin unchanged
+    expect(perspectiveScale({ x3d: 0, y3d: 0, z3d: 0 }, cam)).toBe(1); // origin unchanged
   });
 });
 
 describe('project3D', () => {
-  const cx = 100, cy = 100, scale = 10;
+  const cx = 100,
+    cy = 100,
+    scale = 10;
 
   it('phi=0, theta=-90 -> classic XY (X right, Y up)', () => {
-    const p = project3D({ x3d: 2, y3d: 3, z3d: 5 },
-      { phi: 0, theta: -90, zoom: 1, mode: 'orthographic' }, cx, cy, scale);
+    const p = project3D(
+      { x3d: 2, y3d: 3, z3d: 5 },
+      { phi: 0, theta: -90, zoom: 1, mode: 'orthographic' },
+      cx,
+      cy,
+      scale
+    );
     expect(p.px).toBeCloseTo(cx + 2 * scale, 3);
     expect(p.py).toBeCloseTo(cy - 3 * scale, 3);
   });
 
   it('phi=90 -> world Z maps to screen up', () => {
-    const p = project3D({ x3d: 1, y3d: 9, z3d: 4 },
-      { phi: 90, theta: -90, zoom: 1, mode: 'orthographic' }, cx, cy, scale);
+    const p = project3D(
+      { x3d: 1, y3d: 9, z3d: 4 },
+      { phi: 90, theta: -90, zoom: 1, mode: 'orthographic' },
+      cx,
+      cy,
+      scale
+    );
     expect(p.px).toBeCloseTo(cx + 1 * scale, 3);
     expect(p.py).toBeCloseTo(cy - 4 * scale, 3);
   });
@@ -44,7 +61,10 @@ describe('project3D', () => {
 describe('unprojectIso (orthographic, y fixed)', () => {
   it('round-trips x3d/z3d with y held constant', () => {
     const cam = { phi: 65, theta: -40, zoom: 1, mode: 'orthographic' };
-    const cx = 100, cy = 100, scale = 10, yKnown = 1.5;
+    const cx = 100,
+      cy = 100,
+      scale = 10,
+      yKnown = 1.5;
     const orig = { x3d: 2.3, y3d: yKnown, z3d: -1.7 };
     const scr = project3D(orig, cam, cx, cy, scale);
     const back = unprojectIso(scr.px, scr.py, cam, cx, cy, scale, yKnown);

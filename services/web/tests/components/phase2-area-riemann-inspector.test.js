@@ -28,7 +28,7 @@ describe('area/riemann inspector', () => {
     const w = mount(PropertiesPanel);
     await w.find('[data-test="graph-area-toggle"]').trigger('click');
     expect(spy).toHaveBeenCalled();
-    const areaArg = spy.mock.calls.find(c => c[2] && c[2].area)?.[2].area;
+    const areaArg = spy.mock.calls.find((c) => c[2] && c[2].area)?.[2].area;
     expect(areaArg.enabled).toBe(true);
   });
 });

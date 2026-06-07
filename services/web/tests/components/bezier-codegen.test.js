@@ -21,9 +21,15 @@ describe('bezier codegen', () => {
 
   it('round-trips vertices through the parser', () => {
     const o = store.addObject('bezier', 960, 540);
-    store.updateObject(o.id, { vertices: [[-100, 0], [0, -80], [100, 0]] });
+    store.updateObject(o.id, {
+      vertices: [
+        [-100, 0],
+        [0, -80],
+        [100, 0],
+      ],
+    });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const bz = parsed.objects.find(x => x.type === 'bezier');
+    const bz = parsed.objects.find((x) => x.type === 'bezier');
     expect(bz).toBeTruthy();
     expect(bz.vertices.length).toBe(3);
     expect(bz.vertices[0][0]).toBeCloseTo(-100, -1);

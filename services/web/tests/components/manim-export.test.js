@@ -1,17 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { generateManimScript } from '../../src/export/manim.js';
 
-const SW = 1920, SH = 1080;
+const SW = 1920,
+  SH = 1080;
 
 function makeObj(id, type = 'circle', extra = {}) {
   return {
-    id, type,
-    x: SW / 2, y: SH / 2,
-    width: 200, height: 200,
-    fill: '#ffffff', stroke: 'transparent', strokeWidth: 2,
-    opacity: 1, rotation: 0,
-    enterTime: 0, duration: 5,
-    enterAnim: 'fade_in', exitAnim: 'none',
+    id,
+    type,
+    x: SW / 2,
+    y: SH / 2,
+    width: 200,
+    height: 200,
+    fill: '#ffffff',
+    stroke: 'transparent',
+    strokeWidth: 2,
+    opacity: 1,
+    rotation: 0,
+    enterTime: 0,
+    duration: 5,
+    enterAnim: 'fade_in',
+    exitAnim: 'none',
     ...extra,
   };
 }
@@ -30,10 +39,19 @@ function makeProject(objects, clips) {
 
 describe('generator — numberplane', () => {
   it('emits NumberPlane with x/y ranges and dimensions', () => {
-    const project = makeProject([makeObj('obj1', 'numberplane', {
-      xRange: [-6, 6, 1], yRange: [-4, 4, 1], xStep: 1, yStep: 1,
-      width: 1200, height: 800,
-    })], []);
+    const project = makeProject(
+      [
+        makeObj('obj1', 'numberplane', {
+          xRange: [-6, 6, 1],
+          yRange: [-4, 4, 1],
+          xStep: 1,
+          yStep: 1,
+          width: 1200,
+          height: 800,
+        }),
+      ],
+      []
+    );
     const script = generateManimScript(project);
     expect(script).toContain('NumberPlane(x_range=[-6, 6, 1], y_range=[-4, 4, 1]');
   });
@@ -53,7 +71,7 @@ describe('generator/parser — latex', () => {
     const project = makeProject([makeObj('obj1', 'latex', { latex: '\\int_a^b' })], []);
     const script = generateManimScript(project);
     const parsed = parseManimScript(script, SW, SH);
-    const tex = parsed.objects.find(o => o.type === 'latex');
+    const tex = parsed.objects.find((o) => o.type === 'latex');
     expect(tex).toBeTruthy();
     expect(tex.latex).toBe('\\int_a^b');
   });
@@ -61,9 +79,16 @@ describe('generator/parser — latex', () => {
 
 describe('generator — numberline', () => {
   it('emits NumberLine with x_range and length', () => {
-    const project = makeProject([makeObj('obj1', 'numberline', {
-      xRange: [-5, 5, 1], width: 1200, height: 100,
-    })], []);
+    const project = makeProject(
+      [
+        makeObj('obj1', 'numberline', {
+          xRange: [-5, 5, 1],
+          width: 1200,
+          height: 100,
+        }),
+      ],
+      []
+    );
     const script = generateManimScript(project);
     expect(script).toContain('NumberLine(x_range=[-5, 5, 1]');
   });
@@ -72,7 +97,8 @@ describe('generator — numberline', () => {
 describe('generator — axes graphs', () => {
   it('emits plot() for each graph on an axes object', () => {
     const axes = makeObj('ax1', 'axes', {
-      xRange: [-5, 5, 1], yRange: [-3, 3, 1],
+      xRange: [-5, 5, 1],
+      yRange: [-3, 3, 1],
       graphs: [
         { id: 'g1', expression: 'x**2', color: '#F59E0B', xMin: -3, xMax: 3, strokeWidth: 3 },
       ],
@@ -87,8 +113,18 @@ describe('generator — axes graphs', () => {
 
   it('sanitises dangerous expressions', () => {
     const axes = makeObj('ax1', 'axes', {
-      xRange: [-5, 5, 1], yRange: [-3, 3, 1],
-      graphs: [{ id: 'g1', expression: '__import__("os")', color: '#fff', xMin: -5, xMax: 5, strokeWidth: 2 }],
+      xRange: [-5, 5, 1],
+      yRange: [-3, 3, 1],
+      graphs: [
+        {
+          id: 'g1',
+          expression: '__import__("os")',
+          color: '#fff',
+          xMin: -5,
+          xMax: 5,
+          strokeWidth: 2,
+        },
+      ],
     });
     const script = generateManimScript(makeProject([axes], []));
     expect(script).toContain('lambda x: x**2'); // fallback expression
@@ -101,8 +137,28 @@ describe('generator — AnimationGroup', () => {
     const project = makeProject(
       [makeObj('obj1'), makeObj('obj2')],
       [
-        { id: 'c1', type: 'move', sourceId: 'obj1', startTime: 1, duration: 1, easing: 'linear', parallel: true, lag_ratio: 0, params: { targetX: 400, targetY: SH / 2 } },
-        { id: 'c2', type: 'move', sourceId: 'obj2', startTime: 1, duration: 1, easing: 'linear', parallel: true, lag_ratio: 0, params: { targetX: 1500, targetY: SH / 2 } },
+        {
+          id: 'c1',
+          type: 'move',
+          sourceId: 'obj1',
+          startTime: 1,
+          duration: 1,
+          easing: 'linear',
+          parallel: true,
+          lag_ratio: 0,
+          params: { targetX: 400, targetY: SH / 2 },
+        },
+        {
+          id: 'c2',
+          type: 'move',
+          sourceId: 'obj2',
+          startTime: 1,
+          duration: 1,
+          easing: 'linear',
+          parallel: true,
+          lag_ratio: 0,
+          params: { targetX: 1500, targetY: SH / 2 },
+        },
       ]
     );
     const script = generateManimScript(project);
@@ -116,8 +172,28 @@ describe('generator — AnimationGroup', () => {
     const project = makeProject(
       [makeObj('obj1'), makeObj('obj2')],
       [
-        { id: 'c1', type: 'move', sourceId: 'obj1', startTime: 1, duration: 1, easing: 'linear', parallel: true, lag_ratio: 0.3, params: { targetX: 400, targetY: SH / 2 } },
-        { id: 'c2', type: 'move', sourceId: 'obj2', startTime: 1, duration: 1, easing: 'linear', parallel: true, lag_ratio: 0.3, params: { targetX: 1500, targetY: SH / 2 } },
+        {
+          id: 'c1',
+          type: 'move',
+          sourceId: 'obj1',
+          startTime: 1,
+          duration: 1,
+          easing: 'linear',
+          parallel: true,
+          lag_ratio: 0.3,
+          params: { targetX: 400, targetY: SH / 2 },
+        },
+        {
+          id: 'c2',
+          type: 'move',
+          sourceId: 'obj2',
+          startTime: 1,
+          duration: 1,
+          easing: 'linear',
+          parallel: true,
+          lag_ratio: 0.3,
+          params: { targetX: 1500, targetY: SH / 2 },
+        },
       ]
     );
     const script = generateManimScript(project);
@@ -130,11 +206,23 @@ describe('generator — path_move', () => {
   it('emits VMobject + MoveAlongPath for path_move clips', () => {
     const project = makeProject(
       [makeObj('obj1')],
-      [{
-        id: 'clip1', type: 'path_move', sourceId: 'obj1',
-        startTime: 1, duration: 2, easing: 'linear', parallel: false, lag_ratio: 0,
-        path: [{ x: 960, y: 540 }, { x: 1200, y: 300 }, { x: 1400, y: 540 }],
-      }]
+      [
+        {
+          id: 'clip1',
+          type: 'path_move',
+          sourceId: 'obj1',
+          startTime: 1,
+          duration: 2,
+          easing: 'linear',
+          parallel: false,
+          lag_ratio: 0,
+          path: [
+            { x: 960, y: 540 },
+            { x: 1200, y: 300 },
+            { x: 1400, y: 540 },
+          ],
+        },
+      ]
     );
     const script = generateManimScript(project);
     expect(script).toContain('VMobject()');
@@ -145,11 +233,19 @@ describe('generator — path_move', () => {
   it('skips path_move clips with fewer than 2 points', () => {
     const project = makeProject(
       [makeObj('obj1')],
-      [{
-        id: 'clip1', type: 'path_move', sourceId: 'obj1',
-        startTime: 1, duration: 2, easing: 'linear', parallel: false, lag_ratio: 0,
-        path: [{ x: 960, y: 540 }],
-      }]
+      [
+        {
+          id: 'clip1',
+          type: 'path_move',
+          sourceId: 'obj1',
+          startTime: 1,
+          duration: 2,
+          easing: 'linear',
+          parallel: false,
+          lag_ratio: 0,
+          path: [{ x: 960, y: 540 }],
+        },
+      ]
     );
     const script = generateManimScript(project);
     expect(script).not.toContain('VMobject()');
@@ -177,10 +273,16 @@ describe('generator — camera', () => {
       name: 'Test',
       stage: { width: SW, height: SH, backgroundColor: '#000000' },
       cameraType: 'moving',
-      cameraTrack: [{
-        id: 'cam1', type: 'camera_move', startTime: 0.5, duration: 1, easing: 'linear',
-        params: { targetX: SW / 2, targetY: SH / 2, zoom: 2 },
-      }],
+      cameraTrack: [
+        {
+          id: 'cam1',
+          type: 'camera_move',
+          startTime: 0.5,
+          duration: 1,
+          easing: 'linear',
+          params: { targetX: SW / 2, targetY: SH / 2, zoom: 2 },
+        },
+      ],
       objects: [makeObj('obj1')],
       groups: [],
       tracks: [{ id: 't1', name: 'Track 1', clips: [] }],
@@ -270,7 +372,7 @@ class MainScene(Scene):
         self.wait(1)`;
     const result = parseManimScript(py, SW, SH);
     const clips = result.tracks[0]?.clips || [];
-    const pathClip = clips.find(c => c.type === 'path_move');
+    const pathClip = clips.find((c) => c.type === 'path_move');
     expect(pathClip).toBeTruthy();
     expect(pathClip.path).toHaveLength(3);
     expect(pathClip.duration).toBe(2);
@@ -294,9 +396,9 @@ class MainScene(Scene):
         self.wait(1)`;
     const result = parseManimScript(py, SW, SH);
     const clips = result.tracks[0]?.clips || [];
-    const parallelClips = clips.filter(c => c.parallel === true);
+    const parallelClips = clips.filter((c) => c.parallel === true);
     expect(parallelClips.length).toBeGreaterThanOrEqual(2);
-    expect(parallelClips.every(c => c.startTime === parallelClips[0].startTime)).toBe(true);
+    expect(parallelClips.every((c) => c.startTime === parallelClips[0].startTime)).toBe(true);
   });
 
   it('parses LaggedStart with lag_ratio', () => {
@@ -315,9 +417,9 @@ class MainScene(Scene):
         self.wait(1)`;
     const result = parseManimScript(py, SW, SH);
     const clips = result.tracks[0]?.clips || [];
-    const parallelClips = clips.filter(c => c.parallel === true);
+    const parallelClips = clips.filter((c) => c.parallel === true);
     expect(parallelClips.length).toBeGreaterThanOrEqual(2);
-    expect(parallelClips[0].lag_ratio).toBeCloseTo(0.30);
+    expect(parallelClips[0].lag_ratio).toBeCloseTo(0.3);
   });
 });
 
@@ -365,23 +467,32 @@ describe('generator — counter (DecimalNumber)', () => {
   });
 
   it('value=50, numDecimals=1, suffix="u" → DecimalNumber(50, num_decimal_places=1, unit="u")', () => {
-    const project = makeProject([makeObj('obj1', 'counter', { value: 50, numDecimals: 1, suffix: 'u' })], []);
+    const project = makeProject(
+      [makeObj('obj1', 'counter', { value: 50, numDecimals: 1, suffix: 'u' })],
+      []
+    );
     const py = generateManimScript(project);
     expect(py).toContain('DecimalNumber(50, num_decimal_places=1, unit="u")');
   });
 
   it('LaTeX-special suffix "%" is escaped (DecimalNumber unit renders via MathTex)', () => {
-    const project = makeProject([makeObj('obj1', 'counter', { value: 50, numDecimals: 0, suffix: '%' })], []);
+    const project = makeProject(
+      [makeObj('obj1', 'counter', { value: 50, numDecimals: 0, suffix: '%' })],
+      []
+    );
     const py = generateManimScript(project);
-    expect(py).toContain('unit="\\\\%"');   // escaped \\% in the emitted .py
-    expect(py).not.toContain('unit="%"');    // never the bare % that breaks the render
+    expect(py).toContain('unit="\\\\%"'); // escaped \\% in the emitted .py
+    expect(py).not.toContain('unit="%"'); // never the bare % that breaks the render
   });
 
   it('round-trips a LaTeX-special suffix back to the raw value', () => {
-    const project = makeProject([makeObj('obj1', 'counter', { value: 7, numDecimals: 0, suffix: '%' })], []);
+    const project = makeProject(
+      [makeObj('obj1', 'counter', { value: 7, numDecimals: 0, suffix: '%' })],
+      []
+    );
     const py = generateManimScript(project);
     const back = parseManimScript(py, SW, SH);
-    const ctr = back.objects.find(o => o.type === 'counter');
+    const ctr = back.objects.find((o) => o.type === 'counter');
     expect(ctr).toBeTruthy();
     expect(ctr.suffix).toBe('%');
   });
@@ -391,8 +502,16 @@ describe('generator — count clip (ValueTracker block)', () => {
   it('emits _count_<clipid> = ValueTracker(, add_updater set_value, animate.set_value, clear_updaters', () => {
     const obj = makeObj('ctr1', 'counter', { value: 0, numDecimals: 0 });
     const clip = {
-      id: 'clip1', type: 'count', objectId: 'ctr1',
-      from: 0, to: 100, startTime: 1, duration: 2, easing: 'linear', parallel: false, lag_ratio: 0,
+      id: 'clip1',
+      type: 'count',
+      objectId: 'ctr1',
+      from: 0,
+      to: 100,
+      startTime: 1,
+      duration: 2,
+      easing: 'linear',
+      parallel: false,
+      lag_ratio: 0,
     };
     const py = generateManimScript(makeProject([obj], [clip]));
     expect(py).toContain('_count_');
@@ -407,8 +526,29 @@ describe('generator — count clip (ValueTracker block)', () => {
     const obj1 = makeObj('ctr1', 'counter', { value: 0, numDecimals: 0 });
     const obj2 = makeObj('obj2', 'circle');
     const clips = [
-      { id: 'c1', type: 'count', objectId: 'ctr1', from: 0, to: 50, startTime: 1, duration: 2, easing: 'linear', parallel: true, lag_ratio: 0 },
-      { id: 'c2', type: 'move', sourceId: 'obj2', startTime: 1, duration: 2, easing: 'linear', parallel: true, lag_ratio: 0, params: { targetX: 400, targetY: SH / 2 } },
+      {
+        id: 'c1',
+        type: 'count',
+        objectId: 'ctr1',
+        from: 0,
+        to: 50,
+        startTime: 1,
+        duration: 2,
+        easing: 'linear',
+        parallel: true,
+        lag_ratio: 0,
+      },
+      {
+        id: 'c2',
+        type: 'move',
+        sourceId: 'obj2',
+        startTime: 1,
+        duration: 2,
+        easing: 'linear',
+        parallel: true,
+        lag_ratio: 0,
+        params: { targetX: 400, targetY: SH / 2 },
+      },
     ];
     const py = generateManimScript(makeProject([obj1, obj2], clips));
     // The AnimationGroup expression list must not include a _count_ reference
@@ -420,8 +560,18 @@ describe('generator — transformExpr (matchTerms)', () => {
   it('two latex + matchTerms → TransformMatchingTex(', () => {
     const la = makeObj('la1', 'latex', { latex: 'a^2', enterTime: 0, duration: 5 });
     const lb = makeObj('lb1', 'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
-    const clip = { id: 'tc1', type: 'transform', sourceId: 'la1', targetId: 'lb1',
-      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0, matchTerms: true };
+    const clip = {
+      id: 'tc1',
+      type: 'transform',
+      sourceId: 'la1',
+      targetId: 'lb1',
+      startTime: 1,
+      duration: 1,
+      easing: 'linear',
+      parallel: false,
+      lag_ratio: 0,
+      matchTerms: true,
+    };
     const py = generateManimScript(makeProject([la, lb], [clip]));
     expect(py).toContain('TransformMatchingTex(');
   });
@@ -429,8 +579,18 @@ describe('generator — transformExpr (matchTerms)', () => {
   it('two non-latex VMobjects + matchTerms → TransformMatchingShapes(', () => {
     const ca = makeObj('ca1', 'circle', { enterTime: 0, duration: 5 });
     const cb = makeObj('cb1', 'square', { enterTime: 0, duration: 5 });
-    const clip = { id: 'tc2', type: 'transform', sourceId: 'ca1', targetId: 'cb1',
-      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0, matchTerms: true };
+    const clip = {
+      id: 'tc2',
+      type: 'transform',
+      sourceId: 'ca1',
+      targetId: 'cb1',
+      startTime: 1,
+      duration: 1,
+      easing: 'linear',
+      parallel: false,
+      lag_ratio: 0,
+      matchTerms: true,
+    };
     const py = generateManimScript(makeProject([ca, cb], [clip]));
     expect(py).toContain('TransformMatchingShapes(');
   });
@@ -438,8 +598,17 @@ describe('generator — transformExpr (matchTerms)', () => {
   it('no matchTerms → ReplacementTransform(, NOT TransformMatching', () => {
     const la = makeObj('la1', 'latex', { latex: 'a^2', enterTime: 0, duration: 5 });
     const lb = makeObj('lb1', 'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
-    const clip = { id: 'tc3', type: 'transform', sourceId: 'la1', targetId: 'lb1',
-      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0 };
+    const clip = {
+      id: 'tc3',
+      type: 'transform',
+      sourceId: 'la1',
+      targetId: 'lb1',
+      startTime: 1,
+      duration: 1,
+      easing: 'linear',
+      parallel: false,
+      lag_ratio: 0,
+    };
     const py = generateManimScript(makeProject([la, lb], [clip]));
     expect(py).toContain('ReplacementTransform(');
     expect(py).not.toContain('TransformMatching');
@@ -447,9 +616,19 @@ describe('generator — transformExpr (matchTerms)', () => {
 
   it('raster source + matchTerms → FadeTransform(, NOT TransformMatching', () => {
     const img = makeObj('img1', 'image', { name: 'photo', enterTime: 0, duration: 5 });
-    const lb  = makeObj('lb1',  'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
-    const clip = { id: 'tc4', type: 'transform', sourceId: 'img1', targetId: 'lb1',
-      startTime: 1, duration: 1, easing: 'linear', parallel: false, lag_ratio: 0, matchTerms: true };
+    const lb = makeObj('lb1', 'latex', { latex: 'b^2', enterTime: 0, duration: 5 });
+    const clip = {
+      id: 'tc4',
+      type: 'transform',
+      sourceId: 'img1',
+      targetId: 'lb1',
+      startTime: 1,
+      duration: 1,
+      easing: 'linear',
+      parallel: false,
+      lag_ratio: 0,
+      matchTerms: true,
+    };
     const py = generateManimScript(makeProject([img, lb], [clip]));
     expect(py).toContain('FadeTransform(');
     expect(py).not.toContain('TransformMatching');
@@ -458,13 +637,19 @@ describe('generator — transformExpr (matchTerms)', () => {
 
 describe('generator — typewriter presets', () => {
   it('enterAnim typewriter → AddTextLetterByLetter(', () => {
-    const project = makeProject([makeObj('obj1', 'text', { content: 'Hello', enterAnim: 'typewriter' })], []);
+    const project = makeProject(
+      [makeObj('obj1', 'text', { content: 'Hello', enterAnim: 'typewriter' })],
+      []
+    );
     const py = generateManimScript(project);
     expect(py).toContain('AddTextLetterByLetter(');
   });
 
   it('exitAnim typewriter_out → RemoveTextLetterByLetter(', () => {
-    const project = makeProject([makeObj('obj1', 'text', { content: 'Bye', exitAnim: 'typewriter_out', duration: 3 })], []);
+    const project = makeProject(
+      [makeObj('obj1', 'text', { content: 'Bye', exitAnim: 'typewriter_out', duration: 3 })],
+      []
+    );
     const py = generateManimScript(project);
     expect(py).toContain('RemoveTextLetterByLetter(');
   });
@@ -474,22 +659,43 @@ describe('FRAME_WIDTH unification', () => {
   const FRAME_WIDTH = 14 + 2 / 9;
 
   it('keyframe set_x uses the same scale as static x (14.222)', () => {
-    const px = 1440, sw = 1920;
-    const expectedMx = (((px / sw) - 0.5) * FRAME_WIDTH).toFixed(4); // "3.5556"
+    const px = 1440,
+      sw = 1920;
+    const expectedMx = ((px / sw - 0.5) * FRAME_WIDTH).toFixed(4); // "3.5556"
     const project = {
-      name: 'kf', sceneDuration: 2,
+      name: 'kf',
+      sceneDuration: 2,
       stage: { width: sw, height: 1080, backgroundColor: '#000' },
-      objects: [{
-        id: 'o1', type: 'circle', name: 'c', x: 960, y: 540, width: 100, height: 100,
-        fill: '#fff', stroke: 'transparent', opacity: 1, rotation: 0,
-        enterTime: 0, duration: 2, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: 0,
-        keyframes: { x: [
-          { time: 0.0, value: 960, easing: { type: 'linear' } },
-          { time: 1.0, value: px,  easing: { type: 'linear' } },
-        ] },
-        keyframeCodegen: { x: 'animate' },
-      }],
-      tracks: [], assets: [], cameraTrack: [],
+      objects: [
+        {
+          id: 'o1',
+          type: 'circle',
+          name: 'c',
+          x: 960,
+          y: 540,
+          width: 100,
+          height: 100,
+          fill: '#fff',
+          stroke: 'transparent',
+          opacity: 1,
+          rotation: 0,
+          enterTime: 0,
+          duration: 2,
+          enterAnim: 'fade_in',
+          exitAnim: 'fade_out',
+          zOrder: 0,
+          keyframes: {
+            x: [
+              { time: 0.0, value: 960, easing: { type: 'linear' } },
+              { time: 1.0, value: px, easing: { type: 'linear' } },
+            ],
+          },
+          keyframeCodegen: { x: 'animate' },
+        },
+      ],
+      tracks: [],
+      assets: [],
+      cameraTrack: [],
     };
     const script = generateManimScript(project);
     expect(script).toContain(`set_x(${expectedMx})`);
@@ -497,11 +703,23 @@ describe('FRAME_WIDTH unification', () => {
 
   it('camera set_width uses FRAME_WIDTH (zoom=2 -> 7.111)', () => {
     const project = {
-      name: 'cam', sceneDuration: 2, cameraType: 'moving',
+      name: 'cam',
+      sceneDuration: 2,
+      cameraType: 'moving',
       stage: { width: 1920, height: 1080, backgroundColor: '#000' },
-      objects: [], tracks: [], assets: [],
-      cameraTrack: [{ id: 'cm', type: 'camera_move', startTime: 0, duration: 1,
-        easing: 'linear', params: { targetX: 0, targetY: 0, zoom: 2 } }],
+      objects: [],
+      tracks: [],
+      assets: [],
+      cameraTrack: [
+        {
+          id: 'cm',
+          type: 'camera_move',
+          startTime: 0,
+          duration: 1,
+          easing: 'linear',
+          params: { targetX: 0, targetY: 0, zoom: 2 },
+        },
+      ],
     };
     const script = generateManimScript(project);
     expect(script).toContain('.set_width(7.111)');
@@ -513,7 +731,13 @@ describe('FRAME_WIDTH unification', () => {
 describe('generator — table (no labels, text mode)', () => {
   it('emits Table with cell data', () => {
     const obj = makeObj('t1', 'table', {
-      cellData: [['1', '2'], ['3', '4']], mathMode: false, rowLabels: [], colLabels: [],
+      cellData: [
+        ['1', '2'],
+        ['3', '4'],
+      ],
+      mathMode: false,
+      rowLabels: [],
+      colLabels: [],
     });
     const py = generateManimScript(makeProject([obj], []));
     expect(py).toContain('Table([["1", "2"], ["3", "4"]])');
@@ -525,8 +749,13 @@ describe('generator — table (no labels, text mode)', () => {
 describe('generator — table (MathTable + row/col labels)', () => {
   it('emits MathTable with MathTex row and col labels', () => {
     const obj = makeObj('t2', 'table', {
-      cellData: [['1', '2'], ['3', '4']], mathMode: true,
-      rowLabels: ['a', 'b'], colLabels: ['x', 'y'],
+      cellData: [
+        ['1', '2'],
+        ['3', '4'],
+      ],
+      mathMode: true,
+      rowLabels: ['a', 'b'],
+      colLabels: ['x', 'y'],
     });
     const py = generateManimScript(makeProject([obj], []));
     expect(py).toContain('MathTable(');
@@ -538,7 +767,10 @@ describe('generator — table (MathTable + row/col labels)', () => {
 describe('generator — complex_plane', () => {
   it('emits ComplexPlane with x_range and y_range', () => {
     const obj = makeObj('cp1', 'complex_plane', {
-      xRange: [-3, 3, 1], yRange: [-2, 2, 1], width: 1200, height: 800,
+      xRange: [-3, 3, 1],
+      yRange: [-2, 2, 1],
+      width: 1200,
+      height: 800,
     });
     const py = generateManimScript(makeProject([obj], []));
     expect(py).toContain('ComplexPlane(x_range=[-3, 3, 1], y_range=[-2, 2, 1]');
@@ -548,7 +780,11 @@ describe('generator — complex_plane', () => {
 describe('generator — polar_plane', () => {
   it('emits PolarPlane with radius_max, radius_step, azimuth_units', () => {
     const obj = makeObj('pp1', 'polar_plane', {
-      radiusMax: 4, radiusStep: 1, azimuthUnits: 12, width: 800, height: 800,
+      radiusMax: 4,
+      radiusStep: 1,
+      azimuthUnits: 12,
+      width: 800,
+      height: 800,
     });
     const py = generateManimScript(makeProject([obj], []));
     expect(py).toContain('PolarPlane(radius_max=4, radius_step=1, azimuth_units=12');
@@ -559,9 +795,13 @@ describe('generator — graph (undirected + labels)', () => {
   it('emits Graph with vertices, edges, layout and labels=True', () => {
     const obj = makeObj('g1', 'graph', {
       vertices: ['A', 'B', 'C'],
-      edges: [['A', 'B'], ['B', 'C']],
+      edges: [
+        ['A', 'B'],
+        ['B', 'C'],
+      ],
       positions: { A: [-60, 0], B: [0, -40], C: [60, 0] },
-      directed: false, showLabels: true,
+      directed: false,
+      showLabels: true,
     });
     const py = generateManimScript(makeProject([obj], []));
     expect(py).toContain('Graph(["A", "B", "C"], [("A", "B"), ("B", "C")], layout={');
@@ -575,7 +815,8 @@ describe('generator — graph (directed)', () => {
       vertices: ['A', 'B'],
       edges: [['A', 'B']],
       positions: { A: [-60, 0], B: [60, 0] },
-      directed: true, showLabels: false,
+      directed: true,
+      showLabels: false,
     });
     const py = generateManimScript(makeProject([obj], []));
     expect(py).toContain('DiGraph(["A"');
@@ -585,9 +826,14 @@ describe('generator — graph (directed)', () => {
 describe('generator — vector_field', () => {
   it('emits ArrowVectorField with double-lambda form', () => {
     const obj = makeObj('vf1', 'vector_field', {
-      fx: 'y', fy: '-x', xRange: [-3, 3, 1], yRange: [-2, 2, 1],
+      fx: 'y',
+      fy: '-x',
+      xRange: [-3, 3, 1],
+      yRange: [-2, 2, 1],
     });
     const py = generateManimScript(makeProject([obj], []));
-    expect(py).toContain('ArrowVectorField(lambda p: (lambda x, y: np.array([y, -x, 0]))(p[0], p[1])');
+    expect(py).toContain(
+      'ArrowVectorField(lambda p: (lambda x, y: np.array([y, -x, 0]))(p[0], p[1])'
+    );
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Shape Geometry Engine
- * 
+ *
  * Generates outline point arrays for each shape type.
  * Points are centered at (0, 0) and fit within the given dimensions.
  * Used for rendering and morph interpolation.
@@ -19,20 +19,34 @@ const QUALITY_POINT_COUNTS = { low: 32, medium: 64, high: 128 };
 export function generateShapePoints(type, width, height, quality = 'medium') {
   const n = QUALITY_POINT_COUNTS[quality] || 64;
   switch (type) {
-    case 'heart':     return generateHeartPoints(width, height, n);
-    case 'square':    return generateSquarePoints(width, height, n);
-    case 'rectangle': return generateSquarePoints(width, height, n);
-    case 'circle':    return generateCirclePoints(width, height, n);
-    case 'ellipse':   return generateCirclePoints(width, height, n);
-    case 'dot':       return generateCirclePoints(width, height, n);
-    case 'dot_grid':  return generateCirclePoints(width, height, n);
-    case 'triangle':  return generateTrianglePoints(width, height, n);
-    case 'star':      return generateStarPoints(width, height, n, 5, 0.4);
-    case 'polygon':   return generatePolygonPoints(width, height, n, 6);
-    case 'line':      return generateLinePoints(width, height, n);
-    case 'arrow':     return generateArrowPoints(width, height, n);
-    case 'text':      return generateSquarePoints(width, height, n);
-    default:          return generateCirclePoints(width, height, n);
+    case 'heart':
+      return generateHeartPoints(width, height, n);
+    case 'square':
+      return generateSquarePoints(width, height, n);
+    case 'rectangle':
+      return generateSquarePoints(width, height, n);
+    case 'circle':
+      return generateCirclePoints(width, height, n);
+    case 'ellipse':
+      return generateCirclePoints(width, height, n);
+    case 'dot':
+      return generateCirclePoints(width, height, n);
+    case 'dot_grid':
+      return generateCirclePoints(width, height, n);
+    case 'triangle':
+      return generateTrianglePoints(width, height, n);
+    case 'star':
+      return generateStarPoints(width, height, n, 5, 0.4);
+    case 'polygon':
+      return generatePolygonPoints(width, height, n, 6);
+    case 'line':
+      return generateLinePoints(width, height, n);
+    case 'arrow':
+      return generateArrowPoints(width, height, n);
+    case 'text':
+      return generateSquarePoints(width, height, n);
+    default:
+      return generateCirclePoints(width, height, n);
   }
 }
 
@@ -48,7 +62,10 @@ export function generateHeartPoints(width, height, numPoints) {
     raw.push({ x, y });
   }
 
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
   for (const p of raw) {
     if (p.x < minX) minX = p.x;
     if (p.x > maxX) maxX = p.x;
@@ -61,9 +78,9 @@ export function generateHeartPoints(width, height, numPoints) {
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
 
-  return raw.map(p => ({
+  return raw.map((p) => ({
     x: ((p.x - cx) / rangeX) * width,
-    y: -((p.y - cy) / rangeY) * height
+    y: -((p.y - cy) / rangeY) * height,
   }));
 }
 
@@ -107,8 +124,8 @@ export function generateCirclePoints(width, height, numPoints) {
   for (let i = 0; i < numPoints; i++) {
     const angle = (i / numPoints) * 2 * Math.PI;
     points.push({
-      x: Math.cos(angle) * width / 2,
-      y: Math.sin(angle) * height / 2
+      x: (Math.cos(angle) * width) / 2,
+      y: (Math.sin(angle) * height) / 2,
     });
   }
   return points;
@@ -124,7 +141,7 @@ export function generateTrianglePoints(width, height, numPoints) {
   const verts = [
     { x: 0, y: -hh },
     { x: hw, y: hh },
-    { x: -hw, y: hh }
+    { x: -hw, y: hh },
   ];
 
   // Distribute points evenly along the triangle perimeter
@@ -133,7 +150,8 @@ export function generateTrianglePoints(width, height, numPoints) {
   for (let i = 0; i < 3; i++) {
     const a = verts[i];
     const b = verts[(i + 1) % 3];
-    const dx = b.x - a.x, dy = b.y - a.y;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
     const len = Math.sqrt(dx * dx + dy * dy);
     segments.push({ a, b, len });
     totalLen += len;
@@ -148,7 +166,7 @@ export function generateTrianglePoints(width, height, numPoints) {
         const frac = (targetDist - cumLen) / seg.len;
         points.push({
           x: seg.a.x + (seg.b.x - seg.a.x) * Math.max(0, Math.min(1, frac)),
-          y: seg.a.y + (seg.b.y - seg.a.y) * Math.max(0, Math.min(1, frac))
+          y: seg.a.y + (seg.b.y - seg.a.y) * Math.max(0, Math.min(1, frac)),
         });
         break;
       }
@@ -171,7 +189,7 @@ export function generateStarPoints(width, height, numPoints, arms = 5, innerRati
     const r = i % 2 === 0 ? 1 : innerRatio;
     starVerts.push({
       x: Math.cos(angle) * r * hw,
-      y: Math.sin(angle) * r * hh
+      y: Math.sin(angle) * r * hh,
     });
   }
 
@@ -181,7 +199,8 @@ export function generateStarPoints(width, height, numPoints, arms = 5, innerRati
   for (let i = 0; i < starVerts.length; i++) {
     const a = starVerts[i];
     const b = starVerts[(i + 1) % starVerts.length];
-    const dx = b.x - a.x, dy = b.y - a.y;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
     const len = Math.sqrt(dx * dx + dy * dy);
     segments.push({ a, b, len });
     totalLen += len;
@@ -196,7 +215,7 @@ export function generateStarPoints(width, height, numPoints, arms = 5, innerRati
         const frac = Math.max(0, Math.min(1, (targetDist - cumLen) / seg.len));
         points.push({
           x: seg.a.x + (seg.b.x - seg.a.x) * frac,
-          y: seg.a.y + (seg.b.y - seg.a.y) * frac
+          y: seg.a.y + (seg.b.y - seg.a.y) * frac,
         });
         break;
       }
@@ -218,7 +237,7 @@ export function generatePolygonPoints(width, height, numPoints, sides = 6) {
     const angle = (i / sides) * 2 * Math.PI - Math.PI / 2;
     polyVerts.push({
       x: Math.cos(angle) * hw,
-      y: Math.sin(angle) * hh
+      y: Math.sin(angle) * hh,
     });
   }
 
@@ -228,7 +247,8 @@ export function generatePolygonPoints(width, height, numPoints, sides = 6) {
   for (let i = 0; i < polyVerts.length; i++) {
     const a = polyVerts[i];
     const b = polyVerts[(i + 1) % polyVerts.length];
-    const dx = b.x - a.x, dy = b.y - a.y;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
     const len = Math.sqrt(dx * dx + dy * dy);
     segments.push({ a, b, len });
     totalLen += len;
@@ -243,7 +263,7 @@ export function generatePolygonPoints(width, height, numPoints, sides = 6) {
         const frac = Math.max(0, Math.min(1, (targetDist - cumLen) / seg.len));
         points.push({
           x: seg.a.x + (seg.b.x - seg.a.x) * frac,
-          y: seg.a.y + (seg.b.y - seg.a.y) * frac
+          y: seg.a.y + (seg.b.y - seg.a.y) * frac,
         });
         break;
       }
@@ -286,13 +306,13 @@ export function generateArrowPoints(width, height, numPoints) {
 
   // Arrow polygon: shaft + triangle head
   const arrowVerts = [
-    { x: -hw, y: -shaftWidth },            // shaft top-left
-    { x: headStart, y: -shaftWidth },       // shaft top-right
-    { x: headStart, y: -hh },              // head top
-    { x: hw, y: 0 },                        // head tip
-    { x: headStart, y: hh },               // head bottom
-    { x: headStart, y: shaftWidth },        // shaft bottom-right
-    { x: -hw, y: shaftWidth }              // shaft bottom-left
+    { x: -hw, y: -shaftWidth }, // shaft top-left
+    { x: headStart, y: -shaftWidth }, // shaft top-right
+    { x: headStart, y: -hh }, // head top
+    { x: hw, y: 0 }, // head tip
+    { x: headStart, y: hh }, // head bottom
+    { x: headStart, y: shaftWidth }, // shaft bottom-right
+    { x: -hw, y: shaftWidth }, // shaft bottom-left
   ];
 
   // Distribute numPoints evenly along the arrow perimeter
@@ -301,7 +321,8 @@ export function generateArrowPoints(width, height, numPoints) {
   for (let i = 0; i < arrowVerts.length; i++) {
     const a = arrowVerts[i];
     const b = arrowVerts[(i + 1) % arrowVerts.length];
-    const dx = b.x - a.x, dy = b.y - a.y;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
     const len = Math.sqrt(dx * dx + dy * dy);
     segments.push({ a, b, len });
     totalLen += len;
@@ -316,7 +337,7 @@ export function generateArrowPoints(width, height, numPoints) {
         const frac = Math.max(0, Math.min(1, (targetDist - cumLen) / seg.len));
         points.push({
           x: seg.a.x + (seg.b.x - seg.a.x) * frac,
-          y: seg.a.y + (seg.b.y - seg.a.y) * frac
+          y: seg.a.y + (seg.b.y - seg.a.y) * frac,
         });
         break;
       }
@@ -338,7 +359,7 @@ export function generateDotGridPositions(cols, rows, spacing) {
     for (let c = 0; c < cols; c++) {
       positions.push({
         x: c * spacing - totalWidth / 2,
-        y: r * spacing - totalHeight / 2
+        y: r * spacing - totalHeight / 2,
       });
     }
   }
@@ -392,7 +413,10 @@ export function pathLength(points, closed = true) {
  * Compute bounding box of points.
  */
 export function boundingBox(points) {
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
   for (const p of points) {
     if (p.x < minX) minX = p.x;
     if (p.x > maxX) maxX = p.x;
@@ -417,5 +441,5 @@ export default {
   flatToPoints,
   pathLength,
   boundingBox,
-  QUALITY_POINT_COUNTS
+  QUALITY_POINT_COUNTS,
 };

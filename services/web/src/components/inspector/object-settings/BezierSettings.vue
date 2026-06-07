@@ -1,9 +1,22 @@
 <template>
   <Section label="Bezier Curve">
-    <p class="text-[10px] text-studio-text-muted">{{ (obj.vertices || []).length }} anchors · drag them on the canvas to reshape.</p>
+    <p class="text-[10px] text-studio-text-muted">
+      {{ (obj.vertices || []).length }} anchors · drag them on the canvas to reshape.
+    </p>
     <div class="flex gap-1.5 mt-1.5">
-      <button class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" @click="addAnchor">+ Anchor</button>
-      <button class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted" :disabled="(obj.vertices || []).length <= 2" @click="removeAnchor">− Anchor</button>
+      <button
+        class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
+        @click="addAnchor"
+      >
+        + Anchor
+      </button>
+      <button
+        class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
+        :disabled="(obj.vertices || []).length <= 2"
+        @click="removeAnchor"
+      >
+        − Anchor
+      </button>
     </div>
   </Section>
 </template>

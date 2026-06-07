@@ -1,6 +1,6 @@
 /**
  * Assets API Routes
- * 
+ *
  * File upload and management for project assets.
  */
 
@@ -17,7 +17,7 @@ const ALLOWED_TYPES = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
-  'image/svg+xml': 'svg'
+  'image/svg+xml': 'svg',
 };
 
 // Configure multer for file uploads
@@ -35,7 +35,7 @@ const storage = multer.diskStorage({
     const ext = ALLOWED_TYPES[file.mimetype] || 'bin';
     const name = `${uuidv4().split('-')[0]}_${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
     cb(null, name);
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -49,7 +49,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
 });
 
 /**
@@ -61,13 +61,13 @@ router.post('/:projectId', upload.single('file'), async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    
+
     const projectId = req.params.projectId;
     const file = req.file;
-    
+
     // Determine asset type
     const assetType = file.mimetype === 'image/svg+xml' ? 'svg' : 'image';
-    
+
     // Create asset record
     const asset = {
       id: `asset_${uuidv4().split('-')[0]}`,
@@ -75,9 +75,9 @@ router.post('/:projectId', upload.single('file'), async (req, res, next) => {
       filename: file.filename,
       originalName: file.originalname,
       size: file.size,
-      mimetype: file.mimetype
+      mimetype: file.mimetype,
     };
-    
+
     res.status(201).json(asset);
   } catch (err) {
     next(err);
@@ -91,32 +91,32 @@ router.post('/:projectId', upload.single('file'), async (req, res, next) => {
 router.get('/:projectId', async (req, res, next) => {
   try {
     const assetsDir = path.join(req.dataDir, 'assets', req.params.projectId);
-    
+
     try {
       await fs.access(assetsDir);
     } catch {
       return res.json([]);
     }
-    
+
     const files = await fs.readdir(assetsDir);
     const assets = [];
-    
+
     for (const filename of files) {
       const filePath = path.join(assetsDir, filename);
       const stats = await fs.stat(filePath);
-      
+
       // Determine type from extension
       const ext = path.extname(filename).toLowerCase();
       const type = ext === '.svg' ? 'svg' : 'image';
-      
+
       assets.push({
         id: filename.split('_')[0],
         filename,
         type,
-        size: stats.size
+        size: stats.size,
       });
     }
-    
+
     res.json(assets);
   } catch (err) {
     next(err);
@@ -129,13 +129,8 @@ router.get('/:projectId', async (req, res, next) => {
  */
 router.get('/:projectId/:filename', async (req, res, next) => {
   try {
-    const filePath = path.join(
-      req.dataDir,
-      'assets',
-      req.params.projectId,
-      req.params.filename
-    );
-    
+    const filePath = path.join(req.dataDir, 'assets', req.params.projectId, req.params.filename);
+
     await fs.access(filePath);
     res.sendFile(filePath);
   } catch (err) {
@@ -180,7 +175,7 @@ router.post('/:projectId/base64', async (req, res, next) => {
       filename,
       originalName: name,
       size: buffer.length,
-      mimetype
+      mimetype,
     });
   } catch (err) {
     next(err);
@@ -193,13 +188,8 @@ router.post('/:projectId/base64', async (req, res, next) => {
  */
 router.delete('/:projectId/:filename', async (req, res, next) => {
   try {
-    const filePath = path.join(
-      req.dataDir,
-      'assets',
-      req.params.projectId,
-      req.params.filename
-    );
-    
+    const filePath = path.join(req.dataDir, 'assets', req.params.projectId, req.params.filename);
+
     await fs.unlink(filePath);
     res.status(204).send();
   } catch (err) {

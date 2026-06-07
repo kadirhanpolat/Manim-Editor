@@ -23,7 +23,7 @@ describe('ray codegen', () => {
     const o = store.addObject('ray', 960, 540);
     store.updateObject(o.id, { angle: 45, length: 280 });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const ray = parsed.objects.find(x => x.type === 'ray');
+    const ray = parsed.objects.find((x) => x.type === 'ray');
     expect(ray).toBeTruthy();
     expect(ray.length).toBeCloseTo(280, 0);
     expect(ray.angle).toBeCloseTo(45, 0);

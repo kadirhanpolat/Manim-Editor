@@ -17,7 +17,9 @@
         role="menuitem"
         :aria-haspopup="true"
         :aria-expanded="openMenuId === menu.id"
-      >{{ menu.label }}</button>
+      >
+        {{ menu.label }}
+      </button>
 
       <!-- Dropdown -->
       <transition name="menu-pop">
@@ -27,7 +29,7 @@
           role="menu"
           @keydown="onDropdownKey($event, mi)"
         >
-          <template v-for="(item, idx) in menu.items" :key="item.id || ('s' + idx)">
+          <template v-for="(item, idx) in menu.items" :key="item.id || 's' + idx">
             <div v-if="item.type === 'separator'" class="menu-sep"></div>
 
             <!-- Submenu (e.g. Theme) -->
@@ -45,7 +47,17 @@
                 aria-haspopup="true"
               >
                 <span class="mi-label">{{ item.label }}</span>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mi-arrow"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  class="mi-arrow"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               </button>
               <div v-if="hoveredSub === item.id" class="menu-submenu">
                 <button
@@ -99,15 +111,30 @@
 
   <!-- Collapsed hamburger -->
   <div v-else class="menu-anchor" ref="collapsedAnchor">
-    <button class="menu-label" :class="{ active: openMenuId === '_collapsed' }" @click.stop="toggleMenu('_collapsed')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <button
+      class="menu-label"
+      :class="{ active: openMenuId === '_collapsed' }"
+      @click.stop="toggleMenu('_collapsed')"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
       Menu
     </button>
     <transition name="menu-pop">
       <div v-if="openMenuId === '_collapsed'" class="menu-dropdown collapsed-dropdown" role="menu">
         <template v-for="menu in menus" :key="menu.id">
           <div class="menu-group-hdr">{{ menu.label }}</div>
-          <template v-for="(item, idx) in menu.items" :key="item.id || (menu.id + 's' + idx)">
+          <template v-for="(item, idx) in menu.items" :key="item.id || menu.id + 's' + idx">
             <div v-if="item.type === 'separator'" class="menu-sep"></div>
             <button
               v-else-if="item.type !== 'submenu'"
@@ -116,7 +143,9 @@
               @click="executeItem(item)"
               role="menuitem"
             >
-              <span v-if="item.type === 'toggle'" class="mi-check">{{ item.checked && item.checked() ? '✓' : '' }}</span>
+              <span v-if="item.type === 'toggle'" class="mi-check">{{
+                item.checked && item.checked() ? '✓' : ''
+              }}</span>
               <span class="mi-label">{{ item.label }}</span>
               <span v-if="item.shortcut" class="mi-shortcut">{{ item.shortcut }}</span>
             </button>
@@ -153,7 +182,10 @@ function setAnchorRef(id, el) {
 // ── Menu interaction (moved verbatim from Topbar) ──
 function toggleMenu(id) {
   if (_hoverSwitchedAt && Date.now() - _hoverSwitchedAt < 300) return;
-  if (openMenuId.value === id) { closeMenu(); return; }
+  if (openMenuId.value === id) {
+    closeMenu();
+    return;
+  }
   openMenuId.value = id;
   focusIdx.value = -1;
   hoveredSub.value = null;
@@ -177,7 +209,7 @@ function executeItem(item) {
   if (item.type !== 'toggle' && item.type !== 'submenu') closeMenu();
 }
 function onLabelKey(e, menuIndex) {
-  const ids = menus.value.map(m => m.id);
+  const ids = menus.value.map((m) => m.id);
   if (e.key === 'ArrowRight') {
     e.preventDefault();
     const next = (menuIndex + 1) % ids.length;
@@ -240,7 +272,7 @@ function onDropdownKey(e, menuIndex) {
   }
 }
 function nextFocusable(current, dir, items) {
-  const menu = items || (menus.value.find(m => m.id === openMenuId.value)?.items) || [];
+  const menu = items || menus.value.find((m) => m.id === openMenuId.value)?.items || [];
   let i = current + dir;
   while (i >= 0 && i < menu.length) {
     if (menu[i].type !== 'separator') return i;
@@ -255,14 +287,24 @@ function _globalKey(e) {
     e.stopPropagation();
   }
 }
-onMounted(() => { document.addEventListener('keydown', _globalKey); });
-onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
+onMounted(() => {
+  document.addEventListener('keydown', _globalKey);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', _globalKey);
+});
 </script>
 
 <style scoped>
 /* ── Menu labels ── */
-.menubar-nav { display: flex; align-items: center; gap: 1px; }
-.menu-anchor { position: relative; }
+.menubar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.menu-anchor {
+  position: relative;
+}
 
 .menu-label {
   padding: 4px 10px;
@@ -273,16 +315,26 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
   display: flex;
   align-items: center;
   gap: 5px;
   outline: none;
   white-space: nowrap;
 }
-.menu-label:hover { background: var(--studio-border); color: var(--studio-text); }
-.menu-label.active { background: var(--studio-border); color: var(--studio-text); }
-.menu-label:focus-visible { box-shadow: 0 0 0 2px var(--studio-focus-ring); }
+.menu-label:hover {
+  background: var(--studio-border);
+  color: var(--studio-text);
+}
+.menu-label.active {
+  background: var(--studio-border);
+  color: var(--studio-text);
+}
+.menu-label:focus-visible {
+  box-shadow: 0 0 0 2px var(--studio-focus-ring);
+}
 
 /* ── Dropdown ── */
 .menu-dropdown {
@@ -294,10 +346,14 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
   border: 1px solid var(--studio-border);
   border-radius: 8px;
   padding: 4px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   z-index: 201;
 }
-.collapsed-dropdown { min-width: 240px; max-height: 70vh; overflow-y: auto; }
+.collapsed-dropdown {
+  min-width: 240px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
 
 .menu-group-hdr {
   padding: 6px 10px 3px;
@@ -308,7 +364,11 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
   color: var(--studio-text-muted);
 }
 
-.menu-sep { height: 1px; margin: 4px 8px; background: var(--studio-divider); }
+.menu-sep {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--studio-divider);
+}
 
 .menu-item {
   display: flex;
@@ -326,25 +386,56 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
   text-align: left;
   outline: none;
 }
-.menu-item:hover, .menu-item.focused { background: var(--studio-accent-subtle); }
-.menu-item.disabled { opacity: 0.4; cursor: default; pointer-events: none; }
-.menu-item:focus-visible { box-shadow: inset 0 0 0 2px var(--studio-focus-ring); }
+.menu-item:hover,
+.menu-item.focused {
+  background: var(--studio-accent-subtle);
+}
+.menu-item.disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.menu-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--studio-focus-ring);
+}
 
-.mi-label  { flex: 1; white-space: nowrap; }
+.mi-label {
+  flex: 1;
+  white-space: nowrap;
+}
 .mi-shortcut {
   font-size: 10px;
   color: var(--studio-text-muted);
   margin-left: auto;
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
 }
-.mi-check { width: 14px; text-align: center; font-size: 11px; color: var(--studio-accent); flex-shrink: 0; }
-.mi-radio { width: 14px; text-align: center; font-size: 12px; color: var(--studio-accent); flex-shrink: 0; }
-.mi-arrow { flex-shrink: 0; opacity: 0.5; }
+.mi-check {
+  width: 14px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--studio-accent);
+  flex-shrink: 0;
+}
+.mi-radio {
+  width: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--studio-accent);
+  flex-shrink: 0;
+}
+.mi-arrow {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
 
-.radio-on .mi-radio { color: var(--studio-accent); }
+.radio-on .mi-radio {
+  color: var(--studio-accent);
+}
 
 /* ── Submenu ── */
-.menu-sub-anchor { position: relative; }
+.menu-sub-anchor {
+  position: relative;
+}
 .menu-submenu {
   position: absolute;
   left: calc(100% + 2px);
@@ -354,7 +445,7 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
   border: 1px solid var(--studio-border);
   border-radius: 8px;
   padding: 4px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   z-index: 202;
 }
 
@@ -367,8 +458,19 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', _globalKey); });
 }
 
 /* ── Transitions ── */
-.menu-pop-enter-active { transition: opacity 0.1s ease, transform 0.1s ease; }
-.menu-pop-leave-active { transition: opacity 0.08s ease; }
-.menu-pop-enter { opacity: 0; transform: translateY(-4px); }
-.menu-pop-leave-to { opacity: 0; }
+.menu-pop-enter-active {
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+.menu-pop-leave-active {
+  transition: opacity 0.08s ease;
+}
+.menu-pop-enter {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.menu-pop-leave-to {
+  opacity: 0;
+}
 </style>

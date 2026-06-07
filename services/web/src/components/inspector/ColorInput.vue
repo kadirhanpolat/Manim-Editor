@@ -11,74 +11,80 @@
       :value="displayValue"
       @input="handleTextInput"
       @blur="validateOnBlur"
-      :class="['hex-input text-sm flex-1 px-2 py-1 rounded border', 
-               isValid ? '' : 'invalid']"
-      :style="{ background: 'var(--studio-bg)', color: 'var(--studio-text)', borderColor: isValid ? 'var(--studio-border)' : 'var(--studio-danger)' }"
+      :class="['hex-input text-sm flex-1 px-2 py-1 rounded border', isValid ? '' : 'invalid']"
+      :style="{
+        background: 'var(--studio-bg)',
+        color: 'var(--studio-text)',
+        borderColor: isValid ? 'var(--studio-border)' : 'var(--studio-danger)',
+      }"
       placeholder="#000000"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue';
 
-const HEX_REGEX = /^#[0-9A-F]{6}$/i
+const HEX_REGEX = /^#[0-9A-F]{6}$/i;
 
 const props = defineProps({
-  value: { type: String, default: '#000000' }
-})
-const emit = defineEmits(['input', 'change'])
+  value: { type: String, default: '#000000' },
+});
+const emit = defineEmits(['input', 'change']);
 
-const displayValue = ref(props.value || '#000000')
-const isValid = ref(true)
+const displayValue = ref(props.value || '#000000');
+const isValid = ref(true);
 
 const validatedValue = computed(() => {
   // Ensure the color picker always gets a valid 6-digit hex
-  if (HEX_REGEX.test(displayValue.value)) return displayValue.value.toLowerCase()
+  if (HEX_REGEX.test(displayValue.value)) return displayValue.value.toLowerCase();
   // Default fallback
-  return '#000000'
-})
+  return '#000000';
+});
 
-watch(() => props.value, (newVal) => {
-  if (newVal && newVal !== displayValue.value) {
-    displayValue.value = newVal
-    isValid.value = HEX_REGEX.test(newVal)
+watch(
+  () => props.value,
+  (newVal) => {
+    if (newVal && newVal !== displayValue.value) {
+      displayValue.value = newVal;
+      isValid.value = HEX_REGEX.test(newVal);
+    }
   }
-})
+);
 
 function handleColorPicker(event) {
-  const value = event.target.value
-  displayValue.value = value
-  isValid.value = true
-  emit('input', value)
-  emit('change', value)
+  const value = event.target.value;
+  displayValue.value = value;
+  isValid.value = true;
+  emit('input', value);
+  emit('change', value);
 }
 
 function handleTextInput(event) {
-  let value = event.target.value
+  let value = event.target.value;
 
   // Auto-add # if missing and user types hex chars
   if (value && !value.startsWith('#') && /^[0-9A-F]/i.test(value)) {
-    value = '#' + value
+    value = '#' + value;
   }
 
-  displayValue.value = value
+  displayValue.value = value;
 
   // Only emit if valid
   if (HEX_REGEX.test(value)) {
-    isValid.value = true
-    emit('input', value.toLowerCase())
-    emit('change', value.toLowerCase())
+    isValid.value = true;
+    emit('input', value.toLowerCase());
+    emit('change', value.toLowerCase());
   } else {
-    isValid.value = false
+    isValid.value = false;
   }
 }
 
 function validateOnBlur() {
   if (!HEX_REGEX.test(displayValue.value)) {
     // Reset to last valid value or default
-    displayValue.value = props.value || '#000000'
-    isValid.value = true
+    displayValue.value = props.value || '#000000';
+    isValid.value = true;
   }
 }
 </script>

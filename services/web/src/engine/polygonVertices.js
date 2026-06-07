@@ -5,22 +5,39 @@
 
 /** Preset vertex arrays scaled to a w×h bounding box, centered at (0,0). */
 export function presetVertices(type, w, h) {
-  const hw = Math.round(w / 2), hh = Math.round(h / 2);
+  const hw = Math.round(w / 2),
+    hh = Math.round(h / 2);
   if (type === 'parallelogram') {
     const s = Math.round(hw * 0.4);
-    return [[-hw + s, -hh], [hw + s, -hh], [hw - s, hh], [-hw - s, hh]];
+    return [
+      [-hw + s, -hh],
+      [hw + s, -hh],
+      [hw - s, hh],
+      [-hw - s, hh],
+    ];
   }
   if (type === 'free') {
-    return [[0, -hh], [hw, 0], [0, hh], [-hw, 0]];   // diamond starting shape
+    return [
+      [0, -hh],
+      [hw, 0],
+      [0, hh],
+      [-hw, 0],
+    ]; // diamond starting shape
   }
   // trapezoid (default): narrower top
   const tw = Math.round(hw * 0.5);
-  return [[-tw, -hh], [tw, -hh], [hw, hh], [-hw, hh]];
+  return [
+    [-tw, -hh],
+    [tw, -hh],
+    [hw, hh],
+    [-hw, hh],
+  ];
 }
 
 /** Bounding-box {width, height} of a vertex list. */
 export function verticesBBox(vertices) {
-  const xs = vertices.map(v => v[0]), ys = vertices.map(v => v[1]);
+  const xs = vertices.map((v) => v[0]),
+    ys = vertices.map((v) => v[1]);
   return { width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) };
 }
 

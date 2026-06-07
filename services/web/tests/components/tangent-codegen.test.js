@@ -37,7 +37,7 @@ describe('graph tangent line codegen', () => {
 
   it('round-trips tangent x/length through the parser', () => {
     const parsed = parseManimScript(axesWithTangent({ enabled: true, x: 1, length: 2.5 }));
-    const tg = parsed.objects.find(x => x.type === 'axes')?.graphs?.[0]?.tangent;
+    const tg = parsed.objects.find((x) => x.type === 'axes')?.graphs?.[0]?.tangent;
     expect(tg).toBeTruthy();
     expect(tg.enabled).toBe(true);
     expect(tg.x).toBeCloseTo(1, 1);

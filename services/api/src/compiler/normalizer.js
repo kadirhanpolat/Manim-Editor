@@ -18,11 +18,11 @@ export function normalizeProject(project) {
     width: norm.stage?.width ?? 1920,
     height: norm.stage?.height ?? 1080,
     backgroundColor: norm.stage?.backgroundColor ?? '#000000',
-    ...(norm.stage || {})
+    ...(norm.stage || {}),
   };
 
   // ── Objects ──
-  norm.objects = (norm.objects || []).map(obj => ({
+  norm.objects = (norm.objects || []).map((obj) => ({
     ...obj,
     x: obj.x ?? norm.stage.width / 2,
     y: obj.y ?? norm.stage.height / 2,
@@ -35,14 +35,14 @@ export function normalizeProject(project) {
     enterAnim: obj.enterAnim ?? 'fade_in',
     exitAnim: obj.exitAnim ?? 'fade_out',
     enterAnimDur: Math.max(0.1, obj.enterAnimDur ?? 0.5),
-    exitAnimDur: Math.max(0.1, obj.exitAnimDur ?? 0.5)
+    exitAnimDur: Math.max(0.1, obj.exitAnimDur ?? 0.5),
   }));
 
   // ── Groups ──
-  norm.groups = (norm.groups || []).map(g => ({
+  norm.groups = (norm.groups || []).map((g) => ({
     ...g,
     childIds: g.childIds || [],
-    margin: g.margin ?? 10
+    margin: g.margin ?? 10,
   }));
 
   // ── Asset lookup map ──
@@ -52,15 +52,15 @@ export function normalizeProject(project) {
   }
 
   // ── Tracks & clips ──
-  norm.tracks = (norm.tracks || []).map(track => ({
+  norm.tracks = (norm.tracks || []).map((track) => ({
     ...track,
-    clips: (track.clips || []).map(clip => ({
+    clips: (track.clips || []).map((clip) => ({
       ...clip,
       startTime: Math.max(0, clip.startTime ?? 0),
       duration: Math.max(0.1, clip.duration ?? 1.5),
       easing: clip.easing ?? 'ease_in_out',
-      params: clip.params ?? {}
-    }))
+      params: clip.params ?? {},
+    })),
   }));
 
   return norm;

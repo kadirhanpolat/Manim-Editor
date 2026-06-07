@@ -5,10 +5,13 @@
 const DEG = Math.PI / 180;
 
 function basis(phi, theta) {
-  const ph = phi * DEG, th = theta * DEG;
+  const ph = phi * DEG,
+    th = theta * DEG;
   return {
-    sp: Math.sin(ph), cp: Math.cos(ph),
-    st: Math.sin(th), ct: Math.cos(th),
+    sp: Math.sin(ph),
+    cp: Math.cos(ph),
+    st: Math.sin(th),
+    ct: Math.cos(th),
   };
 }
 
@@ -21,14 +24,17 @@ function basis(phi, theta) {
 export function project3D(p, cam, cx, cy, scale) {
   const { phi = 75, theta = -45, zoom = 1, mode = 'orthographic', focalDistance = 8 } = cam || {};
   const { sp, cp, st, ct } = basis(phi, theta);
-  const x = p.x3d ?? 0, y = p.y3d ?? 0, z = p.z3d ?? 0;
+  const x = p.x3d ?? 0,
+    y = p.y3d ?? 0,
+    z = p.z3d ?? 0;
   let sx = -x * st + y * ct;
   let sy = -cp * (x * ct + y * st) + z * sp;
   if (mode === 'perspective') {
     const d = x * sp * ct + y * sp * st + z * cp; // P·n
     const denom = focalDistance - d;
     const f = denom > 1e-6 ? focalDistance / denom : 1e6;
-    sx *= f; sy *= f;
+    sx *= f;
+    sy *= f;
   }
   const s = scale * zoom;
   return { px: cx + sx * s, py: cy - sy * s };
@@ -44,7 +50,9 @@ export function perspectiveScale(p, cam) {
   const { phi = 75, theta = -45, mode = 'orthographic', focalDistance = 8 } = cam || {};
   if (mode !== 'perspective') return 1;
   const { sp, cp, st, ct } = basis(phi, theta);
-  const x = p.x3d ?? 0, y = p.y3d ?? 0, z = p.z3d ?? 0;
+  const x = p.x3d ?? 0,
+    y = p.y3d ?? 0,
+    z = p.z3d ?? 0;
   const d = x * sp * ct + y * sp * st + z * cp; // P·n
   const denom = focalDistance - d;
   return denom > 1e-6 ? focalDistance / denom : 1e6;

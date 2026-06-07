@@ -22,7 +22,7 @@ describe('prism codegen', () => {
     const o = store.addObject('prism', 0, 0);
     store.updateObject(o.id, { dimX: 3, dimY: 1.5, dimZ: 0.5 });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const p = parsed.objects.find(x => x.type === 'prism');
+    const p = parsed.objects.find((x) => x.type === 'prism');
     expect(p).toBeTruthy();
     expect(p.dimX).toBeCloseTo(3, 1);
     expect(p.dimY).toBeCloseTo(1.5, 1);

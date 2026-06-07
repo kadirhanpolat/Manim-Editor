@@ -1,6 +1,6 @@
 /**
  * Manim Studio Compiler
- * 
+ *
  * Compiles project JSON to Manim Python code.
  * Pipeline: Validate -> Normalize -> Codegen
  */
@@ -21,7 +21,7 @@ export function compileProject(project, assetsBasePath) {
   if (!validation.valid) {
     return {
       success: false,
-      errors: validation.errors
+      errors: validation.errors,
     };
   }
 
@@ -33,7 +33,7 @@ export function compileProject(project, assetsBasePath) {
 
   return {
     success: true,
-    code
+    code,
   };
 }
 

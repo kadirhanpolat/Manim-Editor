@@ -1,18 +1,48 @@
 import { describe, it, expect } from 'vitest';
 import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
 
-const SW = 1920, SH = 1080;
+const SW = 1920,
+  SH = 1080;
 function makeObj(extra = {}) {
   return {
-    id: 'o1', type: 'angle', x: SW / 2, y: SH / 2, width: 140, height: 140,
-    vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '',
-    fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2, opacity: 1, rotation: 0,
-    enterTime: 0, duration: 5, enterAnim: 'none', exitAnim: 'none', ...extra,
+    id: 'o1',
+    type: 'angle',
+    x: SW / 2,
+    y: SH / 2,
+    width: 140,
+    height: 140,
+    vertex: [-40, 40],
+    point1: [80, 40],
+    point2: [-40, -60],
+    rightAngle: false,
+    radius: 0.6,
+    label: '',
+    fill: '#fbbf24',
+    stroke: '#fbbf24',
+    strokeWidth: 2,
+    opacity: 1,
+    rotation: 0,
+    enterTime: 0,
+    duration: 5,
+    enterAnim: 'none',
+    exitAnim: 'none',
+    ...extra,
   };
 }
 function makeProject(objects) {
-  return { name: 'T', sceneType: '2d', stage: { width: SW, height: SH },
-    sceneDuration: 5, fps: 60, background: '#000000', objects, tracks: [], cameraTrack: [], assets: [], groups: [] };
+  return {
+    name: 'T',
+    sceneType: '2d',
+    stage: { width: SW, height: SH },
+    sceneDuration: 5,
+    fps: 60,
+    background: '#000000',
+    objects,
+    tracks: [],
+    cameraTrack: [],
+    assets: [],
+    groups: [],
+  };
 }
 
 describe('angle codegen', () => {
@@ -47,11 +77,19 @@ describe('angle round-trip', () => {
     expect(o.radius).toBeCloseTo(0.6, 2);
   });
   it('round-trips a right angle', () => {
-    const o = parseManimScript(generateManimScript(makeProject([makeObj({ rightAngle: true })])), SW, SH).objects[0];
+    const o = parseManimScript(
+      generateManimScript(makeProject([makeObj({ rightAngle: true })])),
+      SW,
+      SH
+    ).objects[0];
     expect(o.rightAngle).toBe(true);
   });
   it('round-trips a labeled angle', () => {
-    const o = parseManimScript(generateManimScript(makeProject([makeObj({ label: '\\theta' })])), SW, SH).objects[0];
+    const o = parseManimScript(
+      generateManimScript(makeProject([makeObj({ label: '\\theta' })])),
+      SW,
+      SH
+    ).objects[0];
     expect(o.label).toBe('\\theta');
   });
 });

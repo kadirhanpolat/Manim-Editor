@@ -4,8 +4,15 @@ import Position3DPanel from '../../src/components/inspector/Position3DPanel.vue'
 
 const axes3d = {
   type: 'axes3d',
-  x3d: 0, y3d: 0, z3d: 0, rx: 0, ry: 0, rz: 0,
-  xRange: [-3, 3, 1], yRange: [-3, 3, 1], zRange: [-3, 3, 1],
+  x3d: 0,
+  y3d: 0,
+  z3d: 0,
+  rx: 0,
+  ry: 0,
+  rz: 0,
+  xRange: [-3, 3, 1],
+  yRange: [-3, 3, 1],
+  zRange: [-3, 3, 1],
 };
 
 describe('Position3DPanel axes3d ranges', () => {

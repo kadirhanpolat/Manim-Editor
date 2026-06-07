@@ -1,18 +1,48 @@
 import { describe, it, expect } from 'vitest';
 import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
 
-const SW = 1920, SH = 1080;
+const SW = 1920,
+  SH = 1080;
 function makeObj(extra = {}) {
   return {
-    id: 'o1', type: 'polygon_free', x: SW / 2, y: SH / 2, width: 160, height: 120,
-    vertices: [[-40, -60], [40, -60], [80, 60], [-80, 60]],
-    fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2, opacity: 1, rotation: 0,
-    enterTime: 0, duration: 5, enterAnim: 'none', exitAnim: 'none', ...extra,
+    id: 'o1',
+    type: 'polygon_free',
+    x: SW / 2,
+    y: SH / 2,
+    width: 160,
+    height: 120,
+    vertices: [
+      [-40, -60],
+      [40, -60],
+      [80, 60],
+      [-80, 60],
+    ],
+    fill: '#8b5cf6',
+    stroke: '#ffffff',
+    strokeWidth: 2,
+    opacity: 1,
+    rotation: 0,
+    enterTime: 0,
+    duration: 5,
+    enterAnim: 'none',
+    exitAnim: 'none',
+    ...extra,
   };
 }
 function makeProject(objects) {
-  return { name: 'T', sceneType: '2d', stage: { width: SW, height: SH },
-    sceneDuration: 5, fps: 60, background: '#000000', objects, tracks: [], cameraTrack: [], assets: [], groups: [] };
+  return {
+    name: 'T',
+    sceneType: '2d',
+    stage: { width: SW, height: SH },
+    sceneDuration: 5,
+    fps: 60,
+    background: '#000000',
+    objects,
+    tracks: [],
+    cameraTrack: [],
+    assets: [],
+    groups: [],
+  };
 }
 
 describe('polygon_free codegen', () => {
@@ -31,10 +61,10 @@ describe('polygon_free codegen', () => {
   it('round-trips an off-center polygon (position + relative vertices)', () => {
     const code = generateManimScript(makeProject([makeObj({ x: 1400, y: 400 })]));
     const o = parseManimScript(code, SW, SH).objects[0];
-    expect(o.x).toBeCloseTo(1400, -1);   // position survives the move_to
+    expect(o.x).toBeCloseTo(1400, -1); // position survives the move_to
     expect(o.y).toBeCloseTo(400, -1);
     expect(o.vertices.length).toBe(4);
-    expect(o.vertices[0][0]).toBeCloseTo(-40, -1);  // vertices stay center-relative
+    expect(o.vertices[0][0]).toBeCloseTo(-40, -1); // vertices stay center-relative
     expect(o.vertices[0][1]).toBeCloseTo(-60, -1);
   });
 });

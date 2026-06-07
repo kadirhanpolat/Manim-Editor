@@ -10,7 +10,8 @@ async function bootedStore(page) {
   await page.waitForFunction(() => !!window.__projectStore && !!window.__projectStore.project);
 }
 const objCount = (page) => page.evaluate(() => window.__projectStore.project.objects.length);
-const objTypes = (page) => page.evaluate(() => window.__projectStore.project.objects.map((o) => o.type));
+const objTypes = (page) =>
+  page.evaluate(() => window.__projectStore.project.objects.map((o) => o.type));
 const clipCount = (page) =>
   page.evaluate(() => window.__projectStore.project.tracks.flatMap((t) => t.clips).length);
 
@@ -71,7 +72,11 @@ test('F3: Number Plane card adds a numberplane', async ({ page }) => {
 test('3D mode exposes Prism + Surface cards that add 3D objects', async ({ page }) => {
   await page.evaluate(() => window.__projectStore.setSceneType('3d'));
   await expect(page.getByRole('heading', { name: '3D Shapes' })).toBeVisible();
-  for (const [label, type] of [['Prism', 'prism'], ['Surface', 'surface'], ['Sphere', 'sphere']]) {
+  for (const [label, type] of [
+    ['Prism', 'prism'],
+    ['Surface', 'surface'],
+    ['Sphere', 'sphere'],
+  ]) {
     const before = await objCount(page);
     await page.locator('.shape-card', { hasText: label }).click();
     await expect.poll(() => objCount(page)).toBe(before + 1);

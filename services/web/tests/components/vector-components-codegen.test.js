@@ -26,7 +26,7 @@ describe('vector_components codegen', () => {
     const o = store.addObject('vector_components', 960, 540);
     store.updateObject(o.id, { vx: 240, vy: -135 }); // vy<0 = up in px → +y in Manim
     const py = generateManimScript(store.project);
-    const main = py.split('\n').find(l => l.includes('_main = Arrow'));
+    const main = py.split('\n').find((l) => l.includes('_main = Arrow'));
     // 240/1920*14.222 ≈ 1.778 ; 135/1080*8 = 1.0
     expect(main).toContain('1.778');
     expect(main).toContain('1.000');
@@ -36,7 +36,7 @@ describe('vector_components codegen', () => {
     const o = store.addObject('vector_components', 960, 540);
     store.updateObject(o.id, { vx: 200, vy: -100 });
     const parsed = parseManimScript(generateManimScript(store.project));
-    const vc = parsed.objects.find(x => x.type === 'vector_components');
+    const vc = parsed.objects.find((x) => x.type === 'vector_components');
     expect(vc).toBeTruthy();
     expect(vc.vx).toBeCloseTo(200, 0);
     expect(vc.vy).toBeCloseTo(-100, 0);

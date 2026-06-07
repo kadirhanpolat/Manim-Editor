@@ -4,7 +4,9 @@
       <Num label="Angle°" :value="obj.angle ?? 30" @input="u('angle', $event)" />
       <Num label="Length" :value="obj.length ?? 200" :min="1" @input="u('length', $event)" />
     </div>
-    <p class="text-[10px] text-studio-text-muted mt-1.5">Source dot at the object position; arrow points at the angle (0° = right, CCW).</p>
+    <p class="text-[10px] text-studio-text-muted mt-1.5">
+      Source dot at the object position; arrow points at the angle (0° = right, CCW).
+    </p>
   </Section>
 </template>
 

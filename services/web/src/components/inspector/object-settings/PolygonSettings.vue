@@ -1,8 +1,8 @@
 <template>
-      <!-- Polygon settings -->
-      <Section label="Polygon Settings">
-        <Num label="Sides" :value="obj.sides || 6" :min="3" :max="20" @input="u('sides', $event)" />
-      </Section>
+  <!-- Polygon settings -->
+  <Section label="Polygon Settings">
+    <Num label="Sides" :value="obj.sides || 6" :min="3" :max="20" @input="u('sides', $event)" />
+  </Section>
 </template>
 
 <script setup>

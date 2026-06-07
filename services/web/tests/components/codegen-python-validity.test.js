@@ -6,17 +6,30 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useProjectStore } from '../../src/store/project.js';
 import { generateManimScript } from '../../src/export/manim.js';
 
-const HELPER = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'helpers', 'ast_check.py');
+const HELPER = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'helpers',
+  'ast_check.py'
+);
 
 function hasPython() {
-  try { execFileSync('python', ['--version'], { stdio: 'ignore' }); return true; } catch { return false; }
+  try {
+    execFileSync('python', ['--version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 const PY = hasPython();
 
 // One python process validates the whole batch: stdin JSON [{name,src}] -> {name: null|error}.
 function validateAll(scripts) {
   const items = Object.entries(scripts).map(([name, src]) => ({ name, src }));
-  const out = execFileSync('python', [HELPER], { input: JSON.stringify(items), maxBuffer: 64 * 1024 * 1024 });
+  const out = execFileSync('python', [HELPER], {
+    input: JSON.stringify(items),
+    maxBuffer: 64 * 1024 * 1024,
+  });
   return JSON.parse(out.toString());
 }
 
@@ -24,7 +37,9 @@ function expectAllValid(scripts) {
   const res = validateAll(scripts);
   const bad = Object.entries(res).filter(([, e]) => e !== null);
   if (bad.length) {
-    throw new Error('Generated invalid Python:\n' + bad.map(([n, e]) => `  [${n}] ${e}`).join('\n'));
+    throw new Error(
+      'Generated invalid Python:\n' + bad.map(([n, e]) => `  [${n}] ${e}`).join('\n')
+    );
   }
 }
 
@@ -37,11 +52,42 @@ function gen(setup) {
 }
 
 const TYPES_2D = [
-  'rectangle', 'square', 'circle', 'ellipse', 'triangle', 'star', 'polygon',
-  'line', 'arrow', 'heart', 'dot', 'dot_grid', 'text', 'latex', 'axes',
-  'numberplane', 'numberline', 'annulus', 'arc', 'sector', 'double_arrow',
-  'polygon_free', 'parametric', 'matrix', 'brace', 'angle', 'counter', 'table',
-  'complex_plane', 'polar_plane', 'graph', 'vector_field', 'vector_components', 'ray', 'coord_point', 'bezier',
+  'rectangle',
+  'square',
+  'circle',
+  'ellipse',
+  'triangle',
+  'star',
+  'polygon',
+  'line',
+  'arrow',
+  'heart',
+  'dot',
+  'dot_grid',
+  'text',
+  'latex',
+  'axes',
+  'numberplane',
+  'numberline',
+  'annulus',
+  'arc',
+  'sector',
+  'double_arrow',
+  'polygon_free',
+  'parametric',
+  'matrix',
+  'brace',
+  'angle',
+  'counter',
+  'table',
+  'complex_plane',
+  'polar_plane',
+  'graph',
+  'vector_field',
+  'vector_components',
+  'ray',
+  'coord_point',
+  'bezier',
 ];
 const TYPES_3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'];
 
@@ -52,20 +98,24 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
     expect(res.good).toBeNull();
     expect(res.bad).toBeTruthy();
     // generate actually emits a Manim scene (an empty string would also ast.parse).
-    const py = gen(s => s.addObject('rectangle', 960, 540));
+    const py = gen((s) => s.addObject('rectangle', 960, 540));
     expect(py).toContain('def construct');
     expect(py).toContain('Rectangle');
   });
 
   it('every 2D object type compiles', () => {
     const scripts = {};
-    for (const t of TYPES_2D) scripts[t] = gen(s => s.addObject(t, 960, 540));
+    for (const t of TYPES_2D) scripts[t] = gen((s) => s.addObject(t, 960, 540));
     expectAllValid(scripts);
   });
 
   it('every 3D object type compiles', () => {
     const scripts = {};
-    for (const t of TYPES_3D) scripts[t] = gen(s => { s.setSceneType('3d'); s.addObject(t, 0, 0); });
+    for (const t of TYPES_3D)
+      scripts[t] = gen((s) => {
+        s.setSceneType('3d');
+        s.addObject(t, 0, 0);
+      });
     expectAllValid(scripts);
   });
 
@@ -83,20 +133,20 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
       focus_on: { color: '#FFFFFF', opacity: 0.2 },
     };
     for (const [t, p] of Object.entries(CLIPS)) {
-      scripts[`clip_${t}`] = gen(s => {
+      scripts[`clip_${t}`] = gen((s) => {
         s.addObject('rectangle', 960, 540);
         s.selectObject(s.project.objects[0].id);
         s.createAnimation(t, p);
       });
     }
-    scripts['clip_transform'] = gen(s => {
+    scripts['clip_transform'] = gen((s) => {
       s.addObject('circle', 800, 540);
       s.addObject('square', 1100, 540);
       s.selectObject(s.project.objects[0].id);
       s.selectObject(s.project.objects[1].id, true);
       s.createTransform();
     });
-    scripts['clip_transform_matchtex'] = gen(s => {
+    scripts['clip_transform_matchtex'] = gen((s) => {
       s.addObject('latex', 800, 540);
       s.addObject('latex', 1100, 540);
       s.selectObject(s.project.objects[0].id);
@@ -104,14 +154,18 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
       const c = s.createTransform();
       if (c) s.updateClip(c.id, { matchTerms: true });
     });
-    scripts['clip_count'] = gen(s => {
+    scripts['clip_count'] = gen((s) => {
       s.addObject('counter', 960, 540);
       s.selectObject(s.project.objects[0].id);
       s.createCount(0, 100);
     });
-    scripts['clip_path_move'] = gen(s => {
+    scripts['clip_path_move'] = gen((s) => {
       s.addObject('dot', 400, 400);
-      s.addPathMoveClip(s.project.objects[0].id, [{ x: 400, y: 400 }, { x: 800, y: 300 }, { x: 1200, y: 500 }]);
+      s.addPathMoveClip(s.project.objects[0].id, [
+        { x: 400, y: 400 },
+        { x: 800, y: 300 },
+        { x: 1200, y: 500 },
+      ]);
     });
     expectAllValid(scripts);
   });
@@ -119,7 +173,7 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
   it('keyframes in all 3 codegen modes (+ 3D position) compile', () => {
     const scripts = {};
     for (const mode of ['UpdateFromAlphaFunc', 'animate', 'ValueTracker']) {
-      scripts[`kf_${mode}`] = gen(s => {
+      scripts[`kf_${mode}`] = gen((s) => {
         s.addObject('rectangle', 960, 540);
         const id = s.project.objects[0].id;
         s.addKeyframe(id, 'x', 0, 200);
@@ -130,7 +184,7 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
         s.setKeyframeCodegen(id, 'opacity', mode);
       });
     }
-    scripts['kf_3d_position'] = gen(s => {
+    scripts['kf_3d_position'] = gen((s) => {
       s.setSceneType('3d');
       s.addObject('cube', 0, 0);
       const id = s.project.objects[0].id;
@@ -144,7 +198,7 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
 
   it('parallel groups, audio voiceover, and cameras compile', () => {
     const scripts = {};
-    scripts['parallel_group'] = gen(s => {
+    scripts['parallel_group'] = gen((s) => {
       s.addObject('circle', 800, 540);
       s.addObject('square', 1100, 540);
       const [a, b] = s.project.objects;
@@ -155,23 +209,34 @@ describe.skipIf(!PY)('codegen → valid Python', () => {
       if (c1) s.updateClip(c1.id, { parallel: true, startTime: 1, lag_ratio: 0.1 });
       if (c2) s.updateClip(c2.id, { parallel: true, startTime: 1, lag_ratio: 0.1 });
     });
-    scripts['audio_voiceover'] = gen(s => {
+    scripts['audio_voiceover'] = gen((s) => {
       s.addObject('rectangle', 960, 540);
       s.selectObject(s.project.objects[0].id);
       const c = s.createAnimation('move', { targetX: 300, targetY: 0 });
-      if (c) s.setClipAudio(c.id, { type: 'file', src: '/data/assets/audio/x.wav', status: 'ready', duration: 2.5, syncMode: 'auto' });
+      if (c)
+        s.setClipAudio(c.id, {
+          type: 'file',
+          src: '/data/assets/audio/x.wav',
+          status: 'ready',
+          duration: 2.5,
+          syncMode: 'auto',
+        });
     });
-    scripts['camera_2d_moving'] = gen(s => {
+    scripts['camera_2d_moving'] = gen((s) => {
       s.setCameraType('moving');
       s.addCameraMoveClip({ startTime: 0, duration: 2, targetX: 200, targetY: 100, zoom: 1.5 });
     });
-    scripts['camera_3d_move'] = gen(s => {
+    scripts['camera_3d_move'] = gen((s) => {
       s.setSceneType('3d');
       s.setCameraType('moving');
       s.addObject('sphere', 0, 0);
       s.project.cameraTrack.push({
-        id: 'cam_x', type: 'camera_move', startTime: 0, duration: 2,
-        easing: 'ease_in_out', params: { phi: 60, theta: -30, zoom: 1.2 },
+        id: 'cam_x',
+        type: 'camera_move',
+        startTime: 0,
+        duration: 2,
+        easing: 'ease_in_out',
+        params: { phi: 60, theta: -30, zoom: 1.2 },
       });
     });
     expectAllValid(scripts);
