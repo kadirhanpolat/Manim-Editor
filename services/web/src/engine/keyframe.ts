@@ -30,7 +30,10 @@ function cubicBezierY(x1: number, y1: number, x2: number, y2: number, t: number)
   return by(Math.max(0, Math.min(1, g)));
 }
 
-export function interpolateKeyframes(keyframes: Keyframe[] | null | undefined, time: number): number | null {
+export function interpolateKeyframes(
+  keyframes: Keyframe[] | null | undefined,
+  time: number
+): number | null {
   if (!keyframes || keyframes.length === 0) return null;
   if (keyframes.length === 1) return keyframes[0].value;
 

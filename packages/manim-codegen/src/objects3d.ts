@@ -12,13 +12,17 @@ export function objectCode3d(obj: SceneObject): string[] {
 
   switch (obj.type) {
     case 'sphere':
-      lines.push(`${n} = Sphere(radius=${fmt3d((obj.radius as number | undefined) ?? 0.5)}, resolution=(${res}, ${res}))`);
+      lines.push(
+        `${n} = Sphere(radius=${fmt3d((obj.radius as number | undefined) ?? 0.5)}, resolution=(${res}, ${res}))`
+      );
       lines.push(`${n}.set_color(${fill})`);
       if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
       lines.push(`${n}.move_to(${pos()})`);
       break;
     case 'cube':
-      lines.push(`${n} = Cube(side_length=${fmt3d((obj.sideLength as number | undefined) ?? 1.0)})`);
+      lines.push(
+        `${n} = Cube(side_length=${fmt3d((obj.sideLength as number | undefined) ?? 1.0)})`
+      );
       lines.push(`${n}.set_color(${fill})`);
       if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
       lines.push(`${n}.move_to(${pos()})`);

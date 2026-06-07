@@ -28,7 +28,12 @@ import type { SceneObject, GenerateOptions } from './types.js';
 
 // ── Object code (single object definition) ──────────────────────────────────
 
-export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsset }: GenerateOptions): string[] {
+export function objectCode(
+  o: SceneObject,
+  sw: number,
+  sh: number,
+  { resolveAsset }: GenerateOptions
+): string[] {
   const n = vn(o.id),
     lines: string[] = [];
   const scale = (Math.min(o.width as number, o.height as number) / sw) * FRAME_WIDTH;
@@ -44,8 +49,8 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
 
   switch (o.type) {
     case 'heart': {
-      const mw = ((o.width as number / sw) * FRAME_X_RADIUS).toFixed(3);
-      const mh = ((o.height as number / sh) * FRAME_Y_RADIUS).toFixed(3);
+      const mw = (((o.width as number) / sw) * FRAME_X_RADIUS).toFixed(3);
+      const mh = (((o.height as number) / sh) * FRAME_Y_RADIUS).toFixed(3);
       lines.push(`${n} = ParametricFunction(`);
       lines.push(
         `    lambda t: np.array([np.sin(t)**3 * ${mw}, (13*np.cos(t)-5*np.cos(2*t)-2*np.cos(3*t)-np.cos(4*t))/15 * ${mh}, 0]),`
@@ -57,10 +62,13 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'rectangle':
       {
-        const rw = (o.width as number / sw) * FRAME_WIDTH,
-          rh = (o.height as number / sh) * FRAME_HEIGHT;
+        const rw = ((o.width as number) / sw) * FRAME_WIDTH,
+          rh = ((o.height as number) / sh) * FRAME_HEIGHT;
         if ((o.cornerRadius ?? 0) > 0) {
-          const cr = Math.min(((o.cornerRadius as number) / sw) * FRAME_WIDTH, Math.min(rw, rh) / 2 - 0.001);
+          const cr = Math.min(
+            ((o.cornerRadius as number) / sw) * FRAME_WIDTH,
+            Math.min(rw, rh) / 2 - 0.001
+          );
           lines.push(
             `${n} = RoundedRectangle(corner_radius=${cr.toFixed(3)}, width=${rw.toFixed(3)}, height=${rh.toFixed(3)})`
           );
@@ -71,9 +79,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     case 'square':
       if ((o.cornerRadius ?? 0) > 0) {
@@ -87,18 +93,14 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     case 'circle':
       lines.push(`${n} = Circle(radius=${(scale / 2).toFixed(3)})`);
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     case 'annulus': {
       const ri = (safeNum(o.innerRadius, 35) / sw) * FRAME_WIDTH;
@@ -107,9 +109,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     }
     case 'arc': {
@@ -130,13 +130,11 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     }
     case 'double_arrow': {
-      const half = ((o.width as number / 2 / sw) * FRAME_WIDTH).toFixed(3);
+      const half = (((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3);
       lines.push(
         `${n} = DoubleArrow(start=LEFT * ${half}, end=RIGHT * ${half}, color=${hex(o.fill) || '"#EF4444"'}, buff=0, stroke_width=${sw2})`
       );
@@ -144,23 +142,19 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'ellipse':
       lines.push(
-        `${n} = Ellipse(width=${((o.width as number / sw) * FRAME_WIDTH).toFixed(3)}, height=${((o.height as number / sh) * FRAME_HEIGHT).toFixed(3)})`
+        `${n} = Ellipse(width=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)}, height=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(3)})`
       );
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     case 'triangle':
       lines.push(`${n} = Triangle().scale(${scale.toFixed(3)})`);
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     case 'star': {
       const arms = safeNum(o.starArms, 5);
@@ -171,9 +165,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     }
     case 'polygon': {
@@ -182,9 +174,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     }
     case 'polygon_free': {
@@ -207,9 +197,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       if (hasFill)
         lines.push(`${n}.set_fill(color=${fill}, opacity=${fillOpacityExpr(o, opacity)})`);
       if (hasStroke)
-        lines.push(
-          `${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`
-        );
+        lines.push(`${n}.set_stroke(color=${stroke}, width=${sw2}${strokeOpacityArg(o, opacity)})`);
       break;
     }
     case 'bezier': {
@@ -238,8 +226,8 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     case 'parametric': {
       const xe = safeMathExpr(o.xExpr, 't');
       const ye = safeMathExpr(o.yExpr, '0');
-      const t0 = Number.isFinite(o.tMin as number | undefined) ? o.tMin as number : 0;
-      const t1 = Number.isFinite(o.tMax as number | undefined) ? o.tMax as number : 6.283;
+      const t0 = Number.isFinite(o.tMin as number | undefined) ? (o.tMin as number) : 0;
+      const t1 = Number.isFinite(o.tMax as number | undefined) ? (o.tMax as number) : 6.283;
       const col = hex(o.stroke) || hex(o.fill) || '"#10B981"';
       lines.push(
         `${n} = ParametricFunction(lambda t: np.array([${xe}, ${ye}, 0]), t_range=[${t0}, ${t1}], color=${col}, stroke_width=${sw2})`
@@ -248,7 +236,9 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'matrix': {
       const data: string[][] =
-        Array.isArray(o.matrixData) && (o.matrixData as unknown[]).length && Array.isArray((o.matrixData as unknown[][])[0])
+        Array.isArray(o.matrixData) &&
+        (o.matrixData as unknown[]).length &&
+        Array.isArray((o.matrixData as unknown[][])[0])
           ? (o.matrixData as string[][])
           : [
               ['1', '0'],
@@ -263,7 +253,9 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'table': {
       const data: string[][] =
-        Array.isArray(o.cellData) && (o.cellData as unknown[]).length && Array.isArray((o.cellData as unknown[][])[0])
+        Array.isArray(o.cellData) &&
+        (o.cellData as unknown[]).length &&
+        Array.isArray((o.cellData as unknown[][])[0])
           ? (o.cellData as string[][])
           : [
               ['1', '2'],
@@ -359,8 +351,8 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     case 'vector_components': {
       const tip = (vx: number, vy: number) =>
         `[${((vx / sw) * FRAME_WIDTH).toFixed(3)}, ${((-vy / sh) * FRAME_HEIGHT).toFixed(3)}, 0]`;
-      const vcx = Number.isFinite(o.vx as number | undefined) ? o.vx as number : 120;
-      const vcy = Number.isFinite(o.vy as number | undefined) ? o.vy as number : -80;
+      const vcx = Number.isFinite(o.vx as number | undefined) ? (o.vx as number) : 120;
+      const vcy = Number.isFinite(o.vy as number | undefined) ? (o.vy as number) : -80;
       const V = tip(vcx, vcy),
         VX0 = tip(vcx, 0),
         V0Y = tip(0, vcy);
@@ -374,8 +366,8 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       break;
     }
     case 'ray': {
-      const a = ((Number.isFinite(o.angle) ? o.angle as number : 30) * Math.PI) / 180;
-      const L = Number.isFinite(o.length as number | undefined) ? o.length as number : 200;
+      const a = ((Number.isFinite(o.angle) ? (o.angle as number) : 30) * Math.PI) / 180;
+      const L = Number.isFinite(o.length as number | undefined) ? (o.length as number) : 200;
       const VX = (((L * Math.cos(a)) / sw) * FRAME_WIDTH).toFixed(3);
       const VY = (((L * Math.sin(a)) / sh) * FRAME_HEIGHT).toFixed(3);
       const col = hex(o.fill) || '"#22d3ee"';
@@ -386,7 +378,9 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'coord_point': {
       const col = hex(o.fill) || '"#fbbf24"';
-      const d = Number.isFinite(o.decimals as number | undefined) ? Math.max(0, Math.trunc(o.decimals as number)) : 1;
+      const d = Number.isFinite(o.decimals as number | undefined)
+        ? Math.max(0, Math.trunc(o.decimals as number))
+        : 1;
       lines.push(`${n}_dot = Dot([0, 0, 0], color=${col})`);
       lines.push(
         `${n}_label = always_redraw(lambda: MathTex(f"({${n}_dot.get_x():.${d}f}, {${n}_dot.get_y():.${d}f})").next_to(${n}_dot, UR, buff=0.15).set_color(${col}))`
@@ -396,14 +390,14 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'line':
       lines.push(
-        `${n} = Line(LEFT * ${((o.width as number / 2 / sw) * FRAME_WIDTH).toFixed(3)}, RIGHT * ${((o.width as number / 2 / sw) * FRAME_WIDTH).toFixed(3)})`
+        `${n} = Line(LEFT * ${(((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3)})`
       );
       lines.push(
         `${n}.set_stroke(color=${hex(o.stroke) || hex(o.fill) || '"#FFFFFF"'}, width=${safeNum(o.strokeWidth, 3)})`
       );
       break;
     case 'arrow': {
-      const halfLen = ((o.width as number / 2 / sw) * FRAME_WIDTH).toFixed(3);
+      const halfLen = (((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3);
       const tipLen = ((FRAME_X_RADIUS / sw) * FRAME_WIDTH).toFixed(3);
       lines.push(
         `${n} = Arrow(start=LEFT * ${halfLen}, end=RIGHT * ${halfLen}, color=${hex(o.fill) || '"#EF4444"'}, buff=0, tip_length=${tipLen}, stroke_width=${sw2}, max_tip_length_to_length_ratio=0.15)`
@@ -411,12 +405,14 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       break;
     }
     case 'counter': {
-      const val = Number.isFinite(o.value as number | undefined) ? o.value as number : 0;
+      const val = Number.isFinite(o.value as number | undefined) ? (o.value as number) : 0;
       const unit = o.suffix ? `, unit="${latexUnit(o.suffix)}"` : '';
       if (o.useInteger) {
         lines.push(`${n} = Integer(${Math.trunc(val)}${unit})`);
       } else {
-        const dec = Number.isFinite(o.numDecimals as number | undefined) ? Math.max(0, Math.trunc(o.numDecimals as number)) : 0;
+        const dec = Number.isFinite(o.numDecimals as number | undefined)
+          ? Math.max(0, Math.trunc(o.numDecimals as number))
+          : 0;
         lines.push(`${n} = DecimalNumber(${val}, num_decimal_places=${dec}${unit})`);
       }
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
@@ -432,7 +428,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'dot':
       lines.push(
-        `${n} = Dot(radius=${((o.width as number / 2 / sw) * FRAME_X_RADIUS).toFixed(3)}, color=${fill})`
+        `${n} = Dot(radius=${(((o.width as number) / 2 / sw) * FRAME_X_RADIUS).toFixed(3)}, color=${fill})`
       );
       break;
     case 'dot_grid': {
@@ -447,12 +443,12 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     }
     case 'image':
       lines.push(
-        `${n} = ImageMobject("${resolveAsset(o, 'png')}").scale_to_fit_width(${((o.width as number / sw) * FRAME_WIDTH).toFixed(3)})`
+        `${n} = ImageMobject("${resolveAsset(o, 'png')}").scale_to_fit_width(${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)})`
       );
       break;
     case 'svg_asset':
       lines.push(
-        `${n} = SVGMobject("${resolveAsset(o, 'svg')}").scale_to_fit_width(${((o.width as number / sw) * FRAME_WIDTH).toFixed(3)})`
+        `${n} = SVGMobject("${resolveAsset(o, 'svg')}").scale_to_fit_width(${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)})`
       );
       break;
     case 'latex': {
@@ -472,7 +468,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       const xr = (o.xRange as number[] | undefined) || [-5, 5, 1];
       const yr = (o.yRange as number[] | undefined) || [-3, 3, 1];
       lines.push(
-        `${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${((o.width as number / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${((o.height as number / sh) * FRAME_HEIGHT).toFixed(1)}, tips=True)`
+        `${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)}, tips=True)`
       );
       if (o.graphs && (o.graphs as unknown[]).length > 0) {
         for (const g of o.graphs as GraphDef[]) {
@@ -515,9 +511,14 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
           if (g.tangent && g.tangent.enabled) {
             const tn = `${gn}_tangent`;
             const tx = Number.isFinite(g.tangent.x) ? g.tangent.x : ((xMin ?? 0) + (xMax ?? 0)) / 2;
-            const alpha = (xMax ?? 0) > (xMin ?? 0) ? Math.max(0, Math.min(1, ((tx ?? 0) - (xMin ?? 0)) / ((xMax ?? 0) - (xMin ?? 0)))) : 0.5;
+            const alpha =
+              (xMax ?? 0) > (xMin ?? 0)
+                ? Math.max(0, Math.min(1, ((tx ?? 0) - (xMin ?? 0)) / ((xMax ?? 0) - (xMin ?? 0))))
+                : 0.5;
             const tlen =
-              Number.isFinite(g.tangent.length) && (g.tangent.length ?? 0) > 0 ? g.tangent.length : 2;
+              Number.isFinite(g.tangent.length) && (g.tangent.length ?? 0) > 0
+                ? g.tangent.length
+                : 2;
             const tcol = hex(g.tangent.color) || col;
             lines.push(
               `${tn} = TangentLine(${gn}, alpha=${alpha.toFixed(3)}, length=${tlen}, color=${tcol})`
@@ -534,7 +535,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       const xs = (o.xStep as number | undefined) || 1;
       const ys = (o.yStep as number | undefined) || 1;
       lines.push(
-        `${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${((o.width as number / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${((o.height as number / sh) * FRAME_HEIGHT).toFixed(1)})`
+        `${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)})`
       );
       break;
     }
@@ -542,14 +543,18 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
       const xr = (o.xRange as number[] | undefined) || [-3, 3, 1];
       const yr = (o.yRange as number[] | undefined) || [-2, 2, 1];
       lines.push(
-        `${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${((o.width as number / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${((o.height as number / sh) * FRAME_HEIGHT).toFixed(1)})`
+        `${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)})`
       );
       break;
     }
     case 'polar_plane': {
-      const rMax = Number.isFinite(o.radiusMax as number | undefined) ? o.radiusMax as number : 4;
-      const rStep = Number.isFinite(o.radiusStep as number | undefined) ? o.radiusStep as number : 1;
-      const az = Number.isFinite(o.azimuthUnits as number | undefined) ? Math.max(1, Math.trunc(o.azimuthUnits as number)) : 12;
+      const rMax = Number.isFinite(o.radiusMax as number | undefined) ? (o.radiusMax as number) : 4;
+      const rStep = Number.isFinite(o.radiusStep as number | undefined)
+        ? (o.radiusStep as number)
+        : 1;
+      const az = Number.isFinite(o.azimuthUnits as number | undefined)
+        ? Math.max(1, Math.trunc(o.azimuthUnits as number))
+        : 12;
       lines.push(
         `${n} = PolarPlane(radius_max=${rMax}, radius_step=${rStep}, azimuth_units=${az}, size=${((Math.min(o.width as number, o.height as number) / sw) * FRAME_WIDTH).toFixed(1)})`
       );
@@ -558,7 +563,7 @@ export function objectCode(o: SceneObject, sw: number, sh: number, { resolveAsse
     case 'numberline': {
       const xr = (o.xRange as number[] | undefined) || [-5, 5, 1];
       lines.push(
-        `${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${((o.width as number / sw) * FRAME_WIDTH).toFixed(1)})`
+        `${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)})`
       );
       break;
     }

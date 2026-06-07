@@ -2,7 +2,13 @@ import { vn, rtOpt } from './helpers.js';
 import { FRAME_WIDTH, FRAME_HEIGHT } from './constants.js';
 import type { Project, GeneratedStep, Keyframe } from './types.js';
 
-export function _kfPropSet(n: string, prop: string, value: number, sw: number, sh: number): string | null {
+export function _kfPropSet(
+  n: string,
+  prop: string,
+  value: number,
+  sw: number,
+  sh: number
+): string | null {
   const MANIM_W = FRAME_WIDTH,
     MANIM_H = FRAME_HEIGHT;
   switch (prop) {
@@ -68,7 +74,12 @@ export function _kfValue(prop: string, value: number, sw: number, sh: number): n
   }
 }
 
-export function generateKeyframeSteps(project: Project, steps: GeneratedStep[], sw: number, sh: number): void {
+export function generateKeyframeSteps(
+  project: Project,
+  steps: GeneratedStep[],
+  sw: number,
+  sh: number
+): void {
   if (!project.objects) return;
   for (const obj of project.objects) {
     if (!obj.keyframes || Object.keys(obj.keyframes).length === 0) continue;

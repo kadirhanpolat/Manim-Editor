@@ -1,10 +1,4 @@
-import {
-  EASING_MAP,
-  FRAME_WIDTH,
-  FRAME_HEIGHT,
-  DASH_TYPES,
-  SHADOW_TYPES,
-} from './constants.js';
+import { EASING_MAP, FRAME_WIDTH, FRAME_HEIGHT, DASH_TYPES, SHADOW_TYPES } from './constants.js';
 import type { SceneObject, PathPoint } from './types.js';
 
 export function rf(e: string | undefined): string {

@@ -6,8 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"services/**/*.{js,vue,json,css}\" \"packages/**/*.{js,json}\" \"e2e/**/*.{js,json}\"",
-    "format:check": "prettier --check \"services/**/*.{js,vue,json,css}\" \"packages/**/*.{js,json}\" \"e2e/**/*.{js,json}\"",
+    "format": "prettier --write \"services/**/*.{js,ts,vue,json,css}\" \"packages/**/*.{js,ts,json}\" \"e2e/**/*.{js,ts,json}\"",
+    "format:check": "prettier --check \"services/**/*.{js,ts,vue,json,css}\" \"packages/**/*.{js,ts,json}\" \"e2e/**/*.{js,ts,json}\"",
     "typecheck": "npm run build:codegen && vue-tsc -p services/web/tsconfig.json --noEmit",
     "build:codegen": "tsc -p packages/manim-codegen/tsconfig.json"
   },

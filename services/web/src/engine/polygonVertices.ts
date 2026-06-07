@@ -18,21 +18,11 @@ export function presetVertices(type: string, w: number, h: number): Vertex[] {
     ];
   }
   if (type === 'free') {
-    return [
-      [0, -hh] as Vertex,
-      [hw, 0] as Vertex,
-      [0, hh] as Vertex,
-      [-hw, 0] as Vertex,
-    ]; // diamond starting shape
+    return [[0, -hh] as Vertex, [hw, 0] as Vertex, [0, hh] as Vertex, [-hw, 0] as Vertex]; // diamond starting shape
   }
   // trapezoid (default): narrower top
   const tw = Math.round(hw * 0.5);
-  return [
-    [-tw, -hh] as Vertex,
-    [tw, -hh] as Vertex,
-    [hw, hh] as Vertex,
-    [-hw, hh] as Vertex,
-  ];
+  return [[-tw, -hh] as Vertex, [tw, -hh] as Vertex, [hw, hh] as Vertex, [-hw, hh] as Vertex];
 }
 
 /** Bounding-box {width, height} of a vertex list. */
@@ -43,11 +33,22 @@ export function verticesBBox(vertices: Vertex[]): { width: number; height: numbe
 }
 
 /** Vertex (center-relative px) → canvas point, given center canvas coords and zoom. */
-export function vertexToCanvas([vx, vy]: Vertex, centerX: number, centerY: number, zoom: number): { x: number; y: number } {
+export function vertexToCanvas(
+  [vx, vy]: Vertex,
+  centerX: number,
+  centerY: number,
+  zoom: number
+): { x: number; y: number } {
   return { x: centerX + vx * zoom, y: centerY + vy * zoom };
 }
 
 /** Canvas point → vertex (center-relative px), rounded to integers. */
-export function canvasToVertex(cx: number, cy: number, centerX: number, centerY: number, zoom: number): Vertex {
+export function canvasToVertex(
+  cx: number,
+  cy: number,
+  centerX: number,
+  centerY: number,
+  zoom: number
+): Vertex {
   return [Math.round((cx - centerX) / zoom), Math.round((cy - centerY) / zoom)] as Vertex;
 }

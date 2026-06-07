@@ -22,7 +22,13 @@ function basis(phi: number, theta: number): { sp: number; cp: number; st: number
  * @param {{phi?:number,theta?:number,zoom?:number,mode?:string,focalDistance?:number}} cam
  * @returns {{px:number, py:number}}
  */
-export function project3D(p: Partial<Point3D>, cam: Cam3D | null | undefined, cx: number, cy: number, scale: number): { px: number; py: number } {
+export function project3D(
+  p: Partial<Point3D>,
+  cam: Cam3D | null | undefined,
+  cx: number,
+  cy: number,
+  scale: number
+): { px: number; py: number } {
   const { phi = 75, theta = -45, zoom = 1, mode = 'orthographic', focalDistance = 8 } = cam || {};
   const { sp, cp, st, ct } = basis(phi, theta);
   const x = p.x3d ?? 0,
@@ -63,7 +69,15 @@ export function perspectiveScale(p: Partial<Point3D>, cam: Cam3D | null | undefi
  * Inverse of project3D for iso drag, holding y3d fixed. Orthographic only.
  * Returns { x3d, z3d }; either may be null when ill-conditioned (st≈0 or sp≈0).
  */
-export function unprojectIso(px: number, py: number, cam: Cam3D | null | undefined, cx: number, cy: number, scale: number, yKnown: number): { x3d: number | null; z3d: number | null } {
+export function unprojectIso(
+  px: number,
+  py: number,
+  cam: Cam3D | null | undefined,
+  cx: number,
+  cy: number,
+  scale: number,
+  yKnown: number
+): { x3d: number | null; z3d: number | null } {
   const { phi = 75, theta = -45, zoom = 1 } = cam || {};
   const { sp, cp, st, ct } = basis(phi, theta);
   const s = scale * zoom;

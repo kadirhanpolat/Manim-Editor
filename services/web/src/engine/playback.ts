@@ -157,7 +157,12 @@ export class PlaybackEngine {
   /**
    * Start playback.
    */
-  play(tracks: Track[], objects: StageObject[], duration: number, cameraTrack?: CameraClip[]): void {
+  play(
+    tracks: Track[],
+    objects: StageObject[],
+    duration: number,
+    cameraTrack?: CameraClip[]
+  ): void {
     if (this.playing) return;
     this.playing = true;
     this.duration = duration || this.duration;
@@ -198,7 +203,12 @@ export class PlaybackEngine {
   /**
    * Seek to a specific time.
    */
-  seekTo(time: number, tracks?: Track[], objects?: StageObject[], cameraTrack?: CameraClip[]): void {
+  seekTo(
+    time: number,
+    tracks?: Track[],
+    objects?: StageObject[],
+    cameraTrack?: CameraClip[]
+  ): void {
     this.currentTime = Math.max(0, Math.min(time, this.duration));
     if (tracks) this._tracks = tracks;
     if (objects) {
@@ -275,12 +285,18 @@ export class PlaybackEngine {
    * @param {Array} [cameraTrack] - Optional camera clip array
    * @returns {FrameState}
    */
-  computeFrame(time: number, tracks: Track[], objects: StageObject[], cameraTrack?: CameraClip[]): FrameState {
+  computeFrame(
+    time: number,
+    tracks: Track[],
+    objects: StageObject[],
+    cameraTrack?: CameraClip[]
+  ): FrameState {
     if (!tracks || !objects) {
       return { objectOverrides: {}, morphShapes: [], hiddenIds: new Set(), cameraState: null };
     }
 
-    const objectMap = this._objectMap || new Map(objects.map((o): [string, StageObject] => [o.id, o]));
+    const objectMap =
+      this._objectMap || new Map(objects.map((o): [string, StageObject] => [o.id, o]));
     const evaluatedClips: EvaluatedClip[] = [];
 
     for (let trackIdx = 0; trackIdx < tracks.length; trackIdx++) {
@@ -552,7 +568,11 @@ export class PlaybackEngine {
   /**
    * Evaluate a single clip at the given time.
    */
-  private _evaluateClip(clip: Clip, time: number, objectMap: Map<string, StageObject>): ClipResult | null {
+  private _evaluateClip(
+    clip: Clip,
+    time: number,
+    objectMap: Map<string, StageObject>
+  ): ClipResult | null {
     const active = isClipActive(clip, time);
     const completed = isClipCompleted(clip, time);
 
@@ -700,7 +720,13 @@ export class PlaybackEngine {
   /**
    * Evaluate a transform (morph) clip.
    */
-  private _evaluateTransformClip(clip: Clip, time: number, active: boolean, completed: boolean, objectMap: Map<string, StageObject>): ClipResult | null {
+  private _evaluateTransformClip(
+    clip: Clip,
+    time: number,
+    active: boolean,
+    completed: boolean,
+    objectMap: Map<string, StageObject>
+  ): ClipResult | null {
     const sourceObj = objectMap.get(clip.sourceId!);
     const targetObj = objectMap.get(clip.targetId!);
     if (!sourceObj || !targetObj) return null;

@@ -18,7 +18,12 @@ const QUALITY_POINT_COUNTS: Record<string, number> = { low: 32, medium: 64, high
  * @param {string} quality - 'low' | 'medium' | 'high'
  * @returns {Array<{x: number, y: number}>}
  */
-export function generateShapePoints(type: string, width: number, height: number, quality = 'medium'): Point[] {
+export function generateShapePoints(
+  type: string,
+  width: number,
+  height: number,
+  quality = 'medium'
+): Point[] {
   const n = QUALITY_POINT_COUNTS[quality] || 64;
   switch (type) {
     case 'heart':
@@ -182,7 +187,13 @@ export function generateTrianglePoints(width: number, height: number, numPoints:
 /**
  * Star shape with n arms and inner radius ratio.
  */
-export function generateStarPoints(width: number, height: number, numPoints: number, arms = 5, innerRatio = 0.4): Point[] {
+export function generateStarPoints(
+  width: number,
+  height: number,
+  numPoints: number,
+  arms = 5,
+  innerRatio = 0.4
+): Point[] {
   const hw = width / 2;
   const hh = height / 2;
   // Generate star vertices (alternating outer and inner)
@@ -231,7 +242,12 @@ export function generateStarPoints(width: number, height: number, numPoints: num
 /**
  * Regular polygon with n sides.
  */
-export function generatePolygonPoints(width: number, height: number, numPoints: number, sides = 6): Point[] {
+export function generatePolygonPoints(
+  width: number,
+  height: number,
+  numPoints: number,
+  sides = 6
+): Point[] {
   const hw = width / 2;
   const hh = height / 2;
   // Generate polygon vertices

@@ -1,13 +1,5 @@
 import { FRAME_WIDTH } from './constants.js';
-import {
-  rfOpt,
-  rtOpt,
-  vn,
-  hex,
-  stageToManim,
-  pathPointsPy,
-  isSystemFont,
-} from './helpers.js';
+import { rfOpt, rtOpt, vn, hex, stageToManim, pathPointsPy, isSystemFont } from './helpers.js';
 import { objectCode } from './objects.js';
 import { objectCode3d } from './objects3d.js';
 import { transformExpr, emphasisExpr } from './clips.js';
@@ -288,7 +280,8 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
           };
         }
         const ang =
-          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) / 180;
+          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) /
+          180;
         return { code: `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`, dur };
       }
       case 'path_move': {
@@ -352,7 +345,8 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
           return `Rotate(${sn}, angle=${angleRad}, axis=${axis})`;
         }
         const ang =
-          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) / 180;
+          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) /
+          180;
         return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
       }
       case 'transform': {
@@ -433,7 +427,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
         code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${zoom.toFixed(2)}, run_time=${dur})`;
       } else if (project.cameraType === 'moving') {
         const mp = stageToManim(camClip.params?.targetX || 0, camClip.params?.targetY || 0, sw, sh);
-        const zoom = parseFloat(((camClip.params?.zoom as number | undefined || 1)).toFixed(4));
+        const zoom = parseFloat(((camClip.params?.zoom as number | undefined) || 1).toFixed(4));
         const frameWidth = (FRAME_WIDTH / zoom).toFixed(3);
         code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
       } else {

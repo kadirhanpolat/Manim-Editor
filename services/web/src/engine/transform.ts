@@ -117,7 +117,11 @@ export function toHex(rgb: RGB): string {
 /**
  * Interpolate between two hex colors.
  */
-export function interpolateColor(colorA: string | undefined, colorB: string | undefined, t: number): string {
+export function interpolateColor(
+  colorA: string | undefined,
+  colorB: string | undefined,
+  t: number
+): string {
   if (!colorA || !colorB) return colorB || colorA || '#ffffff';
   const a = parseHex(colorA);
   const b = parseHex(colorB);
@@ -146,7 +150,13 @@ export function lerp(a: number, b: number, t: number): number {
  * @param {number} t - Progress [0, 1]
  * @returns {Object} Morph state with interpolated properties
  */
-export function computeMorphState(sourceObj: StageObject, targetObj: StageObject, sourcePoints: Point[], targetPoints: Point[], t: number): MorphState {
+export function computeMorphState(
+  sourceObj: StageObject,
+  targetObj: StageObject,
+  sourcePoints: Point[],
+  targetPoints: Point[],
+  t: number
+): MorphState {
   const morphedPoints = interpolatePoints(sourcePoints, targetPoints, t);
 
   return {
@@ -171,7 +181,11 @@ export function computeMorphState(sourceObj: StageObject, targetObj: StageObject
  * Create a trailing ghost effect for simulated motion blur.
  * Returns an array of ghost states with decreasing opacity.
  */
-export function createMotionGhosts(prevState: MorphState, currentState: MorphState, numGhosts = 3): Array<Record<string, unknown>> {
+export function createMotionGhosts(
+  prevState: MorphState,
+  currentState: MorphState,
+  numGhosts = 3
+): Array<Record<string, unknown>> {
   const ghosts: Array<Record<string, unknown>> = [];
   for (let i = 1; i <= numGhosts; i++) {
     const gt = i / (numGhosts + 1);

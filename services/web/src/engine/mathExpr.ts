@@ -39,7 +39,10 @@ export function compileExpr(
   if (!isSafeExpr(expr)) return null;
   try {
     // eslint-disable-next-line no-new-func
-    const fn = new Function(...names, '"use strict";' + SCOPE + 'return (' + expr.trim() + ');') as (...args: number[]) => number;
+    const fn = new Function(
+      ...names,
+      '"use strict";' + SCOPE + 'return (' + expr.trim() + ');'
+    ) as (...args: number[]) => number;
     const probe = fn(...names.map(() => 1)); // reject ReferenceError (undefined functions) early
     if (typeof probe !== 'number') return null;
     return fn;

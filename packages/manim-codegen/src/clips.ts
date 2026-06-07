@@ -4,9 +4,16 @@ import type { Clip, SceneObject } from './types.js';
 // Shared transform-clip expression. matchTerms (when set and no raster involved)
 // upgrades to TransformMatchingTex (both latex) or TransformMatchingShapes (other
 // VMobjects). Used by all three transform-clip codegen sites + the parallel group.
-export function transformExpr(clip: Clip, sn: string, tn: string, srcObj?: SceneObject, tgtObj?: SceneObject): string {
+export function transformExpr(
+  clip: Clip,
+  sn: string,
+  tn: string,
+  srcObj?: SceneObject,
+  tgtObj?: SceneObject
+): string {
   const hasRaster =
-    ['image', 'svg_asset'].includes(srcObj?.type ?? '') || ['image', 'svg_asset'].includes(tgtObj?.type ?? '');
+    ['image', 'svg_asset'].includes(srcObj?.type ?? '') ||
+    ['image', 'svg_asset'].includes(tgtObj?.type ?? '');
   if (hasRaster) return `FadeTransform(${sn}, ${tn})`;
   if (clip.matchTerms) {
     const bothLatex = srcObj?.type === 'latex' && tgtObj?.type === 'latex';

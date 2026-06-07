@@ -23,7 +23,14 @@ import type {
  * @param {Object} _baseObjects - Map of objectId -> base object state
  * @returns {{ objectOverrides: Object, morphShapes: Array, hiddenIds: Set }}
  */
-export function blendClipResults(evaluatedClips: EvaluatedClip[], _baseObjects: Record<string, StageObject> | Map<string, StageObject>): { objectOverrides: Record<string, Overrides>; morphShapes: FrameState['morphShapes']; hiddenIds: Set<string> } {
+export function blendClipResults(
+  evaluatedClips: EvaluatedClip[],
+  _baseObjects: Record<string, StageObject> | Map<string, StageObject>
+): {
+  objectOverrides: Record<string, Overrides>;
+  morphShapes: FrameState['morphShapes'];
+  hiddenIds: Set<string>;
+} {
   const objectOverrides: Record<string, Overrides> = {};
   const morphShapes: FrameState['morphShapes'] = [];
   const hiddenIds = new Set<string>();
