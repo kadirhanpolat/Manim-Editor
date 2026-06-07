@@ -3,6 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"services/**/*.{js,vue,json,css}\" \"packages/**/*.{js,json}\" \"e2e/**/*.{js,json}\"",
+    "format:check": "prettier --check \"services/**/*.{js,vue,json,css}\" \"packages/**/*.{js,json}\" \"e2e/**/*.{js,json}\""
+  },
   "workspaces": [
     "packages/*",
     "services/api",
