@@ -4,7 +4,7 @@
  * Point resampling, interpolation, and color blending for smooth morphing.
  */
 
-import { pathLength } from './geometry.js';
+import type { Point, RGB, StageObject, MorphState } from './types.js';
 
 /**
  * Resample a closed point path to have exactly `targetCount` evenly-spaced points.
@@ -14,7 +14,7 @@ import { pathLength } from './geometry.js';
  * @param {number} targetCount - Desired number of output points
  * @returns {Array<{x: number, y: number}>}
  */
-export function resamplePoints(points, targetCount) {
+export function resamplePoints(points: Point[], targetCount: number): Point[] {
   if (points.length === 0) return [];
   if (points.length === 1) {
     return Array.from({ length: targetCount }, () => ({ ...points[0] }));
@@ -25,7 +25,7 @@ export function resamplePoints(points, targetCount) {
 
   // Compute cumulative arc lengths (closed path)
   const n = points.length;
-  const cumLen = [0];
+  const cumLen: number[] = [0];
   for (let i = 1; i <= n; i++) {
     const prev = points[i - 1];
     const curr = points[i % n];
@@ -39,7 +39,7 @@ export function resamplePoints(points, targetCount) {
     return Array.from({ length: targetCount }, () => ({ ...points[0] }));
   }
 
-  const result = [];
+  const result: Point[] = [];
   for (let i = 0; i < targetCount; i++) {
     const targetDist = (i / targetCount) * totalLen;
 
@@ -77,7 +77,7 @@ export function resamplePoints(points, targetCount) {
  * @param {number} t - Progress [0, 1]
  * @returns {Array<{x, y}>}
  */
-export function interpolatePoints(a, b, t) {
+export function interpolatePoints(a: Point[], b: Point[], t: number): Point[] {
   const len = Math.min(a.length, b.length);
   const result = new Array(len);
   for (let i = 0; i < len; i++) {
@@ -92,7 +92,7 @@ export function interpolatePoints(a, b, t) {
 /**
  * Parse a hex color string to {r, g, b} (0-255).
  */
-export function parseHex(hex) {
+export function parseHex(hex: string): RGB {
   hex = hex.replace('#', '');
   if (hex.length === 3) {
     hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
@@ -107,7 +107,7 @@ export function parseHex(hex) {
 /**
  * Convert {r, g, b} to hex string.
  */
-export function toHex(rgb) {
+export function toHex(rgb: RGB): string {
   const r = Math.round(Math.max(0, Math.min(255, rgb.r)));
   const g = Math.round(Math.max(0, Math.min(255, rgb.g)));
   const b = Math.round(Math.max(0, Math.min(255, rgb.b)));
@@ -117,7 +117,7 @@ export function toHex(rgb) {
 /**
  * Interpolate between two hex colors.
  */
-export function interpolateColor(colorA, colorB, t) {
+export function interpolateColor(colorA: string | undefined, colorB: string | undefined, t: number): string {
   if (!colorA || !colorB) return colorB || colorA || '#ffffff';
   const a = parseHex(colorA);
   const b = parseHex(colorB);
@@ -131,7 +131,7 @@ export function interpolateColor(colorA, colorB, t) {
 /**
  * Interpolate a numeric value.
  */
-export function lerp(a, b, t) {
+export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
@@ -146,7 +146,7 @@ export function lerp(a, b, t) {
  * @param {number} t - Progress [0, 1]
  * @returns {Object} Morph state with interpolated properties
  */
-export function computeMorphState(sourceObj, targetObj, sourcePoints, targetPoints, t) {
+export function computeMorphState(sourceObj: StageObject, targetObj: StageObject, sourcePoints: Point[], targetPoints: Point[], t: number): MorphState {
   const morphedPoints = interpolatePoints(sourcePoints, targetPoints, t);
 
   return {
@@ -171,8 +171,8 @@ export function computeMorphState(sourceObj, targetObj, sourcePoints, targetPoin
  * Create a trailing ghost effect for simulated motion blur.
  * Returns an array of ghost states with decreasing opacity.
  */
-export function createMotionGhosts(prevState, currentState, numGhosts = 3) {
-  const ghosts = [];
+export function createMotionGhosts(prevState: MorphState, currentState: MorphState, numGhosts = 3): Array<Record<string, unknown>> {
+  const ghosts: Array<Record<string, unknown>> = [];
   for (let i = 1; i <= numGhosts; i++) {
     const gt = i / (numGhosts + 1);
     ghosts.push({

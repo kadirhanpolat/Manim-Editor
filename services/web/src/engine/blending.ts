@@ -6,18 +6,20 @@
  * Each clip produces property overrides for its target object(s).
  */
 
+import type { EvaluatedClip, StageObject, Overrides, MorphState, FrameState, Clip } from './types.js';
+
 /**
  * Blend clip evaluation results from multiple tracks into final object states.
  *
  * @param {Array<Object>} evaluatedClips - Array of { trackIndex, clipResult }
  *   where clipResult = { objectId, overrides: { x, y, opacity, ... }, morphState, hideIds }
- * @param {Object} baseObjects - Map of objectId -> base object state
+ * @param {Object} _baseObjects - Map of objectId -> base object state
  * @returns {{ objectOverrides: Object, morphShapes: Array, hiddenIds: Set }}
  */
-export function blendClipResults(evaluatedClips, baseObjects) {
-  const objectOverrides = {};
-  const morphShapes = [];
-  const hiddenIds = new Set();
+export function blendClipResults(evaluatedClips: EvaluatedClip[], _baseObjects: Record<string, StageObject> | Map<string, StageObject>): { objectOverrides: Record<string, Overrides>; morphShapes: FrameState['morphShapes']; hiddenIds: Set<string> } {
+  const objectOverrides: Record<string, Overrides> = {};
+  const morphShapes: FrameState['morphShapes'] = [];
+  const hiddenIds = new Set<string>();
 
   // Sort by track index (lower first, higher overwrites)
   const sorted = [...evaluatedClips].sort((a, b) => a.trackIndex - b.trackIndex);
@@ -37,7 +39,7 @@ export function blendClipResults(evaluatedClips, baseObjects) {
     // Handle morph shapes (transform clips)
     if (clipResult.morphState) {
       morphShapes.push({
-        ...clipResult.morphState,
+        ...(clipResult.morphState as MorphState),
         trackIndex,
         clipId: clipResult.clipId,
       });
@@ -58,7 +60,7 @@ export function blendClipResults(evaluatedClips, baseObjects) {
  * Apply overrides to a base object, returning a new object with merged properties.
  * Only overrides known animatable properties.
  */
-export function applyOverrides(baseObj, overrides) {
+export function applyOverrides(baseObj: StageObject, overrides?: Overrides): StageObject {
   if (!overrides) return baseObj;
 
   return {
@@ -85,7 +87,7 @@ export function applyOverrides(baseObj, overrides) {
  * Determine if a clip is active at a given time.
  * Zero-duration clips are active at exactly their start time.
  */
-export function isClipActive(clip, time) {
+export function isClipActive(clip: Clip, time: number): boolean {
   if (clip.duration <= 0) {
     return Math.abs(time - clip.startTime) < 1e-9;
   }
@@ -96,7 +98,7 @@ export function isClipActive(clip, time) {
  * Get the local progress of a clip at a given time.
  * @returns {number} Progress [0, 1], or -1 if not active
  */
-export function getClipProgress(clip, time) {
+export function getClipProgress(clip: Clip, time: number): number {
   if (!isClipActive(clip, time)) return -1;
   if (clip.duration <= 0) return 1;
   return (time - clip.startTime) / clip.duration;
@@ -105,7 +107,7 @@ export function getClipProgress(clip, time) {
 /**
  * Check if a transform clip has completed (time is past its end).
  */
-export function isClipCompleted(clip, time) {
+export function isClipCompleted(clip: Clip, time: number): boolean {
   return time >= clip.startTime + clip.duration;
 }
 
