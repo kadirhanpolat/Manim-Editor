@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.15.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.16.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -54,7 +54,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
 - **Coordinate Axes** -- Configurable `Axes` with custom x/y ranges and tick steps; add function graphs (e.g. `x**2`, `sin(x)`) with color and range controls; canvas preview included
-- **NumberPlane / NumberLine** -- Full-page coordinate grid and number line as standalone shape types
+- **NumberPlane / NumberLine** -- Coordinate grid and number line as standalone shape types, addable from the sidebar with their own range/length inspectors
 - **Geometry, calculus & data objects** -- Annulus, Arc, Sector, Double Arrow, Free Polygon (with draggable canvas vertex handles + Trapezoid/Parallelogram presets), Parametric curves (`x(t)`/`y(t)` over a `t`-range), Matrix (per-cell grid editor with `[ ]` / `( )` / `| |` bracket styles), and per-graph Area-under-curve / Riemann-rectangle overlays on Axes -- all render in Manim and round-trip through `.py` export/import
 - **Relational objects** -- Brace (bracket between two draggable points with an optional LaTeX label) and Angle (angle/right-angle mark from a vertex + two draggable endpoints, with arc radius and optional LaTeX label); both are self-contained (defined by their own points) and round-trip through `.py`
 - **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square plus polygon/triangle/star via native `round_corners`), separate fill/stroke opacity, dashed stroke, and a configurable drop shadow (color/opacity/offset, with preview-only blur); controls appear only for shapes that support them; all render in Manim and round-trip through `.py` export/import
@@ -388,7 +388,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
-npm run test:unit # 495 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, object-library extensions (Surface, Prism, Integer counter, Ray, Coord Point, Vector Components, Bezier, Tangent), codegen→valid-Python checks, + StageCanvas config-builder characterization snapshots)
+npm run test:unit # 515 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, object-library extensions (Surface, Prism, Integer counter, Ray, Coord Point, Vector Components, Bezier, Tangent), UI-tools audit (palette reachability, MotionPicker clips, interaction tools), codegen→valid-Python checks, + StageCanvas config-builder characterization snapshots)
 ```
 
 The shared codegen package has its own suite (run from the repo root):
@@ -396,6 +396,21 @@ The shared codegen package has its own suite (run from the repo root):
 ```bash
 npm --workspace packages/manim-codegen test   # 6 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape)
 ```
+
+### End-to-end (Playwright)
+
+The `e2e/` directory is a standalone package (outside the npm workspaces) that
+drives the real app in a browser:
+
+```bash
+cd e2e
+npm install                      # first time only
+npx playwright install chromium  # first time only
+npm test                         # 9 Chromium tests; auto-boots the web dev server on :5188
+```
+
+It clicks every palette/clip/tool surface (add objects, MotionPicker clips,
+keyboard tools, transform gating) against the running app.
 
 ---
 
@@ -427,7 +442,34 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.15.0 (current)
+### v3.16.0 (current)
+
+UI-tools audit — a systematic pass over **every add/clip/tool UI surface**
+(palette → store → preview → inspector → codegen → `.py` round-trip), verified
+three ways: code audit, jsdom unit tests, and a real-browser Playwright suite.
+
+- **Counter & NumberPlane now reachable** — both had full store/codegen/inspector
+  support but no palette button (the `count` clip was effectively unusable without
+  a way to add a `Counter`). Added to the AssetSidebar "Data & Coordinates" group.
+- **NumberLine is now a full tool** — gained an inspector (`NumberLineSettings`:
+  x-range min/max/step + length) and a palette button; previously it only existed
+  via `.py` import.
+- **Removed dead `Toolbar.vue`** — it was never mounted (the app renders
+  `AssetSidebar`); the live interaction tools are the `V` (select) / `H` (hand)
+  keyboard shortcuts.
+- **Clean-install fix** — `jsdom` is now declared in the root `package.json` so the
+  root-hoisted `vitest` resolves it; a fresh `npm install` previously broke
+  `npm run test:unit` with `Cannot find package 'jsdom'`.
+- **New tests**: `ui-tools-audit.test.js` (palette-reachability invariant guarding
+  the orphaned-object regression, MotionPicker clip tools, interaction tools) +
+  `NumberLineSettings` + a `NumberLine` characterization snapshot; and a standalone
+  **Playwright `e2e/` package** (9 Chromium tests) that drives the real app on a
+  dedicated port via a DEV-only `window.__projectStore` hook.
+- **Tests**: totals now **515 unit + 114 engine** (web) + **6** `@manim/codegen`
+  package tests + **9** Playwright E2E. Audit report:
+  `docs/superpowers/specs/2026-06-07-ui-tools-audit-design.md`.
+
+### v3.15.0
 
 Object-library extensions — eight new object types closing the gaps in the visual
 library, each fully integrated (store → byte-identical `@manim/codegen` → `.py`
