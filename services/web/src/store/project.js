@@ -174,6 +174,7 @@ export const SHAPE_DEFAULTS = {
   graph:   { width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2 },
   vector_field: { width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2 },
   vector_components: { width: 200, height: 200, fill: '#3b82f6', stroke: '#3b82f6', strokeWidth: 2 },
+  ray: { width: 200, height: 200, fill: '#22d3ee', stroke: '#22d3ee', strokeWidth: 2 },
 };
 
 export const SHAPE_COLORS = {
@@ -195,7 +196,7 @@ export const SHAPE_COLORS = {
   angle: '#fbbf24',
   counter: '#38bdf8',
   graph:   '#22c55e',
-  vector_field: '#38bdf8', vector_components: '#3b82f6',
+  vector_field: '#38bdf8', vector_components: '#3b82f6', ray: '#22d3ee',
 };
 
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
@@ -313,7 +314,7 @@ const useProjectStore = defineStore('project', {
         annulus: 'Annulus', arc: 'Arc', sector: 'Sector', double_arrow: 'Double Arrow',
         polygon_free: 'Polygon', parametric: 'Parametric',
         matrix: 'Matrix', table: 'Table', brace: 'Brace', angle: 'Angle', counter: 'Counter',
-        graph: 'Graph', vector_field: 'VectorField', vector_components: 'Vector Comp',
+        graph: 'Graph', vector_field: 'VectorField', vector_components: 'Vector Comp', ray: 'Ray',
       };
       const displayName = nameMap[type] || (type.charAt(0).toUpperCase() + type.slice(1));
 
@@ -352,6 +353,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'graph' ? { vertices: ['A','B','C'], edges: [['A','B'],['B','C']], positions: { A:[-60,0], B:[0,-40], C:[60,0] }, directed: false, showLabels: true } : {}),
         ...(type === 'vector_field' ? { fx: 'y', fy: '-x', xRange: [-3,3,1], yRange: [-2,2,1] } : {}),
         ...(type === 'vector_components' ? { vx: 120, vy: -80 } : {}),
+        ...(type === 'ray' ? { angle: 30, length: 200 } : {}),
         ...(type === 'annulus' ? { outerRadius: 70, innerRadius: 35 } : {}),
         ...(type === 'arc'    ? { radius: 70, startAngle: 0, sweepAngle: 180 } : {}),
         ...(type === 'sector' ? { radius: 70, startAngle: 0, sweepAngle: 90 } : {}),

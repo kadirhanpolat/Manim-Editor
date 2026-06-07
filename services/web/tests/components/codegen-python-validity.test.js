@@ -41,7 +41,7 @@ const TYPES_2D = [
   'line', 'arrow', 'heart', 'dot', 'dot_grid', 'text', 'latex', 'axes',
   'numberplane', 'numberline', 'annulus', 'arc', 'sector', 'double_arrow',
   'polygon_free', 'parametric', 'matrix', 'brace', 'angle', 'counter', 'table',
-  'complex_plane', 'polar_plane', 'graph', 'vector_field', 'vector_components',
+  'complex_plane', 'polar_plane', 'graph', 'vector_field', 'vector_components', 'ray',
 ];
 const TYPES_3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'];
 

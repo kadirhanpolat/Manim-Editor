@@ -100,3 +100,16 @@ export function vectorComponentsCfgs(obj, ctx) {
     dashes: [dash([vx, vy, vx, 0]), dash([vx, vy, 0, vy])],
   };
 }
+
+// ray: a source dot + an arrow in the given direction (object-relative).
+export function rayCfgs(obj, ctx) {
+  const z = ctx.vs;
+  const a = (Number.isFinite(obj.angle) ? obj.angle : 30) * Math.PI / 180;
+  const L = (Number.isFinite(obj.length) ? obj.length : 200) * z;
+  const tx = L * Math.cos(a), ty = -L * Math.sin(a); // y down on canvas
+  const col = obj.fill || '#22d3ee';
+  return {
+    dot: { x: 0, y: 0, radius: 5, fill: col, listening: false },
+    arrow: { points: [0, 0, tx, ty], stroke: col, fill: col, strokeWidth: 2, pointerLength: 9, pointerWidth: 9, listening: false },
+  };
+}

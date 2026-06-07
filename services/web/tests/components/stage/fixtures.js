@@ -63,6 +63,7 @@ export const OBJECTS = {
   brace:       { id: 'br1',   type: 'brace',        x: 960, y: 540, width: 200, height: 60,  fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, p1: [-80, 0], p2: [80, 0], label: 'L' },
   angle:       { id: 'an1',   type: 'angle',        x: 960, y: 540, width: 120, height: 120, fill: '#FFFFFF', stroke: '#FFFFFF', strokeWidth: 2, opacity: 1, rotation: 0, vertex: [0, 0], point1: [60, 0], point2: [0, -60], rightAngle: false, radius: 40, label: 'θ' },
   vector_components: { id: 'vc1', type: 'vector_components', x: 960, y: 540, width: 200, height: 200, fill: '#3b82f6', opacity: 1, rotation: 0, vx: 120, vy: -80 },
+  ray: { id: 'ray1', type: 'ray', x: 960, y: 540, width: 200, height: 200, fill: '#22d3ee', opacity: 1, rotation: 0, angle: 30, length: 200 },
   axes:        { id: 'ax1',   type: 'axes',         x: 960, y: 540, width: 800, height: 500, stroke: '#9CA3AF', strokeWidth: 2, opacity: 1, rotation: 0, xRange: [-5, 5, 1], yRange: [-3, 3, 1], graphs: [{ id: 'g1', expression: 'x**2/4', color: '#F59E0B', xMin: -4, xMax: 4, strokeWidth: 3, area: { enabled: true, xMin: -2, xMax: 2, color: '#F59E0B', opacity: 0.4 }, riemann: { enabled: true, xMin: -2, xMax: 2, dx: 0.5, type: 'left', color: '#10B981' } }] },
   // 3D objects
   sphere:      { id: 'sp1',   type: 'sphere',    x3d: 0, y3d: 0, z3d: 0, radius: 1,   fill: '#3B82F6', opacity: 1 },

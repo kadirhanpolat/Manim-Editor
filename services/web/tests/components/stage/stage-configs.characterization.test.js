@@ -69,6 +69,7 @@ describe('relational configs', () => {
   it('angle rays stable', () => { expect(relational.angleRayCfgs(OBJECTS.angle, ctx)).toMatchSnapshot(); });
   it('angle arc stable', () => { expect(relational.angleArcCfg(OBJECTS.angle, ctx)).toMatchSnapshot(); });
   it('vector components stable', () => { expect(relational.vectorComponentsCfgs(OBJECTS.vector_components, ctx)).toMatchSnapshot(); });
+  it('ray stable', () => { expect(relational.rayCfgs(OBJECTS.ray, ctx)).toMatchSnapshot(); });
 });
 
 describe('axes configs', () => {

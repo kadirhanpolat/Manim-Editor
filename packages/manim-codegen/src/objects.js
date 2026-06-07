@@ -236,6 +236,17 @@ export function objectCode(obj, sw, sh, { resolveAsset }) {
       lines.push(`${n} = VGroup(${n}_main, ${n}_x, ${n}_y, ${n}_dx, ${n}_dy)`);
       break;
     }
+    case 'ray': {
+      const a = (Number.isFinite(obj.angle) ? obj.angle : 30) * Math.PI / 180;
+      const L = Number.isFinite(obj.length) ? obj.length : 200;
+      const VX = (L * Math.cos(a) / sw * FRAME_WIDTH).toFixed(3);
+      const VY = (L * Math.sin(a) / sh * FRAME_HEIGHT).toFixed(3);
+      const col = hex(obj.fill) || '"#22d3ee"';
+      lines.push(`${n}_dot = Dot([0, 0, 0], color=${col})`);
+      lines.push(`${n}_ray = Arrow([0, 0, 0], [${VX}, ${VY}, 0], buff=0, color=${col})`);
+      lines.push(`${n} = VGroup(${n}_dot, ${n}_ray)`);
+      break;
+    }
     case 'line':
       lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)})`);
       lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${safeNum(obj.strokeWidth, 3)})`);

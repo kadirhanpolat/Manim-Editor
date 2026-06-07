@@ -4665,6 +4665,32 @@ exports[`relational configs > brace line stable 1`] = `
 }
 `;
 
+exports[`relational configs > ray stable 1`] = `
+{
+  "arrow": {
+    "fill": "#22d3ee",
+    "listening": false,
+    "pointerLength": 9,
+    "pointerWidth": 9,
+    "points": [
+      0,
+      0,
+      69.2820323027551,
+      -39.99999999999999,
+    ],
+    "stroke": "#22d3ee",
+    "strokeWidth": 2,
+  },
+  "dot": {
+    "fill": "#22d3ee",
+    "listening": false,
+    "radius": 5,
+    "x": 0,
+    "y": 0,
+  },
+}
+`;
+
 exports[`relational configs > vector components stable 1`] = `
 {
   "arrows": [

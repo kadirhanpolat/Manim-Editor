@@ -18,6 +18,7 @@ import PolarPlaneSettings from './PolarPlaneSettings.vue';
 import PlaneRangeSettings from './PlaneRangeSettings.vue';
 import AxesSettings from './AxesSettings.vue';
 import VectorComponentsSettings from './VectorComponentsSettings.vue';
+import RaySettings from './RaySettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -40,5 +41,6 @@ const REGISTRY = {
   complex_plane: PlaneRangeSettings,
   axes: AxesSettings,
   vector_components: VectorComponentsSettings,
+  ray: RaySettings,
 };
 export function settingsComponentFor(type) { return REGISTRY[type] || null; }
