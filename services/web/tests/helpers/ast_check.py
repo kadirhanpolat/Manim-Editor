@@ -3,7 +3,10 @@
 JSON {name: null|error}. Used by codegen-python-validity.test.js to assert the
 generated Manim scripts are syntactically valid Python (a render-blocking class
 that string-match codegen tests can't catch)."""
-import sys, json, ast
+
+import ast
+import json
+import sys
 
 items = json.load(sys.stdin)
 out = {}
