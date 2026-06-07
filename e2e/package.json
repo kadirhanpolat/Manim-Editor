@@ -1,0 +1,14 @@
+{
+  "name": "manim-motion-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Isolated Playwright E2E suite (NOT a workspace member — keeps its own node_modules so it never perturbs the web/api dependency hoisting).",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

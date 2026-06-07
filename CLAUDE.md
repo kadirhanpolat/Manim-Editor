@@ -16,7 +16,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 ## Running Tests
 
 ```bash
-# Unit tests (store, components, export) — 495 tests
+# Unit tests (store, components, export) — 513 tests
 cd services/web && npm run test:unit
 
 # Engine tests (easing, geometry, transform, keyframe) — 114 tests
@@ -24,6 +24,24 @@ cd services/web && npm test
 
 # Both must pass before any commit
 ```
+
+### End-to-end (Playwright)
+
+```bash
+# Browser smoke of every add/clip/tool UI surface — 9 tests, Chromium
+cd e2e && npm install              # first time only (isolated package)
+npx playwright install chromium    # first time only
+npm test                           # auto-boots the web dev server on :5188
+```
+
+- `e2e/` is a **standalone package OUTSIDE the npm workspaces** on purpose — it
+  keeps its own `node_modules` so Playwright never perturbs web/api hoisting.
+- Drives the real app via a DEV-only `window.__projectStore` hook
+  (`services/web/src/main.js`, stripped from prod builds). Dedicated port **5188**
+  (5173 is often taken by other local Vite apps).
+- **`jsdom` is declared in the ROOT `package.json` devDependencies** so the
+  root-hoisted `vitest` can resolve it — without it a clean `npm install` breaks
+  `npm run test:unit` (`Cannot find package 'jsdom'`).
 
 ## Key Files
 
