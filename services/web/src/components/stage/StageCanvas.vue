@@ -184,6 +184,13 @@
               <v-circle :config="rayCfgs(obj).dot" />
             </v-group>
 
+            <!-- Coord point (dot + live (x,y) label) -->
+            <v-group v-if="obj.type === 'coord_point' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="relationalHitCfg(obj)" />
+              <v-circle :config="coordPointCfgs(obj).dot" />
+              <v-text :config="coordPointCfgs(obj).label" />
+            </v-group>
+
             <!-- Graph / DiGraph -->
             <v-group v-if="obj.type === 'graph' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
               <v-rect :config="graphHitCfg(obj)" />
@@ -556,6 +563,7 @@ const relationalLabelCfg = (o, anchor) => relational.relationalLabelCfg(o, ancho
 const braceLineCfg = (o) => relational.braceLineCfg(o, ctx.value);
 const vectorComponentsCfgs = (o) => relational.vectorComponentsCfgs(o, ctx.value);
 const rayCfgs = (o) => relational.rayCfgs(o, ctx.value);
+const coordPointCfgs = (o) => relational.coordPointCfgs(o, ctx.value);
 const braceLabelAnchor = (o) => relational.braceLabelAnchor(o, ctx.value);
 const angleRayCfgs = (o) => relational.angleRayCfgs(o, ctx.value);
 const angleArcCfg = (o) => relational.angleArcCfg(o, ctx.value);

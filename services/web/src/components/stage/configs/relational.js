@@ -113,3 +113,17 @@ export function rayCfgs(obj, ctx) {
     arrow: { points: [0, 0, tx, ty], stroke: col, fill: col, strokeWidth: 2, pointerLength: 9, pointerWidth: 9, listening: false },
   };
 }
+
+// coord_point: a dot + a live "(x, y)" label showing the point's Manim coordinates.
+// Preview shows the static object-position coordinates; Manim's always_redraw updates
+// them live as the dot animates.
+export function coordPointCfgs(obj, ctx) {
+  const col = obj.fill || '#fbbf24';
+  const d = Number.isFinite(obj.decimals) ? Math.max(0, Math.trunc(obj.decimals)) : 1;
+  const mx = (obj.x / ctx.stg.width - 0.5) * 14.222;
+  const my = -(obj.y / ctx.stg.height - 0.5) * 8;
+  return {
+    dot: { x: 0, y: 0, radius: 5, fill: col, listening: false },
+    label: { x: 9, y: -20, text: `(${mx.toFixed(d)}, ${my.toFixed(d)})`, fontSize: Math.max(11, 14 * ctx.vs), fill: col, listening: false },
+  };
+}

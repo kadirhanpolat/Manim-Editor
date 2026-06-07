@@ -4779,6 +4779,26 @@ exports[`relational configs > brace line stable 1`] = `
 }
 `;
 
+exports[`relational configs > coord point stable 1`] = `
+{
+  "dot": {
+    "fill": "#fbbf24",
+    "listening": false,
+    "radius": 5,
+    "x": 0,
+    "y": 0,
+  },
+  "label": {
+    "fill": "#fbbf24",
+    "fontSize": 11,
+    "listening": false,
+    "text": "(1.8, 1.0)",
+    "x": 9,
+    "y": -20,
+  },
+}
+`;
+
 exports[`relational configs > ray stable 1`] = `
 {
   "arrow": {

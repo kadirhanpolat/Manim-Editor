@@ -247,6 +247,14 @@ export function objectCode(obj, sw, sh, { resolveAsset }) {
       lines.push(`${n} = VGroup(${n}_dot, ${n}_ray)`);
       break;
     }
+    case 'coord_point': {
+      const col = hex(obj.fill) || '"#fbbf24"';
+      const d = Number.isFinite(obj.decimals) ? Math.max(0, Math.trunc(obj.decimals)) : 1;
+      lines.push(`${n}_dot = Dot([0, 0, 0], color=${col})`);
+      lines.push(`${n}_label = always_redraw(lambda: MathTex(f"({${n}_dot.get_x():.${d}f}, {${n}_dot.get_y():.${d}f})").next_to(${n}_dot, UR, buff=0.15).set_color(${col}))`);
+      lines.push(`${n} = VGroup(${n}_dot, ${n}_label)`);
+      break;
+    }
     case 'line':
       lines.push(`${n} = Line(LEFT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)}, RIGHT * ${(obj.width / 2 / sw * FRAME_WIDTH).toFixed(3)})`);
       lines.push(`${n}.set_stroke(color=${hex(obj.stroke) || hex(obj.fill) || '"#FFFFFF"'}, width=${safeNum(obj.strokeWidth, 3)})`);

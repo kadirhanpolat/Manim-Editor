@@ -56,6 +56,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   const relLineMap = {};   // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
   const vcPending = {};    // <prefix> → { vx, vy } for vector_components, resolved on its VGroup line
   const rayPending = {};   // <prefix> → { angle, length } for ray, resolved on its VGroup line
+  const coordPending = {}; // <prefix> → { decimals } for coord_point, resolved on its VGroup line
   const pendingShadow = {};   // base var → { color, opacity, dx, dy } awaiting its VGroup line
   const pendingCount = {};    // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
 
@@ -427,6 +428,21 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const obj = { id, type: 'ray', name: m[1], x: sw / 2, y: sh / 2, angle, length, fill: '#22d3ee', opacity: 1, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
       objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
       delete rayPending[m[1]];
+      continue;
+    }
+
+    // coord_point: <n>_label always_redraw carries decimals; absorb its VGroup.
+    m = line.match(/^(\w+)_label\s*=\s*always_redraw\(lambda: MathTex\(f"\([^"]*?:\.(\d+)f/);
+    if (m) {
+      coordPending[m[1]] = { decimals: parseInt(m[2], 10) };
+      continue;
+    }
+    m = line.match(/^(\w+)\s*=\s*VGroup\((\w+)_dot, \2_label\)/);
+    if (m && m[1] === m[2] && coordPending[m[1]]) {
+      const id = uid('obj');
+      const obj = { id, type: 'coord_point', name: m[1], x: sw / 2, y: sh / 2, decimals: coordPending[m[1]].decimals, fill: '#fbbf24', opacity: 1, enterTime: 0, duration: 10, enterAnim: 'fade_in', exitAnim: 'fade_out', zOrder: objects.length };
+      objects.push(obj); varMap[m[1]] = id; objById[id] = obj;
+      delete coordPending[m[1]];
       continue;
     }
 

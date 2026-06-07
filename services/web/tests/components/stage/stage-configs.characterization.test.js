@@ -70,6 +70,7 @@ describe('relational configs', () => {
   it('angle arc stable', () => { expect(relational.angleArcCfg(OBJECTS.angle, ctx)).toMatchSnapshot(); });
   it('vector components stable', () => { expect(relational.vectorComponentsCfgs(OBJECTS.vector_components, ctx)).toMatchSnapshot(); });
   it('ray stable', () => { expect(relational.rayCfgs(OBJECTS.ray, ctx)).toMatchSnapshot(); });
+  it('coord point stable', () => { expect(relational.coordPointCfgs(OBJECTS.coord_point, ctx)).toMatchSnapshot(); });
 });
 
 describe('axes configs', () => {
