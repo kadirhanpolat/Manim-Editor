@@ -22,6 +22,12 @@ export function objectCode3d(obj) {
       if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
       lines.push(`${n}.move_to(${pos()})`);
       break;
+    case 'prism':
+      lines.push(`${n} = Prism(dimensions=[${fmt3d(obj.dimX ?? 2)}, ${fmt3d(obj.dimY ?? 1)}, ${fmt3d(obj.dimZ ?? 1)}])`);
+      lines.push(`${n}.set_color(${fill})`);
+      if (opacity < 1) lines.push(`${n}.set_opacity(${opacity.toFixed(3)})`);
+      lines.push(`${n}.move_to(${pos()})`);
+      break;
     case 'cone':
       lines.push(`${n} = Cone(base_radius=${fmt3d(obj.radius ?? 0.5)}, height=${fmt3d(obj.height ?? 1.0)}, resolution=${res})`);
       lines.push(`${n}.set_color(${fill})`);

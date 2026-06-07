@@ -745,6 +745,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // Prism
+    m = line.match(/^(\w+)\s*=\s*Prism\(dimensions=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]\)/);
+    if (m) {
+      const [, name, dx, dy, dz] = m;
+      const id = uid('obj');
+      const obj = { id, type: 'prism', name, x3d: 0, y3d: 0, z3d: 0, dimX: parseFloat(dx), dimY: parseFloat(dy), dimZ: parseFloat(dz), fill: '#ffffff', opacity: 1, enterTime: 0, exitTime: 10, anim: { in: { type: 'none', duration: 0.5 }, out: { type: 'none', duration: 0.5 } }, zOrder: objects.length };
+      objects.push(obj); varMap[name] = id; objById[id] = obj;
+      continue;
+    }
+
     // Cone
     m = line.match(/^(\w+)\s*=\s*Cone\(base_radius=([\d.]+),\s*height=([\d.]+),\s*resolution=(\d+)\)/);
     if (m) {
@@ -814,7 +824,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         if (mz !== 0 || objById[id].type === 'sphere' || objById[id].type === 'cube' ||
             objById[id].type === 'cone' || objById[id].type === 'cylinder' ||
             objById[id].type === 'torus' || objById[id].type === 'axes3d' ||
-            objById[id].type === 'surface') {
+            objById[id].type === 'surface' || objById[id].type === 'prism') {
           objById[id].x3d = parseFloat(m[2]);
           objById[id].y3d = parseFloat(m[3]);
           objById[id].z3d = mz;

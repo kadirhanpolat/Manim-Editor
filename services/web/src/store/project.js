@@ -156,6 +156,7 @@ export const SHAPE_DEFAULTS = {
   numberline: { width: 500, height: 60,  fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   sphere:     { width: 120, height: 120, fill: '#e67700', stroke: '#fff', strokeWidth: 2 },
   cube:       { width: 120, height: 120, fill: '#3b5bdb', stroke: '#fff', strokeWidth: 2 },
+  prism:      { width: 160, height: 100, fill: '#4263eb', stroke: '#fff', strokeWidth: 2 },
   cone:       { width: 100, height: 120, fill: '#2f9e44', stroke: '#fff', strokeWidth: 2 },
   cylinder:   { width: 100, height: 120, fill: '#1098ad', stroke: '#fff', strokeWidth: 2 },
   torus:      { width: 130, height: 130, fill: '#ae3ec9', stroke: '#fff', strokeWidth: 2 },
@@ -185,7 +186,7 @@ export const SHAPE_COLORS = {
   text: '#f472b6', image: '#f59e0b', svg_asset: '#f59e0b',
   latex: '#a855f7', axes: '#10b981',
   numberplane: '#334155', complex_plane: '#334155', polar_plane: '#334155', numberline: '#10b981',
-  sphere: '#e67700', cube: '#3b5bdb', cone: '#2f9e44',
+  sphere: '#e67700', cube: '#3b5bdb', prism: '#4263eb', cone: '#2f9e44',
   cylinder: '#1098ad', torus: '#ae3ec9', axes3d: '#10b981', surface: '#9b59b6',
   annulus: '#14b8a6', arc: '#f97316', sector: '#f59e0b', double_arrow: '#ef4444',
   polygon_free: '#8b5cf6',
@@ -366,7 +367,7 @@ const useProjectStore = defineStore('project', {
         ...extraProps
       };
 
-      const is3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'].includes(type);
+      const is3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'].includes(type);
       if (is3D) {
         obj.x3d = 0;
         obj.y3d = 0;
@@ -390,6 +391,11 @@ const useProjectStore = defineStore('project', {
         obj.zExpr = 'x**2 - y**2';   // z = f(x, y)
         obj.xRange = [-2, 2];        // u_range
         obj.yRange = [-2, 2];        // v_range
+      }
+      if (type === 'prism') {
+        obj.dimX = 2;
+        obj.dimY = 1;
+        obj.dimZ = 1;
       }
 
       this.project.objects.push(obj);

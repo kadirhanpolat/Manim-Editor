@@ -43,7 +43,7 @@ const TYPES_2D = [
   'polygon_free', 'parametric', 'matrix', 'brace', 'angle', 'counter', 'table',
   'complex_plane', 'polar_plane', 'graph', 'vector_field', 'vector_components', 'ray',
 ];
-const TYPES_3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'];
+const TYPES_3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'];
 
 describe.skipIf(!PY)('codegen → valid Python', () => {
   it('self-check: the validator rejects invalid python and generate emits a real scene', () => {

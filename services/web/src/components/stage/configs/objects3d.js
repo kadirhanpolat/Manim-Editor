@@ -83,18 +83,18 @@ export function sphere3dCfg(obj, ctx) {
   };
 }
 
-// Cube: a real box — 6 faces, painter-sorted (far→near), shaded by how much
-// each face normal points toward the camera. Returned relative to the centre.
-export function cube3dFaces(obj, ctx) {
+// A real box — 6 faces, painter-sorted (far→near), shaded by how much each face
+// normal points toward the camera. Returned relative to the centre. (hx,hy,hz) are
+// the half-extents; cube passes equal ones, prism passes per-axis dimensions.
+function boxFaces(obj, ctx, hx, hy, hz) {
   const e3 = ctx.eff3d(obj);
   const c = ctx.iso(e3.x3d, e3.y3d, e3.z3d, ctx.projCx, ctx.projCy, ctx.proj3DScale);
-  const h = (obj.sideLength ?? 1.0) / 2;
   const fill = obj.fill ?? '#3b5bdb', op = obj.opacity ?? 1;
   const sel = (ctx.selectedObjectIds || []).includes(obj.id);
   const b = _basis3d(ctx.cam3d.phi, ctx.cam3d.theta);
   const n = { x: b.sp * b.ct, y: b.sp * b.st, z: b.cp }; // direction origin→camera
   const S = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
-  const corners = S.map(s => _rel(ctx, e3, s[0] * h, s[1] * h, s[2] * h, c));
+  const corners = S.map(s => _rel(ctx, e3, s[0] * hx, s[1] * hy, s[2] * hz, c));
   const faces = [
     { idx: [0, 1, 2, 3], nrm: [0, 0, -1] }, { idx: [4, 5, 6, 7], nrm: [0, 0, 1] },
     { idx: [0, 1, 5, 4], nrm: [0, -1, 0] }, { idx: [3, 2, 6, 7], nrm: [0, 1, 0] },
@@ -103,7 +103,7 @@ export function cube3dFaces(obj, ctx) {
   const arr = faces.map(f => {
     const pts = []; let sx = 0, sy = 0, sz = 0;
     for (const i of f.idx) { pts.push(corners[i][0], corners[i][1]); sx += S[i][0]; sy += S[i][1]; sz += S[i][2]; }
-    const depth = (e3.x3d + sx / 4 * h) * n.x + (e3.y3d + sy / 4 * h) * n.y + (e3.z3d + sz / 4 * h) * n.z;
+    const depth = (e3.x3d + sx / 4 * hx) * n.x + (e3.y3d + sy / 4 * hy) * n.y + (e3.z3d + sz / 4 * hz) * n.z;
     const nd = f.nrm[0] * n.x + f.nrm[1] * n.y + f.nrm[2] * n.z;
     return { points: pts, closed: true, opacity: op, depth,
       fill: shade(fill, 0.5 + 0.55 * Math.max(0, nd)),
@@ -111,6 +111,15 @@ export function cube3dFaces(obj, ctx) {
   });
   arr.sort((a, b) => a.depth - b.depth);
   return arr;
+}
+
+export function cube3dFaces(obj, ctx) {
+  const h = (obj.sideLength ?? 1.0) / 2;
+  return boxFaces(obj, ctx, h, h, h);
+}
+
+export function prism3dFaces(obj, ctx) {
+  return boxFaces(obj, ctx, (obj.dimX ?? 2) / 2, (obj.dimY ?? 1) / 2, (obj.dimZ ?? 1) / 2);
 }
 
 // Projected centre of a 3D object — used to position a Konva group whose

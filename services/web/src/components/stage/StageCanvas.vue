@@ -216,6 +216,13 @@
               </v-group>
             </template>
 
+            <!-- 3D: Prism (box with per-axis dimensions) -->
+            <template v-if="obj.type === 'prism' && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
+              <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
+                <v-line v-for="(f, fi) in prism3dFaces(obj)" :key="'pf' + fi" :config="f" />
+              </v-group>
+            </template>
+
             <!-- 3D: Cone/Cylinder (real silhouettes) -->
             <template v-if="['cone', 'cylinder'].includes(obj.type) && is3D && isVis(obj.id)" :key="obj.id + '-3d'">
               <v-group :config="obj3dCenter(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDrag3DEnd(obj.id, $event)">
@@ -469,6 +476,7 @@ function live(obj) {
 // ── 3D shape config wrappers (delegates to configs/objects3d.js) ──────────
 const sphere3dCfg = (o) => objects3d.sphere3dCfg(o, ctx.value);
 const cube3dFaces = (o) => objects3d.cube3dFaces(o, ctx.value);
+const prism3dFaces = (o) => objects3d.prism3dFaces(o, ctx.value);
 const obj3dCenter = (o) => objects3d.obj3dCenter(o, ctx.value);
 const round3dParts = (o) => objects3d.round3dParts(o, ctx.value);
 const surface3dMesh = (o) => objects3d.surface3dMesh(o, ctx.value);

@@ -2849,6 +2849,119 @@ exports[`objects3d configs > obj3dCenter stable 1`] = `
 }
 `;
 
+exports[`objects3d configs > prism faces stable 1`] = `
+[
+  {
+    "closed": true,
+    "depth": -0.6830127018922194,
+    "fill": "#213276",
+    "opacity": 1,
+    "points": [
+      -15,
+      30,
+      -15,
+      -30,
+      -45,
+      -30,
+      -45,
+      30,
+    ],
+    "stroke": "#172352",
+    "strokeWidth": 1,
+  },
+  {
+    "closed": true,
+    "depth": -0.34150635094610965,
+    "fill": "#213276",
+    "opacity": 1,
+    "points": [
+      -15,
+      -30,
+      45,
+      -30,
+      15,
+      -30,
+      -45,
+      -30,
+    ],
+    "stroke": "#172352",
+    "strokeWidth": 1,
+  },
+  {
+    "closed": true,
+    "depth": -0.12940952255126037,
+    "fill": "#213276",
+    "opacity": 1,
+    "points": [
+      -15,
+      30,
+      45,
+      30,
+      45,
+      -30,
+      -15,
+      -30,
+    ],
+    "stroke": "#172352",
+    "strokeWidth": 1,
+  },
+  {
+    "closed": true,
+    "depth": 0.12940952255126037,
+    "fill": "#2a4097",
+    "opacity": 1,
+    "points": [
+      -45,
+      30,
+      15,
+      30,
+      15,
+      -30,
+      -45,
+      -30,
+    ],
+    "stroke": "#172352",
+    "strokeWidth": 1,
+  },
+  {
+    "closed": true,
+    "depth": 0.34150635094610965,
+    "fill": "#3a57ce",
+    "opacity": 1,
+    "points": [
+      -15,
+      30,
+      45,
+      30,
+      15,
+      30,
+      -45,
+      30,
+    ],
+    "stroke": "#172352",
+    "strokeWidth": 1,
+  },
+  {
+    "closed": true,
+    "depth": 0.6830127018922194,
+    "fill": "#3a57ce",
+    "opacity": 1,
+    "points": [
+      45,
+      30,
+      45,
+      -30,
+      15,
+      -30,
+      15,
+      30,
+    ],
+    "stroke": "#172352",
+    "strokeWidth": 1,
+  },
+]
+`;
+
 exports[`objects3d configs > round3dParts cone stable 1`] = `
 [
   {

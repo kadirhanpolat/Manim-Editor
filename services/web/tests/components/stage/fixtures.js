@@ -68,6 +68,7 @@ export const OBJECTS = {
   // 3D objects
   sphere:      { id: 'sp1',   type: 'sphere',    x3d: 0, y3d: 0, z3d: 0, radius: 1,   fill: '#3B82F6', opacity: 1 },
   cube:        { id: 'cu1',   type: 'cube',      x3d: 0, y3d: 0, z3d: 0, sideLength: 1.5, fill: '#10B981', opacity: 1 },
+  prism:       { id: 'pr1',   type: 'prism',     x3d: 0, y3d: 0, z3d: 0, dimX: 2, dimY: 1, dimZ: 1, fill: '#4263eb', opacity: 1 },
   cone:        { id: 'co1',   type: 'cone',      x3d: 0, y3d: 0, z3d: 0, radius: 0.8, height: 1.5, fill: '#F59E0B', opacity: 1 },
   cylinder:    { id: 'cy1',   type: 'cylinder',  x3d: 0, y3d: 0, z3d: 0, radius: 0.6, height: 1.5, fill: '#8B5CF6', opacity: 1 },
   torus:       { id: 'to1',   type: 'torus',     x3d: 0, y3d: 0, z3d: 0, majorRadius: 1.2, minorRadius: 0.3, fill: '#EF4444', opacity: 1 },

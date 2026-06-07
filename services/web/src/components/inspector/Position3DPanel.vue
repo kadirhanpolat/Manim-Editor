@@ -69,6 +69,14 @@
         <input type="number" data-testid="surface-y-max" :value="element.yRange?.[1] ?? 2" @input="updateRange('yRange', 1, $event)" step="0.5" class="input text-sm w-16" />
       </div>
     </div>
+    <div class="mt-2" v-if="element.type === 'prism'">
+      <label class="block text-xs text-studio-text-muted mb-1">Dimensions (W × H × D)</label>
+      <div class="grid grid-cols-3 gap-2">
+        <input type="number" data-testid="prism-dimX" :value="element.dimX ?? 2" @input="update('dimX', $event)" step="0.5" min="0.1" class="input text-sm" />
+        <input type="number" data-testid="prism-dimY" :value="element.dimY ?? 1" @input="update('dimY', $event)" step="0.5" min="0.1" class="input text-sm" />
+        <input type="number" data-testid="prism-dimZ" :value="element.dimZ ?? 1" @input="update('dimZ', $event)" step="0.5" min="0.1" class="input text-sm" />
+      </div>
+    </div>
   </div>
 </template>
 

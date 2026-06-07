@@ -83,6 +83,7 @@ describe('objects3d configs', () => {
   const ctx = makeCtx({ is3D: true });
   it('sphere config stable', () => { expect(objects3d.sphere3dCfg(OBJECTS.sphere, ctx)).toMatchSnapshot(); });
   it('cube faces stable', () => { expect(objects3d.cube3dFaces(OBJECTS.cube, ctx)).toMatchSnapshot(); });
+  it('prism faces stable', () => { expect(objects3d.prism3dFaces(OBJECTS.prism, ctx)).toMatchSnapshot(); });
   it('round3dParts cone stable', () => { expect(objects3d.round3dParts(OBJECTS.cone, ctx)).toMatchSnapshot(); });
   it('round3dParts cylinder stable', () => { expect(objects3d.round3dParts(OBJECTS.cylinder, ctx)).toMatchSnapshot(); });
   it('torus tube stable', () => { expect(objects3d.torus3dTube(OBJECTS.torus, ctx)).toMatchSnapshot(); });

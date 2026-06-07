@@ -147,7 +147,9 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 `counter` object fields: `value` (number, default 0), `numDecimals` (int ≥ 0, default 0), `suffix` (string, optional), `useInteger` (bool, default false). Emits `DecimalNumber(<value>, num_decimal_places=<dec>[, unit="<suffix>"])`, or — when `useInteger` — `Integer(<trunc value>[, unit="<suffix>"])` (whole-number mode; `numDecimals` hidden in the inspector). `unit=` only when `suffix` is non-empty. Not in GRADIENT_TYPES or DASH_TYPES. `value` is keyframable via `_kfPropSet`/`_kfUpdater` (`set_value` setter). Store actions: `setCounterValue`, `setCounterDecimals`, `setCounterSuffix`, `setCounterInteger`.
 
-**3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`
+**3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`, `prism`
+
+`prism` (Prism): a box with per-axis dimensions — emits `Prism(dimensions=[dimX, dimY, dimZ])`. Fields `dimX`/`dimY`/`dimZ` (Manim units). Preview shares `boxFaces(hx,hy,hz)` with `cube3dFaces` in `configs/objects3d.js` (cube = equal half-extents). Inspector dims in `Position3DPanel`.
 
 `surface` (z=f(x,y)): emits `Surface(lambda x, y: np.array([x, y, <zExpr>]), u_range=[..], v_range=[..], resolution=(r,r))`. Fields: `zExpr` (x,y expression, `safeMathExpr`-guarded), `xRange`/`yRange` (=u/v range), + standard 3D fields. Preview = iso-projected **wireframe** (`surface3dMesh` in `configs/objects3d.js`, via the now-multivariate `compileExpr(expr, ['x','y'])`); preview≈render divergence (wireframe vs filled surface). Registered in the `obj3DTypes` list (`@manim/codegen/index.js`), the store `is3D` list, and `Position3DPanel` (z=f(x,y) + X/Y Range controls).
 
