@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+package-lock.json
+**/package-lock.json
+*.md
+docs
+report.md
+website
+assets
+**/*.snap
+services/web/tests/helpers
