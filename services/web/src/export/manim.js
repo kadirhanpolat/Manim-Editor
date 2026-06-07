@@ -15,8 +15,8 @@ import {
   FRAME_WIDTH,
   FRAME_HEIGHT,
   FRAME_X_RADIUS,
-} from '@manim/codegen/src/constants.js';
-import { generateScene } from '@manim/codegen';
+  generateScene,
+} from '@manim/codegen';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -2542,5 +2542,5 @@ export function downloadManimScript(project) {
 // Alias for test compatibility and API convenience
 export const generateCode = generateManimScript;
 
-export { EASING_MAP } from '@manim/codegen/src/constants.js';
+export { EASING_MAP } from '@manim/codegen';
 export default { generateManimScript, parseManimScript, downloadManimScript, generateCode };
