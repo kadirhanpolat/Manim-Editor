@@ -59,12 +59,13 @@ Yöntem (kullanıcı onayı): **1 → 3 → 2**
 - Palette'te yok (yalnız `complex_plane`/`polar_plane` var).
 - **Düzeltme:** AssetSidebar "Data & Coordinates" grubuna `numberplane` butonu ekle.
 
-### F4 — `numberline` yarım (import-only) (sınırlama, düzeltilmiyor)
-- store default (`xRange`) + codegen (`case 'numberline'` → `NumberLine`) var.
-- **Ama** inspector ayar bileşeni YOK (registry'de değil) ve palette butonu yok.
-- PlaneRangeSettings xRange+yRange düzenler; numberline yalnız xRange kullanır →
-  temiz oturmaz. **Karar:** Buton eklenmiyor; "`.py` import ile gelir, editörde
-  düzenlenemez" sınırlaması olarak belgelendi.
+### F4 — `numberline` yarım (import-only) → ÇÖZÜLDÜ
+- store default (`xRange`) + codegen (`NumberLine`) + canvas preview + parser
+  round-trip zaten vardı; eksik olan **inspector + palette** idi.
+- **Çözüm:** `NumberLineSettings.vue` eklendi (X Min/Max/Step + Length), registry'e
+  kaydedildi (`numberline → NumberLineSettings`), AssetSidebar "Data & Coordinates"e
+  `numberline` butonu eklendi. Artık tam erişilebilir/düzenlenebilir.
+  Test: `object-settings.test.js` (NumberLineSettings) + audit reachability.
 
 ### F5 — stage-configs karakterizasyon testinde stderr gürültüsü (kozmetik)
 - `text config is stable` testinde bir hata stack'i stderr'e basılıyor ama test
@@ -78,9 +79,11 @@ Yöntem (kullanıcı onayı): **1 → 3 → 2**
   `H`=hand (App.vue `handleKeydown`). **`scale`/`rotate` activeTool modlarının
   canlı UI'da erişilebilir bir tetikleyicisi yok** (yalnız ölü Toolbar'daydı);
   scale/rotate pratikte transform handle'ları + Motion clip'leri ile yapılıyor.
-- **Karar:** Toolbar.vue düzenlemesi geri alındı. Öneri (kapsam dışı bırakıldı):
-  ya Toolbar yeniden entegre edilsin ya da silinsin; `scale`/`rotate` modları için
-  kısayol (`S`/`R`) eklensin. Şimdilik **rapor edildi**, davranış değiştirilmedi.
+- **Çözüm (sonradan):** `Toolbar.vue` **silindi** (ölü kod). `activeTool`
+  taraması doğruladı: yalnız `select` (drag/seçim) ve `hand` (pan) tüketiliyor;
+  `scale`/`rotate` değerlerini **hiçbir kod okumuyor** (vestigial) — gerçek
+  scale/rotate Konva Transformer handle'ları + Motion clip'leriyle yapılıyor,
+  bu yüzden `S`/`R` kısayolu eklenmedi (anlamsız olurdu).
 
 ### F7 — (BONUS, düzeltildi) Temiz kurulumda `vitest` jsdom'u bulamıyor
 - `npm install` workspace hoisting'i `vitest`'i köke, `jsdom`'u `services/web`'e
@@ -126,8 +129,8 @@ Yöntem (kullanıcı onayı): **1 → 3 → 2**
 - E2E her palette/clip/tool akışını gerçek tarayıcıda doğruluyor (9/9).
 - Prod build temiz (`npm run build` ✓).
 
-## Açık Öneriler (kapsam dışı, rapor edildi)
-- F6: `Toolbar.vue` ölü kod — silinsin ya da yeniden entegre edilsin; `scale`/
-  `rotate` için klavye kısayolu (`S`/`R`) düşünülsün.
-- F4: `numberline` import-only — istenirse PlaneRangeSettings benzeri bir
-  inspector + palette butonu kazandırılabilir.
+## Açık Öneriler — TÜMÜ KAPANDI
+- ~~F6: `Toolbar.vue` ölü kod~~ → **çözüldü:** silindi; `scale`/`rotate`
+  vestigial olduğu için kısayol eklenmedi.
+- ~~F4: `numberline` import-only~~ → **çözüldü:** `NumberLineSettings` + palette
+  butonu eklendi; artık tam araç.

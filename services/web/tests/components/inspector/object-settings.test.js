@@ -6,6 +6,7 @@ import DotGridSettings from '../../../src/components/inspector/object-settings/D
 import CounterSettings from '../../../src/components/inspector/object-settings/CounterSettings.vue';
 import PolarPlaneSettings from '../../../src/components/inspector/object-settings/PolarPlaneSettings.vue';
 import TableSettings from '../../../src/components/inspector/object-settings/TableSettings.vue';
+import NumberLineSettings from '../../../src/components/inspector/object-settings/NumberLineSettings.vue';
 import { settingsComponentFor } from '../../../src/components/inspector/object-settings/index.js';
 
 let store;
@@ -23,7 +24,21 @@ describe('object-settings registry', () => {
   it('maps known types to a component and unknown types to null', () => {
     expect(settingsComponentFor('dot_grid')).toBeTruthy();
     expect(settingsComponentFor('axes')).toBeTruthy();
+    expect(settingsComponentFor('numberline')).toBeTruthy();
     expect(settingsComponentFor('rectangle')).toBe(null);
+  });
+});
+
+describe('NumberLineSettings', () => {
+  it('editing X Min calls updateObject with the new xRange', async () => {
+    const obj = makeObj('numberline');
+    const spy = vi.spyOn(store, 'updateObject');
+    const w = mount(NumberLineSettings, { props: { obj } });
+    // Num atoms: index 0 = X Min, 1 = X Max, 2 = X Step, 3 = Length.
+    const input = w.findAll('input[type="number"]')[0];
+    await input.setValue('-7');
+    await input.trigger('change');
+    expect(spy).toHaveBeenCalledWith(obj.id, { xRange: [-7, 5, 1] });
   });
 });
 

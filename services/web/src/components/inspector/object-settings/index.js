@@ -21,6 +21,7 @@ import VectorComponentsSettings from './VectorComponentsSettings.vue';
 import RaySettings from './RaySettings.vue';
 import CoordPointSettings from './CoordPointSettings.vue';
 import BezierSettings from './BezierSettings.vue';
+import NumberLineSettings from './NumberLineSettings.vue';
 const REGISTRY = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -41,6 +42,7 @@ const REGISTRY = {
   polar_plane: PolarPlaneSettings,
   numberplane: PlaneRangeSettings,
   complex_plane: PlaneRangeSettings,
+  numberline: NumberLineSettings,
   axes: AxesSettings,
   vector_components: VectorComponentsSettings,
   ray: RaySettings,
