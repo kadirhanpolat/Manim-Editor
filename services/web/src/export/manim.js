@@ -514,6 +514,18 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       continue;
     }
 
+    // Counter (Integer)
+    m = line.match(/^(\w+) = Integer\((-?\d+)(?:, unit="([^"]*)")?\)/);
+    if (m) {
+      const obj = { id: m[1], type: 'counter', name: 'Counter',
+        x: sw / 2, y: sh / 2, width: 120, height: 60,
+        fill: '#ffffff', stroke: 'transparent', strokeWidth: 0, opacity: 1, rotation: 0,
+        enterTime: 0, duration: 5, enterAnim: 'fade_in', exitAnim: 'none', zOrder: objects.length,
+        value: parseInt(m[2], 10), numDecimals: 0, suffix: unescapeUnit(m[3]), useInteger: true };
+      varMap[m[1]] = obj.id; objById[obj.id] = obj; objects.push(obj);
+      continue;
+    }
+
     // Counter (DecimalNumber)
     m = line.match(/^(\w+) = DecimalNumber\((-?[\d.]+), num_decimal_places=(\d+)(?:, unit="([^"]*)")?\)/);
     if (m) {

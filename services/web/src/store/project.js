@@ -349,7 +349,7 @@ const useProjectStore = defineStore('project', {
         ...(type === 'table' ? { cellData: [['1', '2'], ['3', '4']], mathMode: false, rowLabels: [], colLabels: [] } : {}),
         ...(type === 'brace' ? { p1: [-80, 0], p2: [80, 0], label: '' } : {}),
         ...(type === 'angle' ? { vertex: [-40, 40], point1: [80, 40], point2: [-40, -60], rightAngle: false, radius: 0.6, label: '' } : {}),
-        ...(type === 'counter' ? { value: 0, numDecimals: 0, suffix: '' } : {}),
+        ...(type === 'counter' ? { value: 0, numDecimals: 0, suffix: '', useInteger: false } : {}),
         ...(type === 'graph' ? { vertices: ['A','B','C'], edges: [['A','B'],['B','C']], positions: { A:[-60,0], B:[0,-40], C:[60,0] }, directed: false, showLabels: true } : {}),
         ...(type === 'vector_field' ? { fx: 'y', fy: '-x', xRange: [-3,3,1], yRange: [-2,2,1] } : {}),
         ...(type === 'vector_components' ? { vx: 120, vy: -80 } : {}),
@@ -607,6 +607,7 @@ const useProjectStore = defineStore('project', {
     setCounterValue(objId, v) { const o = this.objectById(objId); if (!o) return; o.value = Number(v) || 0; this.commitState(); },
     setCounterDecimals(objId, n) { const o = this.objectById(objId); if (!o) return; o.numDecimals = Math.max(0, Math.floor(Number(n) || 0)); this.commitState(); },
     setCounterSuffix(objId, s) { const o = this.objectById(objId); if (!o) return; o.suffix = String(s ?? ''); this.commitState(); },
+    setCounterInteger(objId, on) { const o = this.objectById(objId); if (!o) return; o.useInteger = !!on; this.commitState(); },
 
     setPolarRadiusMax(id, v) { const o = this.objectById(id); if (!o) return; o.radiusMax = Math.max(1, Number(v) || 4); this.isDirty = true; this._debouncedCommit(); },
     setPolarRadiusStep(id, v) { const o = this.objectById(id); if (!o) return; const n = Number(v); o.radiusStep = Math.max(0.1, Number.isFinite(n) ? n : 1); this.isDirty = true; this._debouncedCommit(); },

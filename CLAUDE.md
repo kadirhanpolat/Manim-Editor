@@ -145,7 +145,7 @@ Clips with `status: 'ready'` generate `with self.voiceover(audio=...) as tracker
 
 `vector_components` (kompozit): bir vektörün x/y bileşenlerini gösterir — `VGroup` of main `Arrow` + x/y component arrows (red/green) + 2 `DashedLine` projection guides. Fields: `vx`, `vy` (object-relative px tip; vy<0 = up). Codegen in `objects.js` (ORIGIN-relative + generic `move_to`); round-trips via the `vcPending` parser branch (brace/angle pattern). Preview = `configs/relational.js` `vectorComponentsCfgs`. Inspector = `object-settings/VectorComponentsSettings.vue` (Vx/Vy). Not in GRADIENT_TYPES/DASH_TYPES.
 
-`counter` object fields: `value` (number, default 0), `numDecimals` (int ≥ 0, default 0), `suffix` (string, optional). Emits `DecimalNumber(<value>, num_decimal_places=<dec>[, unit="<suffix>"])` — `unit=` only when `suffix` is non-empty. Not in GRADIENT_TYPES or DASH_TYPES. `value` is keyframable via `_kfPropSet`/`_kfUpdater` (`set_value` setter). Store actions: `setCounterValue`, `setCounterDecimals`, `setCounterSuffix`.
+`counter` object fields: `value` (number, default 0), `numDecimals` (int ≥ 0, default 0), `suffix` (string, optional), `useInteger` (bool, default false). Emits `DecimalNumber(<value>, num_decimal_places=<dec>[, unit="<suffix>"])`, or — when `useInteger` — `Integer(<trunc value>[, unit="<suffix>"])` (whole-number mode; `numDecimals` hidden in the inspector). `unit=` only when `suffix` is non-empty. Not in GRADIENT_TYPES or DASH_TYPES. `value` is keyframable via `_kfPropSet`/`_kfUpdater` (`set_value` setter). Store actions: `setCounterValue`, `setCounterDecimals`, `setCounterSuffix`, `setCounterInteger`.
 
 **3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`
 
