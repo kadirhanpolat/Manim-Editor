@@ -68,6 +68,7 @@ describe('relational configs', () => {
   it('brace line stable', () => { expect(relational.braceLineCfg(OBJECTS.brace, ctx)).toMatchSnapshot(); });
   it('angle rays stable', () => { expect(relational.angleRayCfgs(OBJECTS.angle, ctx)).toMatchSnapshot(); });
   it('angle arc stable', () => { expect(relational.angleArcCfg(OBJECTS.angle, ctx)).toMatchSnapshot(); });
+  it('vector components stable', () => { expect(relational.vectorComponentsCfgs(OBJECTS.vector_components, ctx)).toMatchSnapshot(); });
 });
 
 describe('axes configs', () => {

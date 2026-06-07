@@ -81,3 +81,22 @@ export function angleLabelAnchor(obj, ctx) {
   const r = 34 * z;
   return [v[0] * z + Math.cos(mid) * r, v[1] * z + Math.sin(mid) * r];
 }
+
+// vector_components: main vector + x/y component arrows + two dashed projection guides.
+// Drawn relative to the object's centre (origin), like brace/angle.
+export function vectorComponentsCfgs(obj, ctx) {
+  const z = ctx.vs;
+  const vx = (Number.isFinite(obj.vx) ? obj.vx : 120) * z;
+  const vy = (Number.isFinite(obj.vy) ? obj.vy : -80) * z;
+  const col = obj.fill || '#3b82f6';
+  const arrow = (pts, color) => ({ points: pts, stroke: color, fill: color, strokeWidth: 2, pointerLength: 9, pointerWidth: 9, listening: false });
+  const dash = (pts) => ({ points: pts, stroke: '#94a3b8', strokeWidth: 1, dash: [4, 4], listening: false });
+  return {
+    arrows: [
+      arrow([0, 0, vx, vy], col),       // main vector
+      arrow([0, 0, vx, 0], '#ef4444'),  // x component
+      arrow([0, 0, 0, vy], '#22c55e'),  // y component
+    ],
+    dashes: [dash([vx, vy, vx, 0]), dash([vx, vy, 0, vy])],
+  };
+}

@@ -169,6 +169,13 @@
               <v-text v-if="obj.label" :config="relationalLabelCfg(obj, angleLabelAnchor(obj))" />
             </v-group>
 
+            <!-- Vector components (main + x/y arrows + dashed guides) -->
+            <v-group v-if="obj.type === 'vector_components' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
+              <v-rect :config="relationalHitCfg(obj)" />
+              <v-line v-for="(d, di) in vectorComponentsCfgs(obj).dashes" :key="'vcd' + di" :config="d" />
+              <v-arrow v-for="(a, ai) in vectorComponentsCfgs(obj).arrows" :key="'vca' + ai" :config="a" />
+            </v-group>
+
             <!-- Graph / DiGraph -->
             <v-group v-if="obj.type === 'graph' && isVis(obj.id)" :config="groupCfg(obj)" @mousedown="onObjDown(obj.id, $event)" @dragend="onDragEnd(obj.id, $event)" @transform="onTransform(obj.id, $event)" @transformend="onTransformEnd(obj.id, $event)">
               <v-rect :config="graphHitCfg(obj)" />
@@ -531,6 +538,7 @@ const vectorFieldArrows = (o) => dataObjects.vectorFieldArrows(o, ctx.value);
 const relationalHitCfg = (o) => relational.relationalHitCfg(o, ctx.value);
 const relationalLabelCfg = (o, anchor) => relational.relationalLabelCfg(o, anchor, ctx.value);
 const braceLineCfg = (o) => relational.braceLineCfg(o, ctx.value);
+const vectorComponentsCfgs = (o) => relational.vectorComponentsCfgs(o, ctx.value);
 const braceLabelAnchor = (o) => relational.braceLabelAnchor(o, ctx.value);
 const angleRayCfgs = (o) => relational.angleRayCfgs(o, ctx.value);
 const angleArcCfg = (o) => relational.angleArcCfg(o, ctx.value);

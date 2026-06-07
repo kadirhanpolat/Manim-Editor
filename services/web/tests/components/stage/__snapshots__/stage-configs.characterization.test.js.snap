@@ -4665,6 +4665,87 @@ exports[`relational configs > brace line stable 1`] = `
 }
 `;
 
+exports[`relational configs > vector components stable 1`] = `
+{
+  "arrows": [
+    {
+      "fill": "#3b82f6",
+      "listening": false,
+      "pointerLength": 9,
+      "pointerWidth": 9,
+      "points": [
+        0,
+        0,
+        48,
+        -32,
+      ],
+      "stroke": "#3b82f6",
+      "strokeWidth": 2,
+    },
+    {
+      "fill": "#ef4444",
+      "listening": false,
+      "pointerLength": 9,
+      "pointerWidth": 9,
+      "points": [
+        0,
+        0,
+        48,
+        0,
+      ],
+      "stroke": "#ef4444",
+      "strokeWidth": 2,
+    },
+    {
+      "fill": "#22c55e",
+      "listening": false,
+      "pointerLength": 9,
+      "pointerWidth": 9,
+      "points": [
+        0,
+        0,
+        0,
+        -32,
+      ],
+      "stroke": "#22c55e",
+      "strokeWidth": 2,
+    },
+  ],
+  "dashes": [
+    {
+      "dash": [
+        4,
+        4,
+      ],
+      "listening": false,
+      "points": [
+        48,
+        -32,
+        48,
+        0,
+      ],
+      "stroke": "#94a3b8",
+      "strokeWidth": 1,
+    },
+    {
+      "dash": [
+        4,
+        4,
+      ],
+      "listening": false,
+      "points": [
+        48,
+        -32,
+        0,
+        -32,
+      ],
+      "stroke": "#94a3b8",
+      "strokeWidth": 1,
+    },
+  ],
+}
+`;
+
 exports[`shapes2d > annulus config is stable 1`] = `
 {
   "draggable": true,
