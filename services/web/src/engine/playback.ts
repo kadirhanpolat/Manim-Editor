@@ -296,7 +296,7 @@ export class PlaybackEngine {
     }
 
     // blendClipResults returns the 3 required FrameState fields; cameraState is set below
-    const frame = blendClipResults(evaluatedClips, objectMap) as FrameState;
+    const frame: FrameState = blendClipResults(evaluatedClips, objectMap);
 
     // Apply keyframe overrides (per-property interpolation)
     this._applyKeyframeOverrides(frame, time, objects);
@@ -311,10 +311,9 @@ export class PlaybackEngine {
       const sortedCam = [...cameraTrack].sort((a, b) => a.startTime - b.startTime);
       for (let ci = 0; ci < sortedCam.length; ci++) {
         const camClip = sortedCam[ci];
-        // CameraClip has startTime/duration/easing — cast to Clip for the blending helpers
-        // which only read those fields (id/type are not accessed)
-        if (!isClipActive(camClip as unknown as Clip, time)) continue;
-        const progress = getClipProgress(camClip as unknown as Clip, time);
+        // CameraClip satisfies TimedClip, which is all the scheduling helpers need.
+        if (!isClipActive(camClip, time)) continue;
+        const progress = getClipProgress(camClip, time);
         const easedT = evaluateEasing(progress, camClip.easing || 'ease_in_out', 0, 1);
         // Interpolate FROM the previous clip's target (or default origin for first clip)
         const prev = ci > 0 ? sortedCam[ci - 1].params : null;

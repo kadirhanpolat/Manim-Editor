@@ -114,11 +114,16 @@ export interface ClipParams {
   [k: string]: unknown;
 }
 
-export interface Clip {
-  id: string;
-  type: string;
+// Minimal time-window shape shared by Clip and CameraClip. The scheduling
+// helpers (isClipActive/getClipProgress/isClipCompleted) only need these.
+export interface TimedClip {
   startTime: number;
   duration: number;
+}
+
+export interface Clip extends TimedClip {
+  id: string;
+  type: string;
   easing?: string;
   sourceId?: string;
   targetId?: string;
@@ -138,9 +143,7 @@ export interface Track {
   [k: string]: unknown;
 }
 
-export interface CameraClip {
-  startTime: number;
-  duration: number;
+export interface CameraClip extends TimedClip {
   easing?: string;
   params?: ClipParams;
   [k: string]: unknown;
