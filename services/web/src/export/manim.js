@@ -722,6 +722,18 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       if (g) g.riemann = { enabled: true, xMin: parseFloat(m[2]), xMax: parseFloat(m[3]), dx: parseFloat(m[4]), type: m[5], color: m[6] || g.color };
       continue;
     }
+    // TangentLine(graphVar, alpha=..., length=..., color=...)
+    m = line.match(/^\w+\s*=\s*TangentLine\((\w+),\s*alpha=([\d.]+),\s*length=([\d.]+)(?:,\s*color=["']([^"']+)["'])?\)/);
+    if (m) {
+      const g = graphVarMap[m[1]];
+      if (g) {
+        const alpha = parseFloat(m[2]);
+        const gxMin = Number.isFinite(g.xMin) ? g.xMin : -5;
+        const gxMax = Number.isFinite(g.xMax) ? g.xMax : 5;
+        g.tangent = { enabled: true, x: gxMin + alpha * (gxMax - gxMin), length: parseFloat(m[3]), color: m[4] || g.color };
+      }
+      continue;
+    }
 
     // ── 3D object parsers ──
 

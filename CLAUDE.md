@@ -428,7 +428,9 @@ constructor → styling → single-line round-trip pattern:
   entries limited). **Keep `safeMatrixEntry`/`matrixBrackets` + the `case 'matrix'`
   byte-identical across codegen.js and manim.js** — guarded by `manim-export.test.js`.
 - **Axes graph extensions**: each `axes.graphs[]` item gains optional `area`
-  (`get_area`) and `riemann` (`get_riemann_rectangles`) fields with full canvas preview.
+  (`get_area`), `riemann` (`get_riemann_rectangles`), and `tangent`
+  (`TangentLine(graph, alpha, length)` — `alpha` derived from `x`) fields with full
+  canvas preview (tangent = numeric-derivative line segment) and round-trip parsing.
 
 ## Phase 2.5 Relational Objects (Brace + Angle — 2026-06-05)
 

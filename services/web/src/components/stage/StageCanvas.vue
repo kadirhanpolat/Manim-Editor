@@ -108,6 +108,7 @@
               <!-- Graph curves preview -->
               <v-line v-for="(ar, ai) in axesAreaRiemann(obj).areas" :key="'ar'+ai" :config="ar" />
               <v-rect v-for="(rr, ri) in axesAreaRiemann(obj).rects" :key="'rr'+ri" :config="rr" />
+              <v-line v-for="(tg, ti) in axesAreaRiemann(obj).tangents" :key="'tg'+ti" :config="tg" />
               <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc'+gi" :config="gc" />
             </v-group>
 

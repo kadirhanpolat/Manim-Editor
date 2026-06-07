@@ -228,6 +228,7 @@ exports[`axes configs > axes area/riemann stable 1`] = `
       "y": -18.75,
     },
   ],
+  "tangents": [],
 }
 `;
 

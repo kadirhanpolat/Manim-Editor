@@ -40,6 +40,7 @@
           <div class="flex items-center gap-2 mt-1">
             <button data-test="graph-area-toggle" class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.area && graph.area.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphArea(graph)">Area</button>
             <button class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.riemann && graph.riemann.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphRiemann(graph)">Riemann</button>
+            <button data-test="graph-tangent-toggle" class="text-[10px] px-1.5 py-0.5 rounded border border-studio-border" :class="graph.tangent && graph.tangent.enabled ? 'text-studio-accent' : 'text-studio-text-muted'" @click="toggleGraphTangent(graph)">Tangent</button>
           </div>
           <div v-if="graph.riemann && graph.riemann.enabled" class="grid grid-cols-2 gap-1.5 mt-1">
             <Num label="dx" :value="graph.riemann.dx" :min="0.05" :step="0.05" @input="setRiemannField(graph, 'dx', $event)" />
@@ -51,6 +52,10 @@
                 <option value="center">center</option>
               </select>
             </div>
+          </div>
+          <div v-if="graph.tangent && graph.tangent.enabled" class="grid grid-cols-2 gap-1.5 mt-1">
+            <Num label="at x" :value="graph.tangent.x" :step="0.5" @input="setTangentField(graph, 'x', $event)" />
+            <Num label="length" :value="graph.tangent.length" :min="0.5" :step="0.5" @input="setTangentField(graph, 'length', $event)" />
           </div>
         </div>
         <button
@@ -81,4 +86,10 @@ function toggleGraphRiemann(graph) {
   store.updateGraph(obj.id, graph.id, { riemann: on ? { xMin: graph.xMin, xMax: graph.xMax, dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10), type: 'left', color: graph.color, ...existing, enabled: true } : { ...existing, enabled: false } });
 }
 function setRiemannField(graph, key, val) { if (graph.riemann) store.updateGraph(obj.id, graph.id, { riemann: { ...graph.riemann, [key]: val } }); }
+function toggleGraphTangent(graph) {
+  const existing = graph.tangent || {}; const on = !existing.enabled;
+  const midX = (Number.isFinite(graph.xMin) && Number.isFinite(graph.xMax)) ? (graph.xMin + graph.xMax) / 2 : 0;
+  store.updateGraph(obj.id, graph.id, { tangent: on ? { x: midX, length: 2, color: graph.color, ...existing, enabled: true } : { ...existing, enabled: false } });
+}
+function setTangentField(graph, key, val) { if (graph.tangent) store.updateGraph(obj.id, graph.id, { tangent: { ...graph.tangent, [key]: val } }); }
 </script>

@@ -116,7 +116,7 @@ export function axesAreaRiemann(obj, ctx) {
   const toCx = (x) => ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
   const toCy = (y) => -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
   const cy0 = toCy(0);
-  const areas = [], rects = [];
+  const areas = [], rects = [], tangents = [];
   for (const graph of obj.graphs) {
     const fn = compileExpr(graph.expression, 'x');
     if (!fn) continue;
@@ -151,6 +151,20 @@ export function axesAreaRiemann(obj, ctx) {
           stroke: '#fff', strokeWidth: 0.5, listening: false });
       }
     }
+    if (graph.tangent && graph.tangent.enabled) {
+      const tx = Number.isFinite(graph.tangent.x) ? graph.tangent.x : (xMin + xMax) / 2;
+      const h = (xMax - xMin) / 1000;
+      const y0 = fn(tx), slope = (fn(tx + h) - fn(tx - h)) / (2 * h);
+      if (Number.isFinite(y0) && Number.isFinite(slope)) {
+        const dCx = pw / (xMax - xMin), dCy = -slope * ph / (yMax - yMin);
+        const len = Math.hypot(dCx, dCy) || 1;
+        const half = ((Number.isFinite(graph.tangent.length) ? graph.tangent.length : 2) * pw / (xMax - xMin)) / 2;
+        const ux = dCx / len, uy = dCy / len;
+        const cx = toCx(tx), cyy = toCy(y0);
+        tangents.push({ points: [cx - ux * half, cyy - uy * half, cx + ux * half, cyy + uy * half],
+          stroke: graph.tangent.color || graph.color || '#f59e0b', strokeWidth: 2, listening: false });
+      }
+    }
   }
-  return { areas, rects };
+  return { areas, rects, tangents };
 }

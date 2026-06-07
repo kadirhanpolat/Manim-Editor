@@ -332,6 +332,15 @@ export function objectCode(obj, sw, sh, { resolveAsset }) {
             lines.push(`${rn} = ${n}.get_riemann_rectangles(${gn}, x_range=[${rxMin}, ${rxMax}], dx=${rdx}, input_sample_type="${rtype}", color=${rcol})`);
             lines.push(`${n}.add(${rn})`);
           }
+          if (g.tangent && g.tangent.enabled) {
+            const tn = `${gn}_tangent`;
+            const tx = Number.isFinite(g.tangent.x) ? g.tangent.x : (xMin + xMax) / 2;
+            const alpha = (xMax > xMin) ? Math.max(0, Math.min(1, (tx - xMin) / (xMax - xMin))) : 0.5;
+            const tlen = (Number.isFinite(g.tangent.length) && g.tangent.length > 0) ? g.tangent.length : 2;
+            const tcol = hex(g.tangent.color) || col;
+            lines.push(`${tn} = TangentLine(${gn}, alpha=${alpha.toFixed(3)}, length=${tlen}, color=${tcol})`);
+            lines.push(`${n}.add(${tn})`);
+          }
         }
       }
       break;
