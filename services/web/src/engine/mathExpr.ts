@@ -10,7 +10,7 @@ const SCOPE =
   'power:Math.pow,floor:Math.floor,ceil:Math.ceil,pi:Math.PI,e:Math.E};' +
   'const PI=Math.PI,TAU=2*Math.PI,E=Math.E;';
 
-export function isSafeExpr(expr) {
+export function isSafeExpr(expr: unknown): boolean {
   if (!expr || typeof expr !== 'string') return false;
   const e = expr.trim();
   if (!e) return false;
@@ -30,13 +30,16 @@ export function isSafeExpr(expr) {
  * or won't evaluate. `varName` is a single identifier (e.g. 'x') or an array of
  * identifiers (e.g. ['x', 'y']) for multivariate expressions like a 3D surface.
  */
-export function compileExpr(expr, varName = 'x') {
-  const names = Array.isArray(varName) ? varName : [varName];
+export function compileExpr(
+  expr: string,
+  varName: string | string[] = 'x'
+): ((...args: number[]) => number) | null {
+  const names: string[] = Array.isArray(varName) ? varName : [varName];
   if (!names.every((v) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(v))) return null;
   if (!isSafeExpr(expr)) return null;
   try {
     // eslint-disable-next-line no-new-func
-    const fn = new Function(...names, '"use strict";' + SCOPE + 'return (' + expr.trim() + ');');
+    const fn = new Function(...names, '"use strict";' + SCOPE + 'return (' + expr.trim() + ');') as (...args: number[]) => number;
     const probe = fn(...names.map(() => 1)); // reject ReferenceError (undefined functions) early
     if (typeof probe !== 'number') return null;
     return fn;

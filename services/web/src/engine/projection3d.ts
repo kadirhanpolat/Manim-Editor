@@ -1,10 +1,11 @@
 // Manim Z-up spherical-camera projection (preview-only).
 // phi  = polar angle from +Z (deg), theta = azimuth in XY (deg).
 // n=(sφcθ, sφsθ, cφ) view dir; r=(-sθ, cθ, 0) screen-right; u=n×r=(-cφcθ, -cφsθ, sφ) screen-up.
+import type { Point3D, Cam3D } from './types.js';
 
 const DEG = Math.PI / 180;
 
-function basis(phi, theta) {
+function basis(phi: number, theta: number): { sp: number; cp: number; st: number; ct: number } {
   const ph = phi * DEG,
     th = theta * DEG;
   return {
@@ -21,7 +22,7 @@ function basis(phi, theta) {
  * @param {{phi?:number,theta?:number,zoom?:number,mode?:string,focalDistance?:number}} cam
  * @returns {{px:number, py:number}}
  */
-export function project3D(p, cam, cx, cy, scale) {
+export function project3D(p: Partial<Point3D>, cam: Cam3D | null | undefined, cx: number, cy: number, scale: number): { px: number; py: number } {
   const { phi = 75, theta = -45, zoom = 1, mode = 'orthographic', focalDistance = 8 } = cam || {};
   const { sp, cp, st, ct } = basis(phi, theta);
   const x = p.x3d ?? 0,
@@ -46,7 +47,7 @@ export function project3D(p, cam, cx, cy, scale) {
  * to scale rendered object sizes so they grow/shrink with depth.
  * @returns {number}
  */
-export function perspectiveScale(p, cam) {
+export function perspectiveScale(p: Partial<Point3D>, cam: Cam3D | null | undefined): number {
   const { phi = 75, theta = -45, mode = 'orthographic', focalDistance = 8 } = cam || {};
   if (mode !== 'perspective') return 1;
   const { sp, cp, st, ct } = basis(phi, theta);
@@ -62,7 +63,7 @@ export function perspectiveScale(p, cam) {
  * Inverse of project3D for iso drag, holding y3d fixed. Orthographic only.
  * Returns { x3d, z3d }; either may be null when ill-conditioned (st≈0 or sp≈0).
  */
-export function unprojectIso(px, py, cam, cx, cy, scale, yKnown) {
+export function unprojectIso(px: number, py: number, cam: Cam3D | null | undefined, cx: number, cy: number, scale: number, yKnown: number): { x3d: number | null; z3d: number | null } {
   const { phi = 75, theta = -45, zoom = 1 } = cam || {};
   const { sp, cp, st, ct } = basis(phi, theta);
   const s = scale * zoom;
