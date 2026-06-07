@@ -1,7 +1,8 @@
 import { vn, rtOpt } from './helpers.js';
 import { FRAME_WIDTH, FRAME_HEIGHT } from './constants.js';
+import type { Project, GeneratedStep, Keyframe } from './types.js';
 
-export function _kfPropSet(n, prop, value, sw, sh) {
+export function _kfPropSet(n: string, prop: string, value: number, sw: number, sh: number): string | null {
   const MANIM_W = FRAME_WIDTH,
     MANIM_H = FRAME_HEIGHT;
   switch (prop) {
@@ -37,7 +38,7 @@ export function _kfPropSet(n, prop, value, sw, sh) {
   }
 }
 
-export function _kfUpdater(prop) {
+export function _kfUpdater(prop: string): string | null {
   switch (prop) {
     case 'x':
       return 'set_x';
@@ -54,7 +55,7 @@ export function _kfUpdater(prop) {
 
 // Convert a raw keyframe value (stage pixels for x/y) into the Manim-space value
 // the setter expects. UpdateFromAlphaFunc/ValueTracker feed the setter directly.
-export function _kfValue(prop, value, sw, sh) {
+export function _kfValue(prop: string, value: number, sw: number, sh: number): number {
   switch (prop) {
     case 'x':
       return (value / sw - 0.5) * FRAME_WIDTH;
@@ -67,7 +68,7 @@ export function _kfValue(prop, value, sw, sh) {
   }
 }
 
-export function generateKeyframeSteps(project, steps, sw, sh) {
+export function generateKeyframeSteps(project: Project, steps: GeneratedStep[], sw: number, sh: number): void {
   if (!project.objects) return;
   for (const obj of project.objects) {
     if (!obj.keyframes || Object.keys(obj.keyframes).length === 0) continue;
@@ -85,7 +86,7 @@ export function generateKeyframeSteps(project, steps, sw, sh) {
     });
 
     if (hasPos3D) {
-      const pos3DKeyframes = {};
+      const pos3DKeyframes: Record<string, Keyframe[]> = {};
       for (const p of pos3DProps) {
         const kfs = obj.keyframes?.[p];
         if (!kfs || kfs.length < 2) continue;
@@ -93,14 +94,14 @@ export function generateKeyframeSteps(project, steps, sw, sh) {
       }
 
       // Collect all unique time points across active 3D props
-      const allTimes = new Set();
+      const allTimes = new Set<number>();
       for (const kfs of Object.values(pos3DKeyframes)) {
         kfs.forEach((kf) => allTimes.add(kf.time));
       }
       const sortedTimes = [...allTimes].sort((a, b) => a - b);
 
       // "last known value at or before time t" helper
-      const getVal = (kfs, t) => {
+      const getVal = (kfs: Keyframe[] | undefined, t: number): number | null => {
         if (!kfs || kfs.length === 0) return null;
         const last = kfs.filter((k) => k.time <= t).pop();
         return last ? last.value : kfs[0].value;
@@ -118,7 +119,7 @@ export function generateKeyframeSteps(project, steps, sw, sh) {
         steps.push({
           time: t1,
           order: 0.5,
-          code: `self.play(${n}.animate.move_to([${tx.toFixed(3)}, ${ty.toFixed(3)}, ${tz.toFixed(3)}])${rt})`,
+          code: `self.play(${n}.animate.move_to([${(tx as number).toFixed(3)}, ${(ty as number).toFixed(3)}, ${(tz as number).toFixed(3)}])${rt})`,
           dur,
         });
       }
@@ -176,7 +177,6 @@ export function generateKeyframeSteps(project, steps, sw, sh) {
           const kfVar = `_kf_${n}_${safeProp}_${i}`;
           const setter = _kfUpdater(prop);
           if (!setter) continue;
-          const rt = rtOpt(dur);
           const v0 = _kfValue(prop, k1.value, sw, sh).toFixed(4),
             v1 = _kfValue(prop, k2.value, sw, sh).toFixed(4);
           const t0 = k1.time.toFixed(4);

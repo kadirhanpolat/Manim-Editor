@@ -1,5 +1,5 @@
 // NOTE: keep in sync with services/api/src/compiler/codegen.js EASING_MAP
-export const EASING_MAP = {
+export const EASING_MAP: Record<string, string> = {
   linear: 'linear',
   ease_in: 'rate_functions.ease_in_sine',
   ease_out: 'rate_functions.ease_out_sine',
@@ -26,7 +26,7 @@ export const FRAME_X_RADIUS = FRAME_WIDTH / 2; // 7.11
 export const FRAME_Y_RADIUS = FRAME_HEIGHT / 2; // 4
 
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/api/src/compiler/codegen.js) ──
-export const GRADIENT_TYPES = new Set([
+export const GRADIENT_TYPES: Set<string> = new Set([
   'rectangle',
   'square',
   'circle',
@@ -39,7 +39,7 @@ export const GRADIENT_TYPES = new Set([
   'sector',
   'polygon_free',
 ]);
-export const DASH_TYPES = new Set([
+export const DASH_TYPES: Set<string> = new Set([
   'rectangle',
   'square',
   'circle',
@@ -57,7 +57,7 @@ export const DASH_TYPES = new Set([
   'polygon_free',
   'parametric',
 ]);
-export const SHADOW_TYPES = new Set([
+export const SHADOW_TYPES: Set<string> = new Set([
   'rectangle',
   'square',
   'circle',

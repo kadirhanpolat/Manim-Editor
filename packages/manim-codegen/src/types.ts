@@ -2,7 +2,7 @@
 // Wide-interface style: type-specific fields are optional on a single SceneObject.
 // (Discriminated-union refinement is deferred to Phase 4.)
 
-export type ResolveAsset = (asset: { src?: string; serverFilename?: string } | string) => string;
+export type ResolveAsset = (obj: SceneObject, ext: string) => string;
 
 export interface Stage {
   width: number;

@@ -1,52 +1,29 @@
+import { FRAME_WIDTH } from './constants.js';
 import {
-  EASING_MAP,
-  FRAME_WIDTH,
-  FRAME_HEIGHT,
-  FRAME_X_RADIUS,
-  FRAME_Y_RADIUS,
-  GRADIENT_TYPES,
-  DASH_TYPES,
-  SHADOW_TYPES,
-} from './constants.js';
-import {
-  rf,
   rfOpt,
   rtOpt,
   vn,
   hex,
-  safeNum,
-  safeOpacity,
-  safeMathExpr,
-  safeText,
-  safeLatex,
-  safeMatrixEntry,
-  matrixBrackets,
-  fillOpacityExpr,
-  strokeOpacityArg,
-  gradientLine,
-  dashedLines,
-  roundCornersLine,
-  shadowLines,
   stageToManim,
   pathPointsPy,
   isSystemFont,
-  fmt3d,
 } from './helpers.js';
 import { objectCode } from './objects.js';
 import { objectCode3d } from './objects3d.js';
 import { transformExpr, emphasisExpr } from './clips.js';
 import { generateKeyframeSteps } from './keyframes.js';
+import type { Project, GenerateOptions, GeneratedStep, SceneObject, Clip } from './types.js';
 
-export function generateScene(project, { resolveAsset }) {
-  const L = [],
+export function generateScene(project: Project, { resolveAsset }: GenerateOptions): string {
+  const L: string[] = [],
     sw = project.stage.width,
     sh = project.stage.height;
 
   // Collect unique Google Fonts used by text objects
-  const usedFonts = new Set();
+  const usedFonts = new Set<string>();
   for (const obj of project.objects || []) {
     if (obj.type === 'text' && obj.fontFamily) {
-      const font = obj.fontFamily;
+      const font = obj.fontFamily as string;
       if (font && !isSystemFont(font)) {
         usedFonts.add(font);
       }
@@ -85,7 +62,7 @@ export function generateScene(project, { resolveAsset }) {
   L.push('');
   L.push('');
 
-  let sceneBase;
+  let sceneBase: string;
   if (is3D) {
     sceneBase = hasReadyAudio ? 'ThreeDScene, VoiceoverScene' : 'ThreeDScene';
   } else if (project.cameraType === 'moving') {
@@ -136,7 +113,7 @@ export function generateScene(project, { resolveAsset }) {
 
   // ── Object definitions ──
   const obj3DTypes = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'];
-  const oMap = {};
+  const oMap: Record<string, SceneObject> = {};
   L.push(`${indent}# Objects`);
   for (const o of project.objects) {
     oMap[o.id] = o;
@@ -165,13 +142,13 @@ export function generateScene(project, { resolveAsset }) {
   }
 
   // ── Collect clips ──
-  const clips = [];
+  const clips: Clip[] = [];
   for (const t of project.tracks) for (const c of t.clips) clips.push(c);
   clips.sort((a, b) => a.startTime - b.startTime);
 
   // ── Determine transform relationships ──
-  const transformSources = new Set();
-  const transformTargets = new Set();
+  const transformSources = new Set<string | undefined>();
+  const transformTargets = new Set<string | undefined>();
   for (const c of clips) {
     if (c.type === 'transform') {
       transformSources.add(c.sourceId);
@@ -180,7 +157,7 @@ export function generateScene(project, { resolveAsset }) {
   }
 
   // ── Build animation steps ──
-  const steps = [];
+  const steps: GeneratedStep[] = [];
 
   // Enter: skip objects that are transform targets
   for (const o of project.objects) {
@@ -191,7 +168,7 @@ export function generateScene(project, { resolveAsset }) {
     const rt = rtOpt(dur);
     const enterAnim = o.enterAnim || 'fade_in';
 
-    let enterCode;
+    let enterCode: string;
     switch (enterAnim) {
       case 'none':
         enterCode = `self.add(${n})`;
@@ -236,7 +213,10 @@ export function generateScene(project, { resolveAsset }) {
   }
 
   // ── Group parallel clips ──
-  const clipGroups = [];
+  type ClipGroup =
+    | { type: 'group'; clips: typeof clips; startTime: number }
+    | { type: 'single'; clip: (typeof clips)[0]; startTime: number };
+  const clipGroups: ClipGroup[] = [];
   let gi = 0;
   while (gi < clips.length) {
     const c = clips[gi];
@@ -260,17 +240,17 @@ export function generateScene(project, { resolveAsset }) {
   }
 
   // ── Build clip animation steps ──
-  function singleClipCode(c) {
+  function singleClipCode(c: (typeof clips)[0]): { code: string; dur: number } | null {
     const objId = c.sourceId ?? c.objectId;
-    const sn = vn(objId);
+    const sn = vn(objId ?? '');
     const dur = c.duration;
     const rtStr = rtOpt(dur);
     const rfStr = rfOpt(c.easing);
     switch (c.type) {
       case 'transform': {
-        const tn = vn(c.targetId);
+        const tn = vn(c.targetId ?? '');
         return {
-          code: `self.play(${transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId])}${rtStr}${rfStr})`,
+          code: `self.play(${transformExpr(c, sn, tn, oMap[c.sourceId ?? ''], oMap[c.targetId ?? ''])}${rtStr}${rfStr})`,
           dur,
         };
       }
@@ -297,9 +277,9 @@ export function generateScene(project, { resolveAsset }) {
         };
       }
       case 'rotate': {
-        const obj = oMap[objId];
+        const obj = oMap[objId ?? ''];
         if (is3D && obj && obj3DTypes.includes(obj.type)) {
-          const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+          const axisMap: Record<string, string> = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
           const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
           const angleRad = (((c.angle ?? 90) * Math.PI) / 180).toFixed(4);
           return {
@@ -308,7 +288,7 @@ export function generateScene(project, { resolveAsset }) {
           };
         }
         const ang =
-          (((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI) / 180;
+          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) / 180;
         return { code: `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`, dur };
       }
       case 'path_move': {
@@ -326,8 +306,8 @@ export function generateScene(project, { resolveAsset }) {
       case 'count': {
         const cn = (c.id || sn).replace(/[^a-zA-Z0-9_]/g, '_');
         const vt = `_count_${cn}`; // distinct from keyframe _vt_<obj>_<prop> to avoid parser collision
-        const from = Number.isFinite(c.from) ? c.from : 0;
-        const to = Number.isFinite(c.to) ? c.to : 0;
+        const from = Number.isFinite(c.from) ? c.from! : 0;
+        const to = Number.isFinite(c.to) ? c.to! : 0;
         const multiLine = [
           `${vt} = ValueTracker(${from})`,
           `${sn}.add_updater(lambda m: m.set_value(${vt}.get_value()))`,
@@ -349,9 +329,9 @@ export function generateScene(project, { resolveAsset }) {
     }
   }
 
-  function animExpr(c) {
+  function animExpr(c: (typeof clips)[0]): string | null {
     const objId = c.sourceId ?? c.objectId;
-    const sn = vn(objId);
+    const sn = vn(objId ?? '');
     switch (c.type) {
       case 'move': {
         const mp = stageToManim(c.params?.targetX || 0, c.params?.targetY || 0, sw, sh);
@@ -364,20 +344,20 @@ export function generateScene(project, { resolveAsset }) {
         return op < 0.01 ? `FadeOut(${sn})` : `${sn}.animate.set_opacity(${op.toFixed(2)})`;
       }
       case 'rotate': {
-        const obj = oMap[objId];
+        const obj = oMap[objId ?? ''];
         if (is3D && obj && obj3DTypes.includes(obj.type)) {
-          const axisMap = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
+          const axisMap: Record<string, string> = { X: 'RIGHT', Y: 'UP', Z: 'OUT' };
           const axis = axisMap[c.axis ?? 'Z'] ?? 'OUT';
           const angleRad = (((c.angle ?? 90) * Math.PI) / 180).toFixed(4);
           return `Rotate(${sn}, angle=${angleRad}, axis=${axis})`;
         }
         const ang =
-          (((c.params?.targetRotation || 360) - (oMap[objId]?.rotation || 0)) * Math.PI) / 180;
+          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) / 180;
         return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
       }
       case 'transform': {
-        const tn = vn(c.targetId);
-        return transformExpr(c, sn, tn, oMap[c.sourceId], oMap[c.targetId]);
+        const tn = vn(c.targetId ?? '');
+        return transformExpr(c, sn, tn, oMap[c.sourceId ?? ''], oMap[c.targetId ?? '']);
       }
       case 'indicate':
       case 'flash':
@@ -418,7 +398,7 @@ export function generateScene(project, { resolveAsset }) {
       const dur = Math.max(...groupClips.map((c) => c.duration));
       const rtStr = rtOpt(dur);
       const maxLag = Math.max(...groupClips.map((c) => c.lag_ratio || 0));
-      const exprs = groupClips.map(animExpr).filter(Boolean);
+      const exprs = groupClips.map(animExpr).filter((e): e is string => e !== null);
       if (exprs.length > 0) {
         const groupFn = maxLag > 0 ? 'LaggedStart' : 'AnimationGroup';
         const lagStr = maxLag > 0 ? `, lag_ratio=${maxLag.toFixed(2)}` : '';
@@ -444,16 +424,16 @@ export function generateScene(project, { resolveAsset }) {
       const rtStr = rtOpt(dur);
       const rfStr = rfOpt(camClip.easing);
 
-      let code;
+      let code: string;
       if (is3D) {
         const p = camClip.params || {};
         const phi = p.phi ?? project.camera3d?.phi ?? 75;
         const theta = p.theta ?? project.camera3d?.theta ?? -45;
         const zoom = p.zoom ?? 1.0;
-        code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${zoom.toFixed(2)}, run_time=${dur})`;
+        code = `self.move_camera(phi=${phi} * DEGREES, theta=${theta} * DEGREES, zoom=${(zoom as number).toFixed(2)}, run_time=${dur})`;
       } else if (project.cameraType === 'moving') {
         const mp = stageToManim(camClip.params?.targetX || 0, camClip.params?.targetY || 0, sw, sh);
-        const zoom = parseFloat((camClip.params?.zoom || 1).toFixed(4));
+        const zoom = parseFloat(((camClip.params?.zoom as number | undefined || 1)).toFixed(4));
         const frameWidth = (FRAME_WIDTH / zoom).toFixed(3);
         code = `self.play(self.camera.frame.animate.move_to([${mp.x.toFixed(2)}, ${mp.y.toFixed(2)}, 0]).set_width(${frameWidth})${rtStr}${rfStr})`;
       } else {
@@ -482,7 +462,7 @@ export function generateScene(project, { resolveAsset }) {
     const dur = o.exitAnimDur || 0.5;
     const rt = rtOpt(dur);
 
-    let exitCode;
+    let exitCode: string;
     switch (exitAnim) {
       case 'none':
         continue; // Skip entirely
@@ -534,15 +514,15 @@ export function generateScene(project, { resolveAsset }) {
         ? `tracker_${step._clipId.replace(/[^a-zA-Z0-9]/g, '_')}`
         : `tracker_${steps.indexOf(step)}`;
       L.push(`${indent}with self.voiceover(audio="${a.src}") as ${trackerId}:`);
-      if (a.syncMode === 'manual' && a.offset > 0) {
-        L.push(`${indent}    self.wait(${parseFloat(a.offset).toFixed(1)})`);
+      if (a.syncMode === 'manual' && (a.offset ?? 0) > 0) {
+        L.push(`${indent}    self.wait(${parseFloat(String(a.offset)).toFixed(1)})`);
       }
       const innerLines = step.code.split('\n');
       for (const line of innerLines) {
         L.push(`${indent}    ${line.trim()}`);
       }
       if (a.syncMode === 'auto') {
-        const dur = parseFloat(step.dur || 1).toFixed(1);
+        const dur = parseFloat(String(step.dur || 1)).toFixed(1);
         L.push(`${indent}    self.wait(max(0, ${trackerId}.duration - ${dur}))`);
       }
     } else {
