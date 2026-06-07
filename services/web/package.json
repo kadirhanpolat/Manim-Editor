@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "pretest": "npm run build:codegen --prefix ../..",
     "test": "node tests/engine.test.mjs",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest"
