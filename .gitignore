@@ -14,3 +14,7 @@ dist/
 
 # Tooling
 .superpowers/
+
+# Python caches (renderer/audio workers + test helpers)
+__pycache__/
+*.pyc
