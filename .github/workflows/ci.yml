@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - name: Prettier format check
+        run: npm run format:check
+      - name: Web unit tests
+        run: npm run test:unit --workspace services/web
+      - name: Engine tests
+        run: npm test --workspace services/web
+      # NOTE: `npm run lint` and typecheck are added as gates in Phase 6,
+      # once the codebase is migrated and violations are resolved.
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install ruff black
+      - name: Ruff
+        run: ruff check services/renderer/worker.py services/audio/worker.py services/web/tests/helpers/ast_check.py
+      - name: Black
+        run: black --check services/renderer/worker.py services/audio/worker.py services/web/tests/helpers/ast_check.py
