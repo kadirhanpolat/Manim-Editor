@@ -1,7 +1,8 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
+import type { FileFilterCallback } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -11,7 +12,7 @@ const execFileAsync = promisify(execFile);
 
 const router = Router();
 
-const ALLOWED_AUDIO = {
+const ALLOWED_AUDIO: Record<string, string> = {
   'audio/mpeg': 'mp3',
   'audio/mp3': 'mp3',
   'audio/wav': 'wav',
@@ -20,26 +21,26 @@ const ALLOWED_AUDIO = {
 };
 
 const audioStorage = multer.diskStorage({
-  destination: async (req, file, cb) => {
+  destination: async (req: Request, _file: Express.Multer.File, cb) => {
     const dir = path.join(req.dataDir, 'assets', 'audio');
     try {
       await fs.mkdir(dir, { recursive: true, mode: 0o777 });
       cb(null, dir);
     } catch (err) {
-      cb(err);
+      cb(err as Error, '');
     }
   },
-  filename: (req, file, cb) => {
-    const ext = ALLOWED_AUDIO[file.mimetype] || 'wav';
+  filename: (_req: Request, file: Express.Multer.File, cb) => {
+    const ext = ALLOWED_AUDIO[file.mimetype] ?? 'wav';
     cb(null, `${uuidv4().replace(/-/g, '')}.${ext}`);
   },
 });
 
 const audioUpload = multer({
   storage: audioStorage,
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     if (ALLOWED_AUDIO[file.mimetype]) cb(null, true);
-    else cb(new Error(`Audio type not allowed: ${file.mimetype}`), false);
+    else cb(new Error(`Audio type not allowed: ${file.mimetype}`));
   },
   limits: { fileSize: 100 * 1024 * 1024 },
 });
@@ -49,9 +50,9 @@ const audioUpload = multer({
  * POST /api/audio/upload
  * Body: multipart, field "file"
  */
-router.post('/upload', audioUpload.single('file'), async (req, res, next) => {
+router.post('/upload', audioUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) return void res.status(400).json({ error: 'No file uploaded' });
 
     const filePath = req.file.path;
     let duration = 0;
@@ -65,15 +66,15 @@ router.post('/upload', audioUpload.single('file'), async (req, res, next) => {
         '-show_streams',
         filePath,
       ]);
-      const data = JSON.parse(stdout);
-      for (const stream of data.streams || []) {
+      const data = JSON.parse(stdout) as { streams?: Array<{ codec_type: string; duration?: string }> };
+      for (const stream of data.streams ?? []) {
         if (stream.codec_type === 'audio') {
-          duration = parseFloat(stream.duration || 0);
+          duration = parseFloat(stream.duration ?? '0');
           break;
         }
       }
     } catch (e) {
-      console.error('[audio] ffprobe failed:', e.message);
+      console.error('[audio] ffprobe failed:', (e as Error).message);
     }
 
     res.status(201).json({
@@ -92,16 +93,23 @@ router.post('/upload', audioUpload.single('file'), async (req, res, next) => {
  * POST /api/audio/tts
  * Body: { clipId, type: 'gtts'|'coqui', text, lang }
  */
-router.post('/tts', async (req, res, next) => {
+router.post('/tts', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { clipId, type, text, lang } = req.body;
-    if (!clipId) return res.status(400).json({ error: 'clipId required' });
-    if (!text || !text.trim()) return res.status(400).json({ error: 'text required' });
-    if (!['gtts', 'coqui'].includes(type))
-      return res.status(400).json({ error: 'type must be gtts or coqui' });
+    const body = req.body as { clipId?: string; type?: string; text?: string; lang?: string };
+    const { clipId, type, text, lang } = body;
+    if (!clipId) return void res.status(400).json({ error: 'clipId required' });
+    if (!text || !text.trim()) return void res.status(400).json({ error: 'text required' });
+    if (!['gtts', 'coqui'].includes(type ?? ''))
+      return void res.status(400).json({ error: 'type must be gtts or coqui' });
 
     const jobId = uuidv4().replace(/-/g, '');
-    await enqueueAudioJob({ jobId, clipId, type, text: text.trim(), lang: lang || 'tr' });
+    await enqueueAudioJob({
+      jobId,
+      clipId,
+      type: type as 'gtts' | 'coqui',
+      text: text.trim(),
+      lang: lang ?? 'tr',
+    });
 
     res.status(201).json({ jobId, status: 'pending' });
   } catch (err) {
@@ -114,14 +122,20 @@ router.post('/tts', async (req, res, next) => {
  * POST /api/audio/:jobId/complete
  * Body: { status: 'ready'|'error', clipId, duration?, error? }
  */
-router.post('/:jobId/complete', async (req, res, next) => {
+router.post('/:jobId/complete', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { jobId } = req.params;
-    const { status, clipId, duration, error } = req.body;
+    const jobId = req.params['jobId'];
+    const body = req.body as {
+      status?: string;
+      clipId?: string;
+      duration?: string | number;
+      error?: string;
+    };
+    const { status, clipId, duration, error } = body;
 
-    const updates = { status };
-    if (duration != null) updates.duration = duration;
-    if (error) updates.error = error;
+    const updates: Record<string, string | number | null | undefined> = { status };
+    if (duration != null) updates['duration'] = duration;
+    if (error) updates['error'] = error;
     await updateAudioJobStatus(jobId, updates);
 
     // Lazy-import broadcastAudioEvent to avoid circular dependency issues during startup
@@ -132,12 +146,12 @@ router.post('/:jobId/complete', async (req, res, next) => {
         event: status === 'ready' ? 'audio_ready' : 'audio_error',
         jobId,
         clipId,
-        duration: duration != null ? parseFloat(duration) : undefined,
+        duration: duration != null ? parseFloat(String(duration)) : undefined,
         src: status === 'ready' ? audioSrc : undefined,
-        error: error || undefined,
+        error: error ?? undefined,
       });
     } catch (e) {
-      console.error('[audio] broadcastAudioEvent not available yet:', e.message);
+      console.error('[audio] broadcastAudioEvent not available yet:', (e as Error).message);
     }
 
     res.json({ ok: true });
@@ -150,10 +164,10 @@ router.post('/:jobId/complete', async (req, res, next) => {
  * Get audio job status.
  * GET /api/audio/:jobId/status
  */
-router.get('/:jobId/status', async (req, res, next) => {
+router.get('/:jobId/status', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const job = await getAudioJobStatus(req.params.jobId);
-    if (!job) return res.status(404).json({ error: 'Job not found' });
+    const job = await getAudioJobStatus(req.params['jobId']);
+    if (!job) return void res.status(404).json({ error: 'Job not found' });
     res.json(job);
   } catch (err) {
     next(err);
@@ -164,14 +178,15 @@ router.get('/:jobId/status', async (req, res, next) => {
  * Delete an audio file.
  * DELETE /api/audio/:audioId
  */
-router.delete('/:audioId', async (req, res, next) => {
+router.delete('/:audioId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const audioId = req.params.audioId.replace(/[^a-zA-Z0-9._-]/g, '');
+    const audioId = req.params['audioId'].replace(/[^a-zA-Z0-9._-]/g, '');
     const filePath = path.join(req.dataDir, 'assets', 'audio', audioId);
     try {
       await fs.unlink(filePath);
     } catch (err) {
-      if (err.code === 'ENOENT') return res.status(404).json({ error: 'Audio file not found' });
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+        return void res.status(404).json({ error: 'Audio file not found' });
       throw err;
     }
     res.status(204).send();

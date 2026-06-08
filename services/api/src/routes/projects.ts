@@ -5,7 +5,7 @@
  * (stage / objects / tracks+clips / assets / sceneDuration).
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,10 +14,10 @@ import { enqueueRenderJob } from '../queue.js';
 
 const router = Router();
 
-function getProjectsDir(dataDir) {
+function getProjectsDir(dataDir: string): string {
   return path.join(dataDir, 'projects');
 }
-function getProjectDir(dataDir, projectId) {
+function getProjectDir(dataDir: string, projectId: string): string {
   return path.join(dataDir, 'projects', projectId);
 }
 
@@ -25,13 +25,13 @@ function getProjectDir(dataDir, projectId) {
  * Sanitize data to prevent NoSQL injection by removing MongoDB operators
  * (keys starting with $) from objects
  */
-function sanitizeNoSQL(obj) {
+function sanitizeNoSQL(obj: unknown): unknown {
   if (Array.isArray(obj)) {
     return obj.map(sanitizeNoSQL);
   }
   if (obj && typeof obj === 'object') {
-    const sanitized = {};
-    for (const [key, value] of Object.entries(obj)) {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       // Skip keys starting with $ to prevent NoSQL injection
       if (key.startsWith('$')) continue;
       sanitized[key] = sanitizeNoSQL(value);
@@ -47,11 +47,13 @@ function sanitizeNoSQL(obj) {
  * POST /api/projects
  * Create a new project with the v2 schema.
  */
-router.post('/', async (req, res, next) => {
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Sanitize input to prevent NoSQL injection
-    const sanitizedBody = sanitizeNoSQL(req.body);
-    const { name = 'My Animation', editorMode = 'visual', codeSource = '' } = sanitizedBody;
+    const sanitizedBody = sanitizeNoSQL(req.body) as Record<string, unknown>;
+    const name = (sanitizedBody['name'] as string | undefined) ?? 'My Animation';
+    const editorMode = (sanitizedBody['editorMode'] as string | undefined) ?? 'visual';
+    const codeSource = (sanitizedBody['codeSource'] as string | undefined) ?? '';
     const projectId = `proj_${uuidv4().split('-')[0]}`;
 
     const projectDir = getProjectDir(req.dataDir, projectId);
@@ -72,9 +74,9 @@ router.post('/', async (req, res, next) => {
         snapToGrid: true,
         snapToCenter: true,
       },
-      assets: [],
-      objects: [],
-      tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      assets: [] as unknown[],
+      objects: [] as unknown[],
+      tracks: [{ id: 'track_1', name: 'Track 1', clips: [] as unknown[] }],
       sceneDuration: 10,
     };
 
@@ -95,27 +97,27 @@ router.post('/', async (req, res, next) => {
  * GET /api/projects
  * List all projects (summary).
  */
-router.get('/', async (req, res, next) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const projectsDir = getProjectsDir(req.dataDir);
     await fs.mkdir(projectsDir, { recursive: true });
 
     const entries = await fs.readdir(projectsDir, { withFileTypes: true });
-    const projects = [];
+    const projects: unknown[] = [];
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       try {
         const projectPath = path.join(projectsDir, entry.name, 'project.json');
         const data = await fs.readFile(projectPath, 'utf-8');
-        const project = JSON.parse(data);
+        const project = JSON.parse(data) as Record<string, unknown>;
         const stat = await fs.stat(projectPath);
         projects.push({
-          id: project.id,
-          name: project.name,
-          editorMode: project.editorMode || 'visual',
-          objectsCount: project.objects?.length || 0,
-          tracksCount: project.tracks?.length || 0,
+          id: project['id'],
+          name: project['name'],
+          editorMode: (project['editorMode'] as string | undefined) ?? 'visual',
+          objectsCount: (project['objects'] as unknown[] | undefined)?.length ?? 0,
+          tracksCount: (project['tracks'] as unknown[] | undefined)?.length ?? 0,
           updatedAt: stat.mtime.toISOString(),
         });
       } catch {
@@ -134,13 +136,14 @@ router.get('/', async (req, res, next) => {
 /**
  * GET /api/projects/:id
  */
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectPath = path.join(getProjectDir(req.dataDir, req.params.id), 'project.json');
+    const projectPath = path.join(getProjectDir(req.dataDir, req.params['id']), 'project.json');
     const data = await fs.readFile(projectPath, 'utf-8');
     res.json(JSON.parse(data));
   } catch (err) {
-    if (err.code === 'ENOENT') return res.status(404).json({ error: 'Project not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+      return void res.status(404).json({ error: 'Project not found' });
     next(err);
   }
 });
@@ -151,24 +154,24 @@ router.get('/:id', async (req, res, next) => {
  * PUT /api/projects/:id
  * Full replace of the project JSON.
  */
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectDir = getProjectDir(req.dataDir, req.params.id);
+    const projectDir = getProjectDir(req.dataDir, req.params['id']);
     const projectPath = path.join(projectDir, 'project.json');
 
     // Ensure dir exists (handles first-save after create)
     await fs.mkdir(projectDir, { recursive: true, mode: 0o777 });
 
     // Sanitize input to prevent NoSQL injection
-    const sanitizedBody = sanitizeNoSQL(req.body);
+    const sanitizedBody = sanitizeNoSQL(req.body) as Record<string, unknown>;
 
     // Preserve server ID
-    const project = { ...sanitizedBody, id: req.params.id };
+    const project: Record<string, unknown> = { ...sanitizedBody, id: req.params['id'] };
 
     // Strip dataUrl from assets before persisting (they can be huge)
-    if (Array.isArray(project.assets)) {
-      project.assets = project.assets.map((a) => {
-        const { dataUrl, serverFilename, ...rest } = a;
+    if (Array.isArray(project['assets'])) {
+      project['assets'] = (project['assets'] as Record<string, unknown>[]).map((a) => {
+        const { dataUrl: _dataUrl, serverFilename: _serverFilename, ...rest } = a;
         return rest;
       });
     }
@@ -176,7 +179,8 @@ router.put('/:id', async (req, res, next) => {
     await fs.writeFile(projectPath, JSON.stringify(project, null, 2));
     res.json(project);
   } catch (err) {
-    if (err.code === 'ENOENT') return res.status(404).json({ error: 'Project not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+      return void res.status(404).json({ error: 'Project not found' });
     next(err);
   }
 });
@@ -186,11 +190,11 @@ router.put('/:id', async (req, res, next) => {
 /**
  * DELETE /api/projects/:id
  */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectDir = getProjectDir(req.dataDir, req.params.id);
-    const assetsDir = path.join(req.dataDir, 'assets', req.params.id);
-    const rendersDir = path.join(req.dataDir, 'renders', req.params.id);
+    const projectDir = getProjectDir(req.dataDir, req.params['id']);
+    const assetsDir = path.join(req.dataDir, 'assets', req.params['id']);
+    const rendersDir = path.join(req.dataDir, 'renders', req.params['id']);
 
     await fs.rm(projectDir, { recursive: true, force: true });
     await fs.rm(assetsDir, { recursive: true, force: true });
@@ -208,22 +212,23 @@ router.delete('/:id', async (req, res, next) => {
  * POST /api/projects/:id/render
  * Compile the project to scene.py and enqueue a Manim render job.
  */
-router.post('/:id/render', async (req, res, next) => {
+router.post('/:id/render', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { quality = 'medium' } = req.body;
-    const projectId = req.params.id;
+    const body = req.body as { quality?: string };
+    const quality = body.quality ?? 'medium';
+    const projectId = req.params['id'];
 
     // Load project
     const projectPath = path.join(getProjectDir(req.dataDir, projectId), 'project.json');
     const projectData = await fs.readFile(projectPath, 'utf-8');
-    const project = JSON.parse(projectData);
+    const project = JSON.parse(projectData) as unknown;
 
     // Compile to Python
     const assetsPath = path.join(req.dataDir, 'assets', projectId);
     const result = compileProject(project, assetsPath);
 
     if (!result.success) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: 'Compilation failed',
         details: result.errors,
       });
@@ -252,7 +257,8 @@ router.post('/:id/render', async (req, res, next) => {
       message: 'Render job enqueued',
     });
   } catch (err) {
-    if (err.code === 'ENOENT') return res.status(404).json({ error: 'Project not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+      return void res.status(404).json({ error: 'Project not found' });
     next(err);
   }
 });
@@ -263,13 +269,16 @@ router.post('/:id/render', async (req, res, next) => {
  * POST /api/projects/:id/render-code
  * Write raw user-supplied Manim code as scene.py and enqueue a render job.
  */
-router.post('/:id/render-code', async (req, res, next) => {
+router.post('/:id/render-code', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { quality = 'medium', codeSource, sceneName = 'MainScene' } = req.body;
-    const projectId = req.params.id;
+    const body = req.body as { quality?: string; codeSource?: string; sceneName?: string };
+    const quality = body.quality ?? 'medium';
+    const codeSource = body.codeSource;
+    const sceneName = body.sceneName ?? 'MainScene';
+    const projectId = req.params['id'];
 
     if (!codeSource || typeof codeSource !== 'string' || codeSource.trim().length === 0) {
-      return res.status(400).json({ error: 'codeSource is required and must be non-empty' });
+      return void res.status(400).json({ error: 'codeSource is required and must be non-empty' });
     }
 
     const projectDir = getProjectDir(req.dataDir, projectId);
@@ -296,7 +305,8 @@ router.post('/:id/render-code', async (req, res, next) => {
       message: 'Code render job enqueued',
     });
   } catch (err) {
-    if (err.code === 'ENOENT') return res.status(404).json({ error: 'Project not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+      return void res.status(404).json({ error: 'Project not found' });
     next(err);
   }
 });

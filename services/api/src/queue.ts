@@ -4,36 +4,51 @@
 
 import { createClient } from 'redis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
-let client = null;
+type RedisClient = ReturnType<typeof createClient>;
+let client: RedisClient | null = null;
 
 /**
  * Get or create Redis client.
  */
-export async function getRedisClient() {
+export async function getRedisClient(): Promise<RedisClient> {
   if (!client) {
     client = createClient({ url: REDIS_URL });
-    client.on('error', (err) => console.error('[Redis Error]', err));
+    client.on('error', (err: unknown) => console.error('[Redis Error]', err));
     await client.connect();
     console.log('[Redis] Connected to', REDIS_URL);
   }
   return client;
 }
 
+export interface RenderJob {
+  jobId: string;
+  projectId: string;
+  sceneFile: string;
+  sceneName: string;
+  quality?: string;
+}
+
+export interface AudioJob {
+  jobId: string;
+  clipId: string;
+  type: 'gtts' | 'coqui';
+  text: string;
+  lang?: string;
+}
+
 /**
  * Enqueue a render job.
- * @param {Object} job - The job payload
- * @returns {string} The job ID
  */
-export async function enqueueRenderJob(job) {
+export async function enqueueRenderJob(job: RenderJob): Promise<string> {
   const redis = await getRedisClient();
 
   // Create job record
   await redis.hSet(`render:job:${job.jobId}`, {
     status: 'queued',
     projectId: job.projectId,
-    quality: job.quality || 'medium',
+    quality: job.quality ?? 'medium',
     createdAt: new Date().toISOString(),
   });
 
@@ -45,10 +60,8 @@ export async function enqueueRenderJob(job) {
 
 /**
  * Get job status.
- * @param {string} jobId - The job ID
- * @returns {Object|null} Job status or null if not found
  */
-export async function getJobStatus(jobId) {
+export async function getJobStatus(jobId: string): Promise<Record<string, string> | null> {
   const redis = await getRedisClient();
   const job = await redis.hGetAll(`render:job:${jobId}`);
 
@@ -61,14 +74,12 @@ export async function getJobStatus(jobId) {
 
 /**
  * Enqueue an audio TTS job.
- * @param {Object} job - { jobId, clipId, type: 'gtts'|'coqui', text, lang }
- * @returns {string} The job ID
  */
-export async function enqueueAudioJob(job) {
+export async function enqueueAudioJob(job: AudioJob): Promise<string> {
   const redis = await getRedisClient();
 
   // Validate job type
-  if (!['gtts', 'coqui'].includes(job.type)) {
+  if (!(['gtts', 'coqui'] as const).includes(job.type)) {
     throw new Error(`Invalid audio job type: ${job.type}`);
   }
 
@@ -78,8 +89,8 @@ export async function enqueueAudioJob(job) {
     status: 'pending',
     clipId: job.clipId,
     type: job.type,
-    text: job.text || '',
-    lang: job.lang || 'tr',
+    text: job.text ?? '',
+    lang: job.lang ?? 'tr',
     createdAt: new Date().toISOString(),
   });
 
@@ -92,10 +103,8 @@ export async function enqueueAudioJob(job) {
 
 /**
  * Get audio job status.
- * @param {string} jobId - The job ID
- * @returns {Object|null} Job status or null if not found
  */
-export async function getAudioJobStatus(jobId) {
+export async function getAudioJobStatus(jobId: string): Promise<Record<string, string> | null> {
   const redis = await getRedisClient();
   const job = await redis.hGetAll(`audio:job:${jobId}`);
 
@@ -108,14 +117,15 @@ export async function getAudioJobStatus(jobId) {
 
 /**
  * Update fields on an audio job hash.
- * @param {string} jobId - The job ID
- * @param {Object} updates - Key-value pairs to update
  */
-export async function updateAudioJobStatus(jobId, updates) {
+export async function updateAudioJobStatus(
+  jobId: string,
+  updates: Record<string, string | number | null | undefined>
+): Promise<void> {
   const redis = await getRedisClient();
 
   // Filter out null/undefined values and ensure remaining values are strings
-  const safe = {};
+  const safe: Record<string, string> = {};
   for (const [k, v] of Object.entries(updates)) {
     if (v != null) safe[k] = String(v);
   }

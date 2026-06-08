@@ -118,25 +118,30 @@ const ProjectSchema = z
 
 // ─── Validate ─────────────────────────────────────────────────────────────────
 
+export type ValidateResult =
+  | { valid: true; data: z.infer<typeof ProjectSchema> }
+  | { valid: false; errors: string[] };
+
 /**
  * Validate a project against the v2 schema.
- * @param {Object} project
- * @returns {{ valid: boolean, errors?: string[], data?: Object }}
  */
-export function validateProject(project) {
+export function validateProject(project: unknown): ValidateResult {
   try {
     const result = ProjectSchema.safeParse(project);
 
     if (!result.success) {
-      const errors = result.error.errors.map((err) => `${err.path.join('.')}: ${err.message}`);
+      const errors = result.error.errors.map(
+        (err: { path: (string | number)[]; message: string }) =>
+          `${err.path.join('.')}: ${err.message}`
+      );
       return { valid: false, errors };
     }
 
     const data = result.data;
-    const errors = [];
+    const errors: string[] = [];
 
     // Check clip object references
-    const objectIds = new Set((data.objects || []).map((o) => o.id));
+    const objectIds = new Set((data.objects ?? []).map((o) => o.id));
     for (const track of data.tracks) {
       for (const clip of track.clips) {
         if (clip.sourceId && !objectIds.has(clip.sourceId)) {
@@ -154,7 +159,8 @@ export function validateProject(project) {
 
     return { valid: true, data };
   } catch (err) {
-    return { valid: false, errors: [err.message] };
+    const msg = err instanceof Error ? err.message : String(err);
+    return { valid: false, errors: [msg] };
   }
 }
 

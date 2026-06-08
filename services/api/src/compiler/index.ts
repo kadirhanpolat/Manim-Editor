@@ -9,13 +9,14 @@ import { validateProject } from './validator.js';
 import { normalizeProject } from './normalizer.js';
 import { generatePythonCode } from './codegen.js';
 
+export type CompileResult =
+  | { success: true; code: string }
+  | { success: false; errors: string[] };
+
 /**
  * Compile a project JSON to Manim Python code.
- * @param {Object} project - The project JSON
- * @param {string} assetsBasePath - Base path for assets (e.g., /data/assets/proj_1)
- * @returns {{ success: boolean, code?: string, errors?: string[] }}
  */
-export function compileProject(project, assetsBasePath) {
+export function compileProject(project: unknown, assetsBasePath: string): CompileResult {
   // Step 1: Validate
   const validation = validateProject(project);
   if (!validation.valid) {

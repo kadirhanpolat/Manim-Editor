@@ -4,7 +4,7 @@
  * Serve rendered video files.
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
@@ -27,9 +27,9 @@ router.use(renderRateLimit);
  * Get the latest render for a project.
  * GET /api/renders/:projectId/latest.mp4
  */
-router.get('/:projectId/latest.mp4', async (req, res, next) => {
+router.get('/:projectId/latest.mp4', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const renderPath = path.join(req.dataDir, 'renders', req.params.projectId, 'latest.mp4');
+    const renderPath = path.join(req.dataDir, 'renders', req.params['projectId'], 'latest.mp4');
 
     // Check if file exists
     await fs.access(renderPath);
@@ -43,7 +43,7 @@ router.get('/:projectId/latest.mp4', async (req, res, next) => {
     res.setHeader('Accept-Ranges', 'bytes');
 
     // Handle range requests for video seeking
-    const range = req.headers.range;
+    const range = req.headers['range'];
 
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
@@ -62,8 +62,8 @@ router.get('/:projectId/latest.mp4', async (req, res, next) => {
       res.sendFile(renderPath);
     }
   } catch (err) {
-    if (err.code === 'ENOENT') {
-      return res.status(404).json({
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return void res.status(404).json({
         error: 'Render not found',
         message: 'No render available for this project. Trigger a render first.',
       });
@@ -76,23 +76,25 @@ router.get('/:projectId/latest.mp4', async (req, res, next) => {
  * List all renders for a project.
  * GET /api/renders/:projectId
  */
-router.get('/:projectId', async (req, res, next) => {
+router.get('/:projectId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rendersDir = path.join(req.dataDir, 'renders', req.params.projectId);
+    const rendersDir = path.join(req.dataDir, 'renders', req.params['projectId']);
 
     try {
       await fs.access(rendersDir);
     } catch {
-      return res.json({ renders: [], hasLatest: false, history: [] });
+      return void res.json({ renders: [], hasLatest: false, history: [] });
     }
 
     const latestPath = path.join(rendersDir, 'latest.mp4');
     let hasLatest = false;
-    let latestStats = null;
+    let latestStats: import('fs').Stats | null = null;
     try {
       latestStats = await fs.stat(latestPath);
       hasLatest = true;
-    } catch {}
+    } catch {
+      // no latest render yet
+    }
 
     const entries = await fs.readdir(rendersDir);
     const historyFiles = entries
@@ -110,20 +112,20 @@ router.get('/:projectId', async (req, res, next) => {
               name,
               size: stat.size,
               modifiedAt: stat.mtime,
-              url: `/api/renders/${req.params.projectId}/${name}`,
+              url: `/api/renders/${req.params['projectId']}/${name}`,
             }
           : null;
       })
     );
 
     res.json({
-      renders: hasLatest
+      renders: hasLatest && latestStats
         ? [
             {
               name: 'latest.mp4',
               size: latestStats.size,
               modifiedAt: latestStats.mtime,
-              url: `/api/renders/${req.params.projectId}/latest.mp4`,
+              url: `/api/renders/${req.params['projectId']}/latest.mp4`,
             },
           ]
         : [],
@@ -139,17 +141,19 @@ router.get('/:projectId', async (req, res, next) => {
  * Serve a specific history render file.
  * GET /api/renders/:projectId/:filename
  */
-router.get('/:projectId/:filename', async (req, res, next) => {
+router.get('/:projectId/:filename', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { projectId, filename } = req.params;
+    const projectId = req.params['projectId'];
+    const filename = req.params['filename'];
     if (!/^[\w.-]+\.mp4$/.test(filename))
-      return res.status(400).json({ error: 'Invalid filename' });
+      return void res.status(400).json({ error: 'Invalid filename' });
 
     const filePath = path.join(req.dataDir, 'renders', projectId, filename);
     await fs.access(filePath);
     res.sendFile(filePath);
   } catch (err) {
-    if (err.code === 'ENOENT') return res.status(404).json({ error: 'File not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+      return void res.status(404).json({ error: 'File not found' });
     next(err);
   }
 });

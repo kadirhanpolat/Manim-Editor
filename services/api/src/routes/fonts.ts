@@ -5,17 +5,23 @@
  * Uses the Google Fonts Developer API to fetch the full font list.
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 
 const router = Router();
 
+interface FontEntry {
+  family: string;
+  category: string;
+  variants: string[];
+}
+
 // Cache for Google Fonts list (refreshed every 24 hours)
-let fontsCache = null;
+let fontsCache: FontEntry[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // Google Fonts API key (optional - works without for basic metadata)
-const GOOGLE_FONTS_API_KEY = process.env.GOOGLE_FONTS_API_KEY || '';
+const GOOGLE_FONTS_API_KEY = process.env.GOOGLE_FONTS_API_KEY ?? '';
 
 /**
  * Fallback list of popular Google Fonts if API is unavailable
@@ -262,7 +268,7 @@ const FALLBACK_FONTS = [
 /**
  * Fetch fonts from Google Fonts API
  */
-async function fetchGoogleFonts() {
+async function fetchGoogleFonts(): Promise<FontEntry[]> {
   const now = Date.now();
 
   // Return cached data if still valid
@@ -283,7 +289,7 @@ async function fetchGoogleFonts() {
       return FALLBACK_FONTS;
     }
 
-    const data = await response.json();
+    const data = await response.json() as { items?: Array<{ family: string; category: string; variants?: string[] }> };
 
     if (!data.items || !Array.isArray(data.items)) {
       console.warn('[Fonts] Invalid response from Google Fonts API, using fallback');
@@ -294,7 +300,7 @@ async function fetchGoogleFonts() {
     fontsCache = data.items.map((font) => ({
       family: font.family,
       category: font.category,
-      variants: font.variants || ['400'],
+      variants: font.variants ?? ['400'],
     }));
 
     cacheTimestamp = now;
@@ -302,7 +308,7 @@ async function fetchGoogleFonts() {
 
     return fontsCache;
   } catch (error) {
-    console.error('[Fonts] Error fetching Google Fonts:', error.message);
+    console.error('[Fonts] Error fetching Google Fonts:', (error as Error).message);
     return FALLBACK_FONTS;
   }
 }
@@ -317,9 +323,12 @@ async function fetchGoogleFonts() {
  *   - limit: Maximum number of fonts to return (default: 100)
  *   - offset: Pagination offset (default: 0)
  */
-router.get('/', async (req, res, next) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { search, category, limit = 100, offset = 0 } = req.query;
+    const search = req.query['search'] as string | undefined;
+    const category = req.query['category'] as string | undefined;
+    const limitQ = req.query['limit'] as string | undefined;
+    const offsetQ = req.query['offset'] as string | undefined;
 
     let fonts = await fetchGoogleFonts();
 
@@ -338,8 +347,8 @@ router.get('/', async (req, res, next) => {
     const total = fonts.length;
 
     // Apply pagination
-    const limitNum = Math.min(parseInt(limit, 10) || 100, 500);
-    const offsetNum = parseInt(offset, 10) || 0;
+    const limitNum = Math.min(parseInt(limitQ ?? '100', 10) || 100, 500);
+    const offsetNum = parseInt(offsetQ ?? '0', 10) || 0;
     fonts = fonts.slice(offsetNum, offsetNum + limitNum);
 
     res.json({
@@ -358,7 +367,7 @@ router.get('/', async (req, res, next) => {
  * GET /api/fonts/categories
  * Returns available font categories
  */
-router.get('/categories', (req, res) => {
+router.get('/categories', (_req: Request, res: Response) => {
   res.json({
     categories: [
       { id: 'sans-serif', label: 'Sans Serif', description: 'Clean, modern fonts without serifs' },
@@ -374,15 +383,15 @@ router.get('/categories', (req, res) => {
  * GET /api/fonts/:family
  * Get details for a specific font family
  */
-router.get('/:family', async (req, res, next) => {
+router.get('/:family', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { family } = req.params;
+    const family = req.params['family'];
     const fonts = await fetchGoogleFonts();
 
     const font = fonts.find((f) => f.family.toLowerCase() === family.toLowerCase());
 
     if (!font) {
-      return res.status(404).json({ error: 'Font not found' });
+      return void res.status(404).json({ error: 'Font not found' });
     }
 
     res.json(font);

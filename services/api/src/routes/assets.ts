@@ -4,16 +4,17 @@
  * File upload and management for project assets.
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
+import type { FileFilterCallback } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 // Allowed file types
-const ALLOWED_TYPES = {
+const ALLOWED_TYPES: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -22,27 +23,27 @@ const ALLOWED_TYPES = {
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const assetsDir = path.join(req.dataDir, 'assets', req.params.projectId);
+  destination: async (req: Request, _file: Express.Multer.File, cb) => {
+    const assetsDir = path.join(req.dataDir, 'assets', req.params['projectId']);
     try {
       await fs.mkdir(assetsDir, { recursive: true, mode: 0o777 });
       cb(null, assetsDir);
     } catch (err) {
-      cb(err);
+      cb(err as Error, '');
     }
   },
-  filename: (req, file, cb) => {
-    const ext = ALLOWED_TYPES[file.mimetype] || 'bin';
+  filename: (_req: Request, file: Express.Multer.File, cb) => {
+    const ext = ALLOWED_TYPES[file.mimetype] ?? 'bin';
     const name = `${uuidv4().split('-')[0]}_${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    cb(null, name);
+    cb(null, `${name}.${ext}`);
   },
 });
 
-const fileFilter = (req, file, cb) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
   if (ALLOWED_TYPES[file.mimetype]) {
     cb(null, true);
   } else {
-    cb(new Error(`File type not allowed: ${file.mimetype}`), false);
+    cb(new Error(`File type not allowed: ${file.mimetype}`));
   }
 };
 
@@ -56,13 +57,12 @@ const upload = multer({
  * Upload an asset to a project.
  * POST /api/assets/:projectId
  */
-router.post('/:projectId', upload.single('file'), async (req, res, next) => {
+router.post('/:projectId', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return void res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const projectId = req.params.projectId;
     const file = req.file;
 
     // Determine asset type
@@ -88,18 +88,18 @@ router.post('/:projectId', upload.single('file'), async (req, res, next) => {
  * List assets for a project.
  * GET /api/assets/:projectId
  */
-router.get('/:projectId', async (req, res, next) => {
+router.get('/:projectId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const assetsDir = path.join(req.dataDir, 'assets', req.params.projectId);
+    const assetsDir = path.join(req.dataDir, 'assets', req.params['projectId']);
 
     try {
       await fs.access(assetsDir);
     } catch {
-      return res.json([]);
+      return void res.json([]);
     }
 
     const files = await fs.readdir(assetsDir);
-    const assets = [];
+    const assets: unknown[] = [];
 
     for (const filename of files) {
       const filePath = path.join(assetsDir, filename);
@@ -127,15 +127,15 @@ router.get('/:projectId', async (req, res, next) => {
  * Get a single asset file.
  * GET /api/assets/:projectId/:filename
  */
-router.get('/:projectId/:filename', async (req, res, next) => {
+router.get('/:projectId/:filename', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filePath = path.join(req.dataDir, 'assets', req.params.projectId, req.params.filename);
+    const filePath = path.join(req.dataDir, 'assets', req.params['projectId'], req.params['filename']);
 
     await fs.access(filePath);
     res.sendFile(filePath);
   } catch (err) {
-    if (err.code === 'ENOENT') {
-      return res.status(404).json({ error: 'Asset not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return void res.status(404).json({ error: 'Asset not found' });
     }
     next(err);
   }
@@ -147,27 +147,28 @@ router.get('/:projectId/:filename', async (req, res, next) => {
  *
  * Body: { name: string, type: 'image'|'svg', data: 'data:...;base64,...' }
  */
-router.post('/:projectId/base64', async (req, res, next) => {
+router.post('/:projectId/base64', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, type, data } = req.body;
-    if (!data) return res.status(400).json({ error: 'No data provided' });
+    const body = req.body as { name?: string; type?: string; data?: string };
+    const { name, type, data } = body;
+    if (!data) return void res.status(400).json({ error: 'No data provided' });
 
     // Parse data-URL
     const match = data.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return res.status(400).json({ error: 'Invalid data URL format' });
+    if (!match) return void res.status(400).json({ error: 'Invalid data URL format' });
 
     const mimetype = match[1];
     const base64Data = match[2];
     const buffer = Buffer.from(base64Data, 'base64');
 
-    const safeName = (name || 'asset').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safeName = (name ?? 'asset').replace(/[^a-zA-Z0-9._-]/g, '_');
     const filename = `${uuidv4().split('-')[0]}_${safeName}`;
 
-    const assetsDir = path.join(req.dataDir, 'assets', req.params.projectId);
+    const assetsDir = path.join(req.dataDir, 'assets', req.params['projectId']);
     await fs.mkdir(assetsDir, { recursive: true, mode: 0o777 });
     await fs.writeFile(path.join(assetsDir, filename), buffer);
 
-    const assetType = type || (mimetype === 'image/svg+xml' ? 'svg' : 'image');
+    const assetType = type ?? (mimetype === 'image/svg+xml' ? 'svg' : 'image');
 
     res.status(201).json({
       id: `asset_${uuidv4().split('-')[0]}`,
@@ -186,15 +187,15 @@ router.post('/:projectId/base64', async (req, res, next) => {
  * Delete an asset.
  * DELETE /api/assets/:projectId/:filename
  */
-router.delete('/:projectId/:filename', async (req, res, next) => {
+router.delete('/:projectId/:filename', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filePath = path.join(req.dataDir, 'assets', req.params.projectId, req.params.filename);
+    const filePath = path.join(req.dataDir, 'assets', req.params['projectId'], req.params['filename']);
 
     await fs.unlink(filePath);
     res.status(204).send();
   } catch (err) {
-    if (err.code === 'ENOENT') {
-      return res.status(404).json({ error: 'Asset not found' });
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return void res.status(404).json({ error: 'Asset not found' });
     }
     next(err);
   }
