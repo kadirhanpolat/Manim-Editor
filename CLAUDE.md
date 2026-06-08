@@ -39,24 +39,24 @@ npm run typecheck      # build:codegen + vue-tsc (web) + tsc (api), all strict
 npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 ```
 
-- `e2e/` is a **standalone package OUTSIDE the npm workspaces** (own `node_modules` so Playwright never perturbs web/api hoisting). Drives the real app via a DEV-only `window.__projectStore` hook (`services/web/src/main.js`, stripped from prod). Dedicated port **5188**.
+- `e2e/` is a **standalone package OUTSIDE the npm workspaces** (own `node_modules` so Playwright never perturbs web/api hoisting). Drives the real app via a DEV-only `window.__projectStore` hook (`services/web/src/main.ts`, stripped from prod). Dedicated port **5188**.
 - **`jsdom` must stay in the ROOT `package.json` devDependencies** so the root-hoisted `vitest` resolves it; otherwise a clean `npm install` breaks `test:unit`.
-- Test boilerplate: `setActivePinia(createPinia())` → `store = useProjectStore()` → `store.newProject('Test','visual')` → `store.commitState()` in `beforeEach`. Test files in `services/web/tests/components/*.test.js`.
-- **Codegen Python-validity** (`tests/components/codegen-python-validity.test.js`): generates a script for every object/clip/keyframe/audio/camera combo and asserts valid Python via `python -m ast`. **Requires `python` on PATH; self-skips otherwise.**
+- Test boilerplate: `setActivePinia(createPinia())` → `store = useProjectStore()` → `store.newProject('Test','visual')` → `store.commitState()` in `beforeEach`. Test files in `services/web/tests/components/*.test.ts`.
+- **Codegen Python-validity** (`tests/components/codegen-python-validity.test.ts`): generates a script for every object/clip/keyframe/audio/camera combo and asserts valid Python via `python -m ast`. **Requires `python` on PATH; self-skips otherwise.**
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `services/web/src/store/project.js` | Pinia store — all project state, actions, getters (`useProjectStore()`); exports `uid()` |
+| `services/web/src/store/project.ts` | Pinia store — all project state, actions, getters (`useProjectStore()`); exports `uid()` |
 | `services/web/src/engine/playback.ts` | 60fps rAF playback engine — evaluates clips, computes frame state |
 | `services/web/src/engine/types.ts` | Shared engine domain types (`Point`, `StageObject`, `Clip`, `ClipParams`, `Overrides`, `FrameState`, `TimedClip`, …) |
 | `packages/manim-codegen/src/` | **Single source of truth for codegen** — `constants.ts`, `helpers.ts`, `objects.ts`, `objects3d.ts`, `clips.ts`, `keyframes.ts`, `index.ts` (`generateScene`), `types.ts` |
-| `services/api/src/compiler/codegen.js` | Thin server wrapper over `@manim/codegen` (server asset paths via `resolveAsset`) |
-| `services/web/src/export/manim.js` | Thin client generator wrapper + the web-only `.py` **parser** (`parseManimScript`) |
+| `services/api/src/compiler/codegen.ts` | Thin server wrapper over `@manim/codegen` (server asset paths via `resolveAsset`) |
+| `services/web/src/export/manim.ts` | Thin client generator wrapper + the web-only `.py` **parser** (`parseManimScript`) |
 | `services/web/src/components/stage/StageCanvas.vue` | Thin orchestrator (~544 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders |
-| `services/web/src/components/stage/configs/*.js` | **Pure** Konva config builders `fn(obj, ctx)` (unit-tested): `context.js` (ctx contract), `shapes2d`, `text`, `dataObjects`, `relational`, `axes`, `objects3d`, `overlays`, `chrome`, `effects` |
-| `services/web/src/components/stage/composables/*.js` | `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select), `useStagePathDraw`, `useStageAssets` |
+| `services/web/src/components/stage/configs/*.ts` | **Pure** Konva config builders `fn(obj, ctx)` (unit-tested): `context.ts` (ctx contract), `shapes2d`, `text`, `dataObjects`, `relational`, `axes`, `objects3d`, `overlays`, `chrome`, `effects` |
+| `services/web/src/components/stage/composables/*.ts` | `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select), `useStagePathDraw`, `useStageAssets` |
 | `services/web/src/components/inspector/PropertiesPanel.vue` | Thin orchestrator (~40 lines) — `KeyframePanel` + 4-way switch over `panels/{Object,Clip,CameraClip,Canvas}Inspector.vue` |
 | `services/web/src/components/inspector/object-settings/*.vue` + `index.js` | Per-object-type settings + `settingsComponentFor(type)` registry. Cross-cutting: `EffectsSection`, `TextSettings`, `MotionPicker` |
 | `services/web/src/components/inspector/ui/*.vue` + `useObjectUpdate.js` | Shared atoms (`Section`, `Num`, `ColorRow`) + `u`/`uSize`/`uRange` field-update composable |
@@ -64,20 +64,20 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `services/web/src/components/topbar/{Topbar,MenuBar,NewProjectDialog}.vue` + `menus.js` | Menubar orchestrator + reusable dropdown widget + new-project modal. **Menu items live in `menus.js`** (`buildMenus(ctx)`). |
 | `services/web/src/components/timeline/Timeline.vue` + `KeyframeLanesPanel/KeyframeLane/KeyframeEasingPopup.vue` | Multi-track timeline + camera track + per-property keyframe lanes + Bezier easing editor |
 | `services/web/src/engine/keyframe.ts` | `interpolateKeyframes`, `getKeyframeRange`, Bezier solver |
-| `services/api/src/routes/audio.js` + `services/api/src/ws.js` | Audio upload/TTS/callback/delete endpoints; WebSocket push for render+audio events |
+| `services/api/src/routes/audio.ts` + `services/api/src/ws.ts` | Audio upload/TTS/callback/delete endpoints; WebSocket push for render+audio events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
 
 ## Codegen — single source of truth (`@manim/codegen`)
 
 All Manim Python generation lives in the **`@manim/codegen`** npm-workspace package (`packages/manim-codegen/src/`, **strict TypeScript**): `constants.ts` (EASING_MAP, FRAME_*, *_TYPES), `helpers.ts` (`vn`, `hex`, `safe*`, `gradientLine`, `shadowLines`, …), `objects.ts` (`objectCode`), `objects3d.ts` (`objectCode3d`), `clips.ts` (`transformExpr`, `emphasisExpr`), `keyframes.ts` (`generateKeyframeSteps`), `index.ts` (`generateScene`), `types.ts` (domain model). Built to `dist/` via `tsc`; web consumes the TS source (via the `source` export condition), api/renderer consume `dist/`.
 
-Both services are **thin wrappers** calling `generateScene(project, { resolveAsset })` — the only intentional divergence is `resolveAsset` (server file path vs client placeholder). The **`.py` parser** (`parseManimScript`) is web-only, in `manim.js`.
+Both services are **thin wrappers** calling `generateScene(project, { resolveAsset })` — the only intentional divergence is `resolveAsset` (server file path vs client placeholder). The **`.py` parser** (`parseManimScript`) is web-only, in `manim.ts`.
 
-**Adding a new object/clip type → edit the package once + the `manim.js` parser for round-trip.** Emit constructors on **one line** so the regex parser can read them back.
+**Adding a new object/clip type → edit the package once + the `manim.ts` parser for round-trip.** Emit constructors on **one line** so the regex parser can read them back.
 
 ### Parity invariants (regression-guarded)
 
-The codegen test suite asserts the generated Python is stable. When touching codegen, keep these consistent and re-run `manim-export.test.js`, `effects-codegen.test.js`, `phase26-effects-codegen.test.js`:
+The codegen test suite asserts the generated Python is stable. When touching codegen, keep these consistent and re-run `manim-export.test.ts`, `effects-codegen.test.ts`, `phase26-effects-codegen.test.ts`:
 - Generator helpers that historically had byte-identical copies (`emphasisExpr`, `transformExpr`, the `count`/`counter`/`matrix`/`brace`/`angle`/`table`/`graph`/`vector_field` cases, `safeMatrixEntry`, `safeLatex`, `fillOpacityExpr`, `strokeOpacityArg`, `gradientLine`, `dashedLines`, `shadowLines`, `roundCornersLine`, `SHADOW_TYPES`) now live **once** in `@manim/codegen`; the parity/round-trip tests remain as regression guards.
 - The math whitelist exists in two places that must stay in sync: `safeMathExpr` (`@manim/codegen/helpers.ts`, used by codegen) and `engine/mathExpr.ts` `isSafeExpr`/`compileExpr` (preview). Whitelist:
   ```js
@@ -91,7 +91,7 @@ The codegen test suite asserts the generated Python is stable. When touching cod
 - **Manim coords**: `stageToManim(px, py, sw, sh)` → ≈ −7..+7 (x), −4..+4 (y).
 - **Canvas coords**: `c2s(cx, cy)` / `s2c(px, py)` in StageCanvas — account for pan (`ox`, `oy`) and zoom (`vs`).
 - **3D coords**: `obj.x3d/y3d/z3d` are direct Manim units (NOT through `stageToManim`). `iso()`/`top()` project 3D→2D for canvas.
-- **Constants** (shared in `@manim/codegen/constants.js`, so server+client emit identical coords): `FRAME_WIDTH = 14 + 2/9` (14.222), `FRAME_HEIGHT = 8`, `FRAME_X_RADIUS = 7.111`, `FRAME_Y_RADIUS = 4`. Positions + scale-based shape spacing use `FRAME_WIDTH`; radius values (heart `mw`, Dot radius) use `FRAME_X_RADIUS`, heart `mh` uses `FRAME_Y_RADIUS`.
+- **Constants** (shared in `@manim/codegen/constants.ts`, so server+client emit identical coords): `FRAME_WIDTH = 14 + 2/9` (14.222), `FRAME_HEIGHT = 8`, `FRAME_X_RADIUS = 7.111`, `FRAME_Y_RADIUS = 4`. Positions + scale-based shape spacing use `FRAME_WIDTH`; radius values (heart `mw`, Dot radius) use `FRAME_X_RADIUS`, heart `mh` uses `FRAME_Y_RADIUS`.
 
 ## Store Patterns
 
@@ -129,7 +129,7 @@ clip.audio = {
 
 ## Object Types
 
-> **Adding a new object type** touches: generator (`@manim/codegen` once + `manim.js` parser), **canvas preview** (a `fn(obj, ctx)` builder in the matching `configs/*.js` + a one-line `<template>` branch + compat wrapper in `StageCanvas.vue` + a snapshot in `tests/components/stage/`), **store** (`project.js` defaults/actions), **inspector** (one `<Type>Settings.vue` in `object-settings/` + one `index.js` registry line; cross-cutting controls in `EffectsSection.vue`/`TextSettings.vue`), **palette** (a card in `components/sidebar/AssetSidebar.vue`'s `shapes`/`shapesData`/`shapes3D` array — the **only** live add UI; `Toolbar.vue` was removed). `tests/components/ui-tools-audit.test.js` fails if a registered type has no palette card.
+> **Adding a new object type** touches: generator (`@manim/codegen` once + `manim.ts` parser), **canvas preview** (a `fn(obj, ctx)` builder in the matching `configs/*.ts` + a one-line `<template>` branch + compat wrapper in `StageCanvas.vue` + a snapshot in `tests/components/stage/`), **store** (`project.ts` defaults/actions), **inspector** (one `<Type>Settings.vue` in `object-settings/` + one `index.ts` registry line; cross-cutting controls in `EffectsSection.vue`/`TextSettings.vue`), **palette** (a card in `components/sidebar/AssetSidebar.vue`'s `shapes`/`shapesData`/`shapes3D` array — the **only** live add UI; `Toolbar.vue` was removed). `tests/components/ui-tools-audit.test.ts` fails if a registered type has no palette card.
 
 **2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`
 
@@ -186,7 +186,7 @@ Store actions (all call `commitState()`): `addKeyframe(objId,prop,time,value)` (
 
 **Playback** (`computeFrame` per-property): clip blending → `clipValue` → `_applyKeyframeOverrides` (reads `keyframes`+mode) → `_applyEnterExitAnims`. Modes: `opt-in` applies only within `[getKeyframeRange.start,.end]`; `override` → `overrides[prop]=kfValue`; `additive` → `clipValue+kfValue`.
 
-**Codegen** (`generateKeyframeSteps` in `@manim/codegen/keyframes.js`, runs before camera clips): `UpdateFromAlphaFunc` (default, `def _kf_<obj>_<prop>_<i>_fn(mob,alpha)` + `self.play(UpdateFromAlphaFunc(…))`), `animate` (sequential `obj.animate.set_x(…)`), `ValueTracker` (`_vt` + `add_updater` + `clear_updaters`). ValueTracker/UpdateFromAlphaFunc skip props where `_kfUpdater(prop)` is null. `counter.value` keyframable via `set_value`.
+**Codegen** (`generateKeyframeSteps` in `@manim/codegen/keyframes.ts`, runs before camera clips): `UpdateFromAlphaFunc` (default, `def _kf_<obj>_<prop>_<i>_fn(mob,alpha)` + `self.play(UpdateFromAlphaFunc(…))`), `animate` (sequential `obj.animate.set_x(…)`), `ValueTracker` (`_vt` + `add_updater` + `clear_updaters`). ValueTracker/UpdateFromAlphaFunc skip props where `_kfUpdater(prop)` is null. `counter.value` keyframable via `set_value`.
 
 **3D position keyframes**: keyframed `x3d/y3d/z3d` merge into **one** `move_to([x,y,z])` per segment (last-known value per axis), regardless of each axis's `keyframeCodegen` mode (no 3D setter exists for the other modes).
 

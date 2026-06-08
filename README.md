@@ -302,9 +302,9 @@ Manim-docker/
 +-- services/
     +-- web/                          # Vue frontend
     |   +-- src/
-    |   |   +-- App.vue               # Root: dialogs, shortcuts
-    |   |   +-- api.js                # API client
-    |   |   +-- store/project.js      # State, history, clipboard, theme
+    |   |   +-- App.vue               # Root (script setup lang=ts): dialogs, shortcuts
+    |   |   +-- api.ts                # API client
+    |   |   +-- store/project.ts      # Pinia store: state, history, clipboard, theme
     |   |   +-- styles/main.css       # Theme tokens, light/dark palettes
     |   |   +-- engine/               # Playback engine (strict TypeScript)
     |   |   |   +-- types.ts          # Shared engine domain types
@@ -313,7 +313,7 @@ Manim-docker/
     |   |   |   +-- transform.ts      # Morph interpolation
     |   |   |   +-- playback.ts       # rAF loop
     |   |   |   +-- blending.ts       # Multi-track blending
-    |   |   +-- export/manim.js       # Client-side .py generator + .py parser
+    |   |   +-- export/manim.ts       # Client-side .py generator + .py parser
     |   |   +-- components/
     |   |       +-- topbar/           # Desktop menubar (File, Edit, View, Tools, Help)
     |   |       +-- sidebar/          # Shapes, assets, transform
