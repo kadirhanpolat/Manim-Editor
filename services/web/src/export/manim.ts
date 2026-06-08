@@ -1098,6 +1098,126 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       }
     }
 
+    // surrounding_rect — SurroundingRectangle
+    m = line.match(
+      /^(\w+)\s*=\s*SurroundingRectangle\((\w+),\s*color="(#[0-9a-fA-F]+)",\s*stroke_width=([\d.]+),\s*buff=([\d.]+),\s*corner_radius=([\d.]+)\)/
+    );
+    if (m) {
+      const [, varName, targetVar, color, sw2Str, buffStr, crStr] = m;
+      const targetId = varMap[targetVar] ? targetVar : '';
+      const buffPx = Math.round((parseFloat(buffStr) / FRAME_WIDTH) * sw);
+      const crPx = Math.round((parseFloat(crStr) / FRAME_WIDTH) * sw);
+      const id = uid('obj');
+      const obj: SceneObject = {
+        id,
+        type: 'surrounding_rect',
+        name: varName,
+        x: sw / 2,
+        y: sh / 2,
+        width: 160,
+        height: 80,
+        fill: color,
+        stroke: color,
+        strokeWidth: parseFloat(sw2Str),
+        color,
+        buff: buffPx,
+        cornerRadius: crPx,
+        targetId,
+        opacity: 1,
+        rotation: 0,
+        zOrder: objIdx,
+        enterTime: 0,
+        duration: ct || 5,
+        enterAnim: 'none',
+        exitAnim: 'none',
+        enterAnimDur: 0.5,
+        exitAnimDur: 0.5,
+        visible: true,
+      };
+      varMap[varName] = id;
+      objById[id] = obj;
+      objects.push(obj);
+      continue;
+    }
+
+    // underline — Underline
+    m = line.match(
+      /^(\w+)\s*=\s*Underline\((\w+),\s*color="(#[0-9a-fA-F]+)",\s*stroke_width=([\d.]+),\s*buff=([\d.]+)\)/
+    );
+    if (m) {
+      const [, varName, targetVar, color, sw2Str, buffStr] = m;
+      const targetId = varMap[targetVar] ? targetVar : '';
+      const buffPx = Math.round((parseFloat(buffStr) / FRAME_WIDTH) * sw);
+      const id = uid('obj');
+      const obj: SceneObject = {
+        id,
+        type: 'underline',
+        name: varName,
+        x: sw / 2,
+        y: sh / 2,
+        width: 160,
+        height: 20,
+        fill: color,
+        stroke: color,
+        strokeWidth: parseFloat(sw2Str),
+        color,
+        buff: buffPx,
+        targetId,
+        opacity: 1,
+        rotation: 0,
+        zOrder: objIdx,
+        enterTime: 0,
+        duration: ct || 5,
+        enterAnim: 'none',
+        exitAnim: 'none',
+        enterAnimDur: 0.5,
+        exitAnimDur: 0.5,
+        visible: true,
+      };
+      varMap[varName] = id;
+      objById[id] = obj;
+      objects.push(obj);
+      continue;
+    }
+
+    // cross — Cross
+    m = line.match(
+      /^(\w+)\s*=\s*Cross\((\w+),\s*stroke_color="(#[0-9a-fA-F]+)",\s*stroke_width=([\d.]+)\)/
+    );
+    if (m) {
+      const [, varName, targetVar, color, sw2Str] = m;
+      const targetId = varMap[targetVar] ? targetVar : '';
+      const id = uid('obj');
+      const obj: SceneObject = {
+        id,
+        type: 'cross',
+        name: varName,
+        x: sw / 2,
+        y: sh / 2,
+        width: 160,
+        height: 80,
+        fill: color,
+        stroke: color,
+        strokeWidth: parseFloat(sw2Str),
+        color,
+        targetId,
+        opacity: 1,
+        rotation: 0,
+        zOrder: objIdx,
+        enterTime: 0,
+        duration: ct || 5,
+        enterAnim: 'none',
+        exitAnim: 'none',
+        enterAnimDur: 0.5,
+        exitAnimDur: 0.5,
+        visible: true,
+      };
+      varMap[varName] = id;
+      objById[id] = obj;
+      objects.push(obj);
+      continue;
+    }
+
     // VGroup label wrapper for brace/angle — renames base obj to the VGroup var + sets label
     m = line.match(/^(\w+)\s*=\s*VGroup\((\w+(?:_brace|_arc)), \2\.get_tex\("(.*)"\)\)/);
     if (m) {
