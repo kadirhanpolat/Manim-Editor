@@ -31,6 +31,29 @@ jobs:
       - name: API tests
         run: npm test --workspace services/api
 
+  e2e:
+    runs-on: ubuntu-latest
+    # Non-blocking: the Playwright smoke suite boots a real browser + dev server,
+    # so a flaky run shouldn't gate every push. It still runs + reports on each push.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install workspace deps (web dev server)
+        run: npm ci
+      - name: Install e2e deps
+        run: npm ci
+        working-directory: e2e
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: Run Playwright smoke tests
+        run: npm test
+        working-directory: e2e
+
   python:
     runs-on: ubuntu-latest
     steps:
