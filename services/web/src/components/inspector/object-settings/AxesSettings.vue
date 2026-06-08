@@ -5,19 +5,19 @@
       <div class="grid grid-cols-3 gap-1">
         <Num
           label="X Min"
-          :value="(obj.xRange || [-5, 5, 1])[0]"
+          :value="xRange[0]"
           :step="1"
           @input="uRange('xRange', 0, $event)"
         />
         <Num
           label="X Max"
-          :value="(obj.xRange || [-5, 5, 1])[1]"
+          :value="xRange[1]"
           :step="1"
           @input="uRange('xRange', 1, $event)"
         />
         <Num
           label="X Step"
-          :value="(obj.xRange || [-5, 5, 1])[2]"
+          :value="xRange[2]"
           :min="0.1"
           :step="0.5"
           @input="uRange('xRange', 2, $event)"
@@ -26,19 +26,19 @@
       <div class="grid grid-cols-3 gap-1">
         <Num
           label="Y Min"
-          :value="(obj.yRange || [-3, 3, 1])[0]"
+          :value="yRange[0]"
           :step="1"
           @input="uRange('yRange', 0, $event)"
         />
         <Num
           label="Y Max"
-          :value="(obj.yRange || [-3, 3, 1])[1]"
+          :value="yRange[1]"
           :step="1"
           @input="uRange('yRange', 1, $event)"
         />
         <Num
           label="Y Step"
-          :value="(obj.yRange || [-3, 3, 1])[2]"
+          :value="yRange[2]"
           :min="0.1"
           :step="0.5"
           @input="uRange('yRange', 2, $event)"
@@ -50,7 +50,7 @@
   <!-- Axes: Graph Functions -->
   <Section label="Graphs">
     <div
-      v-for="graph in obj.graphs || []"
+      v-for="graph in graphs"
       :key="graph.id"
       class="mb-2 p-2 rounded bg-studio-surface2 border border-studio-border"
     >
@@ -59,13 +59,13 @@
           class="input input-sm flex-1 font-mono text-xs"
           :value="graph.expression"
           placeholder="x**2"
-          @change="updateGraph(graph.id, 'expression', $event.target.value)"
+          @change="onGraphExprChange(graph.id, $event)"
         />
         <input
           type="color"
           class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
           :value="graph.color"
-          @input="updateGraph(graph.id, 'color', $event.target.value)"
+          @input="onGraphColorInput(graph.id, $event)"
         />
         <button
           class="text-studio-error hover:opacity-80 text-xs px-1"
@@ -122,7 +122,7 @@
           <select
             class="select text-xs"
             :value="graph.riemann.type"
-            @change="setRiemannField(graph, 'type', $event.target.value)"
+            @change="onRiemannTypeChange(graph, $event)"
           >
             <option value="left">left</option>
             <option value="right">right</option>
@@ -155,25 +155,53 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+
+interface GraphEntry {
+  id: string;
+  expression?: string;
+  color?: string;
+  xMin?: number;
+  xMax?: number;
+  area?: { enabled?: boolean; xMin?: number; xMax?: number; opacity?: number; color?: string; [k: string]: unknown };
+  riemann?: { enabled?: boolean; xMin?: number; xMax?: number; dx?: number; type?: string; color?: string; [k: string]: unknown };
+  tangent?: { enabled?: boolean; x?: number; length?: number; color?: string; [k: string]: unknown };
+}
+
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const { uRange } = useObjectUpdate(() => props.obj);
 const obj = props.obj;
+const graphs = computed(() => (obj.graphs as GraphEntry[] | undefined) ?? []);
+const xRange = computed(() => (obj.xRange as number[] | undefined) ?? [-5, 5, 1]);
+const yRange = computed(() => (obj.yRange as number[] | undefined) ?? [-3, 3, 1]);
+
+function onGraphExprChange(graphId: string, e: Event) {
+  updateGraph(graphId, 'expression', (e.target as HTMLInputElement).value);
+}
+function onGraphColorInput(graphId: string, e: Event) {
+  updateGraph(graphId, 'color', (e.target as HTMLInputElement).value);
+}
+function onRiemannTypeChange(graph: GraphEntry, e: Event) {
+  setRiemannField(graph, 'type', (e.target as HTMLSelectElement).value);
+}
+
 function addGraph() {
   store.addGraph(obj.id);
 }
-function removeGraph(graphId) {
+function removeGraph(graphId: string) {
   store.removeGraph(obj.id, graphId);
 }
-function updateGraph(graphId, key, value) {
+function updateGraph(graphId: string, key: string, value: unknown) {
   store.updateGraph(obj.id, graphId, { [key]: value });
 }
-function toggleGraphArea(graph) {
+function toggleGraphArea(graph: GraphEntry) {
   const existing = graph.area || {};
   const on = !existing.enabled;
   store.updateGraph(obj.id, graph.id, {
@@ -189,7 +217,7 @@ function toggleGraphArea(graph) {
       : { ...existing, enabled: false },
   });
 }
-function toggleGraphRiemann(graph) {
+function toggleGraphRiemann(graph: GraphEntry) {
   const existing = graph.riemann || {};
   const on = !existing.enabled;
   store.updateGraph(obj.id, graph.id, {
@@ -197,7 +225,7 @@ function toggleGraphRiemann(graph) {
       ? {
           xMin: graph.xMin,
           xMax: graph.xMax,
-          dx: Math.max(0.1, (graph.xMax - graph.xMin) / 10),
+          dx: Math.max(0.1, ((graph.xMax ?? 5) - (graph.xMin ?? -5)) / 10),
           type: 'left',
           color: graph.color,
           ...existing,
@@ -206,22 +234,22 @@ function toggleGraphRiemann(graph) {
       : { ...existing, enabled: false },
   });
 }
-function setRiemannField(graph, key, val) {
+function setRiemannField(graph: GraphEntry, key: string, val: unknown) {
   if (graph.riemann)
     store.updateGraph(obj.id, graph.id, { riemann: { ...graph.riemann, [key]: val } });
 }
-function toggleGraphTangent(graph) {
+function toggleGraphTangent(graph: GraphEntry) {
   const existing = graph.tangent || {};
   const on = !existing.enabled;
   const midX =
-    Number.isFinite(graph.xMin) && Number.isFinite(graph.xMax) ? (graph.xMin + graph.xMax) / 2 : 0;
+    Number.isFinite(graph.xMin) && Number.isFinite(graph.xMax) ? ((graph.xMin ?? 0) + (graph.xMax ?? 0)) / 2 : 0;
   store.updateGraph(obj.id, graph.id, {
     tangent: on
       ? { x: midX, length: 2, color: graph.color, ...existing, enabled: true }
       : { ...existing, enabled: false },
   });
 }
-function setTangentField(graph, key, val) {
+function setTangentField(graph: GraphEntry, key: string, val: unknown) {
   if (graph.tangent)
     store.updateGraph(obj.id, graph.id, { tangent: { ...graph.tangent, [key]: val } });
 }

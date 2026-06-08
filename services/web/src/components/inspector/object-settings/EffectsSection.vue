@@ -15,15 +15,15 @@
           }}</span>
         </button>
         <div v-if="obj.gradient" class="mt-1.5 space-y-1.5">
-          <div v-for="(c, i) in obj.gradient.colors" :key="i" class="flex items-center gap-2">
+          <div v-for="(c, i) in (obj.gradient.colors ?? [])" :key="i" class="flex items-center gap-2">
             <input
               type="color"
               class="color-input"
               :value="c"
-              @input="setGradientStop(i, $event.target.value)"
+              @input="onGradientStopInput(i, $event)"
             />
             <button
-              v-if="obj.gradient.colors.length > 2"
+              v-if="(obj.gradient.colors ?? []).length > 2"
               class="text-studio-error text-xs px-1"
               @click="removeGradientStop(i)"
             >
@@ -42,7 +42,7 @@
               step="1"
               class="flex-1 accent-studio-accent"
               :value="obj.gradient.angle ?? 135"
-              @input="setGradientAngle($event.target.value)"
+              @input="onGradientAngleInput($event)"
             />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
               >{{ obj.gradient.angle ?? 135 }}°</span
@@ -60,7 +60,7 @@
           min="0"
           step="1"
           :value="obj.cornerRadius || 0"
-          @change="store.setCornerRadius(obj.id, Number($event.target.value))"
+          @change="onCornerRadiusChange($event)"
         />
       </div>
 
@@ -89,7 +89,7 @@
             type="color"
             class="w-full h-6 rounded bg-studio-bg border border-studio-border"
             :value="obj.shadow.color"
-            @input="store.setShadow(obj.id, { ...obj.shadow, color: $event.target.value })"
+            @input="onShadowColorInput($event)"
           />
           <label class="text-[10px] text-studio-text-muted">Opacity</label>
           <input
@@ -99,9 +99,7 @@
             max="1"
             class="input input-sm"
             :value="obj.shadow.opacity"
-            @input="
-              store.setShadow(obj.id, { ...obj.shadow, opacity: Number($event.target.value) })
-            "
+            @input="onShadowOpacityInput($event)"
           />
           <label class="text-[10px] text-studio-text-muted">Offset X</label>
           <input
@@ -109,7 +107,7 @@
             step="1"
             class="input input-sm"
             :value="obj.shadow.dx"
-            @input="store.setShadow(obj.id, { ...obj.shadow, dx: Number($event.target.value) })"
+            @input="onShadowDxInput($event)"
           />
           <label class="text-[10px] text-studio-text-muted">Offset Y</label>
           <input
@@ -117,7 +115,7 @@
             step="1"
             class="input input-sm"
             :value="obj.shadow.dy"
-            @input="store.setShadow(obj.id, { ...obj.shadow, dy: Number($event.target.value) })"
+            @input="onShadowDyInput($event)"
           />
           <label class="text-[10px] text-studio-text-muted">Blur (preview)</label>
           <input
@@ -126,7 +124,7 @@
             min="0"
             class="input input-sm"
             :value="obj.shadow.blur"
-            @input="store.setShadow(obj.id, { ...obj.shadow, blur: Number($event.target.value) })"
+            @input="onShadowBlurInput($event)"
           />
         </div>
       </div>
@@ -141,7 +139,7 @@
           step="0.01"
           class="flex-1 accent-studio-accent"
           :value="obj.fillOpacity ?? 1"
-          @input="u('fillOpacity', Number($event.target.value))"
+          @input="onFillOpacityInput($event)"
         />
         <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
           >{{ Math.round((obj.fillOpacity ?? 1) * 100) }}%</span
@@ -158,7 +156,7 @@
           step="0.01"
           class="flex-1 accent-studio-accent"
           :value="obj.strokeOpacity ?? 1"
-          @input="u('strokeOpacity', Number($event.target.value))"
+          @input="onStrokeOpacityInput($event)"
         />
         <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
           >{{ Math.round((obj.strokeOpacity ?? 1) * 100) }}%</span
@@ -184,7 +182,7 @@
               step="1"
               class="flex-1 accent-studio-accent"
               :value="obj.dash.numDashes"
-              @input="setDashField('numDashes', $event.target.value)"
+              @input="onDashFieldInput('numDashes', $event)"
             />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">{{
               obj.dash.numDashes
@@ -199,7 +197,7 @@
               step="0.05"
               class="flex-1 accent-studio-accent"
               :value="obj.dash.ratio"
-              @input="setDashField('ratio', $event.target.value)"
+              @input="onDashFieldInput('ratio', $event)"
             />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">{{
               obj.dash.ratio
@@ -211,13 +209,14 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const { u } = useObjectUpdate(() => props.obj);
 const obj = computed(() => props.obj);
@@ -283,35 +282,73 @@ function toggleGradient() {
       angle: 135,
     });
 }
-function setGradientStop(i, color) {
+function setGradientStop(i: number, color: string) {
   const g = obj.value.gradient;
   if (!g) return;
-  const colors = [...g.colors];
+  const colors = [...(g.colors ?? [])];
   colors[i] = color;
-  store.setGradient(obj.value.id, { ...g, colors });
+  store.setGradient(obj.value.id, { angle: g.angle, colors });
+}
+function onGradientStopInput(i: number, e: Event) {
+  setGradientStop(i, (e.target as HTMLInputElement).value);
 }
 function addGradientStop() {
   const g = obj.value.gradient;
   if (!g) return;
-  store.setGradient(obj.value.id, { ...g, colors: [...g.colors, '#ffffff'] });
+  store.setGradient(obj.value.id, { angle: g.angle, colors: [...(g.colors ?? []), '#ffffff'] });
 }
-function removeGradientStop(i) {
+function removeGradientStop(i: number) {
   const g = obj.value.gradient;
-  if (!g || g.colors.length <= 2) return;
-  store.setGradient(obj.value.id, { ...g, colors: g.colors.filter((_, j) => j !== i) });
+  if (!g || (g.colors ?? []).length <= 2) return;
+  store.setGradient(obj.value.id, { angle: g.angle, colors: (g.colors ?? []).filter((_, j) => j !== i) });
 }
-function setGradientAngle(deg) {
+function setGradientAngle(deg: unknown) {
   const g = obj.value.gradient;
   if (!g) return;
-  store.setGradient(obj.value.id, { ...g, angle: Number(deg) });
+  store.setGradient(obj.value.id, { colors: g.colors ?? [], angle: Number(deg) });
+}
+function onGradientAngleInput(e: Event) {
+  setGradientAngle((e.target as HTMLInputElement).value);
+}
+function onCornerRadiusChange(e: Event) {
+  store.setCornerRadius(obj.value.id, Number((e.target as HTMLInputElement).value));
+}
+function onShadowColorInput(e: Event) {
+  if (!obj.value.shadow) return;
+  store.setShadow(obj.value.id, { ...obj.value.shadow, color: (e.target as HTMLInputElement).value });
+}
+function onShadowOpacityInput(e: Event) {
+  if (!obj.value.shadow) return;
+  store.setShadow(obj.value.id, { ...obj.value.shadow, opacity: Number((e.target as HTMLInputElement).value) });
+}
+function onShadowDxInput(e: Event) {
+  if (!obj.value.shadow) return;
+  store.setShadow(obj.value.id, { ...obj.value.shadow, dx: Number((e.target as HTMLInputElement).value) });
+}
+function onShadowDyInput(e: Event) {
+  if (!obj.value.shadow) return;
+  store.setShadow(obj.value.id, { ...obj.value.shadow, dy: Number((e.target as HTMLInputElement).value) });
+}
+function onShadowBlurInput(e: Event) {
+  if (!obj.value.shadow) return;
+  store.setShadow(obj.value.id, { ...obj.value.shadow, blur: Number((e.target as HTMLInputElement).value) });
+}
+function onFillOpacityInput(e: Event) {
+  u('fillOpacity', Number((e.target as HTMLInputElement).value));
+}
+function onStrokeOpacityInput(e: Event) {
+  u('strokeOpacity', Number((e.target as HTMLInputElement).value));
 }
 function toggleDash() {
   if (!obj.value) return;
   if (obj.value.dash) store.setDash(obj.value.id, null);
   else store.setDash(obj.value.id, { numDashes: 12, ratio: 0.5 });
 }
-function setDashField(key, val) {
-  const d = obj.value.dash || { numDashes: 12, ratio: 0.5 };
+function setDashField(key: string, val: unknown) {
+  const d = obj.value.dash ?? { numDashes: 12, ratio: 0.5 };
   store.setDash(obj.value.id, { ...d, [key]: Number(val) });
+}
+function onDashFieldInput(key: string, e: Event) {
+  setDashField(key, (e.target as HTMLInputElement).value);
 }
 </script>

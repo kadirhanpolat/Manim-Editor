@@ -22,7 +22,7 @@
           min="0.1"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.radius"
-          @input="store.setAngleRadius(obj.id, $event.target.value)"
+          @input="setAngleRadius($event)"
         />
       </div>
       <label class="block text-[10px] text-studio-text-muted">Label (LaTeX, optional)</label>
@@ -30,7 +30,7 @@
         data-test="rel-label"
         class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
         :value="obj.label"
-        @input="store.setRelationalLabel(obj.id, $event.target.value)"
+        @input="setRelationalLabel($event)"
         placeholder="e.g. \\theta"
       />
       <p class="text-[10px] text-studio-text-muted">
@@ -40,10 +40,17 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const obj = props.obj;
+function setAngleRadius(e: Event) {
+  store.setAngleRadius(obj.id, (e.target as HTMLInputElement).value);
+}
+function setRelationalLabel(e: Event) {
+  store.setRelationalLabel(obj.id, (e.target as HTMLInputElement).value);
+}
 </script>

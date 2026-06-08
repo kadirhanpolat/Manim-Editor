@@ -7,16 +7,16 @@
         <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
           <input
             type="checkbox"
-            :checked="obj.directed"
-            @change="store.setGraphDirected(obj.id, $event.target.checked)"
+            :checked="!!(obj.directed)"
+            @change="onDirectedChange($event)"
           />
           Directed
         </label>
         <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
           <input
             type="checkbox"
-            :checked="obj.showLabels"
-            @change="store.setGraphShowLabels(obj.id, $event.target.checked)"
+            :checked="!!(obj.showLabels)"
+            @change="onShowLabelsChange($event)"
           />
           Labels
         </label>
@@ -24,11 +24,11 @@
       <!-- Vertex list -->
       <div class="pt-1">
         <p class="text-[10px] text-studio-text-muted mb-1">Vertices</p>
-        <div v-for="v in obj.vertices || []" :key="'gv-' + v" class="flex items-center gap-1 mb-1">
+        <div v-for="v in graphVertices" :key="'gv-' + v" class="flex items-center gap-1 mb-1">
           <input
             class="flex-1 min-w-0 px-1 py-0.5 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
             :value="v"
-            @change="renameGraphVertex(v, $event.target.value)"
+            @change="onRenameVertex(v, $event)"
           />
           <button
             class="px-1.5 py-0.5 text-[10px] rounded border border-studio-border hover:bg-red-500/20 text-studio-text-muted"
@@ -48,7 +48,7 @@
       <div class="pt-1">
         <p class="text-[10px] text-studio-text-muted mb-1">Edges</p>
         <div
-          v-for="(edge, ei) in obj.edges || []"
+          v-for="(edge, ei) in graphEdges"
           :key="'ge-' + ei"
           class="flex items-center gap-1 mb-1"
         >
@@ -66,18 +66,18 @@
           <select
             class="flex-1 min-w-0 px-1 py-0.5 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
             :value="newEdgeFrom"
-            @change="newEdgeFrom = $event.target.value"
+            @change="onNewEdgeFromChange($event)"
           >
             <option value="">From…</option>
-            <option v-for="v in obj.vertices || []" :key="'ef-' + v" :value="v">{{ v }}</option>
+            <option v-for="v in graphVertices" :key="'ef-' + v" :value="v">{{ v }}</option>
           </select>
           <select
             class="flex-1 min-w-0 px-1 py-0.5 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
             :value="newEdgeTo"
-            @change="newEdgeTo = $event.target.value"
+            @change="onNewEdgeToChange($event)"
           >
             <option value="">To…</option>
-            <option v-for="v in obj.vertices || []" :key="'et-' + v" :value="v">{{ v }}</option>
+            <option v-for="v in graphVertices" :key="'et-' + v" :value="v">{{ v }}</option>
           </select>
           <button
             class="px-2 py-0.5 text-[10px] rounded border border-studio-accent/50 text-studio-accent hover:bg-studio-accent/10"
@@ -94,15 +94,18 @@
   </Section>
 </template>
 
-<script setup>
-import { ref, watch } from 'vue';
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const obj = props.obj;
 const newEdgeFrom = ref('');
 const newEdgeTo = ref('');
+const graphVertices = computed(() => (obj.vertices as string[] | undefined) ?? []);
+const graphEdges = computed(() => (obj.edges as [string, string][] | undefined) ?? []);
 watch(
   () => store.selectedObjectIds,
   () => {
@@ -110,18 +113,33 @@ watch(
     newEdgeTo.value = '';
   }
 );
-function graphVertexName(v) {
+function graphVertexName(v: unknown): string {
   return String(v || '').trim();
 }
 function addGraphVertexAuto() {
-  store.addGraphVertex(obj.id);
+  store.addGraphVertex(obj.id, undefined);
 }
-function removeGraphVertex(v) {
+function removeGraphVertex(v: string) {
   store.removeGraphVertex(obj.id, v);
 }
-function renameGraphVertex(oldV, newV) {
+function renameGraphVertex(oldV: string, newV: unknown) {
   const nv = graphVertexName(newV);
   if (nv && nv !== oldV) store.renameGraphVertex(obj.id, oldV, nv);
+}
+function onRenameVertex(oldV: string, e: Event) {
+  renameGraphVertex(oldV, (e.target as HTMLInputElement).value);
+}
+function onDirectedChange(e: Event) {
+  store.setGraphDirected(obj.id, (e.target as HTMLInputElement).checked);
+}
+function onShowLabelsChange(e: Event) {
+  store.setGraphShowLabels(obj.id, (e.target as HTMLInputElement).checked);
+}
+function onNewEdgeFromChange(e: Event) {
+  newEdgeFrom.value = (e.target as HTMLSelectElement).value;
+}
+function onNewEdgeToChange(e: Event) {
+  newEdgeTo.value = (e.target as HTMLSelectElement).value;
 }
 function addGraphEdgeFromUI() {
   const a = newEdgeFrom.value,
@@ -132,7 +150,7 @@ function addGraphEdgeFromUI() {
     newEdgeTo.value = '';
   }
 }
-function removeGraphEdge(a, b) {
+function removeGraphEdge(a: string, b: string) {
   store.removeGraphEdge(obj.id, a, b);
 }
 </script>

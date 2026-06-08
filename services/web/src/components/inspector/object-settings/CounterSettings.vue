@@ -9,15 +9,15 @@
           step="1"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.value ?? 0"
-          @change="store.setCounterValue(obj.id, $event.target.value)"
+          @change="onValueChange($event)"
         />
       </div>
       <label class="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
           data-test="counter-integer"
-          :checked="obj.useInteger"
-          @change="store.setCounterInteger(obj.id, $event.target.checked)"
+          :checked="!!(obj.useInteger)"
+          @change="onIntegerChange($event)"
         />
         <span class="text-[11px] text-studio-text-muted">Integer mode (whole numbers)</span>
       </label>
@@ -29,7 +29,7 @@
           min="0"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.numDecimals ?? 0"
-          @change="store.setCounterDecimals(obj.id, $event.target.value)"
+          @change="onDecimalsChange($event)"
         />
       </div>
       <div class="flex items-center gap-2">
@@ -38,7 +38,7 @@
           type="text"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.suffix ?? ''"
-          @input="store.setCounterSuffix(obj.id, $event.target.value)"
+          @input="onSuffixInput($event)"
           placeholder="e.g. %"
         />
       </div>
@@ -46,10 +46,23 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const obj = props.obj;
+function onValueChange(e: Event) {
+  store.setCounterValue(obj.id, (e.target as HTMLInputElement).value);
+}
+function onIntegerChange(e: Event) {
+  store.setCounterInteger(obj.id, (e.target as HTMLInputElement).checked);
+}
+function onDecimalsChange(e: Event) {
+  store.setCounterDecimals(obj.id, (e.target as HTMLInputElement).value);
+}
+function onSuffixInput(e: Event) {
+  store.setCounterSuffix(obj.id, (e.target as HTMLInputElement).value);
+}
 </script>

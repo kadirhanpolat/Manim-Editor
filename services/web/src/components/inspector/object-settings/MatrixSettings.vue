@@ -2,14 +2,14 @@
   <!-- Matrix grid editor -->
   <Section label="Matrix">
     <div class="space-y-2">
-      <div v-for="(row, r) in obj.matrixData" :key="'mr' + r" class="flex gap-1">
+      <div v-for="(row, r) in matrixData" :key="'mr' + r" class="flex gap-1">
         <input
           v-for="(cell, c) in row"
           :key="'mc' + r + '-' + c"
           data-test="matrix-cell"
           class="w-full min-w-0 px-1 py-1 text-[11px] text-center rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="cell"
-          @input="store.setMatrixCell(obj.id, r, c, $event.target.value)"
+          @input="onCellInput(r, c, $event)"
         />
       </div>
       <div class="flex gap-1 pt-1">
@@ -79,10 +79,16 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const obj = props.obj;
+const matrixData = computed(() => (obj.matrixData as string[][] | undefined) ?? [[]]);
+function onCellInput(r: number, c: number, e: Event) {
+  store.setMatrixCell(obj.id, r, c, (e.target as HTMLInputElement).value);
+}
 </script>

@@ -8,7 +8,7 @@
         min="0"
         class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
         :value="obj.decimals ?? 1"
-        @change="u('decimals', Math.max(0, Math.trunc(Number($event.target.value) || 0)))"
+        @change="u('decimals', Math.max(0, Math.trunc(Number((($event.target) as HTMLInputElement).value) || 0)))"
       />
     </div>
     <p class="text-[10px] text-studio-text-muted mt-1.5">
@@ -17,10 +17,11 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { SceneObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
 const obj = props.obj;
 </script>
