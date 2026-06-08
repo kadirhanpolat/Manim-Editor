@@ -569,30 +569,28 @@ export function objectCode(
       break;
     }
     case 'surrounding_rect': {
-      const target = vn(o.targetId as string || '');
+      const target = vn((o.targetId as string) || '');
       const annColor = hex(o.color) || fill;
-      const buffM = safeNum((o.buff as number ?? 10) / sw * FRAME_WIDTH, 0.1);
-      const crM = safeNum((o.cornerRadius as number ?? 0) / sw * FRAME_WIDTH, 0);
+      const buffM = safeNum((((o.buff as number) ?? 10) / sw) * FRAME_WIDTH, 0.1);
+      const crM = safeNum((((o.cornerRadius as number) ?? 0) / sw) * FRAME_WIDTH, 0);
       lines.push(
         `${n} = SurroundingRectangle(${target}, color=${annColor}, stroke_width=${sw2}, buff=${buffM.toFixed(3)}, corner_radius=${crM.toFixed(3)})`
       );
       break;
     }
     case 'underline': {
-      const target = vn(o.targetId as string || '');
+      const target = vn((o.targetId as string) || '');
       const annColor = hex(o.color) || fill;
-      const buffM = safeNum((o.buff as number ?? 6) / sw * FRAME_WIDTH, 0.05);
+      const buffM = safeNum((((o.buff as number) ?? 6) / sw) * FRAME_WIDTH, 0.05);
       lines.push(
         `${n} = Underline(${target}, color=${annColor}, stroke_width=${sw2}, buff=${buffM.toFixed(3)})`
       );
       break;
     }
     case 'cross': {
-      const target = vn(o.targetId as string || '');
+      const target = vn((o.targetId as string) || '');
       const annColor = hex(o.color) || fill;
-      lines.push(
-        `${n} = Cross(${target}, stroke_color=${annColor}, stroke_width=${sw2})`
-      );
+      lines.push(`${n} = Cross(${target}, stroke_color=${annColor}, stroke_width=${sw2})`);
       break;
     }
     default:
