@@ -138,9 +138,8 @@ export function heartCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknow
         const py =
           -((13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 15) *
           hh;
-        i === 0
-          ? (ctx2.moveTo as (x: number, y: number) => void)(px, py)
-          : (ctx2.lineTo as (x: number, y: number) => void)(px, py);
+        if (i === 0) (ctx2.moveTo as (x: number, y: number) => void)(px, py);
+        else (ctx2.lineTo as (x: number, y: number) => void)(px, py);
       }
       (ctx2.closePath as () => void)();
       (ctx2.fillStrokeShape as (shape: unknown) => void)(shape);

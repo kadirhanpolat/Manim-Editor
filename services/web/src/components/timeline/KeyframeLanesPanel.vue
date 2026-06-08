@@ -28,12 +28,12 @@
     <KeyframeLane
       v-for="prop in activePropLanes"
       :key="prop"
-      :objId="sourceObj.id"
+      :obj-id="sourceObj.id"
       :prop="prop"
       :pps="pps"
-      :labelW="labelW"
-      :totalW="totalW"
-      @openEasingPopup="$emit('openEasingPopup', $event)"
+      :label-w="labelW"
+      :total-w="totalW"
+      @open-easing-popup="$emit('openEasingPopup', $event)"
     />
   </div>
 </template>

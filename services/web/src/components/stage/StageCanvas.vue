@@ -721,9 +721,9 @@
       <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay)">
         <select
           :value="store.project.camera3d?.view ?? 'perspective'"
-          @change="onViewChange"
           class="text-xs bg-studio-surface border border-studio-border rounded px-2 py-1 text-studio-text shadow cursor-pointer"
           title="3D view"
+          @change="onViewChange"
         >
           <option value="perspective">Perspective</option>
           <option value="top">Top</option>

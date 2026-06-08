@@ -8,18 +8,18 @@
       @drop.prevent="onDrop"
     >
       <input
-        type="file"
         ref="fileInput"
-        @change="onFileSelect"
+        type="file"
         accept=".png,.jpg,.jpeg,.svg"
         multiple
         class="hidden"
+        @change="onFileSelect"
       />
       
       <div v-if="!uploading">
         <div class="text-4xl mb-3 opacity-50">📤</div>
         <p class="text-sm text-studio-text-muted mb-2">Drag files here or</p>
-        <button @click="fileInput?.click()" class="btn btn-primary text-sm">
+        <button class="btn btn-primary text-sm" @click="fileInput?.click()">
           Browse Files
         </button>
         <p class="text-xs text-studio-text-muted mt-3">PNG, JPG, SVG (max 50MB)</p>

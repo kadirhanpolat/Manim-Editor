@@ -11,10 +11,10 @@
           <input
             type="number"
             :value="style.size as number"
-            @input="updateStyle('size', parseInt(($event.target as HTMLInputElement).value))"
             min="8"
             max="200"
             class="input text-sm"
+            @input="updateStyle('size', parseInt(($event.target as HTMLInputElement).value))"
           />
         </div>
         <div>
@@ -31,11 +31,11 @@
           <input
             type="range"
             :value="(style.opacity as number | undefined) || 1"
-            @input="updateStyle('opacity', parseFloat(($event.target as HTMLInputElement).value))"
             min="0"
             max="1"
             step="0.1"
             class="flex-1"
+            @input="updateStyle('opacity', parseFloat(($event.target as HTMLInputElement).value))"
           />
           <span class="text-sm text-studio-text-muted w-12"
             >{{ Math.round(((style.opacity as number | undefined) || 1) * 100) }}%</span

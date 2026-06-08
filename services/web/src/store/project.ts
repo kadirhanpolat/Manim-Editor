@@ -1920,7 +1920,9 @@ const useProjectStore = defineStore('project', {
       document.documentElement.setAttribute('data-theme', id);
       try {
         localStorage.setItem('manim-motion-theme', id);
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     },
 
     addPathMoveClip(sourceId: string, pathPoints: import('@manim/codegen').PathPoint[]) {

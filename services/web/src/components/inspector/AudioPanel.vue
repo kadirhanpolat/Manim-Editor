@@ -102,8 +102,8 @@
       <div v-if="localSyncMode === 'manual'" class="mt-2">
         <label class="block text-xs text-studio-text-muted mb-1">Offset (s)</label>
         <input
-          type="number"
           v-model.number="localOffset"
+          type="number"
           min="0"
           step="0.1"
           class="input text-xs w-24"
@@ -227,7 +227,7 @@ async function generateTTS() {
       wsDisconnect.value = null;
       ttsLoading.value = false;
     });
-  } catch (err) {
+  } catch {
     store.setClipAudio(props.clip.id!, { ...(props.clip.audio || {}), status: 'error' });
     ttsLoading.value = false;
   }

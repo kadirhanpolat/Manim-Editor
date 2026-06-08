@@ -25,10 +25,10 @@
         <label class="block text-xs text-studio-text-muted mb-2">Content</label>
         <textarea
           :value="(selectedElement.content as string | undefined) ?? ''"
-          @input="updateContent(($event.target as HTMLTextAreaElement).value)"
           class="input text-sm resize-none"
           rows="2"
           placeholder="Enter text..."
+          @input="updateContent(($event.target as HTMLTextAreaElement).value)"
         ></textarea>
       </div>
 
@@ -55,12 +55,12 @@
         <label class="block text-xs text-studio-text-muted mb-1">Rotation Axis</label>
         <select
           :value="selectedClip.axis ?? 'Z'"
+          class="select text-sm w-full"
           @change="
             store.updateClip(selectedClip!.id!, {
               axis: ($event.target as HTMLSelectElement).value as 'X' | 'Y' | 'Z',
             })
           "
-          class="select text-sm w-full"
         >
           <option value="X">X (RIGHT)</option>
           <option value="Y">Y (UP)</option>
@@ -77,13 +77,13 @@
           <input
             type="checkbox"
             :checked="!!selectedClip.matchTerms"
+            class="w-3.5 h-3.5"
             @change="
               store.setClipMatchTerms(
                 selectedClip!.id!,
                 ($event.target as HTMLInputElement).checked
               )
             "
-            class="w-3.5 h-3.5"
           />
           <span class="text-xs text-studio-text-muted">Match terms</span>
           <span class="text-xs text-studio-text-muted opacity-60"
@@ -155,8 +155,8 @@
       <!-- Delete Button -->
       <div class="px-4 py-4 border-t border-studio-border mt-auto">
         <button
-          @click="deleteElement"
           class="w-full py-2 text-sm text-studio-error bg-studio-error/10 rounded hover:bg-studio-error/20 transition-colors"
+          @click="deleteElement"
         >
           Delete Element
         </button>
@@ -170,7 +170,7 @@
     <div v-if="!selectedElement" class="p-4 border-t border-studio-border">
       <p class="text-xs text-studio-text-muted mb-3">Quick Add</p>
       <div class="flex gap-2">
-        <button @click="addTextElement" class="btn btn-secondary text-xs flex-1">+ Text</button>
+        <button class="btn btn-secondary text-xs flex-1" @click="addTextElement">+ Text</button>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils';
 import PropertiesPanel from '../../src/components/inspector/PropertiesPanel.vue';
 import { useProjectStore } from '../../src/store/project.js';
 
-let store, id, gid;
+let store, id;
 beforeEach(() => {
   setActivePinia(createPinia());
   store = useProjectStore();
@@ -13,7 +13,6 @@ beforeEach(() => {
   store.addObject('axes', 960, 540);
   id = store.project.objects[0].id;
   store.addGraph(id, { expression: 'x**2' });
-  gid = store.objectById(id).graphs[0].id;
   store.selectObject(id);
 });
 

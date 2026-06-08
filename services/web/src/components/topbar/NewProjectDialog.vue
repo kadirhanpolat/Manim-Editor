@@ -7,11 +7,11 @@
 
         <label class="np-label">Project Name</label>
         <input
-          class="np-input"
+          ref="npNameInput"
           v-model="newProjectName"
+          class="np-input"
           placeholder="My Animation"
           @keydown.enter="confirmNewProject"
-          ref="npNameInput"
         />
 
         <label class="np-label" style="margin-top: 12px">Editor Mode</label>
@@ -69,8 +69,8 @@
                   (newProjectTemplate && newProjectTemplate.id === tpl.id) ||
                   (!newProjectTemplate && tpl.id === 'blank'),
               }"
-              @click="newProjectTemplate = tpl.id === 'blank' ? null : tpl"
               style="text-align: left; padding: 10px 12px"
+              @click="newProjectTemplate = tpl.id === 'blank' ? null : tpl"
             >
               <span style="font-size: 18px; display: block; margin-bottom: 4px">{{
                 tpl.icon

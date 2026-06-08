@@ -195,7 +195,9 @@ export function connectJobWebSocket(
         [k: string]: unknown;
       };
       if (msg.type === 'job_update' && msg.jobId === jobId) onUpdate(msg);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   };
   ws.onerror = () => ws.close();
 

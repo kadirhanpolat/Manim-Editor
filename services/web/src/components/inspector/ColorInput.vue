@@ -3,14 +3,12 @@
     <input
       type="color"
       :value="validatedValue"
-      @input="handleColorPicker"
       class="color-picker w-8 h-8 rounded cursor-pointer border-0 p-0"
+      @input="handleColorPicker"
     />
     <input
       type="text"
       :value="displayValue"
-      @input="handleTextInput"
-      @blur="validateOnBlur"
       :class="['hex-input text-sm flex-1 px-2 py-1 rounded border', isValid ? '' : 'invalid']"
       :style="{
         background: 'var(--studio-bg)',
@@ -18,6 +16,8 @@
         borderColor: isValid ? 'var(--studio-border)' : 'var(--studio-danger)',
       }"
       placeholder="#000000"
+      @input="handleTextInput"
+      @blur="validateOnBlur"
     />
   </div>
 </template>

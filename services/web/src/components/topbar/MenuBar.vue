@@ -4,19 +4,19 @@
     <div
       v-for="(menu, mi) in menus"
       :key="menu.id"
-      class="menu-anchor"
       :ref="(el) => setAnchorRef(menu.id, el)"
+      class="menu-anchor"
     >
       <button
         class="menu-label"
         :class="{ active: openMenuId === menu.id }"
-        @click.stop="toggleMenu(menu.id)"
-        @mouseenter="hoverMenu(menu.id)"
-        @keydown="onLabelKey($event, mi)"
         tabindex="0"
         role="menuitem"
         :aria-haspopup="true"
         :aria-expanded="openMenuId === menu.id"
+        @click.stop="toggleMenu(menu.id)"
+        @mouseenter="hoverMenu(menu.id)"
+        @keydown="onLabelKey($event, mi)"
       >
         {{ menu.label }}
       </button>
@@ -42,9 +42,9 @@
               <button
                 class="menu-item"
                 :class="{ focused: focusIdx === idx }"
-                @mouseenter="focusIdx = idx"
                 role="menuitem"
                 aria-haspopup="true"
+                @mouseenter="focusIdx = idx"
               >
                 <span class="mi-label">{{ item.label }}</span>
                 <svg
@@ -65,9 +65,9 @@
                   :key="sub.id"
                   class="menu-item"
                   :class="{ 'radio-on': sub.active && sub.active() }"
-                  @click="executeItem(sub)"
                   role="menuitemradio"
                   :aria-checked="sub.active ? sub.active() : undefined"
+                  @click="executeItem(sub)"
                 >
                   <span class="mi-radio">{{ sub.active && sub.active() ? '◉' : '○' }}</span>
                   <span class="mi-label">{{ sub.label }}</span>
@@ -80,10 +80,10 @@
               v-else-if="item.type === 'toggle'"
               class="menu-item"
               :class="{ focused: focusIdx === idx }"
-              @click="executeItem(item)"
-              @mouseenter="focusIdx = idx"
               role="menuitemcheckbox"
               :aria-checked="item.checked ? item.checked() : false"
+              @click="executeItem(item)"
+              @mouseenter="focusIdx = idx"
             >
               <span class="mi-check">{{ item.checked && item.checked() ? '✓' : '' }}</span>
               <span class="mi-label">{{ item.label }}</span>
@@ -96,9 +96,9 @@
               class="menu-item"
               :class="{ disabled: item.disabled && item.disabled(), focused: focusIdx === idx }"
               :disabled="item.disabled && item.disabled()"
+              role="menuitem"
               @click="executeItem(item)"
               @mouseenter="focusIdx = idx"
-              role="menuitem"
             >
               <span class="mi-label">{{ item.label }}</span>
               <span v-if="item.shortcut" class="mi-shortcut">{{ item.shortcut }}</span>
@@ -110,7 +110,7 @@
   </nav>
 
   <!-- Collapsed hamburger -->
-  <div v-else class="menu-anchor" ref="collapsedAnchor">
+  <div v-else ref="collapsedAnchor" class="menu-anchor">
     <button
       class="menu-label"
       :class="{ active: openMenuId === '_collapsed' }"
@@ -140,8 +140,8 @@
               v-else-if="item.type !== 'submenu'"
               class="menu-item"
               :disabled="item.disabled && item.disabled()"
-              @click="executeItem(item)"
               role="menuitem"
+              @click="executeItem(item)"
             >
               <span v-if="item.type === 'toggle'" class="mi-check">{{
                 item.checked && item.checked() ? '✓' : ''

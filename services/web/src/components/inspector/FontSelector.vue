@@ -1,5 +1,5 @@
 <template>
-  <div class="font-selector" ref="container">
+  <div ref="container" class="font-selector">
     <span class="text-[9px] text-studio-text-muted/50">Font</span>
     <div class="relative">
       <input
@@ -7,11 +7,11 @@
         type="text"
         class="input input-sm w-full pr-6"
         :value="searchQuery"
+        :placeholder="value || 'Search fonts...'"
         @input="onInput"
         @focus="onFocus"
         @blur="onBlur"
         @keydown="onKeydown"
-        :placeholder="value || 'Search fonts...'"
       />
       <button
         v-if="searchQuery || isOpen"
@@ -47,7 +47,7 @@
     </div>
 
     <!-- Dropdown -->
-    <div v-if="isOpen" class="font-dropdown" ref="dropdown">
+    <div v-if="isOpen" ref="dropdown" class="font-dropdown">
       <!-- Category tabs -->
       <div class="category-tabs">
         <button
@@ -68,7 +68,7 @@
       </div>
 
       <!-- Font list -->
-      <div v-else class="font-list" ref="fontList">
+      <div v-else ref="fontList" class="font-list">
         <div
           v-for="(font, index) in filteredFonts"
           :key="font.family"
@@ -89,7 +89,7 @@
 
       <!-- Load more button -->
       <div v-if="hasMore && !loading" class="load-more">
-        <button @mousedown.prevent="loadMore" class="load-more-btn">Load more fonts...</button>
+        <button class="load-more-btn" @mousedown.prevent="loadMore">Load more fonts...</button>
       </div>
     </div>
   </div>

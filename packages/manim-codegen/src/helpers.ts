@@ -9,7 +9,7 @@ export function rfOpt(e: string | undefined): string {
   return r === 'rate_functions.smooth' ? '' : `, rate_func=${r}`;
 }
 export function vn(id: string): string {
-  let n = id.replace(/[^a-zA-Z0-9_]/g, '_');
+  const n = id.replace(/[^a-zA-Z0-9_]/g, '_');
   return /^[0-9]/.test(n) ? 'o_' + n : n;
 }
 export function rtOpt(d: number): string {

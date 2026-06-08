@@ -40,8 +40,8 @@
       </div>
       <div class="flex items-center gap-2 pt-1">
         <input
-          type="checkbox"
           id="table-math-mode"
+          type="checkbox"
           :checked="!!obj.mathMode"
           @change="onMathMode($event)"
         />

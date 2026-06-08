@@ -10,10 +10,10 @@
         <input
           type="number"
           :value="timing.start"
-          @input="updateTiming('start', parseFloat(($event.target as HTMLInputElement).value))"
           min="0"
           step="0.1"
           class="input text-sm"
+          @input="updateTiming('start', parseFloat(($event.target as HTMLInputElement).value))"
         />
       </div>
       <div>
@@ -21,10 +21,10 @@
         <input
           type="number"
           :value="timing.duration"
-          @input="updateTiming('duration', parseFloat(($event.target as HTMLInputElement).value))"
           min="0.1"
           step="0.1"
           class="input text-sm"
+          @input="updateTiming('duration', parseFloat(($event.target as HTMLInputElement).value))"
         />
       </div>
     </div>

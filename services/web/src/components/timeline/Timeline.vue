@@ -130,7 +130,7 @@
           :key="track.id"
           :track="track"
           :pps="pps"
-          :labelW="labelW"
+          :label-w="labelW"
         />
 
         <!-- Camera Track -->
@@ -146,8 +146,8 @@
             🎥 <span>Camera</span>
             <button
               class="ml-auto text-[10px] text-studio-accent hover:opacity-80 leading-none"
-              @click="addCameraClip"
               title="Add camera clip at playhead"
+              @click="addCameraClip"
             >
               +
             </button>
@@ -188,9 +188,9 @@
       <div class="flex-shrink-0 border-t border-studio-border max-h-32 overflow-y-auto">
         <KeyframeLanesPanel
           :pps="pps"
-          :labelW="labelW"
-          :totalW="totalW"
-          @openEasingPopup="onOpenEasingPopup"
+          :label-w="labelW"
+          :total-w="totalW"
+          @open-easing-popup="onOpenEasingPopup"
         />
       </div>
     </div>

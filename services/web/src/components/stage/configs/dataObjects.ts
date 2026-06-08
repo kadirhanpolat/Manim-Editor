@@ -511,7 +511,6 @@ function _compileField2(expr: string): ((x: number, y: number) => number) | null
     'power:Math.pow,floor:Math.floor,ceil:Math.ceil,pi:Math.PI,e:Math.E};' +
     'const PI=Math.PI,TAU=2*Math.PI,E=Math.E;';
   try {
-    // eslint-disable-next-line no-new-func
     const fn = new Function('x', 'y', '"use strict";' + SCOPE2 + 'return (' + expr + ');') as (
       x: number,
       y: number

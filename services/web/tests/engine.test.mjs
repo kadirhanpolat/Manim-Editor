@@ -10,7 +10,7 @@
  */
 
 import { EASING_FUNCTIONS, getEasing, evaluateEasing, overshootSettle } from '../src/engine/easing.js';
-import { generateShapePoints, generateHeartPoints, generateSquarePoints, generateCirclePoints, pathLength } from '../src/engine/geometry.js';
+import { generateHeartPoints, generateSquarePoints, generateCirclePoints } from '../src/engine/geometry.js';
 import { resamplePoints, interpolatePoints, interpolateColor, lerp } from '../src/engine/transform.js';
 import { isClipActive, getClipProgress, blendClipResults } from '../src/engine/blending.js';
 import { EASING_MAP } from '../src/export/manim.js';

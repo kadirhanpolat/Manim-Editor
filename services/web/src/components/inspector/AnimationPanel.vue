@@ -8,8 +8,8 @@
       <label class="block text-xs text-studio-text-muted mb-2">Entrance</label>
       <select
         :value="inType"
-        @change="updateAnim('in', 'type', ($event.target as HTMLSelectElement).value)"
         class="select text-sm mb-2"
+        @change="updateAnim('in', 'type', ($event.target as HTMLSelectElement).value)"
       >
         <option v-for="a in entranceAnims" :key="a.type" :value="a.type">{{ a.label }}</option>
       </select>
@@ -18,12 +18,12 @@
         <input
           type="number"
           :value="inDur"
-          @input="
-            updateAnim('in', 'duration', parseFloat(($event.target as HTMLInputElement).value))
-          "
           min="0.1"
           step="0.1"
           class="input text-sm w-20"
+          @input="
+            updateAnim('in', 'duration', parseFloat(($event.target as HTMLInputElement).value))
+          "
         />
         <span class="text-xs text-studio-text-muted">s</span>
       </div>
@@ -33,8 +33,8 @@
       <label class="block text-xs text-studio-text-muted mb-2">Exit</label>
       <select
         :value="outType"
-        @change="updateAnim('out', 'type', ($event.target as HTMLSelectElement).value)"
         class="select text-sm mb-2"
+        @change="updateAnim('out', 'type', ($event.target as HTMLSelectElement).value)"
       >
         <option v-for="a in exitAnims" :key="a.type" :value="a.type">{{ a.label }}</option>
       </select>
@@ -43,12 +43,12 @@
         <input
           type="number"
           :value="outDur"
-          @input="
-            updateAnim('out', 'duration', parseFloat(($event.target as HTMLInputElement).value))
-          "
           min="0.1"
           step="0.1"
           class="input text-sm w-20"
+          @input="
+            updateAnim('out', 'duration', parseFloat(($event.target as HTMLInputElement).value))
+          "
         />
         <span class="text-xs text-studio-text-muted">s</span>
       </div>

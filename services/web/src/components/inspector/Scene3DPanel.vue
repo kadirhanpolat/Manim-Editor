@@ -20,9 +20,9 @@
           max="180"
           step="1"
           :value="cam.phi ?? 75"
+          class="w-full accent-studio-accent"
           @input="setPhi($event)"
           @change="store.commitState()"
-          class="w-full accent-studio-accent"
         />
       </div>
       <div class="mt-2">
@@ -37,9 +37,9 @@
           max="180"
           step="1"
           :value="cam.theta ?? -45"
+          class="w-full accent-studio-accent"
           @input="setTheta($event)"
           @change="store.commitState()"
-          class="w-full accent-studio-accent"
         />
       </div>
     </template>
@@ -56,22 +56,22 @@
         max="3"
         step="0.05"
         :value="cam.zoom ?? 1"
+        class="w-full accent-studio-accent"
         @input="setZoom($event)"
         @change="store.commitState()"
-        class="w-full accent-studio-accent"
       />
     </div>
 
-    <div class="mt-2" v-if="isPerspective">
+    <div v-if="isPerspective" class="mt-2">
       <label class="block text-xs text-studio-text-muted mb-1">Focal Distance</label>
       <input
         type="number"
         data-testid="focal-distance"
         :value="cam.focalDistance ?? 8"
-        @change="setFocalDistance($event)"
         min="2"
         step="1"
         class="input text-sm w-24"
+        @change="setFocalDistance($event)"
       />
     </div>
 

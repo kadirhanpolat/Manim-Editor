@@ -419,7 +419,7 @@ export class PlaybackEngine {
       // Skip if hidden by a transform clip
       if (frame.hiddenIds.has(obj.id)) continue;
 
-      let overrides = frame.objectOverrides[obj.id] || {};
+      const overrides = frame.objectOverrides[obj.id] || {};
       let changed = false;
 
       // ── Entrance animation ──

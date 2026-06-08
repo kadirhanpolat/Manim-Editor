@@ -1,5 +1,5 @@
 <template>
-  <div class="menubar-root" ref="root">
+  <div ref="root" class="menubar-root">
     <header class="menubar-header">
       <!-- Brand: official logo from assets (public folder) -->
       <div class="menubar-brand">
@@ -22,10 +22,10 @@
         <input
           class="tb-project-input"
           :value="projectName"
-          @change="updateName(($event.target as HTMLInputElement).value)"
-          @keydown.enter="($event.target as HTMLInputElement).blur()"
           placeholder="Project name"
           title="Project name"
+          @change="updateName(($event.target as HTMLInputElement).value)"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
         <span v-if="isDirty" class="tb-unsaved">unsaved</span>
       </div>
@@ -40,20 +40,20 @@
           v-if="project && project.editorMode === 'visual'"
           class="tb-toggle tb-scene-type"
           :class="{ on: project.sceneType === '3d' }"
-          @click="store.setSceneType(project.sceneType === '3d' ? '2d' : '3d')"
           title="Toggle 2D/3D scene mode"
+          @click="store.setSceneType(project.sceneType === '3d' ? '2d' : '3d')"
         >
           {{ project.sceneType === '3d' ? '3D' : '2D' }}
         </button>
         <button
           class="tb-toggle"
           :class="{ on: project.cameraType === 'moving' }"
-          @click="toggleCamera"
           title="Toggle Moving Camera (MovingCameraScene)"
+          @click="toggleCamera"
         >
           🎥
         </button>
-        <button class="tb-toggle" :class="{ on: gridVisible }" @click="toggleGrid" title="Grid">
+        <button class="tb-toggle" :class="{ on: gridVisible }" title="Grid" @click="toggleGrid">
           <svg
             width="11"
             height="11"
@@ -69,7 +69,7 @@
             <line x1="15" y1="3" x2="15" y2="21" />
           </svg>
         </button>
-        <button class="tb-toggle" :class="{ on: snapEnabled }" @click="toggleSnap" title="Snap">
+        <button class="tb-toggle" :class="{ on: snapEnabled }" title="Snap" @click="toggleSnap">
           <svg
             width="11"
             height="11"
@@ -87,8 +87,8 @@
           class="tb-render-btn"
           :class="{ busy: isRendering }"
           :disabled="isRendering"
-          @click="openRender"
           title="Render HQ via Docker"
+          @click="openRender"
         >
           <svg
             v-if="!isRendering"

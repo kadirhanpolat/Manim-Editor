@@ -94,7 +94,7 @@ export async function loadFont(fontFamily: string): Promise<boolean> {
           loadedFonts.add(fontFamily);
           loadingFonts.delete(fontFamily);
           resolve(true);
-        } catch (e) {
+        } catch {
           // Font might still work, mark as loaded anyway
           loadedFonts.add(fontFamily);
           loadingFonts.delete(fontFamily);

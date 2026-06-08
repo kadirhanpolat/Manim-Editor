@@ -17,9 +17,9 @@
         <input
           type="number"
           :value="layout.offset[0]"
-          @input="updateOffsetX(($event.target as HTMLInputElement).value)"
           step="0.1"
           class="input text-sm"
+          @input="updateOffsetX(($event.target as HTMLInputElement).value)"
         />
       </div>
       <div>
@@ -27,9 +27,9 @@
         <input
           type="number"
           :value="layout.offset[1]"
-          @input="updateOffsetY(($event.target as HTMLInputElement).value)"
           step="0.1"
           class="input text-sm"
+          @input="updateOffsetY(($event.target as HTMLInputElement).value)"
         />
       </div>
     </div>
@@ -41,20 +41,20 @@
         <input
           type="range"
           :value="layout.scale"
-          @input="updateScale(($event.target as HTMLInputElement).value)"
           min="0.1"
           max="3"
           step="0.1"
           class="flex-1"
+          @input="updateScale(($event.target as HTMLInputElement).value)"
         />
         <input
           type="number"
           :value="layout.scale"
-          @input="updateScale(($event.target as HTMLInputElement).value)"
           min="0.1"
           max="3"
           step="0.1"
           class="input text-sm w-20"
+          @input="updateScale(($event.target as HTMLInputElement).value)"
         />
       </div>
     </div>

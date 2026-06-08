@@ -38,7 +38,6 @@ export function compileExpr(
   if (!names.every((v) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(v))) return null;
   if (!isSafeExpr(expr)) return null;
   try {
-    // eslint-disable-next-line no-new-func
     const fn = new Function(
       ...names,
       '"use strict";' + SCOPE + 'return (' + expr.trim() + ');'

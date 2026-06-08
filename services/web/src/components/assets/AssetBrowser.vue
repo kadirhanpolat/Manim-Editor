@@ -2,7 +2,7 @@
   <div class="asset-browser h-full flex flex-col">
     <div class="panel-header flex items-center justify-between">
       <span>Assets</span>
-      <button @click="showUploader = true" class="text-xs px-2 py-1 bg-studio-accent rounded hover:bg-studio-accent-hover">
+      <button class="text-xs px-2 py-1 bg-studio-accent rounded hover:bg-studio-accent-hover" @click="showUploader = true">
         + Upload
       </button>
     </div>
@@ -34,7 +34,7 @@
           
           <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
             <span class="text-xs text-white truncate flex-1">{{ asset.filename }}</span>
-            <button @click.stop="deleteAsset(asset)" class="text-studio-error hover:text-red-400 ml-1">✕</button>
+            <button class="text-studio-error hover:text-red-400 ml-1" @click.stop="deleteAsset(asset)">✕</button>
           </div>
           
           <div class="absolute top-1 right-1">
@@ -51,7 +51,7 @@
       <div class="bg-studio-surface border border-studio-border rounded-lg w-96 p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-medium">Upload Assets</h3>
-          <button @click="showUploader = false" class="text-studio-text-muted hover:text-studio-text">✕</button>
+          <button class="text-studio-text-muted hover:text-studio-text" @click="showUploader = false">✕</button>
         </div>
         
         <AssetUploader @uploaded="onAssetUploaded" @close="showUploader = false" />

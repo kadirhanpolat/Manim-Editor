@@ -246,8 +246,8 @@
         <input
           type="checkbox"
           :checked="clip.parallel"
-          @change="uc('parallel', ($event.target as HTMLInputElement).checked)"
           class="accent-violet-500"
+          @change="uc('parallel', ($event.target as HTMLInputElement).checked)"
         />
         Run in parallel with same-time clips
       </label>

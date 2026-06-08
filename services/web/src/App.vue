@@ -106,8 +106,8 @@
             <button
               v-if="codeEdited && !isCodeMode"
               class="code-stage-btn apply-btn"
-              @click="applyCodeToCanvas"
               title="Parse this code and update the canvas"
+              @click="applyCodeToCanvas"
             >
               <svg
                 width="12"
@@ -124,8 +124,8 @@
             <button
               v-if="codeEdited && !isCodeMode"
               class="code-stage-btn"
-              @click="resetCode"
               title="Discard edits and regenerate"
+              @click="resetCode"
             >
               <svg
                 width="12"
@@ -144,8 +144,8 @@
             </button>
             <button
               class="code-stage-btn"
-              @click="copyStageCode"
               :title="stageCopied ? 'Copied!' : 'Copy to clipboard'"
+              @click="copyStageCode"
             >
               <svg
                 width="12"
@@ -188,12 +188,12 @@
               ref="codeArea"
               class="code-stage-textarea"
               :value="stageCode"
-              @input="onCodeInput"
-              @scroll="syncCodeScroll"
               spellcheck="false"
               autocomplete="off"
               autocorrect="off"
               autocapitalize="off"
+              @input="onCodeInput"
+              @scroll="syncCodeScroll"
             ></textarea>
           </div>
           <!-- Footer -->
@@ -259,13 +259,13 @@
                 Download a self-contained scene.py
               </p>
             </div>
-            <button @click="closeExport" class="text-lg" style="color: var(--studio-text-muted)">
+            <button class="text-lg" style="color: var(--studio-text-muted)" @click="closeExport">
               &times;
             </button>
           </div>
           <div class="flex-1 overflow-y-auto p-5">
             <div class="mb-3 flex items-center gap-2">
-              <button @click="downloadPy" class="btn btn-primary text-sm flex items-center gap-2">
+              <button class="btn btn-primary text-sm flex items-center gap-2" @click="downloadPy">
                 <svg
                   width="14"
                   height="14"
@@ -280,7 +280,7 @@
                 </svg>
                 Download scene.py
               </button>
-              <button @click="copyCode" class="btn btn-secondary text-sm flex items-center gap-2">
+              <button class="btn btn-secondary text-sm flex items-center gap-2" @click="copyCode">
                 <svg
                   width="14"
                   height="14"
@@ -360,7 +360,7 @@
                 High-quality render via Docker
               </p>
             </div>
-            <button @click="closeRender" class="text-lg" style="color: var(--studio-text-muted)">
+            <button class="text-lg" style="color: var(--studio-text-muted)" @click="closeRender">
               &times;
             </button>
           </div>
@@ -395,11 +395,11 @@
                 </p>
               </div>
               <button
-                @click="startRender"
                 :disabled="hasPendingAudio"
                 :title="hasPendingAudio ? 'Waiting for audio generation...' : ''"
                 class="mt-4 w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                 :class="{ 'opacity-50 cursor-not-allowed': hasPendingAudio }"
+                @click="startRender"
               >
                 <svg
                   width="16"
@@ -431,8 +431,8 @@
               <div v-if="renderLog" class="mt-3">
                 <div class="flex justify-end mb-1">
                   <button
-                    @click="copyRenderLog"
                     class="text-[10px] text-studio-accent hover:opacity-80"
+                    @click="copyRenderLog"
                   >
                     {{ renderCopied ? '✓ Copied' : '⧉ Copy log' }}
                   </button>
@@ -453,7 +453,7 @@
             >
               <div class="flex items-center justify-between mb-1">
                 <p class="text-xs text-red-400 font-medium">Render Failed</p>
-                <button @click="copyRenderLog" class="text-[10px] text-red-300 hover:text-red-100">
+                <button class="text-[10px] text-red-300 hover:text-red-100" @click="copyRenderLog">
                   {{ renderCopied ? '✓ Copied' : '⧉ Copy error' }}
                 </button>
               </div>
@@ -464,8 +464,8 @@
                 {{ renderError }}
               </p>
               <button
-                @click="retryRender"
                 class="mt-3 px-4 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-colors"
+                @click="retryRender"
               >
                 Retry
               </button>
@@ -519,8 +519,8 @@
                   Download MP4
                 </a>
                 <button
-                  @click="resetRender"
                   class="px-4 py-2.5 rounded-lg bg-studio-border hover:bg-studio-border/80 text-studio-text text-sm font-medium transition-colors"
+                  @click="resetRender"
                 >
                   Render Again
                 </button>
@@ -584,9 +584,9 @@
               </p>
             </div>
             <button
-              @click="closeProjectBrowser"
               class="text-lg"
               style="color: var(--studio-text-muted)"
+              @click="closeProjectBrowser"
             >
               &times;
             </button>
@@ -621,8 +621,8 @@
                 <div class="flex items-center gap-1.5">
                   <button
                     class="p-1.5 rounded-md text-studio-text-muted opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all"
-                    @click.stop="deleteServerProject(p.id, p.name)"
                     title="Delete project"
+                    @click.stop="deleteServerProject(p.id, p.name)"
                   >
                     <svg
                       width="14"
@@ -642,8 +642,8 @@
                   </button>
                   <button
                     class="p-1.5 rounded-md text-studio-text-muted hover:text-studio-accent transition-colors"
-                    @click="openServerProject(p.id)"
                     title="Open project"
+                    @click="openServerProject(p.id)"
                   >
                     <svg
                       width="14"
@@ -678,7 +678,7 @@
       >
         <span style="color: var(--studio-danger)">!</span>
         <span class="text-sm">{{ error }}</span>
-        <button @click="clearError" class="ml-2" style="color: var(--studio-text-muted)">
+        <button class="ml-2" style="color: var(--studio-text-muted)" @click="clearError">
           &times;
         </button>
       </div>
@@ -1179,7 +1179,9 @@ async function loadRenderHistory() {
       history?: Array<{ name: string; url: string }>;
     };
     renderHistory.value = info.history || [];
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 }
 
 function formatRenderDate(filename: string) {

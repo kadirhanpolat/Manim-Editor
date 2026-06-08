@@ -7,8 +7,8 @@
         data-test="rel-label"
         class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
         :value="obj.label"
-        @input="setRelationalLabel($event)"
         placeholder="e.g. x or \\frac{a}{b}"
+        @input="setRelationalLabel($event)"
       />
       <p class="text-[10px] text-studio-text-muted">
         Drag the two endpoint handles on the canvas to reshape.

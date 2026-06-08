@@ -4,8 +4,8 @@
       class="input input-sm resize-none"
       rows="3"
       :value="(obj.content as string) || ''"
-      @input="onContent($event)"
       placeholder="Enter text..."
+      @input="onContent($event)"
     ></textarea>
   </Section>
   <Section label="Text Style">
@@ -25,8 +25,8 @@
             <button
               class="align-btn"
               :class="{ active: ((obj.textAlign as string | undefined) ?? 'center') === 'left' }"
-              @click="u('textAlign', 'left')"
               title="Align Left"
+              @click="u('textAlign', 'left')"
             >
               <svg
                 width="14"
@@ -44,8 +44,8 @@
             <button
               class="align-btn"
               :class="{ active: ((obj.textAlign as string | undefined) ?? 'center') === 'center' }"
-              @click="u('textAlign', 'center')"
               title="Align Center"
+              @click="u('textAlign', 'center')"
             >
               <svg
                 width="14"
@@ -63,8 +63,8 @@
             <button
               class="align-btn"
               :class="{ active: ((obj.textAlign as string | undefined) ?? 'center') === 'right' }"
-              @click="u('textAlign', 'right')"
               title="Align Right"
+              @click="u('textAlign', 'right')"
             >
               <svg
                 width="14"

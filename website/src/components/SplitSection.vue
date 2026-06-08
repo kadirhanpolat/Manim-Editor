@@ -60,7 +60,7 @@
               &nbsp;· scene.py
             </span>
           </div>
-          <div class="code-panel-body" id="code-display">
+          <div id="code-display" class="code-panel-body">
             <!-- Code lines injected by JS -->
           </div>
         </div>

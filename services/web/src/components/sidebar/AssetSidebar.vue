@@ -11,10 +11,10 @@
           :key="s.type"
           class="shape-card group"
           draggable="true"
+          :title="'Drag or click to add ' + s.label"
           @dragstart="onDragStart(s.type, $event)"
           @dragend="onDragEnd"
           @click="addShape(s.type)"
-          :title="'Drag or click to add ' + s.label"
         >
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
@@ -33,10 +33,10 @@
           :key="s.type"
           class="shape-card group"
           draggable="true"
+          :title="'Drag or click to add ' + s.label"
           @dragstart="onDragStart(s.type, $event)"
           @dragend="onDragEnd"
           @click="addShape(s.type)"
-          :title="'Drag or click to add ' + s.label"
         >
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
@@ -54,8 +54,8 @@
           v-for="s in shapes3D"
           :key="s.type"
           class="shape-card group"
-          @click="addShape(s.type)"
           :title="'Add ' + s.label"
+          @click="addShape(s.type)"
         >
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
@@ -71,10 +71,10 @@
       <button
         class="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-studio-bg hover:bg-studio-border cursor-pointer border border-transparent hover:border-studio-accent/30 transition-all text-left"
         draggable="true"
+        title="Drag or click to add text"
         @dragstart="onDragStart('text', $event)"
         @dragend="onDragEnd"
         @click="addShape('text')"
-        title="Drag or click to add text"
       >
         <svg
           width="18"
@@ -151,10 +151,10 @@
           :key="asset.id"
           class="asset-thumb group"
           :draggable="!isCodeMode"
+          :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
           @dragstart="!isCodeMode && onDragStartAsset(asset.id, $event)"
           @dragend="onDragEnd"
           @click="onAssetClick(asset)"
-          :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
         >
           <img
             :src="asset.dataUrl ?? undefined"
@@ -165,8 +165,8 @@
           <button
             v-if="isCodeMode"
             class="asset-copy-path"
-            @click.stop="copyAssetPath(asset)"
             title="Copy file path"
+            @click.stop="copyAssetPath(asset)"
           >
             <svg
               width="10"
@@ -180,7 +180,7 @@
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
-          <button class="asset-remove" @click.stop="removeAsset(asset.id)" title="Remove">
+          <button class="asset-remove" title="Remove" @click.stop="removeAsset(asset.id)">
             &times;
           </button>
         </div>
@@ -231,10 +231,10 @@
           :key="asset.id"
           class="asset-thumb group"
           :draggable="!isCodeMode"
+          :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
           @dragstart="!isCodeMode && onDragStartAsset(asset.id, $event)"
           @dragend="onDragEnd"
           @click="onAssetClick(asset)"
-          :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
         >
           <img
             :src="asset.dataUrl ?? undefined"
@@ -245,8 +245,8 @@
           <button
             v-if="isCodeMode"
             class="asset-copy-path"
-            @click.stop="copyAssetPath(asset)"
             title="Copy file path"
+            @click.stop="copyAssetPath(asset)"
           >
             <svg
               width="10"
@@ -260,7 +260,7 @@
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
-          <button class="asset-remove" @click.stop="removeAsset(asset.id)" title="Remove">
+          <button class="asset-remove" title="Remove" @click.stop="removeAsset(asset.id)">
             &times;
           </button>
         </div>

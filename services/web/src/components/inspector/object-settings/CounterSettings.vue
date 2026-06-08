@@ -21,7 +21,7 @@
         />
         <span class="text-[11px] text-studio-text-muted">Integer mode (whole numbers)</span>
       </label>
-      <div class="flex items-center gap-2" v-if="!obj.useInteger">
+      <div v-if="!obj.useInteger" class="flex items-center gap-2">
         <span class="text-[10px] text-studio-text-muted w-20">Decimals</span>
         <input
           type="number"
@@ -38,8 +38,8 @@
           type="text"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.suffix ?? ''"
-          @input="onSuffixInput($event)"
           placeholder="e.g. %"
+          @input="onSuffixInput($event)"
         />
       </div>
     </div>

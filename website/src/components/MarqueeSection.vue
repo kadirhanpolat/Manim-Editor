@@ -1,7 +1,7 @@
 <template>
-  <div class="marquee-section" ref="sectionEl" aria-hidden="true">
-    <div class="marquee-track" id="marquee" :class="{ 'marquee-ready': partWidthPx > 0 }" :style="trackStyle">
-      <div class="marquee-track-part" ref="part1Ref">
+  <div ref="sectionEl" class="marquee-section" aria-hidden="true">
+    <div id="marquee" class="marquee-track" :class="{ 'marquee-ready': partWidthPx > 0 }" :style="trackStyle">
+      <div ref="part1Ref" class="marquee-track-part">
         <span class="marquee-item">From Code to Cinema</span>
         <span class="marquee-sep">·</span>
         <span class="marquee-item accent">Math Made Visual</span>

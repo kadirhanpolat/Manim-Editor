@@ -38,8 +38,8 @@
           <input
             type="checkbox"
             :checked="stg.gridVisible"
-            @change="uStage('gridVisible', ($event.target as HTMLInputElement).checked)"
             class="accent-studio-accent"
+            @change="uStage('gridVisible', ($event.target as HTMLInputElement).checked)"
           />
           <span class="text-[10px] text-studio-text-muted">Visible</span>
         </label>
@@ -80,8 +80,8 @@
         <input
           type="checkbox"
           :checked="stg.snapEnabled"
-          @change="uStage('snapEnabled', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
+          @change="uStage('snapEnabled', ($event.target as HTMLInputElement).checked)"
         />
         <span class="text-[10px] text-studio-text-muted">Snap enabled</span>
       </label>
@@ -89,8 +89,8 @@
         <input
           type="checkbox"
           :checked="stg.snapToGrid"
-          @change="uStage('snapToGrid', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
+          @change="uStage('snapToGrid', ($event.target as HTMLInputElement).checked)"
         />
         <span class="text-[10px] text-studio-text-muted">Snap to grid</span>
       </label>
@@ -98,8 +98,8 @@
         <input
           type="checkbox"
           :checked="stg.snapToCenter"
-          @change="uStage('snapToCenter', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
+          @change="uStage('snapToCenter', ($event.target as HTMLInputElement).checked)"
         />
         <span class="text-[10px] text-studio-text-muted">Snap to center</span>
       </label>
@@ -107,8 +107,8 @@
         <input
           type="checkbox"
           :checked="stg.snapToObjects"
-          @change="uStage('snapToObjects', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
+          @change="uStage('snapToObjects', ($event.target as HTMLInputElement).checked)"
         />
         <span class="text-[10px] text-studio-text-muted">Snap to objects</span>
       </label>

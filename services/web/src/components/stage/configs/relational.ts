@@ -113,8 +113,8 @@ export function angleArcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unk
   const r =
     (((obj.radius as number | undefined) || 0.6) / 14.222) * (ctx.stg.width as number) * z * 0.5;
   const pts: number[] = [];
-  let start = a1,
-    end = a2;
+  const start = a1;
+  let end = a2;
   if (end < start) end += Math.PI * 2;
   const steps = 24;
   for (let i = 0; i <= steps; i++) {

@@ -33,7 +33,7 @@
 
   <!-- Mobile drawer -->
   <Transition name="drawer">
-    <div v-show="menuOpen" class="nav-drawer-overlay" @click="menuOpen = false" aria-hidden="true"></div>
+    <div v-show="menuOpen" class="nav-drawer-overlay" aria-hidden="true" @click="menuOpen = false"></div>
   </Transition>
   <Transition name="drawer-slide">
     <aside

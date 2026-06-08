@@ -16,11 +16,11 @@
 
     <!-- Render Button -->
     <button
-      @click="startRender"
       :disabled="isRendering || !hasElements || hasPendingAudio"
       class="w-full btn btn-primary mb-3"
       :class="{ 'opacity-50 cursor-not-allowed': isRendering || !hasElements || hasPendingAudio }"
       :title="hasPendingAudio ? 'Waiting for audio generation...' : ''"
+      @click="startRender"
     >
       <span v-if="isRendering" class="flex items-center justify-center gap-2">
         <svg
@@ -59,15 +59,15 @@
     <!-- Logs Toggle + Copy -->
     <div v-if="hasLogs" class="flex items-center gap-3 mb-2">
       <button
-        @click="showLogs = !showLogs"
         class="text-xs text-studio-text-muted hover:text-studio-text"
+        @click="showLogs = !showLogs"
       >
         {{ showLogs ? '▼ Hide Logs' : '▶ Show Logs' }}
       </button>
       <button
-        @click="copyLogs"
         class="text-xs text-studio-accent hover:opacity-80"
         title="Copy the render log to the clipboard"
+        @click="copyLogs"
       >
         {{ copied ? '✓ Copied' : '⧉ Copy logs' }}
       </button>
@@ -85,7 +85,7 @@
     </div>
 
     <!-- Video Preview -->
-    <VideoPreview v-if="hasRender && projectId" :project-id="projectId" :key="renderKey" />
+    <VideoPreview v-if="hasRender && projectId" :key="renderKey" :project-id="projectId" />
 
     <div v-else-if="!isRendering" class="text-center text-studio-text-muted py-4">
       <div class="text-2xl mb-2 opacity-30">🎥</div>
