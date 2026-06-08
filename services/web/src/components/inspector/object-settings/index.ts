@@ -23,6 +23,7 @@ import RaySettings from './RaySettings.vue';
 import CoordPointSettings from './CoordPointSettings.vue';
 import BezierSettings from './BezierSettings.vue';
 import NumberLineSettings from './NumberLineSettings.vue';
+import AnnotationSettings from './AnnotationSettings.vue';
 const REGISTRY: Record<string, Component> = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -49,6 +50,9 @@ const REGISTRY: Record<string, Component> = {
   ray: RaySettings,
   coord_point: CoordPointSettings,
   bezier: BezierSettings,
+  surrounding_rect: AnnotationSettings,
+  underline: AnnotationSettings,
+  cross: AnnotationSettings,
 };
 export function settingsComponentFor(type: string): Component | null {
   return REGISTRY[type] ?? null;
