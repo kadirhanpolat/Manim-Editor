@@ -56,7 +56,14 @@ export const projects = {
       body: JSON.stringify({ quality }),
     }),
 
-  renderCode: (id: string, { quality = 'high', codeSource, sceneName = 'MainScene' }: { quality?: string; codeSource?: string; sceneName?: string }) =>
+  renderCode: (
+    id: string,
+    {
+      quality = 'high',
+      codeSource,
+      sceneName = 'MainScene',
+    }: { quality?: string; codeSource?: string; sceneName?: string }
+  ) =>
     request(`/projects/${id}/render-code`, {
       method: 'POST',
       body: JSON.stringify({ quality, codeSource, sceneName }),
@@ -86,7 +93,10 @@ export const assets = {
   },
 
   /** Upload a base64 data-URL (used when syncing browser assets to server). */
-  uploadBase64: (projectId: string, { name, type, data }: { name: string; type: string; data: string }) =>
+  uploadBase64: (
+    projectId: string,
+    { name, type, data }: { name: string; type: string; data: string }
+  ) =>
     request(`/assets/${projectId}/base64`, {
       method: 'POST',
       body: JSON.stringify({ name, type, data }),
@@ -107,7 +117,8 @@ export const jobs = {
 // ─── Renders ──────────────────────────────────────────────────────────────────
 
 export const renders = {
-  getLatestUrl: (projectId: string) => `${API_BASE}/renders/${projectId}/latest.mp4?t=${Date.now()}`,
+  getLatestUrl: (projectId: string) =>
+    `${API_BASE}/renders/${projectId}/latest.mp4?t=${Date.now()}`,
   getInfo: (projectId: string) => request(`/renders/${projectId}`),
 };
 
@@ -160,7 +171,13 @@ export async function checkHealth(): Promise<boolean> {
  */
 export function connectJobWebSocket(
   jobId: string,
-  onUpdate: (msg: { status?: string; stdout?: string; stderr?: string; error?: string; [k: string]: unknown }) => void,
+  onUpdate: (msg: {
+    status?: string;
+    stdout?: string;
+    stderr?: string;
+    error?: string;
+    [k: string]: unknown;
+  }) => void
 ): () => void {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const ws = new WebSocket(`${protocol}//${location.host}/ws`);
@@ -168,7 +185,15 @@ export function connectJobWebSocket(
   ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe', jobId }));
   ws.onmessage = (event) => {
     try {
-      const msg = JSON.parse(event.data as string) as { type?: string; jobId?: string; status?: string; stdout?: string; stderr?: string; error?: string; [k: string]: unknown };
+      const msg = JSON.parse(event.data as string) as {
+        type?: string;
+        jobId?: string;
+        status?: string;
+        stdout?: string;
+        stderr?: string;
+        error?: string;
+        [k: string]: unknown;
+      };
       if (msg.type === 'job_update' && msg.jobId === jobId) onUpdate(msg);
     } catch {}
   };
@@ -182,7 +207,14 @@ export function connectJobWebSocket(
  */
 export function connectAudioWebSocket(
   jobId: string,
-  onUpdate: (data: { event: string; clipId?: string; duration?: number; src?: string; error?: string; [k: string]: unknown }) => void,
+  onUpdate: (data: {
+    event: string;
+    clipId?: string;
+    duration?: number;
+    src?: string;
+    error?: string;
+    [k: string]: unknown;
+  }) => void
 ): () => void {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const ws = new WebSocket(`${protocol}//${location.host}/ws`);
@@ -190,7 +222,14 @@ export function connectAudioWebSocket(
   ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe_audio', jobId }));
   ws.onmessage = (event) => {
     try {
-      const data = JSON.parse(event.data as string) as { event: string; clipId?: string; duration?: number; src?: string; error?: string; [k: string]: unknown };
+      const data = JSON.parse(event.data as string) as {
+        event: string;
+        clipId?: string;
+        duration?: number;
+        src?: string;
+        error?: string;
+        [k: string]: unknown;
+      };
       if (data.event === 'audio_ready' || data.event === 'audio_error') {
         onUpdate(data);
         ws.close();

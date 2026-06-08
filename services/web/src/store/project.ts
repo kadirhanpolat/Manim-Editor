@@ -11,14 +11,7 @@
  */
 
 import { createPinia, defineStore, setActivePinia } from 'pinia';
-import type {
-  SceneObject,
-  Clip,
-  Track,
-  Group,
-  Camera3d,
-  KeyframeDefaults,
-} from '@manim/codegen';
+import type { SceneObject, Clip, Track, Group, Camera3d, KeyframeDefaults } from '@manim/codegen';
 import api, { connectJobWebSocket } from '../api.js';
 import { presetVertices } from '../engine/polygonVertices.js';
 
@@ -433,7 +426,8 @@ const useProjectStore = defineStore('project', {
       }
       return null;
     },
-    groupById: (state) => (id: string) => (state.project.groups || []).find((g) => g.id === id) || null,
+    groupById: (state) => (id: string) =>
+      (state.project.groups || []).find((g) => g.id === id) || null,
     objectGroup: (state) => (objId: string) =>
       (state.project.groups || []).find((g) => g.childIds && g.childIds.includes(objId)) || null,
     computedDuration: (state) => {
@@ -466,7 +460,12 @@ const useProjectStore = defineStore('project', {
     // Objects
     // ══════════════════════════════════════════════════════════════════════════
 
-    addObject(type: string, x?: number, y?: number, extraProps: Record<string, unknown> = {}): SceneObject {
+    addObject(
+      type: string,
+      x?: number,
+      y?: number,
+      extraProps: Record<string, unknown> = {}
+    ): SceneObject {
       const stage = this.project.stage;
       const d = SHAPE_DEFAULTS[type as keyof typeof SHAPE_DEFAULTS] || SHAPE_DEFAULTS.circle;
       const pos =
@@ -512,7 +511,8 @@ const useProjectStore = defineStore('project', {
         ray: 'Ray',
         coord_point: 'Coord Point',
       };
-      const displayName = (nameMap as Record<string, string>)[type] || type.charAt(0).toUpperCase() + type.slice(1);
+      const displayName =
+        (nameMap as Record<string, string>)[type] || type.charAt(0).toUpperCase() + type.slice(1);
 
       const obj: SceneObject = {
         id: uid('obj'),
@@ -738,7 +738,8 @@ const useProjectStore = defineStore('project', {
 
     removeMatrixRow(id: string) {
       const obj = this.project.objects.find((o) => o.id === id);
-      if (!obj || !Array.isArray(obj.matrixData) || (obj.matrixData as string[][]).length <= 1) return;
+      if (!obj || !Array.isArray(obj.matrixData) || (obj.matrixData as string[][]).length <= 1)
+        return;
       (obj.matrixData as string[][]).pop();
       this.isDirty = true;
       this.commitState();
@@ -755,13 +756,7 @@ const useProjectStore = defineStore('project', {
     removeMatrixColumn(id: string) {
       const obj = this.project.objects.find((o) => o.id === id);
       const md = obj ? (obj.matrixData as string[][] | undefined) : undefined;
-      if (
-        !obj ||
-        !Array.isArray(md) ||
-        !md[0] ||
-        md[0].length <= 1
-      )
-        return;
+      if (!obj || !Array.isArray(md) || !md[0] || md[0].length <= 1) return;
       md.forEach((row) => row.pop());
       this.isDirty = true;
       this.commitState();
@@ -778,13 +773,7 @@ const useProjectStore = defineStore('project', {
     setTableCell(id: string, r: number, c: number, value: unknown) {
       const obj = this.objectById(id);
       const cd = obj ? (obj.cellData as string[][] | undefined) : undefined;
-      if (
-        !obj ||
-        !Array.isArray(cd) ||
-        !cd[r] ||
-        cd[r][c] === undefined
-      )
-        return;
+      if (!obj || !Array.isArray(cd) || !cd[r] || cd[r][c] === undefined) return;
       cd[r][c] = String(value);
       this.isDirty = true;
       this._debouncedCommit();
@@ -817,8 +806,7 @@ const useProjectStore = defineStore('project', {
     removeTableColumn(id: string) {
       const obj = this.objectById(id);
       const cd = obj ? (obj.cellData as string[][] | undefined) : undefined;
-      if (!obj || !Array.isArray(cd) || !cd[0] || cd[0].length <= 1)
-        return;
+      if (!obj || !Array.isArray(cd) || !cd[0] || cd[0].length <= 1) return;
       cd.forEach((row) => row.pop());
       if (Array.isArray(obj.colLabels) && (obj.colLabels as string[]).length > cd[0].length)
         (obj.colLabels as string[]).splice(cd[0].length);
@@ -918,7 +906,13 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setShadow(id: string, shadow: { color?: unknown; opacity?: unknown; dx?: unknown; dy?: unknown; blur?: unknown } | null | undefined) {
+    setShadow(
+      id: string,
+      shadow:
+        | { color?: unknown; opacity?: unknown; dx?: unknown; dy?: unknown; blur?: unknown }
+        | null
+        | undefined
+    ) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (shadow) {
@@ -1313,7 +1307,8 @@ const useProjectStore = defineStore('project', {
       for (const track of this.project.tracks) {
         const clip = track.clips.find((c) => c.id === clipId);
         if (clip) {
-          for (const key of Object.keys(updates)) (clip as Record<string, unknown>)[key] = updates[key];
+          for (const key of Object.keys(updates))
+            (clip as Record<string, unknown>)[key] = updates[key];
           this.isDirty = true;
           return;
         }
@@ -1491,7 +1486,8 @@ const useProjectStore = defineStore('project', {
     // ══════════════════════════════════════════════════════════════════════════
 
     updateStage(u: Partial<StoreStage>) {
-      for (const k of Object.keys(u)) (this.project.stage as Record<string, unknown>)[k] = (u as Record<string, unknown>)[k];
+      for (const k of Object.keys(u))
+        (this.project.stage as Record<string, unknown>)[k] = (u as Record<string, unknown>)[k];
       this.isDirty = true;
     },
     toggleGrid() {
@@ -1559,7 +1555,8 @@ const useProjectStore = defineStore('project', {
             return;
           }
           const reader = new FileReader();
-          reader.onload = (ev) => resolve(this.importJSON((ev.target as FileReader).result as string));
+          reader.onload = (ev) =>
+            resolve(this.importJSON((ev.target as FileReader).result as string));
           reader.onerror = () => {
             this.error = 'Failed to read file';
             resolve(false);
@@ -1618,7 +1615,10 @@ const useProjectStore = defineStore('project', {
       try {
         // 1. Create on server if no project ID
         if (!this.project.id) {
-          const created = await api.projects.create(this.project.name, this.project.editorMode) as { id: string };
+          const created = (await api.projects.create(
+            this.project.name,
+            this.project.editorMode
+          )) as { id: string };
           this.project.id = created.id;
         }
 
@@ -1628,11 +1628,11 @@ const useProjectStore = defineStore('project', {
         for (const asset of this.project.assets) {
           if (asset.dataUrl && !asset.serverFilename) {
             try {
-              const result = await api.assets.uploadBase64(projectId, {
+              const result = (await api.assets.uploadBase64(projectId, {
                 name: asset.filename || asset.name || 'asset',
                 type: asset.type,
                 data: asset.dataUrl,
-              }) as { filename: string };
+              })) as { filename: string };
               asset.serverFilename = result.filename;
             } catch (err) {
               console.warn('[saveToServer] Asset upload failed:', asset.name, err);
@@ -1670,7 +1670,7 @@ const useProjectStore = defineStore('project', {
     async loadFromServer(id: string) {
       this.loading = true;
       try {
-        const project = await api.projects.get(id) as Record<string, unknown>;
+        const project = (await api.projects.get(id)) as Record<string, unknown>;
 
         // For each asset, create a displayable URL
         for (const asset of (project.assets as Record<string, unknown>[] | undefined) || []) {
@@ -1710,7 +1710,7 @@ const useProjectStore = defineStore('project', {
      */
     async listServerProjects() {
       try {
-        const list = await api.projects.list() as unknown[];
+        const list = (await api.projects.list()) as unknown[];
         this.serverProjects = list || [];
         return list;
       } catch (err) {
@@ -1725,7 +1725,9 @@ const useProjectStore = defineStore('project', {
      */
     async deleteServerProject(id: string) {
       await api.projects.delete(id);
-      this.serverProjects = this.serverProjects.filter((p) => (p as Record<string, unknown>).id !== id);
+      this.serverProjects = this.serverProjects.filter(
+        (p) => (p as Record<string, unknown>).id !== id
+      );
       if (this.project.id === id) {
         this.project.id = null;
       }
@@ -1754,13 +1756,13 @@ const useProjectStore = defineStore('project', {
         this.renderStatus = 'queued';
         let result: { jobId: string };
         if (this.project.editorMode === 'code') {
-          result = await api.projects.renderCode(projectId, {
+          result = (await api.projects.renderCode(projectId, {
             quality,
             codeSource: this.project.codeSource,
             sceneName: 'MainScene',
-          }) as { jobId: string };
+          })) as { jobId: string };
         } else {
-          result = await api.projects.render(projectId, quality) as { jobId: string };
+          result = (await api.projects.render(projectId, quality)) as { jobId: string };
         }
         this.renderJobId = result.jobId;
 
@@ -1998,7 +2000,16 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    addCameraMoveClip(params: { startTime?: number; duration?: number; easing?: string; targetX?: number; targetY?: number; zoom?: number } = {}) {
+    addCameraMoveClip(
+      params: {
+        startTime?: number;
+        duration?: number;
+        easing?: string;
+        targetX?: number;
+        targetY?: number;
+        zoom?: number;
+      } = {}
+    ) {
       if (!this.project.cameraTrack) this.project.cameraTrack = [];
       const clip: Clip = {
         id: uid('cam'),
@@ -2018,12 +2029,16 @@ const useProjectStore = defineStore('project', {
       return clip;
     },
 
-    updateCameraClip(clipId: string, updates: { params?: Record<string, unknown> } & Record<string, unknown>) {
+    updateCameraClip(
+      clipId: string,
+      updates: { params?: Record<string, unknown> } & Record<string, unknown>
+    ) {
       const clip = this.project.cameraTrack?.find((c) => c.id === clipId);
       if (!clip) return;
       if (updates.params) {
         if (!clip.params) clip.params = {};
-        for (const k of Object.keys(updates.params)) (clip.params as Record<string, unknown>)[k] = (updates.params)[k];
+        for (const k of Object.keys(updates.params))
+          (clip.params as Record<string, unknown>)[k] = updates.params[k];
       }
       const topLevel = Object.keys(updates).filter((k) => k !== 'params');
       for (const k of topLevel) (clip as Record<string, unknown>)[k] = updates[k];
@@ -2074,7 +2089,8 @@ const useProjectStore = defineStore('project', {
       const start = obj.enterTime || 0;
       const end = start + (obj.duration ?? 3);
       const t = Math.round(Math.max(start, Math.min(end, time)) * 100) / 100;
-      const isFirst = !(obj.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.length;
+      const isFirst = !(obj.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]
+        ?.length;
       if (!obj.keyframes) obj.keyframes = {};
       const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
       if (!kfMap[prop]) kfMap[prop] = [];
@@ -2210,7 +2226,14 @@ const useProjectStore = defineStore('project', {
     // they slide/scale with the edge being dragged; pinned boundaries snap to
     // the new edges. `origKeyframes` is a snapshot taken before the resize began
     // so repeated calls during a drag remap from the original (no compounding).
-    rescaleKeyframes(objId: string, origKeyframes: Record<string, StoreKeyframe[]>, oldStart: number, oldEnd: number, newStart: number, newEnd: number) {
+    rescaleKeyframes(
+      objId: string,
+      origKeyframes: Record<string, StoreKeyframe[]>,
+      oldStart: number,
+      oldEnd: number,
+      newStart: number,
+      newEnd: number
+    ) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj || !origKeyframes) return;
       const oldSpan = oldEnd - oldStart || 1;
@@ -2235,16 +2258,25 @@ const useProjectStore = defineStore('project', {
 
     updateKeyframeValue(objId: string, prop: string, time: number, value: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
-      const kf = (obj?.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
+      const kf = (obj?.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.find(
+        (k) => Math.abs(k.time - time) < 0.01
+      );
       if (!kf) return;
       kf.value = value;
       this.isDirty = true;
       this.commitState();
     },
 
-    updateKeyframeEasing(objId: string, prop: string, time: number, easing: { type: string; handles?: number[] }) {
+    updateKeyframeEasing(
+      objId: string,
+      prop: string,
+      time: number,
+      easing: { type: string; handles?: number[] }
+    ) {
       const obj = this.project.objects.find((o) => o.id === objId);
-      const kf = (obj?.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
+      const kf = (obj?.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.find(
+        (k) => Math.abs(k.time - time) < 0.01
+      );
       if (!kf) return;
       kf.easing = easing;
       this.isDirty = true;
@@ -2260,7 +2292,11 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    setKeyframeCodegen(objId: string, prop: string, codegenMode: import('@manim/codegen').KeyframeCodegenMode) {
+    setKeyframeCodegen(
+      objId: string,
+      prop: string,
+      codegenMode: import('@manim/codegen').KeyframeCodegenMode
+    ) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframeCodegen) obj.keyframeCodegen = {};
@@ -2269,7 +2305,11 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    selectKeyframe(objId: string | null | undefined, prop: string | null | undefined, time: number | null | undefined) {
+    selectKeyframe(
+      objId: string | null | undefined,
+      prop: string | null | undefined,
+      time: number | null | undefined
+    ) {
       this.selectedKeyframeId =
         objId && prop != null && time != null ? { objId, prop, time } : null;
     },
