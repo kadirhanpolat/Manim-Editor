@@ -3,18 +3,18 @@
     <textarea
       class="input input-sm resize-none"
       rows="3"
-      :value="(obj.content as string) || ''"
+      :value="o.content || ''"
       placeholder="Enter text..."
       @input="onContent($event)"
     ></textarea>
   </Section>
   <Section label="Text Style">
     <div class="space-y-1.5">
-      <ColorRow label="Color" :value="obj.fill as string | undefined" @input="u('fill', $event)" />
+      <ColorRow label="Color" :value="o.fill" @input="u('fill', $event)" />
       <div class="grid grid-cols-2 gap-1.5">
         <Num
           label="Font Size"
-          :value="(obj.fontSize as number | undefined) ?? 48"
+          :value="o.fontSize ?? 48"
           :min="8"
           :max="200"
           @input="u('fontSize', $event)"
@@ -24,7 +24,7 @@
           <div class="flex gap-0.5 mt-0.5">
             <button
               class="align-btn"
-              :class="{ active: ((obj.textAlign as string | undefined) ?? 'center') === 'left' }"
+              :class="{ active: (o.textAlign ?? 'center') === 'left' }"
               title="Align Left"
               @click="u('textAlign', 'left')"
             >
@@ -43,7 +43,7 @@
             </button>
             <button
               class="align-btn"
-              :class="{ active: ((obj.textAlign as string | undefined) ?? 'center') === 'center' }"
+              :class="{ active: (o.textAlign ?? 'center') === 'center' }"
               title="Align Center"
               @click="u('textAlign', 'center')"
             >
@@ -62,7 +62,7 @@
             </button>
             <button
               class="align-btn"
-              :class="{ active: ((obj.textAlign as string | undefined) ?? 'center') === 'right' }"
+              :class="{ active: (o.textAlign ?? 'center') === 'right' }"
               title="Align Right"
               @click="u('textAlign', 'right')"
             >
@@ -84,14 +84,14 @@
       </div>
       <div class="grid grid-cols-2 gap-1.5">
         <FontSelector
-          :value="(obj.fontFamily as string | undefined) ?? 'Roboto'"
+          :value="o.fontFamily ?? 'Roboto'"
           @input="u('fontFamily', $event)"
         />
         <div>
           <span class="text-[9px] text-studio-text-muted/50">Weight</span>
           <select
             class="select text-xs"
-            :value="(obj.fontWeight as string | undefined) ?? 'normal'"
+            :value="o.fontWeight ?? 'normal'"
             @change="onFontWeight($event)"
           >
             <option value="normal">Normal</option>
@@ -104,7 +104,8 @@
 </template>
 
 <script setup lang="ts">
-import type { SceneObject } from '@manim/codegen';
+import { computed } from 'vue';
+import type { SceneObject, TextObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
@@ -113,7 +114,7 @@ import FontSelector from '../FontSelector.vue';
 
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
+const o = computed(() => props.obj as TextObject);
 function onContent(e: Event) {
   u('content', (e.target as HTMLTextAreaElement).value);
 }

@@ -16,25 +16,25 @@
         <button
           data-test="matrix-add-row"
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.addMatrixRow(obj.id)"
+          @click="store.addMatrixRow(o.id)"
         >
           + Row
         </button>
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.removeMatrixRow(obj.id)"
+          @click="store.removeMatrixRow(o.id)"
         >
           − Row
         </button>
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.addMatrixColumn(obj.id)"
+          @click="store.addMatrixColumn(o.id)"
         >
           + Col
         </button>
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.removeMatrixColumn(obj.id)"
+          @click="store.removeMatrixColumn(o.id)"
         >
           − Col
         </button>
@@ -44,33 +44,33 @@
         <button
           class="flex-1 py-1 text-[11px] rounded border"
           :class="
-            obj.bracket === '['
+            o.bracket === '['
               ? 'border-studio-accent text-studio-accent'
               : 'border-studio-border text-studio-text-muted hover:bg-studio-accent/10'
           "
-          @click="store.setMatrixBracket(obj.id, '[')"
+          @click="store.setMatrixBracket(o.id, '[')"
         >
           [ ]
         </button>
         <button
           class="flex-1 py-1 text-[11px] rounded border"
           :class="
-            obj.bracket === '('
+            o.bracket === '('
               ? 'border-studio-accent text-studio-accent'
               : 'border-studio-border text-studio-text-muted hover:bg-studio-accent/10'
           "
-          @click="store.setMatrixBracket(obj.id, '(')"
+          @click="store.setMatrixBracket(o.id, '(')"
         >
           ( )
         </button>
         <button
           class="flex-1 py-1 text-[11px] rounded border"
           :class="
-            obj.bracket === '|'
+            o.bracket === '|'
               ? 'border-studio-accent text-studio-accent'
               : 'border-studio-border text-studio-text-muted hover:bg-studio-accent/10'
           "
-          @click="store.setMatrixBracket(obj.id, '|')"
+          @click="store.setMatrixBracket(o.id, '|')"
         >
           | |
         </button>
@@ -81,14 +81,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SceneObject } from '@manim/codegen';
+import type { SceneObject, MatrixObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
-const obj = props.obj;
-const matrixData = computed(() => (obj.matrixData as string[][] | undefined) ?? [[]]);
+const o = computed(() => props.obj as MatrixObject);
+const matrixData = computed(() => o.value.matrixData ?? [[]]);
 function onCellInput(r: number, c: number, e: Event) {
-  store.setMatrixCell(obj.id, r, c, (e.target as HTMLInputElement).value);
+  store.setMatrixCell(o.value.id, r, c, (e.target as HTMLInputElement).value);
 }
 </script>

@@ -15,25 +15,25 @@
       <div class="flex gap-1 pt-1">
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.addTableRow(obj.id)"
+          @click="store.addTableRow(o.id)"
         >
           + Row
         </button>
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.removeTableRow(obj.id)"
+          @click="store.removeTableRow(o.id)"
         >
           − Row
         </button>
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.addTableColumn(obj.id)"
+          @click="store.addTableColumn(o.id)"
         >
           + Col
         </button>
         <button
           class="flex-1 py-1 text-[10px] rounded border border-studio-border hover:bg-studio-accent/10 text-studio-text-muted"
-          @click="store.removeTableColumn(obj.id)"
+          @click="store.removeTableColumn(o.id)"
         >
           − Col
         </button>
@@ -42,7 +42,7 @@
         <input
           id="table-math-mode"
           type="checkbox"
-          :checked="!!obj.mathMode"
+          :checked="!!o.mathMode"
           @change="onMathMode($event)"
         />
         <label for="table-math-mode" class="text-[11px] text-studio-text-muted"
@@ -71,25 +71,25 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SceneObject } from '@manim/codegen';
+import type { SceneObject, TableObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
-const obj = props.obj;
-const cellData = computed(() => (obj.cellData as string[][] | undefined) ?? [[]]);
-const rowLabels = computed(() => (obj.rowLabels as string[] | undefined) ?? []);
-const colLabels = computed(() => (obj.colLabels as string[] | undefined) ?? []);
+const o = computed(() => props.obj as TableObject);
+const cellData = computed(() => o.value.cellData ?? [[]]);
+const rowLabels = computed(() => o.value.rowLabels ?? []);
+const colLabels = computed(() => o.value.colLabels ?? []);
 function onCellInput(r: number, c: number, e: Event) {
-  store.setTableCell(obj.id, r, c, (e.target as HTMLInputElement).value);
+  store.setTableCell(o.value.id, r, c, (e.target as HTMLInputElement).value);
 }
 function onMathMode(e: Event) {
-  store.setTableMathMode(obj.id, (e.target as HTMLInputElement).checked);
+  store.setTableMathMode(o.value.id, (e.target as HTMLInputElement).checked);
 }
 function onRowLabels(e: Event) {
   const val = (e.target as HTMLInputElement).value;
   store.setTableRowLabels(
-    obj.id,
+    o.value.id,
     val
       .split(',')
       .map((s) => s.trim())
@@ -99,7 +99,7 @@ function onRowLabels(e: Event) {
 function onColLabels(e: Event) {
   const val = (e.target as HTMLInputElement).value;
   store.setTableColLabels(
-    obj.id,
+    o.value.id,
     val
       .split(',')
       .map((s) => s.trim())

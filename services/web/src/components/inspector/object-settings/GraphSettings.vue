@@ -5,11 +5,11 @@
       <!-- Toggles -->
       <div class="flex gap-3">
         <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
-          <input type="checkbox" :checked="!!obj.directed" @change="onDirectedChange($event)" />
+          <input type="checkbox" :checked="!!o.directed" @change="onDirectedChange($event)" />
           Directed
         </label>
         <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
-          <input type="checkbox" :checked="!!obj.showLabels" @change="onShowLabelsChange($event)" />
+          <input type="checkbox" :checked="!!o.showLabels" @change="onShowLabelsChange($event)" />
           Labels
         </label>
       </div>
@@ -88,16 +88,16 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import type { SceneObject } from '@manim/codegen';
+import type { SceneObject, GraphObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
-const obj = props.obj;
+const o = computed(() => props.obj as GraphObject);
 const newEdgeFrom = ref('');
 const newEdgeTo = ref('');
-const graphVertices = computed(() => (obj.vertices as string[] | undefined) ?? []);
-const graphEdges = computed(() => (obj.edges as [string, string][] | undefined) ?? []);
+const graphVertices = computed(() => o.value.vertices ?? []);
+const graphEdges = computed(() => o.value.edges ?? []);
 watch(
   () => store.selectedObjectIds,
   () => {
@@ -109,23 +109,23 @@ function graphVertexName(v: unknown): string {
   return String(v || '').trim();
 }
 function addGraphVertexAuto() {
-  store.addGraphVertex(obj.id, undefined);
+  store.addGraphVertex(o.value.id, undefined);
 }
 function removeGraphVertex(v: string) {
-  store.removeGraphVertex(obj.id, v);
+  store.removeGraphVertex(o.value.id, v);
 }
 function renameGraphVertex(oldV: string, newV: unknown) {
   const nv = graphVertexName(newV);
-  if (nv && nv !== oldV) store.renameGraphVertex(obj.id, oldV, nv);
+  if (nv && nv !== oldV) store.renameGraphVertex(o.value.id, oldV, nv);
 }
 function onRenameVertex(oldV: string, e: Event) {
   renameGraphVertex(oldV, (e.target as HTMLInputElement).value);
 }
 function onDirectedChange(e: Event) {
-  store.setGraphDirected(obj.id, (e.target as HTMLInputElement).checked);
+  store.setGraphDirected(o.value.id, (e.target as HTMLInputElement).checked);
 }
 function onShowLabelsChange(e: Event) {
-  store.setGraphShowLabels(obj.id, (e.target as HTMLInputElement).checked);
+  store.setGraphShowLabels(o.value.id, (e.target as HTMLInputElement).checked);
 }
 function onNewEdgeFromChange(e: Event) {
   newEdgeFrom.value = (e.target as HTMLSelectElement).value;
@@ -137,12 +137,12 @@ function addGraphEdgeFromUI() {
   const a = newEdgeFrom.value,
     b = newEdgeTo.value;
   if (a && b && a !== b) {
-    store.addGraphEdge(obj.id, a, b);
+    store.addGraphEdge(o.value.id, a, b);
     newEdgeFrom.value = '';
     newEdgeTo.value = '';
   }
 }
 function removeGraphEdge(a: string, b: string) {
-  store.removeGraphEdge(obj.id, a, b);
+  store.removeGraphEdge(o.value.id, a, b);
 }
 </script>

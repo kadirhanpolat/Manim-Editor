@@ -13,19 +13,19 @@
           @input="uRange('xRange', 2, $event)"
         />
       </div>
-      <Num label="Length (px)" :value="obj.width" :min="1" @input="u('width', $event)" />
+      <Num label="Length (px)" :value="o.width" :min="1" @input="u('width', $event)" />
     </div>
   </Section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SceneObject } from '@manim/codegen';
+import type { SceneObject, NumberLineObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u, uRange } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
-const xRange = computed(() => (obj.xRange as number[] | undefined) ?? [-5, 5, 1]);
+const o = computed(() => props.obj as NumberLineObject);
+const xRange = computed(() => o.value.xRange ?? [-5, 5, 1]);
 </script>

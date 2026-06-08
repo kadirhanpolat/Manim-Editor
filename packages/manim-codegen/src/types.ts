@@ -211,6 +211,168 @@ export interface Project {
   keyframeDefaults?: KeyframeDefaults;
 }
 
+// ─── Per-type narrow interfaces ────────────────────────────────────────────
+// Each extends SceneObject with a literal `type` discriminant so components
+// can narrow once and access type-specific fields without inline casts.
+
+export interface ParametricObject extends SceneObject {
+  type: 'parametric';
+  xExpr?: string;
+  yExpr?: string;
+  tMin?: number;
+  tMax?: number;
+}
+
+export interface VectorFieldObject extends SceneObject {
+  type: 'vector_field';
+  fx?: string;
+  fy?: string;
+  xRange?: number[];
+  yRange?: number[];
+}
+
+export interface DotGridObject extends SceneObject {
+  type: 'dot_grid';
+  gridCols?: number;
+  gridRows?: number;
+  dotSpacing?: number;
+  dotRadius?: number;
+}
+
+export interface TableObject extends SceneObject {
+  type: 'table';
+  cellData?: string[][];
+  mathMode?: boolean;
+  rowLabels?: string[];
+  colLabels?: string[];
+}
+
+export interface ArcSectorObject extends SceneObject {
+  type: 'arc' | 'sector';
+  radius?: number;
+  startAngle?: number;
+  sweepAngle?: number;
+}
+
+export interface AnnulusObject extends SceneObject {
+  type: 'annulus';
+  innerRadius?: number;
+  outerRadius?: number;
+}
+
+export interface StarObject extends SceneObject {
+  type: 'star';
+  starArms?: number;
+  innerRatio?: number;
+}
+
+export interface RayObject extends SceneObject {
+  type: 'ray';
+  angle?: number;
+  length?: number;
+}
+
+export interface PlaneObject extends SceneObject {
+  type: 'numberplane' | 'complex_plane' | 'polar_plane';
+  xRange?: number[];
+  yRange?: number[];
+  // polar_plane extras
+  radiusMax?: number;
+  radiusStep?: number;
+  azimuthUnits?: number;
+}
+
+export interface GraphEntry {
+  id: string;
+  expression?: string;
+  color?: string;
+  xMin?: number;
+  xMax?: number;
+  strokeWidth?: number;
+  area?: {
+    enabled?: boolean;
+    xMin?: number;
+    xMax?: number;
+    opacity?: number;
+    color?: string;
+    [k: string]: unknown;
+  };
+  riemann?: {
+    enabled?: boolean;
+    xMin?: number;
+    xMax?: number;
+    dx?: number;
+    type?: string;
+    color?: string;
+    [k: string]: unknown;
+  };
+  tangent?: {
+    enabled?: boolean;
+    x?: number;
+    length?: number;
+    color?: string;
+    [k: string]: unknown;
+  };
+}
+
+export interface AxesObject extends SceneObject {
+  type: 'axes';
+  xRange?: number[];
+  yRange?: number[];
+  graphs?: GraphEntry[];
+}
+
+export interface PolygonObject extends SceneObject {
+  type: 'polygon';
+  sides?: number;
+}
+
+export interface NumberLineObject extends SceneObject {
+  type: 'numberline';
+  xRange?: number[];
+}
+
+export interface MatrixObject extends SceneObject {
+  type: 'matrix';
+  matrixData?: string[][];
+  bracket?: '[' | '(' | '|';
+}
+
+export interface LatexObject extends SceneObject {
+  type: 'latex';
+  latex?: string;
+}
+
+export interface DiGraphEdge extends Array<string> {
+  0: string;
+  1: string;
+}
+
+export interface GraphObject extends SceneObject {
+  type: 'graph';
+  vertices?: string[];
+  edges?: [string, string][];
+  positions?: Record<string, [number, number]>;
+  directed?: boolean;
+  showLabels?: boolean;
+}
+
+export interface VectorComponentsObject extends SceneObject {
+  type: 'vector_components';
+  vx?: number;
+  vy?: number;
+}
+
+export interface TextObject extends SceneObject {
+  type: 'text';
+  content?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  fontWeight?: string;
+  // fontSize and fontFamily are already on SceneObject
+}
+
+// ─── End per-type interfaces ────────────────────────────────────────────────
+
 /** A scheduled animation line produced internally by generateScene. */
 export interface GeneratedStep {
   time: number;

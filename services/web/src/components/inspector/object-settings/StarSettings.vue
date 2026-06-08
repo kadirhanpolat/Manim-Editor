@@ -4,14 +4,14 @@
     <div class="grid grid-cols-2 gap-1.5">
       <Num
         label="Arms"
-        :value="(obj.starArms as number | undefined) ?? 5"
+        :value="o.starArms ?? 5"
         :min="3"
         :max="20"
         @input="u('starArms', $event)"
       />
       <Num
         label="Inner Ratio"
-        :value="(obj.innerRatio as number | undefined) ?? 0.4"
+        :value="o.innerRatio ?? 0.4"
         :min="0.1"
         :max="0.9"
         :step="0.05"
@@ -22,11 +22,12 @@
 </template>
 
 <script setup lang="ts">
-import type { SceneObject } from '@manim/codegen';
+import { computed } from 'vue';
+import type { SceneObject, StarObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
+const o = computed(() => props.obj as StarObject);
 </script>

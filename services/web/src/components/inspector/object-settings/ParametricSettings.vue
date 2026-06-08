@@ -6,7 +6,7 @@
         <span class="text-[10px] text-studio-text-muted w-8">x(t)</span>
         <input
           class="input input-sm flex-1"
-          :value="obj.xExpr as string | undefined"
+          :value="o.xExpr"
           @change="onXExpr($event)"
         />
       </div>
@@ -14,19 +14,19 @@
         <span class="text-[10px] text-studio-text-muted w-8">y(t)</span>
         <input
           class="input input-sm flex-1"
-          :value="obj.yExpr as string | undefined"
+          :value="o.yExpr"
           @change="onYExpr($event)"
         />
       </div>
       <div class="grid grid-cols-2 gap-1.5">
         <Num
           label="t min"
-          :value="(obj.tMin as number | undefined) ?? 0"
+          :value="o.tMin ?? 0"
           @input="u('tMin', $event)"
         />
         <Num
           label="t max"
-          :value="(obj.tMax as number | undefined) ?? 6.283"
+          :value="o.tMax ?? 6.283"
           @input="u('tMax', $event)"
         />
       </div>
@@ -35,13 +35,14 @@
 </template>
 
 <script setup lang="ts">
-import type { SceneObject } from '@manim/codegen';
+import { computed } from 'vue';
+import type { SceneObject, ParametricObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
+const o = computed(() => props.obj as ParametricObject);
 function onXExpr(e: Event) {
   u('xExpr', (e.target as HTMLInputElement).value);
 }

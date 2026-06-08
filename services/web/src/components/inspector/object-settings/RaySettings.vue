@@ -3,12 +3,12 @@
     <div class="grid grid-cols-2 gap-1.5">
       <Num
         label="Angle°"
-        :value="(obj.angle as number | undefined) ?? 30"
+        :value="o.angle ?? 30"
         @input="u('angle', $event)"
       />
       <Num
         label="Length"
-        :value="(obj.length as number | undefined) ?? 200"
+        :value="o.length ?? 200"
         :min="1"
         @input="u('length', $event)"
       />
@@ -20,11 +20,12 @@
 </template>
 
 <script setup lang="ts">
-import type { SceneObject } from '@manim/codegen';
+import { computed } from 'vue';
+import type { SceneObject, RayObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
+const o = computed(() => props.obj as RayObject);
 </script>

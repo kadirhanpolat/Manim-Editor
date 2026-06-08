@@ -1,21 +1,21 @@
 <template>
   <!-- Arc / Sector settings -->
-  <Section :label="obj.type === 'arc' ? 'Arc' : 'Sector'">
+  <Section :label="o.type === 'arc' ? 'Arc' : 'Sector'">
     <div class="grid grid-cols-3 gap-1.5">
       <Num
         label="Radius"
-        :value="(obj.radius as number | undefined) ?? 70"
+        :value="o.radius ?? 70"
         :min="1"
         @input="u('radius', $event)"
       />
       <Num
         label="Start°"
-        :value="(obj.startAngle as number | undefined) ?? 0"
+        :value="o.startAngle ?? 0"
         @input="u('startAngle', $event)"
       />
       <Num
         label="Sweep°"
-        :value="(obj.sweepAngle as number | undefined) ?? 90"
+        :value="o.sweepAngle ?? 90"
         @input="u('sweepAngle', $event)"
       />
     </div>
@@ -23,11 +23,12 @@
 </template>
 
 <script setup lang="ts">
-import type { SceneObject } from '@manim/codegen';
+import { computed } from 'vue';
+import type { SceneObject, ArcSectorObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
+const o = computed(() => props.obj as ArcSectorObject);
 </script>

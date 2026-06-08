@@ -6,7 +6,7 @@
         <span class="text-[10px] text-studio-text-muted w-8">fx</span>
         <input
           class="input input-sm flex-1"
-          :value="obj.fx as string | undefined"
+          :value="o.fx"
           @change="onFx($event)"
         />
       </div>
@@ -14,7 +14,7 @@
         <span class="text-[10px] text-studio-text-muted w-8">fy</span>
         <input
           class="input input-sm flex-1"
-          :value="obj.fy as string | undefined"
+          :value="o.fy"
           @change="onFy($event)"
         />
       </div>
@@ -34,29 +34,29 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SceneObject } from '@manim/codegen';
+import type { SceneObject, VectorFieldObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
-const obj = props.obj;
-const xRange = computed(() => (obj.xRange as number[] | undefined) ?? [-3, 3, 1]);
-const yRange = computed(() => (obj.yRange as number[] | undefined) ?? [-2, 2, 1]);
+const o = computed(() => props.obj as VectorFieldObject);
+const xRange = computed(() => o.value.xRange ?? [-3, 3, 1]);
+const yRange = computed(() => o.value.yRange ?? [-2, 2, 1]);
 function onFx(e: Event) {
-  store.setFieldExpr(obj.id, 'fx', (e.target as HTMLInputElement).value);
+  store.setFieldExpr(o.value.id, 'fx', (e.target as HTMLInputElement).value);
 }
 function onFy(e: Event) {
-  store.setFieldExpr(obj.id, 'fy', (e.target as HTMLInputElement).value);
+  store.setFieldExpr(o.value.id, 'fy', (e.target as HTMLInputElement).value);
 }
 function setXRange(idx: number, val: number) {
   const r = [...xRange.value];
   r[idx] = val;
-  store.setFieldRange(obj.id, 'xRange', r);
+  store.setFieldRange(o.value.id, 'xRange', r);
 }
 function setYRange(idx: number, val: number) {
   const r = [...yRange.value];
   r[idx] = val;
-  store.setFieldRange(obj.id, 'yRange', r);
+  store.setFieldRange(o.value.id, 'yRange', r);
 }
 </script>

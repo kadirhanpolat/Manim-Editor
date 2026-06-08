@@ -137,51 +137,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { SceneObject } from '@manim/codegen';
+import type { SceneObject, AxesObject, GraphEntry } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
 
-interface GraphEntry {
-  id: string;
-  expression?: string;
-  color?: string;
-  xMin?: number;
-  xMax?: number;
-  area?: {
-    enabled?: boolean;
-    xMin?: number;
-    xMax?: number;
-    opacity?: number;
-    color?: string;
-    [k: string]: unknown;
-  };
-  riemann?: {
-    enabled?: boolean;
-    xMin?: number;
-    xMax?: number;
-    dx?: number;
-    type?: string;
-    color?: string;
-    [k: string]: unknown;
-  };
-  tangent?: {
-    enabled?: boolean;
-    x?: number;
-    length?: number;
-    color?: string;
-    [k: string]: unknown;
-  };
-}
-
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const { uRange } = useObjectUpdate(() => props.obj);
-const obj = props.obj;
-const graphs = computed(() => (obj.graphs as GraphEntry[] | undefined) ?? []);
-const xRange = computed(() => (obj.xRange as number[] | undefined) ?? [-5, 5, 1]);
-const yRange = computed(() => (obj.yRange as number[] | undefined) ?? [-3, 3, 1]);
+const o = computed(() => props.obj as AxesObject);
+const graphs = computed(() => o.value.graphs ?? []);
+const xRange = computed(() => o.value.xRange ?? [-5, 5, 1]);
+const yRange = computed(() => o.value.yRange ?? [-3, 3, 1]);
 
 function onGraphExprChange(graphId: string, e: Event) {
   updateGraph(graphId, 'expression', (e.target as HTMLInputElement).value);
@@ -194,18 +162,18 @@ function onRiemannTypeChange(graph: GraphEntry, e: Event) {
 }
 
 function addGraph() {
-  store.addGraph(obj.id);
+  store.addGraph(o.value.id);
 }
 function removeGraph(graphId: string) {
-  store.removeGraph(obj.id, graphId);
+  store.removeGraph(o.value.id, graphId);
 }
 function updateGraph(graphId: string, key: string, value: unknown) {
-  store.updateGraph(obj.id, graphId, { [key]: value });
+  store.updateGraph(o.value.id, graphId, { [key]: value });
 }
 function toggleGraphArea(graph: GraphEntry) {
   const existing = graph.area || {};
   const on = !existing.enabled;
-  store.updateGraph(obj.id, graph.id, {
+  store.updateGraph(o.value.id, graph.id, {
     area: on
       ? {
           xMin: graph.xMin,
@@ -221,7 +189,7 @@ function toggleGraphArea(graph: GraphEntry) {
 function toggleGraphRiemann(graph: GraphEntry) {
   const existing = graph.riemann || {};
   const on = !existing.enabled;
-  store.updateGraph(obj.id, graph.id, {
+  store.updateGraph(o.value.id, graph.id, {
     riemann: on
       ? {
           xMin: graph.xMin,
@@ -237,7 +205,7 @@ function toggleGraphRiemann(graph: GraphEntry) {
 }
 function setRiemannField(graph: GraphEntry, key: string, val: unknown) {
   if (graph.riemann)
-    store.updateGraph(obj.id, graph.id, { riemann: { ...graph.riemann, [key]: val } });
+    store.updateGraph(o.value.id, graph.id, { riemann: { ...graph.riemann, [key]: val } });
 }
 function toggleGraphTangent(graph: GraphEntry) {
   const existing = graph.tangent || {};
@@ -246,7 +214,7 @@ function toggleGraphTangent(graph: GraphEntry) {
     Number.isFinite(graph.xMin) && Number.isFinite(graph.xMax)
       ? ((graph.xMin ?? 0) + (graph.xMax ?? 0)) / 2
       : 0;
-  store.updateGraph(obj.id, graph.id, {
+  store.updateGraph(o.value.id, graph.id, {
     tangent: on
       ? { x: midX, length: 2, color: graph.color, ...existing, enabled: true }
       : { ...existing, enabled: false },
@@ -254,6 +222,6 @@ function toggleGraphTangent(graph: GraphEntry) {
 }
 function setTangentField(graph: GraphEntry, key: string, val: unknown) {
   if (graph.tangent)
-    store.updateGraph(obj.id, graph.id, { tangent: { ...graph.tangent, [key]: val } });
+    store.updateGraph(o.value.id, graph.id, { tangent: { ...graph.tangent, [key]: val } });
 }
 </script>
