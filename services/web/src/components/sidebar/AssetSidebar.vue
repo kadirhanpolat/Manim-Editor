@@ -182,7 +182,12 @@
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
-          <button class="asset-remove" title="Remove" aria-label="Remove image asset" @click.stop="removeAsset(asset.id)">
+          <button
+            class="asset-remove"
+            title="Remove"
+            aria-label="Remove image asset"
+            @click.stop="removeAsset(asset.id)"
+          >
             &times;
           </button>
         </div>
@@ -263,7 +268,12 @@
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
-          <button class="asset-remove" title="Remove" aria-label="Remove SVG asset" @click.stop="removeAsset(asset.id)">
+          <button
+            class="asset-remove"
+            title="Remove"
+            aria-label="Remove SVG asset"
+            @click.stop="removeAsset(asset.id)"
+          >
             &times;
           </button>
         </div>

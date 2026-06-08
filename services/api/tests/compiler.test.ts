@@ -107,7 +107,17 @@ describe('validateProject', () => {
 
   it('accepts a count clip', () => {
     const obj = makeObj('n1', 'counter', { value: 0, numDecimals: 0 });
-    const clip = { id: 'cnt1', type: 'count', sourceId: 'n1', startTime: 0, duration: 2, from: 0, to: 100, easing: 'linear', params: {} };
+    const clip = {
+      id: 'cnt1',
+      type: 'count',
+      sourceId: 'n1',
+      startTime: 0,
+      duration: 2,
+      from: 0,
+      to: 100,
+      easing: 'linear',
+      params: {},
+    };
     const result = validateProject(makeProject([obj], [clip]));
     expect(result.valid).toBe(true);
   });
@@ -169,7 +179,15 @@ describe('validateProject', () => {
 
   it('rejects a clip with an unknown type', () => {
     const obj = makeObj('obj1', 'circle');
-    const clip = { id: 'cl1', type: 'explode', sourceId: 'obj1', startTime: 0, duration: 1, easing: 'linear', params: {} };
+    const clip = {
+      id: 'cl1',
+      type: 'explode',
+      sourceId: 'obj1',
+      startTime: 0,
+      duration: 1,
+      easing: 'linear',
+      params: {},
+    };
     const result = validateProject(makeProject([obj], [clip]));
     expect(result.valid).toBe(false);
   });
@@ -222,9 +240,7 @@ describe('normalizeProject', () => {
 
   it('builds _assetMap from assets array', () => {
     const project = makeProject([], [], {
-      assets: [
-        { id: 'a1', name: 'Logo', type: 'image', filename: 'logo.png' },
-      ],
+      assets: [{ id: 'a1', name: 'Logo', type: 'image', filename: 'logo.png' }],
     });
     const norm = normalizeProject(project);
     expect(norm._assetMap).toBeDefined();

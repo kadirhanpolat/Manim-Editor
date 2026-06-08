@@ -263,7 +263,12 @@
                 Download a self-contained scene.py
               </p>
             </div>
-            <button class="text-lg" style="color: var(--studio-text-muted)" aria-label="Close" @click="closeExport">
+            <button
+              class="text-lg"
+              style="color: var(--studio-text-muted)"
+              aria-label="Close"
+              @click="closeExport"
+            >
               &times;
             </button>
           </div>
@@ -367,7 +372,12 @@
                 High-quality render via Docker
               </p>
             </div>
-            <button class="text-lg" style="color: var(--studio-text-muted)" aria-label="Close" @click="closeRender">
+            <button
+              class="text-lg"
+              style="color: var(--studio-text-muted)"
+              aria-label="Close"
+              @click="closeRender"
+            >
               &times;
             </button>
           </div>
@@ -691,7 +701,12 @@
       >
         <span style="color: var(--studio-danger)">!</span>
         <span class="text-sm">{{ error }}</span>
-        <button class="ml-2" style="color: var(--studio-text-muted)" aria-label="Dismiss notification" @click="clearError">
+        <button
+          class="ml-2"
+          style="color: var(--studio-text-muted)"
+          aria-label="Dismiss notification"
+          @click="clearError"
+        >
           &times;
         </button>
       </div>

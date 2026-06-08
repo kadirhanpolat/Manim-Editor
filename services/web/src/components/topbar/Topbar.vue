@@ -55,7 +55,13 @@
         >
           🎥
         </button>
-        <button class="tb-toggle" :class="{ on: gridVisible }" title="Grid" aria-label="Grid" @click="toggleGrid">
+        <button
+          class="tb-toggle"
+          :class="{ on: gridVisible }"
+          title="Grid"
+          aria-label="Grid"
+          @click="toggleGrid"
+        >
           <svg
             width="11"
             height="11"
@@ -71,7 +77,13 @@
             <line x1="15" y1="3" x2="15" y2="21" />
           </svg>
         </button>
-        <button class="tb-toggle" :class="{ on: snapEnabled }" title="Snap" aria-label="Snap" @click="toggleSnap">
+        <button
+          class="tb-toggle"
+          :class="{ on: snapEnabled }"
+          title="Snap"
+          aria-label="Snap"
+          @click="toggleSnap"
+        >
           <svg
             width="11"
             height="11"

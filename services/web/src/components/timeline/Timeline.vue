@@ -33,13 +33,21 @@
 
       <!-- Zoom -->
       <div class="flex items-center gap-1">
-        <button class="text-studio-text-muted hover:text-studio-text text-xs px-1" aria-label="Zoom out timeline" @click="zoomOut">
+        <button
+          class="text-studio-text-muted hover:text-studio-text text-xs px-1"
+          aria-label="Zoom out timeline"
+          @click="zoomOut"
+        >
           -
         </button>
         <span class="text-[10px] text-studio-text-muted w-10 text-center tabular-nums"
           >{{ Math.round(pps) }}px/s</span
         >
-        <button class="text-studio-text-muted hover:text-studio-text text-xs px-1" aria-label="Zoom in timeline" @click="zoomIn">
+        <button
+          class="text-studio-text-muted hover:text-studio-text text-xs px-1"
+          aria-label="Zoom in timeline"
+          @click="zoomIn"
+        >
           +
         </button>
       </div>
