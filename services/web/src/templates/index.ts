@@ -1,4 +1,30 @@
 import { uid } from '../store/project.js';
+import type { SceneObject, Clip } from '@manim/codegen';
+
+/** A wider clip type that allows extra template-only fields (overshoot, morphQuality, …). */
+type TemplateClip = Clip & Record<string, unknown>;
+
+/** A minimal project snapshot used by template factories. */
+export interface TemplateProject {
+  name: string;
+  editorMode: string;
+  codeSource: string;
+  stage: Record<string, unknown>;
+  assets: unknown[];
+  groups: unknown[];
+  sceneDuration: number;
+  objects: SceneObject[];
+  tracks: Array<{ id: string; name?: string; clips: TemplateClip[] }>;
+}
+
+/** A single entry in the template palette. */
+export interface Template {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  project: (() => TemplateProject) | null;
+}
 
 const STAGE = {
   width: 1920,
@@ -16,7 +42,7 @@ const STAGE = {
   snapToObjects: false,
 };
 
-export const TEMPLATES = [
+export const TEMPLATES: Template[] = [
   {
     id: 'blank',
     label: 'Boş Proje',

@@ -4,7 +4,18 @@
  * 3x3 anchor positions for element placement.
  */
 
-export const ANCHORS = [
+export type AnchorName =
+  | 'TOP_LEFT'
+  | 'TOP'
+  | 'TOP_RIGHT'
+  | 'LEFT'
+  | 'CENTER'
+  | 'RIGHT'
+  | 'BOTTOM_LEFT'
+  | 'BOTTOM'
+  | 'BOTTOM_RIGHT';
+
+export const ANCHORS: AnchorName[] = [
   'TOP_LEFT',
   'TOP',
   'TOP_RIGHT',
@@ -17,14 +28,14 @@ export const ANCHORS = [
 ];
 
 // Grid layout for the anchor picker
-export const ANCHOR_GRID = [
+export const ANCHOR_GRID: AnchorName[][] = [
   ['TOP_LEFT', 'TOP', 'TOP_RIGHT'],
   ['LEFT', 'CENTER', 'RIGHT'],
   ['BOTTOM_LEFT', 'BOTTOM', 'BOTTOM_RIGHT'],
 ];
 
 // Display labels
-export const ANCHOR_LABELS = {
+export const ANCHOR_LABELS: Record<AnchorName, string> = {
   TOP_LEFT: '↖',
   TOP: '↑',
   TOP_RIGHT: '↗',
@@ -37,7 +48,7 @@ export const ANCHOR_LABELS = {
 };
 
 // Manim position mapping (for reference in UI)
-export const ANCHOR_POSITIONS = {
+export const ANCHOR_POSITIONS: Record<AnchorName, { x: number; y: number }> = {
   TOP_LEFT: { x: -1, y: 1 },
   TOP: { x: 0, y: 1 },
   TOP_RIGHT: { x: 1, y: 1 },
@@ -51,14 +62,15 @@ export const ANCHOR_POSITIONS = {
 
 /**
  * Convert anchor to stage position (for canvas preview).
- * @param {string} anchor - Anchor name
- * @param {number} stageWidth - Stage width in pixels
- * @param {number} stageHeight - Stage height in pixels
- * @param {number} padding - Edge padding
- * @returns {{ x: number, y: number }}
  */
-export function anchorToStagePosition(anchor, stageWidth, stageHeight, padding = 50) {
-  const pos = ANCHOR_POSITIONS[anchor] || ANCHOR_POSITIONS.CENTER;
+export function anchorToStagePosition(
+  anchor: string,
+  stageWidth: number,
+  stageHeight: number,
+  padding = 50,
+): { x: number; y: number } {
+  const pos =
+    ANCHOR_POSITIONS[anchor as AnchorName] ?? ANCHOR_POSITIONS.CENTER;
 
   // Map -1..1 to padding..width-padding
   const x = ((pos.x + 1) / 2) * (stageWidth - padding * 2) + padding;

@@ -6,8 +6,8 @@
  */
 
 // Track which fonts have been loaded
-const loadedFonts = new Set();
-const loadingFonts = new Map(); // font -> Promise
+const loadedFonts = new Set<string>();
+const loadingFonts = new Map<string, Promise<boolean>>(); // font -> Promise
 
 // System fonts that don't need to be loaded
 const SYSTEM_FONTS = [
@@ -35,7 +35,7 @@ const SYSTEM_FONTS = [
 /**
  * Check if a font is a system font
  */
-export function isSystemFont(fontFamily) {
+export function isSystemFont(fontFamily: string | null | undefined): boolean {
   if (!fontFamily) return true;
   return SYSTEM_FONTS.includes(fontFamily.toLowerCase());
 }
@@ -43,7 +43,7 @@ export function isSystemFont(fontFamily) {
 /**
  * Check if a font is already loaded
  */
-export function isFontLoaded(fontFamily) {
+export function isFontLoaded(fontFamily: string): boolean {
   if (isSystemFont(fontFamily)) return true;
   return loadedFonts.has(fontFamily);
 }
@@ -52,7 +52,7 @@ export function isFontLoaded(fontFamily) {
  * Load a Google Font dynamically
  * Returns a promise that resolves when the font is ready
  */
-export async function loadFont(fontFamily) {
+export async function loadFont(fontFamily: string): Promise<boolean> {
   // Skip system fonts
   if (isSystemFont(fontFamily)) {
     return true;
@@ -65,11 +65,11 @@ export async function loadFont(fontFamily) {
 
   // Currently loading - return existing promise
   if (loadingFonts.has(fontFamily)) {
-    return loadingFonts.get(fontFamily);
+    return loadingFonts.get(fontFamily) as Promise<boolean>;
   }
 
   // Create loading promise
-  const loadPromise = new Promise((resolve, reject) => {
+  const loadPromise = new Promise<boolean>((resolve, reject) => {
     try {
       // Create the Google Fonts link
       const encodedFamily = fontFamily.replace(/ /g, '+');
@@ -122,7 +122,7 @@ export async function loadFont(fontFamily) {
 /**
  * Load multiple fonts at once
  */
-export async function loadFonts(fontFamilies) {
+export async function loadFonts(fontFamilies: string[]): Promise<boolean[]> {
   const promises = fontFamilies
     .filter((f) => f && !isSystemFont(f))
     .map((f) => loadFont(f).catch(() => false));
@@ -133,8 +133,10 @@ export async function loadFonts(fontFamilies) {
 /**
  * Preload fonts used in a project
  */
-export async function preloadProjectFonts(objects) {
-  const fonts = new Set();
+export async function preloadProjectFonts(
+  objects: Array<{ type?: string; fontFamily?: string }> | null | undefined,
+): Promise<void> {
+  const fonts = new Set<string>();
 
   for (const obj of objects || []) {
     if (obj.type === 'text' && obj.fontFamily) {

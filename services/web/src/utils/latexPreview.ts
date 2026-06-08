@@ -2,7 +2,7 @@
 // typesetting from the raw `obj.latex` (MathTex); this just makes `\commands`
 // and _/^ scripts legible on the Konva canvas, which can only draw plain text.
 
-const SYMBOLS = {
+const SYMBOLS: Record<string, string> = {
   // greek (lower)
   alpha: 'α',
   beta: 'β',
@@ -132,7 +132,7 @@ const SYMBOLS = {
   surd: '√',
 };
 
-const SUP = {
+const SUP: Record<string, string> = {
   0: '⁰',
   1: '¹',
   2: '²',
@@ -175,7 +175,7 @@ const SUP = {
   z: 'ᶻ',
 };
 
-const SUB = {
+const SUB: Record<string, string> = {
   0: '₀',
   1: '₁',
   2: '₂',
@@ -211,7 +211,7 @@ const SUB = {
 };
 
 // Map a string to a sub/superscript run; return null if any char is unmappable.
-function toScript(str, table) {
+function toScript(str: string, table: Record<string, string>): string | null {
   let out = '';
   for (const ch of str) {
     if (!table[ch]) return null;
@@ -220,7 +220,7 @@ function toScript(str, table) {
   return out;
 }
 
-export function latexToUnicode(src) {
+export function latexToUnicode(src: unknown): string {
   if (!src) return '';
   let s = String(src);
   s = s.replace(/\$/g, ''); // drop math delimiters
@@ -228,15 +228,15 @@ export function latexToUnicode(src) {
   s = s.replace(/\\\\/g, ' '); // line breaks → space
   s = s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)');
   s = s.replace(/\\sqrt\s*\{([^{}]*)\}/g, '√($1)');
-  s = s.replace(/\\([a-zA-Z]+)/g, (m, name) => (name in SYMBOLS ? SYMBOLS[name] : name));
+  s = s.replace(/\\([a-zA-Z]+)/g, (_m, name: string) => (name in SYMBOLS ? SYMBOLS[name] : name));
   // Scripts in one pass each (braced `{...}` or a single char), so an unmappable
   // fallback like `^(AB)` isn't re-scanned and mangled by a later single-char pass.
-  s = s.replace(/\^(\{[^{}]*\}|\S)/g, (m, g) => {
+  s = s.replace(/\^(\{[^{}]*\}|\S)/g, (_m, g: string) => {
     const braced = g[0] === '{';
     const inner = braced ? g.slice(1, -1) : g;
     return toScript(inner, SUP) ?? (braced ? `^(${inner})` : `^${inner}`);
   });
-  s = s.replace(/_(\{[^{}]*\}|\S)/g, (m, g) => {
+  s = s.replace(/_(\{[^{}]*\}|\S)/g, (_m, g: string) => {
     const braced = g[0] === '{';
     const inner = braced ? g.slice(1, -1) : g;
     return toScript(inner, SUB) ?? (braced ? `_(${inner})` : `_${inner}`);

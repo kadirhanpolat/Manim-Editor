@@ -4,8 +4,21 @@
  * Curated animation types mapped to Manim.
  */
 
+export interface AnimationDef {
+  type: string;
+  label: string;
+  appliesTo: string[];
+  description: string;
+}
+
+export interface QualityPreset {
+  value: string;
+  label: string;
+  description: string;
+}
+
 // Entrance animations
-export const ENTRANCE_ANIMATIONS = [
+export const ENTRANCE_ANIMATIONS: AnimationDef[] = [
   {
     type: 'FADE_IN',
     label: 'Fade In',
@@ -63,7 +76,7 @@ export const ENTRANCE_ANIMATIONS = [
 ];
 
 // Exit animations
-export const EXIT_ANIMATIONS = [
+export const EXIT_ANIMATIONS: AnimationDef[] = [
   {
     type: 'FADE_OUT',
     label: 'Fade Out',
@@ -111,27 +124,27 @@ export const EXIT_ANIMATIONS = [
 /**
  * Get available entrance animations for an element type.
  */
-export function getEntranceAnimationsForType(elementType) {
+export function getEntranceAnimationsForType(elementType: string): AnimationDef[] {
   return ENTRANCE_ANIMATIONS.filter((a) => a.appliesTo.includes(elementType));
 }
 
 /**
  * Get available exit animations for an element type.
  */
-export function getExitAnimationsForType(elementType) {
+export function getExitAnimationsForType(elementType: string): AnimationDef[] {
   return EXIT_ANIMATIONS.filter((a) => a.appliesTo.includes(elementType));
 }
 
 /**
  * Get animation by type.
  */
-export function getAnimationByType(type, isEntrance = true) {
+export function getAnimationByType(type: string, isEntrance = true): AnimationDef | undefined {
   const list = isEntrance ? ENTRANCE_ANIMATIONS : EXIT_ANIMATIONS;
   return list.find((a) => a.type === type);
 }
 
 // Quality presets
-export const QUALITY_PRESETS = [
+export const QUALITY_PRESETS: QualityPreset[] = [
   { value: 'low', label: 'Low Quality', description: '480p 15fps — Fast preview' },
   { value: 'medium', label: 'Medium Quality', description: '720p 30fps — Balanced' },
   { value: 'high', label: 'High Quality', description: '1080p 60fps — Full HD (Recommended)' },

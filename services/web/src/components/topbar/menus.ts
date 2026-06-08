@@ -1,5 +1,64 @@
+import type { Ref } from 'vue';
+
+/** A reactive boolean-valued ref or computed exposed by the menubar context. */
+type BoolRef = Ref<boolean>;
+type StringRef = Ref<string>;
+
+/** The store subset that menus need. */
+interface MenuStore {
+  undo: () => void;
+  redo: () => void;
+  copySelection: () => void;
+  pasteSelection: () => void;
+  setTheme: (id: string) => void;
+}
+
+/** Context bag passed from MenuBar.vue to buildMenus(). */
+export interface MenuCtx {
+  mod: string;
+  isMac: boolean;
+  store: MenuStore;
+  isSaving: BoolRef;
+  canGroup: BoolRef;
+  gridVisible: BoolRef;
+  snapEnabled: BoolRef;
+  currentTheme: StringRef;
+  newProject: () => void;
+  loadProject: () => void;
+  saveProject: () => void;
+  saveToServer: () => void;
+  browseServer: () => void;
+  openExport: () => void;
+  openRender: () => void;
+  showShortcuts: () => void;
+  showAbout: () => void;
+  toggleGrid: () => void;
+  toggleSnap: () => void;
+  groupSelected: () => void;
+}
+
+/** A leaf menu item. */
+export interface MenuItem {
+  id?: string;
+  label?: string;
+  type?: 'separator' | 'toggle' | 'submenu';
+  action?: () => void;
+  shortcut?: string;
+  disabled?: () => boolean;
+  checked?: () => boolean;
+  active?: () => boolean;
+  children?: MenuItem[];
+}
+
+/** A top-level menu group. */
+export interface Menu {
+  id: string;
+  label: string;
+  items: MenuItem[];
+}
+
 // Declarative menubar data. Pure factory: all behavior comes from ctx.
-export function buildMenus(ctx) {
+export function buildMenus(ctx: MenuCtx): Menu[] {
   const {
     mod,
     isMac,
