@@ -95,18 +95,19 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
 
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const obj = props.obj;
 
-function anim(type) {
-  const p = {};
+function anim(type: string) {
+  const p: Record<string, unknown> = {};
   if (type === 'move') {
-    p.targetX = obj.x + 200;
+    p.targetX = (obj.x ?? 0) + 200;
     p.targetY = obj.y;
   }
   if (type === 'scale') {
@@ -117,7 +118,7 @@ function anim(type) {
     p.targetOpacity = 0;
   }
   if (type === 'rotate') {
-    p.targetRotation = (obj.rotation || 0) + 360;
+    p.targetRotation = (obj.rotation ?? 0) + 360;
   }
   if (type === 'indicate') {
     p.color = '#FFFF00';

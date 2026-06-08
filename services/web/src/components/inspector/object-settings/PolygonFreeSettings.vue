@@ -23,19 +23,22 @@
       </button>
     </div>
     <p class="text-[10px] text-studio-text-muted mt-1.5">
-      {{ (obj.vertices || []).length }} vertices · drag corners on canvas
+      {{ vertices.length }} vertices · drag corners on canvas
     </p>
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 import { presetVertices } from '../../../engine/polygonVertices.js';
 import Section from '../ui/Section.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const store = useProjectStore();
 const obj = props.obj;
-function applyPolygonPreset(kind) {
-  store.setPolygonVertices(obj.id, presetVertices(kind, obj.width, obj.height));
+const vertices = computed(() => (obj.vertices as unknown[] | undefined) ?? []);
+function applyPolygonPreset(kind: string) {
+  store.setPolygonVertices(obj.id, presetVertices(kind, obj.width ?? 200, obj.height ?? 200));
 }
 </script>

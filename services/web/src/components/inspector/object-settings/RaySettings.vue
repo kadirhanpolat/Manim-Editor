@@ -1,8 +1,8 @@
 <template>
   <Section label="Ray">
     <div class="grid grid-cols-2 gap-1.5">
-      <Num label="Angle°" :value="obj.angle ?? 30" @input="u('angle', $event)" />
-      <Num label="Length" :value="obj.length ?? 200" :min="1" @input="u('length', $event)" />
+      <Num label="Angle°" :value="(obj.angle as number | undefined) ?? 30" @input="u('angle', $event)" />
+      <Num label="Length" :value="(obj.length as number | undefined) ?? 200" :min="1" @input="u('length', $event)" />
     </div>
     <p class="text-[10px] text-studio-text-muted mt-1.5">
       Source dot at the object position; arrow points at the angle (0° = right, CCW).
@@ -10,11 +10,12 @@
   </Section>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { SceneObject } from '@manim/codegen';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
 import Num from '../ui/Num.vue';
-const props = defineProps({ obj: { type: Object, required: true } });
+const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
 const { u } = useObjectUpdate(() => props.obj);
 const obj = props.obj;
 </script>
