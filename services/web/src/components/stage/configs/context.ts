@@ -119,6 +119,11 @@ export interface StageCtx {
   activeTool: string;
   /** IDs of all currently-selected objects. */
   selectedObjectIds: string[];
+  /**
+   * Return the canvas-coordinate bounding box for a scene object by ID,
+   * or null if the object is not found / not visible.
+   */
+  objectBounds: (id: string) => { x: number; y: number; width: number; height: number } | null;
 }
 
 export const CTX_KEYS = [
@@ -146,4 +151,5 @@ export const CTX_KEYS = [
   'measureTextWidth',
   'activeTool',
   'selectedObjectIds',
+  'objectBounds',
 ] as const;

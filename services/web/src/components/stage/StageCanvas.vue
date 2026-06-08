@@ -1031,6 +1031,21 @@ const ctx = computed(() => ({
   measureTextWidth: text.measureTextWidth,
   activeTool: store.activeTool,
   selectedObjectIds: store.selectedObjectIds,
+  objectBounds(id: string) {
+    const target = store.objectById(id);
+    if (!target || target.visible === false) return null;
+    const effTarget = eff(target);
+    const pos = s2c(
+      (effTarget.x as number) - (effTarget.width as number) / 2,
+      (effTarget.y as number) - (effTarget.height as number) / 2
+    );
+    return {
+      x: pos.x,
+      y: pos.y,
+      width: ((effTarget.width as number) || 0) * vs.value,
+      height: ((effTarget.height as number) || 0) * vs.value,
+    };
+  },
 }));
 
 // ── chrome.js delegating computeds ──
