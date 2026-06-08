@@ -201,8 +201,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
+import type { SceneObject, Clip, Keyframe } from '@manim/codegen';
 import { useProjectStore, SHAPE_COLORS } from '../../store/project.js';
 import { getPlaybackEngine } from '../../engine/playback.js';
 import TimelineTrack from './TimelineTrack.vue';
@@ -210,11 +211,11 @@ import KeyframeLanesPanel from './KeyframeLanesPanel.vue';
 import KeyframeEasingPopup from './KeyframeEasingPopup.vue';
 
 const store = useProjectStore();
-const timelineBody = ref(null);
+const timelineBody = ref<HTMLElement | null>(null);
 const playheadTime = computed(() => store.playbackTime || 0);
 
 // Click/drag on the time ruler to move the playhead (scrub).
-function seekToClientX(clientX) {
+function seekToClientX(clientX: number): void {
   const el = timelineBody.value;
   if (!el) return;
   const rect = el.getBoundingClientRect();
@@ -224,11 +225,11 @@ function seekToClientX(clientX) {
   );
   const eng = getPlaybackEngine();
   eng.duration = totalDuration.value; // keep engine clamp in sync with project length
-  eng.seekTo(t, store.project.tracks, store.project.objects, store.project.cameraTrack || []);
+  eng.seekTo(t, store.project.tracks as unknown as import('../../engine/types.js').Track[], store.project.objects as unknown as import('../../engine/types.js').StageObject[], store.project.cameraTrack || []);
 }
-function startSeek(e) {
+function startSeek(e: MouseEvent): void {
   seekToClientX(e.clientX);
-  const move = (ev) => seekToClientX(ev.clientX);
+  const move = (ev: MouseEvent) => seekToClientX(ev.clientX);
   const up = () => {
     document.removeEventListener('mousemove', move);
     document.removeEventListener('mouseup', up);
@@ -239,7 +240,7 @@ function startSeek(e) {
 
 const pps = ref(80);
 const labelW = ref(90);
-const draggingObjId = ref(null);
+const draggingObjId = ref<string | null>(null);
 
 const totalDuration = computed(() => store.computedDuration);
 const objects = computed(() => store.project.objects);
@@ -254,9 +255,17 @@ const totalW = computed(() => totalDuration.value * pps.value + 50);
 const project = computed(() => store.project);
 const cameraClips = computed(() => store.project.cameraTrack || []);
 const selectedClipId = computed(() => store.selectedClipId);
-const easingPopup = ref(null);
+interface EasingPopupPayload {
+  objId: string;
+  prop: string;
+  k1: Keyframe;
+  k2: Keyframe;
+  event: { clientX: number; clientY: number };
+}
 
-function onOpenEasingPopup(payload) {
+const easingPopup = ref<EasingPopupPayload | null>(null);
+
+function onOpenEasingPopup(payload: EasingPopupPayload | null): void {
   easingPopup.value = payload;
 }
 const ticks = computed(() => {
@@ -274,20 +283,20 @@ const ticks = computed(() => {
   return t;
 });
 
-function fmt(s) {
+function fmt(s: number): string {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return m > 0 ? `${m}:${sec.toFixed(1).padStart(4, '0')}` : `${sec.toFixed(1)}s`;
 }
 
-function zoomIn() {
+function zoomIn(): void {
   pps.value = Math.min(300, pps.value * 1.4);
 }
-function zoomOut() {
+function zoomOut(): void {
   pps.value = Math.max(20, pps.value / 1.4);
 }
 
-function objBarStyle(obj) {
+function objBarStyle(obj: SceneObject): Record<string, string> {
   const enter = obj.enterTime || 0;
   const dur = obj.duration || 3;
   return {
@@ -297,24 +306,24 @@ function objBarStyle(obj) {
     borderColor: objColor(obj) + '60',
   };
 }
-function objColor(obj) {
-  return SHAPE_COLORS[obj.type] || '#94a3b8';
+function objColor(obj: SceneObject): string {
+  return (SHAPE_COLORS as Record<string, string>)[obj.type] || '#94a3b8';
 }
-function isObjSelected(id) {
+function isObjSelected(id: string): boolean {
   return store.selectedObjectIds.includes(id);
 }
-function selectObj(id, e) {
+function selectObj(id: string, e: MouseEvent): void {
   store.selectObject(id, e.shiftKey || e.ctrlKey);
 }
 
-function startObjDrag(obj, e) {
+function startObjDrag(obj: SceneObject, e: MouseEvent): void {
   selectObj(obj.id, e);
   draggingObjId.value = obj.id;
   const startX = e.clientX;
   const startEnter = obj.enterTime || 0;
   let lastEnter = startEnter;
 
-  const move = (ev) => {
+  const move = (ev: MouseEvent) => {
     const dx = (ev.clientX - startX) / pps.value;
     const newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
     const d = Math.round((newEnter - lastEnter) * 100) / 100;
@@ -334,7 +343,7 @@ function startObjDrag(obj, e) {
   document.addEventListener('mouseup', up);
 }
 
-function startObjResize(obj, dir, e) {
+function startObjResize(obj: SceneObject, dir: 'left' | 'right', e: MouseEvent): void {
   e.preventDefault();
   selectObj(obj.id, e);
   draggingObjId.value = obj.id;
@@ -347,9 +356,9 @@ function startObjResize(obj, dir, e) {
   const oldStart = startEnter;
   const oldEnd = startEnter + startDur;
 
-  const move = (ev) => {
+  const move = (ev: MouseEvent) => {
     const dx = (ev.clientX - startX) / pps.value;
-    let newEnter, newDur;
+    let newEnter: number, newDur: number;
     if (dir === 'left') {
       newEnter = Math.max(0, Math.round((startEnter + dx) * 10) / 10);
       newDur = Math.max(0.1, Math.round((startDur - dx) * 10) / 10);
@@ -372,17 +381,17 @@ function startObjResize(obj, dir, e) {
   document.addEventListener('mouseup', up);
 }
 
-function createTransform() {
+function createTransform(): void {
   const clip = store.createTransform();
-  if (clip) store.selectClip(clip.id);
+  if (clip) store.selectClip((clip as Clip).id ?? null);
 }
 
-function addCameraClip() {
+function addCameraClip(): void {
   const clip = store.addCameraMoveClip({});
-  store.selectClip(clip.id);
+  store.selectClip((clip as Clip).id ?? null);
 }
-function selectCameraClip(clipId) {
-  store.selectClip(clipId);
+function selectCameraClip(clipId: string | null | undefined): void {
+  store.selectClip(clipId ?? null);
 }
 </script>
 

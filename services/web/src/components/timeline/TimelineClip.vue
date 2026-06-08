@@ -21,11 +21,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { Clip } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 
-const props = defineProps({ clip: Object, pps: Number });
+const props = defineProps({
+  clip: { type: Object as () => Clip, required: true },
+  pps: { type: Number, required: true },
+});
 
 const store = useProjectStore();
 
@@ -42,10 +46,10 @@ const ICONS = {
 
 const isSelected = computed(() => store.selectedClipId === props.clip.id);
 const label = computed(() => {
-  const src = store.objectById(props.clip.sourceId);
-  const tgt = store.objectById(props.clip.targetId);
+  const src = props.clip.sourceId ? store.objectById(props.clip.sourceId) : null;
+  const tgt = props.clip.targetId ? store.objectById(props.clip.targetId) : null;
   if (props.clip.type === 'transform' && src && tgt) return `${src.name} → ${tgt.name}`;
-  const labels = {
+  const labels: Record<string, string> = {
     transform: 'Transform',
     move: 'Move',
     scale: 'Scale',
@@ -56,7 +60,7 @@ const label = computed(() => {
   if (src) l += ` · ${src.name}`;
   return l;
 });
-const typeIcon = computed(() => ICONS[props.clip.type] || '');
+const typeIcon = computed(() => (ICONS as Record<string, string>)[props.clip.type] || '');
 const typeClass = computed(
   () =>
     ({
@@ -65,7 +69,7 @@ const typeClass = computed(
       scale: 'clip-scale',
       fade: 'clip-fade',
       rotate: 'clip-rotate',
-    })[props.clip.type] || 'clip-default'
+    } as Record<string, string>)[props.clip.type] || 'clip-default'
 );
 const clipStyle = computed(() => ({
   left: `${props.clip.startTime * props.pps}px`,
@@ -73,15 +77,15 @@ const clipStyle = computed(() => ({
 }));
 
 function select() {
-  store.selectClip(props.clip.id);
+  store.selectClip(props.clip.id ?? null);
 }
-function onDown(e) {
+function onDown(e: MouseEvent) {
   select();
   const sx = e.clientX,
     st = props.clip.startTime;
-  const move = (ev) => {
+  const move = (ev: MouseEvent) => {
     const dt = (ev.clientX - sx) / props.pps;
-    store.updateClip(props.clip.id, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10) });
+    store.updateClip(props.clip.id as string, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10) });
   };
   const up = () => {
     document.removeEventListener('mousemove', move);
@@ -90,19 +94,19 @@ function onDown(e) {
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', up);
 }
-function resize(dir, e) {
+function resize(dir: 'left' | 'right', e: MouseEvent) {
   const sx = e.clientX,
     st = props.clip.startTime,
     sd = props.clip.duration;
-  const move = (ev) => {
+  const move = (ev: MouseEvent) => {
     const dt = (ev.clientX - sx) / props.pps;
     if (dir === 'left') {
-      store.updateClip(props.clip.id, {
+      store.updateClip(props.clip.id as string, {
         startTime: Math.max(0, Math.round((st + dt) * 10) / 10),
         duration: Math.max(0.1, Math.round((sd - dt) * 10) / 10),
       });
     } else {
-      store.updateClip(props.clip.id, { duration: Math.max(0.1, Math.round((sd + dt) * 10) / 10) });
+      store.updateClip(props.clip.id as string, { duration: Math.max(0.1, Math.round((sd + dt) * 10) / 10) });
     }
   };
   const up = () => {

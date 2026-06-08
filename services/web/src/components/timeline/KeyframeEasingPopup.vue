@@ -74,7 +74,7 @@
     <select
       :value="codegenMode"
       class="w-full text-[10px] bg-studio-bg border border-studio-border rounded px-1 py-0.5"
-      @change="setCodegenMode($event.target.value)"
+      @change="setCodegenMode(($event.target as HTMLSelectElement).value)"
     >
       <option value="UpdateFromAlphaFunc">UpdateFromFunc</option>
       <option value="animate">animate</option>
@@ -83,8 +83,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import type { Keyframe, KeyframeCodegenMode } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 
 const PRESETS = [
@@ -94,11 +95,19 @@ const PRESETS = [
   { name: 'ease_in_out', label: 'In-Out', handles: [0.42, 0, 0.58, 1] },
 ];
 
+interface EasingPopupPayload {
+  objId: string;
+  prop: string;
+  k1: Keyframe;
+  k2: Keyframe;
+  event: { clientX: number; clientY: number };
+}
+
 const props = defineProps({
-  payload: { type: Object, default: null }, // { objId, prop, k1, k2, event }
+  payload: { type: Object as () => EasingPopupPayload | null, default: null },
 });
 
-defineEmits(['close']);
+defineEmits<{ (e: 'close'): void }>();
 const store = useProjectStore();
 
 const visible = computed(() => !!props.payload);
@@ -155,27 +164,27 @@ const codegenMode = computed(() => {
   );
 });
 
-function applyPreset(preset) {
+function applyPreset(preset: { name: string; label: string; handles: number[] }): void {
   handles.value = [...preset.handles];
   saveEasing({ type: preset.name });
 }
 
-function saveEasing(easing) {
+function saveEasing(easing: { type: string; handles?: number[] }): void {
   const p = props.payload;
   if (!p) return;
   store.updateKeyframeEasing(p.objId, p.prop, p.k1.time, easing);
 }
 
-function setCodegenMode(mode) {
+function setCodegenMode(mode: string): void {
   const p = props.payload;
   if (!p) return;
-  store.setKeyframeCodegen(p.objId, p.prop, mode);
+  store.setKeyframeCodegen(p.objId, p.prop, mode as KeyframeCodegenMode);
 }
 
-function startHandleDrag(handleIdx, e) {
-  const svgEl = e.target.closest('svg');
+function startHandleDrag(handleIdx: number, e: MouseEvent): void {
+  const svgEl = (e.target as SVGElement).closest('svg')!;
   const rect = svgEl.getBoundingClientRect();
-  const move = (ev) => {
+  const move = (ev: MouseEvent) => {
     const rx = Math.max(0, Math.min(1, (ev.clientX - rect.left - 10) / 160));
     const ry = Math.max(0, Math.min(1, (50 - (ev.clientY - rect.top)) / 40));
     const h = [...handles.value];

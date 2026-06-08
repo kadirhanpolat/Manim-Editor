@@ -14,10 +14,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../constants/anchors.js';
 
-const props = defineProps({
+defineProps({
   value: { type: String, default: 'CENTER' },
 });
 

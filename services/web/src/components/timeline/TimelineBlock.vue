@@ -45,154 +45,148 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'TimelineBlock',
+<script setup lang="ts">
+import { computed, ref, onBeforeUnmount } from 'vue';
 
-  props: {
-    element: {
-      type: Object,
-      required: true,
-    },
-    pixelsPerSecond: {
-      type: Number,
-      required: true,
-    },
-    selected: {
-      type: Boolean,
-      default: false,
-    },
-  },
+interface TimingShape {
+  start: number;
+  duration: number;
+}
 
-  data() {
-    return {
-      isDragging: false,
-      isResizing: false,
-      resizeDirection: null,
-      dragStartX: 0,
-      dragStartTime: 0,
-      dragStartDuration: 0,
-    };
-  },
+interface AudioShape {
+  status?: string;
+  syncMode?: string;
+  duration?: number | string;
+}
 
-  computed: {
-    label() {
-      if (this.element.type === 'text') {
-        return this.element.content || 'Text';
-      }
-      return this.element.type.toUpperCase();
-    },
+interface ElementShape {
+  type: string;
+  content?: string;
+  timing: TimingShape;
+  audio?: AudioShape;
+}
 
-    typeClass() {
-      const classes = {
-        text: 'bg-indigo-600',
-        image: 'bg-emerald-600',
-        svg: 'bg-amber-600',
-      };
-      return classes[this.element.type] || 'bg-slate-600';
-    },
+const props = defineProps({
+  element: { type: Object as () => ElementShape, required: true },
+  pixelsPerSecond: { type: Number, required: true },
+  selected: { type: Boolean, default: false },
+});
 
-    blockStyle() {
-      const start = this.element.timing.start;
-      const duration = this.element.timing.duration;
+const emit = defineEmits<{
+  (e: 'click'): void;
+  (e: 'update-timing', value: Partial<TimingShape>): void;
+}>();
 
-      return {
-        left: `${start * this.pixelsPerSecond}px`,
-        width: `${Math.max(20, duration * this.pixelsPerSecond)}px`,
-      };
-    },
+const isDragging = ref(false);
+const isResizing = ref(false);
+const resizeDirection = ref<'left' | 'right' | null>(null);
+const dragStartX = ref(0);
+const dragStartTime = ref(0);
+const dragStartDuration = ref(0);
 
-    audioDuration() {
-      if (this.element.audio?.duration == null) return '';
-      return `${parseFloat(this.element.audio.duration).toFixed(1)}s`;
-    },
+const label = computed(() => {
+  if (props.element.type === 'text') {
+    return props.element.content || 'Text';
+  }
+  return props.element.type.toUpperCase();
+});
 
-    audioAutoLocked() {
-      return this.element.audio?.syncMode === 'auto' && this.element.audio?.status === 'ready';
-    },
-  },
+const typeClass = computed(() => {
+  const classes: Record<string, string> = {
+    text: 'bg-indigo-600',
+    image: 'bg-emerald-600',
+    svg: 'bg-amber-600',
+  };
+  return classes[props.element.type] || 'bg-slate-600';
+});
 
-  methods: {
-    startDrag(e) {
-      if (e.target.classList.contains('resize-handle')) return;
+const blockStyle = computed(() => {
+  const start = props.element.timing.start;
+  const duration = props.element.timing.duration;
+  return {
+    left: `${start * props.pixelsPerSecond}px`,
+    width: `${Math.max(20, duration * props.pixelsPerSecond)}px`,
+  };
+});
 
-      this.isDragging = true;
-      this.dragStartX = e.clientX;
-      this.dragStartTime = this.element.timing.start;
+const audioDuration = computed(() => {
+  if (props.element.audio?.duration == null) return '';
+  return `${parseFloat(String(props.element.audio.duration)).toFixed(1)}s`;
+});
 
-      document.addEventListener('mousemove', this.onDrag);
-      document.addEventListener('mouseup', this.stopDrag);
-    },
+const audioAutoLocked = computed(() => {
+  return props.element.audio?.syncMode === 'auto' && props.element.audio?.status === 'ready';
+});
 
-    onDrag(e) {
-      if (!this.isDragging) return;
+let _onDrag: ((e: MouseEvent) => void) | null = null;
+let _stopDrag: (() => void) | null = null;
+let _onResize: ((e: MouseEvent) => void) | null = null;
+let _stopResize: (() => void) | null = null;
 
-      const deltaX = e.clientX - this.dragStartX;
-      const deltaTime = deltaX / this.pixelsPerSecond;
-      const newStart = Math.max(0, this.dragStartTime + deltaTime);
+function startDrag(e: MouseEvent) {
+  if ((e.target as HTMLElement).classList.contains('resize-handle')) return;
 
-      this.$emit('update-timing', {
+  isDragging.value = true;
+  dragStartX.value = e.clientX;
+  dragStartTime.value = props.element.timing.start;
+
+  _onDrag = (ev: MouseEvent) => {
+    if (!isDragging.value) return;
+    const deltaX = ev.clientX - dragStartX.value;
+    const deltaTime = deltaX / props.pixelsPerSecond;
+    const newStart = Math.max(0, dragStartTime.value + deltaTime);
+    emit('update-timing', { start: Math.round(newStart * 10) / 10 });
+  };
+  _stopDrag = () => {
+    isDragging.value = false;
+    if (_onDrag) document.removeEventListener('mousemove', _onDrag);
+    if (_stopDrag) document.removeEventListener('mouseup', _stopDrag);
+  };
+
+  document.addEventListener('mousemove', _onDrag);
+  document.addEventListener('mouseup', _stopDrag);
+}
+
+function startResize(direction: 'left' | 'right', e: MouseEvent) {
+  isResizing.value = true;
+  resizeDirection.value = direction;
+  dragStartX.value = e.clientX;
+  dragStartTime.value = props.element.timing.start;
+  dragStartDuration.value = props.element.timing.duration;
+
+  _onResize = (ev: MouseEvent) => {
+    if (!isResizing.value) return;
+    const deltaX = ev.clientX - dragStartX.value;
+    const deltaTime = deltaX / props.pixelsPerSecond;
+    if (resizeDirection.value === 'left') {
+      const newStart = Math.max(0, dragStartTime.value + deltaTime);
+      const newDuration = Math.max(0.1, dragStartDuration.value - deltaTime);
+      emit('update-timing', {
         start: Math.round(newStart * 10) / 10,
+        duration: Math.round(newDuration * 10) / 10,
       });
-    },
+    } else {
+      const newDuration = Math.max(0.1, dragStartDuration.value + deltaTime);
+      emit('update-timing', { duration: Math.round(newDuration * 10) / 10 });
+    }
+  };
+  _stopResize = () => {
+    isResizing.value = false;
+    resizeDirection.value = null;
+    if (_onResize) document.removeEventListener('mousemove', _onResize);
+    if (_stopResize) document.removeEventListener('mouseup', _stopResize);
+  };
 
-    stopDrag() {
-      this.isDragging = false;
-      document.removeEventListener('mousemove', this.onDrag);
-      document.removeEventListener('mouseup', this.stopDrag);
-    },
+  document.addEventListener('mousemove', _onResize);
+  document.addEventListener('mouseup', _stopResize);
+}
 
-    startResize(direction, e) {
-      this.isResizing = true;
-      this.resizeDirection = direction;
-      this.dragStartX = e.clientX;
-      this.dragStartTime = this.element.timing.start;
-      this.dragStartDuration = this.element.timing.duration;
-
-      document.addEventListener('mousemove', this.onResize);
-      document.addEventListener('mouseup', this.stopResize);
-    },
-
-    onResize(e) {
-      if (!this.isResizing) return;
-
-      const deltaX = e.clientX - this.dragStartX;
-      const deltaTime = deltaX / this.pixelsPerSecond;
-
-      if (this.resizeDirection === 'left') {
-        // Resize from left: change start and duration
-        const newStart = Math.max(0, this.dragStartTime + deltaTime);
-        const newDuration = Math.max(0.1, this.dragStartDuration - deltaTime);
-
-        this.$emit('update-timing', {
-          start: Math.round(newStart * 10) / 10,
-          duration: Math.round(newDuration * 10) / 10,
-        });
-      } else {
-        // Resize from right: only change duration
-        const newDuration = Math.max(0.1, this.dragStartDuration + deltaTime);
-
-        this.$emit('update-timing', {
-          duration: Math.round(newDuration * 10) / 10,
-        });
-      }
-    },
-
-    stopResize() {
-      this.isResizing = false;
-      this.resizeDirection = null;
-      document.removeEventListener('mousemove', this.onResize);
-      document.removeEventListener('mouseup', this.stopResize);
-    },
-  },
-
-  beforeDestroy() {
-    document.removeEventListener('mousemove', this.onDrag);
-    document.removeEventListener('mouseup', this.stopDrag);
-    document.removeEventListener('mousemove', this.onResize);
-    document.removeEventListener('mouseup', this.stopResize);
-  },
-};
+onBeforeUnmount(() => {
+  if (_onDrag) document.removeEventListener('mousemove', _onDrag);
+  if (_stopDrag) document.removeEventListener('mouseup', _stopDrag);
+  if (_onResize) document.removeEventListener('mousemove', _onResize);
+  if (_stopResize) document.removeEventListener('mouseup', _stopResize);
+});
 </script>
 
 <style scoped>

@@ -13,26 +13,28 @@
   </v-group>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 import api from '../../api.js';
 
 const props = defineProps({
-  element: { type: Object, required: true },
-  config: { type: Object, required: true },
+  element: { type: Object as () => SceneObject, required: true },
+  config: { type: Object as () => Record<string, unknown>, required: true },
 });
 
 const store = useProjectStore();
 
-const svgImage = ref(null);
+const svgImage = ref<HTMLImageElement | null>(null);
 const svgLoaded = ref(false);
 
-const asset = computed(() => store.project.assets.find((a) => a.id === props.element.assetId));
+const assetId = computed(() => props.element.assetId as string | undefined);
+const asset = computed(() => store.project.assets.find((a: Record<string, unknown>) => a.id === assetId.value));
 
 const svgUrl = computed(() => {
-  if (!asset.value) return null;
-  return api.assets.getUrl(store.project.id, asset.value.filename);
+  if (!asset.value || !store.project.id) return null;
+  return api.assets.getUrl(store.project.id, asset.value.filename as string);
 });
 
 const svgConfig = computed(() => ({
@@ -49,7 +51,7 @@ const placeholderConfig = computed(() => ({
   width: 100,
   height: 100,
   fill: 'transparent',
-  stroke: props.element.style?.strokeColor || '#6366f1',
+  stroke: ((props.element.style as Record<string, unknown> | undefined)?.strokeColor as string | undefined) || '#6366f1',
   strokeWidth: 2,
   dash: [4, 4],
   cornerRadius: 4,
@@ -66,13 +68,13 @@ const labelConfig = computed(() => ({
 
 watch(
   svgUrl,
-  (url) => {
+  (url: string | null) => {
     if (url) loadSvg(url);
   },
   { immediate: true }
 );
 
-async function loadSvg(url) {
+async function loadSvg(url: string) {
   try {
     // Load SVG and convert to image for canvas display
     const response = await fetch(url);
@@ -82,7 +84,7 @@ async function loadSvg(url) {
     const blob = new Blob([svgText], { type: 'image/svg+xml' });
     const blobUrl = URL.createObjectURL(blob);
 
-    const img = new Image();
+    const img = new window.Image();
     img.onload = () => {
       svgImage.value = img;
       svgLoaded.value = true;

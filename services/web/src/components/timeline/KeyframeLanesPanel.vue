@@ -38,7 +38,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import KeyframeLane from './KeyframeLane.vue';
@@ -58,7 +58,7 @@ const KEYFRAMEABLE_PROPS = [
 const KEYFRAMEABLE_PROPS_3D = ['x3d', 'y3d', 'z3d', 'rx', 'ry', 'rz', 'opacity'];
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
 
-const props = defineProps({
+defineProps({
   pps: { type: Number, required: true },
   labelW: { type: Number, required: true },
   totalW: { type: Number, required: true },
@@ -90,7 +90,7 @@ const addableProps = computed(() => {
   return base.filter((p) => !active.has(p));
 });
 
-function addPropLane(prop) {
+function addPropLane(prop: string): void {
   if (!sourceObj.value) return;
   // First keyframe also seeds start/end so the property has a usable baseline.
   store.addKeyframeScaffold(sourceObj.value.id, prop, store.playbackTime ?? 0);

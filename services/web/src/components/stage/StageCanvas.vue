@@ -224,7 +224,7 @@
               v-if="
                 (obj.type === 'image' || obj.type === 'svg_asset') &&
                 isVis(obj.id) &&
-                imageElements[obj.assetId]
+                imageElements[obj.assetId as string]
               "
               :config="imageCfg(obj)"
               @mousedown="onObjDown(obj.id, $event)"
@@ -295,10 +295,10 @@
             >
               <v-rect
                 :config="{
-                  x: (-obj.width / 2) * vs,
-                  y: (-obj.height / 2) * vs,
-                  width: obj.width * vs,
-                  height: obj.height * vs,
+                  x: (-(obj.width ?? 0) / 2) * vs,
+                  y: (-(obj.height ?? 0) / 2) * vs,
+                  width: (obj.width ?? 0) * vs,
+                  height: (obj.height ?? 0) * vs,
                   fill: obj.fill || '#334155',
                   opacity: 0.3,
                   listening: true,
@@ -306,7 +306,7 @@
               />
               <v-line
                 :config="{
-                  points: [(-obj.width / 2) * vs, 0, (obj.width / 2) * vs, 0],
+                  points: [(-(obj.width ?? 0) / 2) * vs, 0, ((obj.width ?? 0) / 2) * vs, 0],
                   stroke: obj.stroke || '#64748b',
                   strokeWidth: 1.5,
                   listening: false,
@@ -314,7 +314,7 @@
               />
               <v-line
                 :config="{
-                  points: [0, (-obj.height / 2) * vs, 0, (obj.height / 2) * vs],
+                  points: [0, (-(obj.height ?? 0) / 2) * vs, 0, ((obj.height ?? 0) / 2) * vs],
                   stroke: obj.stroke || '#64748b',
                   strokeWidth: 1.5,
                   listening: false,
@@ -324,7 +324,7 @@
                 :config="{
                   text: obj.type === 'complex_plane' ? 'ComplexPlane' : 'NumberPlane',
                   x: -40,
-                  y: (-obj.height / 2) * vs + 4,
+                  y: (-(obj.height ?? 0) / 2) * vs + 4,
                   fontSize: 10,
                   fill: '#94a3b8',
                   listening: false,
@@ -343,26 +343,26 @@
             >
               <v-rect
                 :config="{
-                  x: (-obj.width / 2) * vs,
-                  y: (-obj.height / 2) * vs,
-                  width: obj.width * vs,
-                  height: obj.height * vs,
+                  x: (-(obj.width ?? 0) / 2) * vs,
+                  y: (-(obj.height ?? 0) / 2) * vs,
+                  width: (obj.width ?? 0) * vs,
+                  height: (obj.height ?? 0) * vs,
                   fill: obj.fill || '#334155',
                   opacity: 0.3,
                   listening: true,
                 }"
               />
-              <template v-for="(cc, ci) in polarCircleConfigs(obj)" :key="'pc' + ci">
+              <template v-for="cc in polarCircleConfigs(obj)" :key="'pc' + cc">
                 <v-circle :config="cc" />
               </template>
-              <template v-for="(sl, si) in polarSpokeConfigs(obj)" :key="'ps' + si">
+              <template v-for="sl in polarSpokeConfigs(obj)" :key="'ps' + sl">
                 <v-line :config="sl" />
               </template>
               <v-text
                 :config="{
                   text: 'PolarPlane',
                   x: -30,
-                  y: (-obj.height / 2) * vs + 4,
+                  y: (-(obj.height ?? 0) / 2) * vs + 4,
                   fontSize: 10,
                   fill: '#94a3b8',
                   listening: false,
@@ -381,9 +381,9 @@
             >
               <v-rect
                 :config="{
-                  x: (-obj.width / 2) * vs,
+                  x: (-(obj.width ?? 0) / 2) * vs,
                   y: -16,
-                  width: obj.width * vs,
+                  width: (obj.width ?? 0) * vs,
                   height: 32,
                   fill: 'rgba(0,0,0,0.01)',
                   listening: true,
@@ -391,7 +391,7 @@
               />
               <v-line
                 :config="{
-                  points: [(-obj.width / 2) * vs, 0, (obj.width / 2) * vs, 0],
+                  points: [(-(obj.width ?? 0) / 2) * vs, 0, ((obj.width ?? 0) / 2) * vs, 0],
                   stroke: obj.stroke || '#ffffff',
                   strokeWidth: 2,
                   listening: false,
@@ -400,11 +400,11 @@
               <v-line
                 :config="{
                   points: [
-                    (obj.width / 2) * vs - 8 * vs,
+                    ((obj.width ?? 0) / 2) * vs - 8 * vs,
                     -5 * vs,
-                    (obj.width / 2) * vs,
+                    ((obj.width ?? 0) / 2) * vs,
                     0,
-                    (obj.width / 2) * vs - 8 * vs,
+                    ((obj.width ?? 0) / 2) * vs - 8 * vs,
                     5 * vs,
                   ],
                   stroke: obj.stroke || '#ffffff',
@@ -568,7 +568,7 @@
               @dragend="onDragEnd(obj.id, $event)"
             >
               <v-rect :config="vectorFieldHitCfg(obj)" />
-              <template v-for="(acfg, ai) in vectorFieldArrows(obj)" :key="'vfa' + ai">
+              <template v-for="acfg in vectorFieldArrows(obj)" :key="'vfa' + acfg">
                 <v-arrow :config="acfg" />
               </template>
             </v-group>
@@ -721,7 +721,7 @@
       <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay)">
         <select
           :value="store.project.camera3d?.view ?? 'perspective'"
-          @change="store.setCamera3d({ view: $event.target.value })"
+          @change="onViewChange"
           class="text-xs bg-studio-surface border border-studio-border rounded px-2 py-1 text-studio-text shadow cursor-pointer"
           title="3D view"
         >
@@ -782,8 +782,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import type { SceneObject } from '@manim/codegen';
+import type { StageObject, Overrides } from '../../engine/types.js';
 import * as shapes2d from './configs/shapes2d.js';
 import * as text from './configs/text.js';
 import * as dataObjects from './configs/dataObjects.js';
@@ -803,21 +805,22 @@ import { useStageAssets } from './composables/useStageAssets.js';
 const store = useProjectStore();
 
 // ── Non-reactive instance vars ──
-let _ro = null;
-let _onKeyDown = null;
-let _onKeyUp = null;
+let _ro: ResizeObserver | null = null;
+let _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+let _onKeyUp: ((e: KeyboardEvent) => void) | null = null;
 
-// ── Template refs ──
-const container = ref(null);
-const konvaStage = ref(null);
-const objectsLayer = ref(null);
-const transformer = ref(null);
+// ── Template refs (typed loosely; composables cast internally via their own interfaces) ──
+const container = ref<HTMLElement | null>(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const konvaStage = ref<any>(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const objectsLayer = ref<any>(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformer = ref<any>(null);
 
 // ── Viewport composable ──
 const {
-  containerWidth,
-  containerHeight,
-  panOffset,
+  // containerWidth, containerHeight, panOffset unused directly (accessed via stageConfig/stg)
   zoomLevel,
   stg,
   vs,
@@ -848,7 +851,7 @@ const sortedObjects = computed(() =>
 const selectedObjectIds = computed(() => store.selectedObjectIds);
 const gridVisible = computed(() => store.project.stage.gridVisible);
 const frameState = computed(() => store.frameState);
-const morphShapes = computed(() => frameState.value.morphShapes || []);
+const morphShapes = computed(() => (frameState.value.morphShapes || []) as import('../../engine/types.js').MorphState[]);
 
 // bgConfig / gridLines / centerH / centerV — delegated to chrome.js (declared after ctx).
 
@@ -933,7 +936,7 @@ watch(
 onMounted(() => {
   updateSize();
   _ro = new ResizeObserver(() => updateSize());
-  _ro.observe(container.value);
+  if (container.value) _ro.observe(container.value);
   loadNewImages();
   loadNewFonts();
   _onKeyDown = (e) => {
@@ -953,46 +956,46 @@ onBeforeUnmount(() => {
 });
 
 // ── Methods ──
-function eff(obj) {
-  const ov = frameState.value.objectOverrides[obj.id];
-  return ov ? applyOverrides(obj, ov) : obj;
+function eff(obj: SceneObject): SceneObject {
+  const ov = frameState.value.objectOverrides[obj.id] as Overrides | undefined;
+  return ov ? applyOverrides(obj as unknown as StageObject, ov) as unknown as SceneObject : obj;
 }
 
 // 3D nesnenin geçerli (override dahil) konumu — playback path_move/move override'larını yansıtır
 // Returns only positional 3D coords (x3d/y3d/z3d) merged with overrides — read other props from obj directly.
-function eff3d(obj) {
-  const ov = frameState.value.objectOverrides[obj.id] || {};
+function eff3d(obj: SceneObject): { x3d: number; y3d: number; z3d: number } {
+  const ov = (frameState.value.objectOverrides[obj.id] as Overrides | undefined) || {};
   return {
-    x3d: ov.x3d ?? obj.x3d ?? 0,
-    y3d: ov.y3d ?? obj.y3d ?? 0,
-    z3d: ov.z3d ?? obj.z3d ?? 0,
+    x3d: (ov.x3d as number | undefined) ?? (obj.x3d as number | undefined) ?? 0,
+    y3d: (ov.y3d as number | undefined) ?? (obj.y3d as number | undefined) ?? 0,
+    z3d: (ov.z3d as number | undefined) ?? (obj.z3d as number | undefined) ?? 0,
   };
 }
 
 // emphasisOverlays / path3dPolylines — delegated to overlays.js (declared after ctx).
 
-function isVis(id) {
+function isVis(id: string): boolean {
   const h = frameState.value.hiddenIds;
   if (h instanceof Set) return !h.has(id);
   return true;
 }
 
 // ── Shape configs ──
-function live(obj) {
+function live(obj: SceneObject) {
   return liveTransform.value && liveTransform.value.id === obj.id ? liveTransform.value : null;
 }
 // morphCfg — delegated to overlays.js (declared after ctx).
 
 // ── 3D shape config wrappers (delegates to configs/objects3d.js) ──────────
-const sphere3dCfg = (o) => objects3d.sphere3dCfg(o, ctx.value);
-const cube3dFaces = (o) => objects3d.cube3dFaces(o, ctx.value);
-const prism3dFaces = (o) => objects3d.prism3dFaces(o, ctx.value);
-const obj3dCenter = (o) => objects3d.obj3dCenter(o, ctx.value);
-const round3dParts = (o) => objects3d.round3dParts(o, ctx.value);
-const surface3dMesh = (o) => objects3d.surface3dMesh(o, ctx.value);
-const torus3dTube = (o) => objects3d.torus3dTube(o, ctx.value);
-const torusOutline = (o) => objects3d.torusOutline(o, ctx.value);
-const axes3dLines = (o) => objects3d.axes3dLines(o, ctx.value);
+const sphere3dCfg = (o: SceneObject) => objects3d.sphere3dCfg(o, ctx.value);
+const cube3dFaces = (o: SceneObject) => objects3d.cube3dFaces(o, ctx.value);
+const prism3dFaces = (o: SceneObject) => objects3d.prism3dFaces(o, ctx.value);
+const obj3dCenter = (o: SceneObject) => objects3d.obj3dCenter(o, ctx.value);
+const round3dParts = (o: SceneObject) => objects3d.round3dParts(o, ctx.value);
+const surface3dMesh = (o: SceneObject) => objects3d.surface3dMesh(o, ctx.value);
+const torus3dTube = (o: SceneObject) => objects3d.torus3dTube(o, ctx.value);
+const torusOutline = (o: SceneObject) => objects3d.torusOutline(o, ctx.value);
+const axes3dLines = (o: SceneObject) => objects3d.axes3dLines(o, ctx.value);
 
 // ── shapes2d ctx bridge ──
 const ctx = computed(() => ({
@@ -1005,13 +1008,13 @@ const ctx = computed(() => ({
   eff,
   eff3d,
   live,
-  applyEffects: (cfg, obj, w, h, centered) =>
+  applyEffects: (cfg: Record<string, unknown>, obj: SceneObject, w: number, h: number, centered: boolean) =>
     effects.applyEffects(cfg, obj, w, h, centered, vs.value),
   hexToRgba: effects.hexToRgba,
   themeAccent: themeAccent.value,
   themeSurface: themeSurface.value,
   imageElements,
-  frameState: frameState.value,
+  frameState: frameState.value as import('../../engine/types.js').FrameState,
   is3D: is3D.value,
   cam3d: cam3d.value,
   proj3DScale: proj3DScale.value,
@@ -1035,70 +1038,75 @@ const floorGridIso = computed(() => chrome.floorGridIso(ctx.value));
 // ── overlays.js delegating computeds ──
 const emphasisOverlays = computed(() => overlays.emphasisOverlays(objects.value, ctx.value));
 const path3dPolylines = computed(() =>
-  overlays.path3dPolylines(store.project.tracks || [], ctx.value)
+  overlays.path3dPolylines(store.project.tracks as unknown as import('../../engine/types.js').Track[] || [], ctx.value)
 );
-const morphCfg = (m) => overlays.morphCfg(m, ctx.value);
-const rectCfg = (o) => shapes2d.rectCfg(o, ctx.value);
-const circleCfg = (o) => shapes2d.circleCfg(o, ctx.value);
-const ellipseCfg = (o) => shapes2d.ellipseCfg(o, ctx.value);
-const dotCfg = (o) => shapes2d.dotCfg(o, ctx.value);
-const heartCfg = (o) => shapes2d.heartCfg(o, ctx.value);
-const triangleCfg = (o) => shapes2d.triangleCfg(o, ctx.value);
-const polygonFreeCfg = (o) => shapes2d.polygonFreeCfg(o, ctx.value);
-const bezierCfg = (o) => shapes2d.bezierCfg(o, ctx.value);
-const parametricCfg = (o) => shapes2d.parametricCfg(o, ctx.value);
-const starCfg = (o) => shapes2d.starCfg(o, ctx.value);
-const polygonCfg = (o) => shapes2d.polygonCfg(o, ctx.value);
-const lineCfg = (o) => shapes2d.lineCfg(o, ctx.value);
-const arrowCfg = (o) => shapes2d.arrowCfg(o, ctx.value);
-const annulusCfg = (o) => shapes2d.annulusCfg(o, ctx.value);
-const sectorCfg = (o) => shapes2d.sectorCfg(o, ctx.value);
-const arcCfg = (o) => shapes2d.arcCfg(o, ctx.value);
-const doubleArrowCfg = (o) => shapes2d.doubleArrowCfg(o, ctx.value);
-const textCfg = (o) => text.textCfg(o, ctx.value);
-const counterCfg = (o) => text.counterCfg(o, ctx.value);
-const latexBgCfg = (o) => text.latexBgCfg(o, ctx.value);
-const latexTextCfg = (o) => text.latexTextCfg(o, ctx.value);
-const latexBadgeCfg = (o) => text.latexBadgeCfg(o, ctx.value);
-const groupCfg = (o) => dataObjects.groupCfg(o, ctx.value);
-const dotGridDots = (o) => dataObjects.dotGridDots(o, ctx.value);
-const dotGridHitCfg = (o) => dataObjects.dotGridHitCfg(o, ctx.value);
-const imageCfg = (o) => dataObjects.imageCfg(o, ctx.value);
-const matrixHitCfg = (o) => dataObjects.matrixHitCfg(o, ctx.value);
-const matrixCellConfigs = (o) => dataObjects.matrixCellConfigs(o, ctx.value);
-const matrixBracketConfigs = (o) => dataObjects.matrixBracketConfigs(o, ctx.value);
-const tableHitCfg = (o) => dataObjects.tableHitCfg(o, ctx.value);
-const tableCellConfigs = (o) => dataObjects.tableCellConfigs(o, ctx.value);
-const tableGridLines = (o) => dataObjects.tableGridLines(o, ctx.value);
-const polarCircleConfigs = (o) => dataObjects.polarCircleConfigs(o, ctx.value);
-const polarSpokeConfigs = (o) => dataObjects.polarSpokeConfigs(o, ctx.value);
-const graphHitCfg = (o) => dataObjects.graphHitCfg(o, ctx.value);
-const graphEdgeConfigs = (o) => dataObjects.graphEdgeConfigs(o, ctx.value);
-const graphVertexConfigs = (o) => dataObjects.graphVertexConfigs(o, ctx.value);
-const graphLabelConfigs = (o) => dataObjects.graphLabelConfigs(o, ctx.value);
-const vectorFieldHitCfg = (o) => dataObjects.vectorFieldHitCfg(o, ctx.value);
-const vectorFieldArrows = (o) => dataObjects.vectorFieldArrows(o, ctx.value);
-const relationalHitCfg = (o) => relational.relationalHitCfg(o, ctx.value);
-const relationalLabelCfg = (o, anchor) => relational.relationalLabelCfg(o, anchor, ctx.value);
-const braceLineCfg = (o) => relational.braceLineCfg(o, ctx.value);
-const vectorComponentsCfgs = (o) => relational.vectorComponentsCfgs(o, ctx.value);
-const rayCfgs = (o) => relational.rayCfgs(o, ctx.value);
-const coordPointCfgs = (o) => relational.coordPointCfgs(o, ctx.value);
-const braceLabelAnchor = (o) => relational.braceLabelAnchor(o, ctx.value);
-const angleRayCfgs = (o) => relational.angleRayCfgs(o, ctx.value);
-const angleArcCfg = (o) => relational.angleArcCfg(o, ctx.value);
-const angleSquareCfg = (o) => relational.angleSquareCfg(o, ctx.value);
-const angleLabelAnchor = (o) => relational.angleLabelAnchor(o, ctx.value);
-const axesBgCfg = (o) => axes.axesBgCfg(o, ctx.value);
-const axesXLineCfg = (o) => axes.axesXLineCfg(o, ctx.value);
-const axesYLineCfg = (o) => axes.axesYLineCfg(o, ctx.value);
-const axesXArrowCfg = (o) => axes.axesXArrowCfg(o, ctx.value);
-const axesYArrowCfg = (o) => axes.axesYArrowCfg(o, ctx.value);
-const axesXTicks = (o) => axes.axesXTicks(o, ctx.value);
-const axesYTicks = (o) => axes.axesYTicks(o, ctx.value);
-const axesLabelCfg = (o, axis) => axes.axesLabelCfg(o, axis, ctx.value);
-const axesGraphCurves = (o) => axes.axesGraphCurves(o, ctx.value);
-const axesAreaRiemann = (o) => axes.axesAreaRiemann(o, ctx.value);
+const morphCfg = (m: import('../../engine/types.js').MorphState) => overlays.morphCfg(m, ctx.value);
+const rectCfg = (o: SceneObject) => shapes2d.rectCfg(o, ctx.value);
+const circleCfg = (o: SceneObject) => shapes2d.circleCfg(o, ctx.value);
+const ellipseCfg = (o: SceneObject) => shapes2d.ellipseCfg(o, ctx.value);
+const dotCfg = (o: SceneObject) => shapes2d.dotCfg(o, ctx.value);
+const heartCfg = (o: SceneObject) => shapes2d.heartCfg(o, ctx.value);
+const triangleCfg = (o: SceneObject) => shapes2d.triangleCfg(o, ctx.value);
+const polygonFreeCfg = (o: SceneObject) => shapes2d.polygonFreeCfg(o, ctx.value);
+const bezierCfg = (o: SceneObject) => shapes2d.bezierCfg(o, ctx.value);
+const parametricCfg = (o: SceneObject) => shapes2d.parametricCfg(o, ctx.value);
+const starCfg = (o: SceneObject) => shapes2d.starCfg(o, ctx.value);
+const polygonCfg = (o: SceneObject) => shapes2d.polygonCfg(o, ctx.value);
+const lineCfg = (o: SceneObject) => shapes2d.lineCfg(o, ctx.value);
+const arrowCfg = (o: SceneObject) => shapes2d.arrowCfg(o, ctx.value);
+const annulusCfg = (o: SceneObject) => shapes2d.annulusCfg(o, ctx.value);
+const sectorCfg = (o: SceneObject) => shapes2d.sectorCfg(o, ctx.value);
+const arcCfg = (o: SceneObject) => shapes2d.arcCfg(o, ctx.value);
+const doubleArrowCfg = (o: SceneObject) => shapes2d.doubleArrowCfg(o, ctx.value);
+const textCfg = (o: SceneObject) => text.textCfg(o, ctx.value);
+const counterCfg = (o: SceneObject) => text.counterCfg(o, ctx.value);
+const latexBgCfg = (o: SceneObject) => text.latexBgCfg(o, ctx.value);
+const latexTextCfg = (o: SceneObject) => text.latexTextCfg(o, ctx.value);
+const latexBadgeCfg = (o: SceneObject) => text.latexBadgeCfg(o, ctx.value);
+const groupCfg = (o: SceneObject) => dataObjects.groupCfg(o, ctx.value);
+const dotGridDots = (o: SceneObject) => dataObjects.dotGridDots(o, ctx.value);
+const dotGridHitCfg = (o: SceneObject) => dataObjects.dotGridHitCfg(o, ctx.value);
+const imageCfg = (o: SceneObject) => dataObjects.imageCfg(o, ctx.value);
+const matrixHitCfg = (o: SceneObject) => dataObjects.matrixHitCfg(o, ctx.value);
+const matrixCellConfigs = (o: SceneObject) => dataObjects.matrixCellConfigs(o, ctx.value);
+const matrixBracketConfigs = (o: SceneObject) => dataObjects.matrixBracketConfigs(o, ctx.value);
+const tableHitCfg = (o: SceneObject) => dataObjects.tableHitCfg(o, ctx.value);
+const tableCellConfigs = (o: SceneObject) => dataObjects.tableCellConfigs(o, ctx.value);
+const tableGridLines = (o: SceneObject) => dataObjects.tableGridLines(o, ctx.value);
+const polarCircleConfigs = (o: SceneObject) => dataObjects.polarCircleConfigs(o, ctx.value);
+const polarSpokeConfigs = (o: SceneObject) => dataObjects.polarSpokeConfigs(o, ctx.value);
+const graphHitCfg = (o: SceneObject) => dataObjects.graphHitCfg(o, ctx.value);
+const graphEdgeConfigs = (o: SceneObject) => dataObjects.graphEdgeConfigs(o, ctx.value);
+const graphVertexConfigs = (o: SceneObject) => dataObjects.graphVertexConfigs(o, ctx.value);
+const graphLabelConfigs = (o: SceneObject) => dataObjects.graphLabelConfigs(o, ctx.value);
+const vectorFieldHitCfg = (o: SceneObject) => dataObjects.vectorFieldHitCfg(o, ctx.value);
+const vectorFieldArrows = (o: SceneObject) => dataObjects.vectorFieldArrows(o, ctx.value);
+const relationalHitCfg = (o: SceneObject) => relational.relationalHitCfg(o, ctx.value);
+const relationalLabelCfg = (o: SceneObject, anchor: [number, number]) => relational.relationalLabelCfg(o, anchor, ctx.value);
+const braceLineCfg = (o: SceneObject) => relational.braceLineCfg(o, ctx.value);
+const vectorComponentsCfgs = (o: SceneObject) => relational.vectorComponentsCfgs(o, ctx.value);
+const rayCfgs = (o: SceneObject) => relational.rayCfgs(o, ctx.value);
+const coordPointCfgs = (o: SceneObject) => relational.coordPointCfgs(o, ctx.value);
+const braceLabelAnchor = (o: SceneObject) => relational.braceLabelAnchor(o, ctx.value);
+const angleRayCfgs = (o: SceneObject) => relational.angleRayCfgs(o, ctx.value);
+const angleArcCfg = (o: SceneObject) => relational.angleArcCfg(o, ctx.value);
+const angleSquareCfg = (o: SceneObject) => relational.angleSquareCfg(o, ctx.value);
+const angleLabelAnchor = (o: SceneObject) => relational.angleLabelAnchor(o, ctx.value);
+const axesBgCfg = (o: SceneObject) => axes.axesBgCfg(o, ctx.value);
+const axesXLineCfg = (o: SceneObject) => axes.axesXLineCfg(o, ctx.value);
+const axesYLineCfg = (o: SceneObject) => axes.axesYLineCfg(o, ctx.value);
+const axesXArrowCfg = (o: SceneObject) => axes.axesXArrowCfg(o, ctx.value);
+const axesYArrowCfg = (o: SceneObject) => axes.axesYArrowCfg(o, ctx.value);
+const axesXTicks = (o: SceneObject) => axes.axesXTicks(o, ctx.value);
+const axesYTicks = (o: SceneObject) => axes.axesYTicks(o, ctx.value);
+const axesLabelCfg = (o: SceneObject, axis: string) => axes.axesLabelCfg(o, axis, ctx.value);
+const axesGraphCurves = (o: SceneObject) => axes.axesGraphCurves(o, ctx.value);
+const axesAreaRiemann = (o: SceneObject) => axes.axesAreaRiemann(o, ctx.value);
+
+// ── 3D view selector handler ──
+function onViewChange(e: Event) {
+  store.setCamera3d({ view: (e.target as HTMLSelectElement).value });
+}
 
 // ── Expose for parent ref calls ──
 defineExpose({ startPathDraw });

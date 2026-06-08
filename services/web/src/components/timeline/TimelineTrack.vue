@@ -17,13 +17,14 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { Track } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 import TimelineClip from './TimelineClip.vue';
 
 const props = defineProps({
-  track: { type: Object, required: true },
+  track: { type: Object as () => Track, required: true },
   pps: { type: Number, required: true },
   labelW: { type: Number, required: true },
 });

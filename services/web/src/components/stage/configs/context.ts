@@ -109,7 +109,7 @@ export interface StageCtx {
     scale?: number
   ) => IsoPoint;
   /** Measure the rendered pixel width of a text string. */
-  measureTextWidth: (text: string, font: string) => number;
+  measureTextWidth: (text: string, fontSize: number, fontFamily: string, fontStyle: string) => number;
   /** Currently active interaction tool ("select", "pen", …). */
   activeTool: string;
   /** IDs of all currently-selected objects. */

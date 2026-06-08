@@ -96,8 +96,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue';
+import type { Keyframe as BaseKeyframe } from '@manim/codegen';
+
+// Runtime keyframes may carry a `pinned` flag (boundary scaffolding)
+type Keyframe = BaseKeyframe & { pinned?: boolean };
 import { useProjectStore } from '../../store/project.js';
 
 const props = defineProps({
@@ -108,11 +112,19 @@ const props = defineProps({
   totalW: { type: Number, required: true },
 });
 
-const emit = defineEmits(['openEasingPopup']);
+const emit = defineEmits<{
+  (e: 'openEasingPopup', payload: {
+    objId: string;
+    prop: string;
+    k1: Keyframe;
+    k2: Keyframe;
+    event: { clientX: number; clientY: number };
+  }): void;
+}>();
 
 const store = useProjectStore();
 const obj = computed(() => store.objectById(props.objId));
-const keyframes = computed(() => obj.value?.keyframes?.[props.prop] || []);
+const keyframes = computed(() => (obj.value?.keyframes?.[props.prop] || []) as Keyframe[]);
 const sortedKeyframes = computed(() => [...keyframes.value].sort((a, b) => a.time - b.time));
 const mode = computed(
   () => obj.value?.keyframeMode?.[props.prop] || store.project.keyframeDefaults?.mode || 'opt-in'
@@ -124,22 +136,19 @@ const modeColor = computed(
 // Keyframes must stay within the object's visible interval [enter, enter+duration].
 const objStart = computed(() => obj.value?.enterTime || 0);
 const objEnd = computed(() => objStart.value + (obj.value?.duration ?? 3));
-function clampToObj(t) {
+function clampToObj(t: number): number {
   return Math.max(objStart.value, Math.min(objEnd.value, t));
 }
 
-function isSelected(kf) {
+function isSelected(kf: Keyframe): boolean {
   const s = store.selectedKeyframeId;
   return (
     !!s && s.objId === props.objId && s.prop === props.prop && Math.abs(s.time - kf.time) < 0.01
   );
 }
-function selectKf(kf) {
-  store.selectKeyframe(props.objId, props.prop, kf.time);
-}
 // Click toggles selection: select if not selected, clear if already selected.
 // Suppressed right after a drag (the trailing click shouldn't toggle).
-function toggleKf(kf) {
+function toggleKf(kf: Keyframe): void {
   if (_dragMoved) {
     _dragMoved = false;
     return;
@@ -148,35 +157,35 @@ function toggleKf(kf) {
   else store.selectKeyframe(props.objId, props.prop, kf.time);
 }
 
-function rightClickKf(kf) {
+function rightClickKf(kf: Keyframe): void {
   // deleteKeyframe enforces the pinned-boundary rules (block / delete-as-pair)
   store.deleteKeyframe(props.objId, props.prop, kf.time);
 }
 
-const laneArea = ref(null);
-function addKfAt(clientX) {
+const laneArea = ref<HTMLElement | null>(null);
+function addKfAt(clientX: number): void {
   const el = laneArea.value;
   if (!el) return;
   const rect = el.getBoundingClientRect();
   const t = Math.round(clampToObj((clientX - rect.left) / props.pps) * 100) / 100;
-  store.addKeyframe(props.objId, props.prop, t, obj.value?.[props.prop] ?? 0);
+  store.addKeyframe(props.objId, props.prop, t, (obj.value?.[props.prop] as number | undefined) ?? 0);
 }
-function onDblClick(e) {
+function onDblClick(e: MouseEvent): void {
   addKfAt(e.clientX);
 }
 
 // Add a keyframe at the playhead (current playback time), clamped to the
 // object's visible interval. Upserts within addKeyframe's 0.01s tolerance, so
 // re-clicking without moving the playhead just refreshes the existing key.
-function addAtPlayhead() {
+function addAtPlayhead(): void {
   store.addKeyframeScaffold(props.objId, props.prop, store.playbackTime ?? 0);
 }
 
 // Segment click is debounced: a lone click opens the easing popup after a short
 // delay; a double-click within that delay cancels it and adds a keyframe on the
 // segment instead (so single = edit easing, double = insert key).
-let _segClickTimer = null;
-function onSegClick(k1, k2, e) {
+let _segClickTimer: ReturnType<typeof setTimeout> | null = null;
+function onSegClick(k1: Keyframe, k2: Keyframe, e: MouseEvent): void {
   if (_segClickTimer) return;
   const ev = { clientX: e.clientX, clientY: e.clientY };
   _segClickTimer = setTimeout(() => {
@@ -184,7 +193,7 @@ function onSegClick(k1, k2, e) {
     emit('openEasingPopup', { objId: props.objId, prop: props.prop, k1, k2, event: ev });
   }, 220);
 }
-function onSegDblClick(e) {
+function onSegDblClick(e: MouseEvent): void {
   if (_segClickTimer) {
     clearTimeout(_segClickTimer);
     _segClickTimer = null;
@@ -193,7 +202,7 @@ function onSegDblClick(e) {
 }
 
 let _dragMoved = false;
-function startDrag(kf, e) {
+function startDrag(kf: Keyframe, e: MouseEvent): void {
   if (kf.pinned) return; // boundary keyframes are locked to the object's edges
   _dragMoved = false;
   // Don't select on mousedown — let the click handler toggle pure clicks.
@@ -202,7 +211,7 @@ function startDrag(kf, e) {
   const origTime = kf.time;
   let currentTime = origTime;
 
-  const move = (ev) => {
+  const move = (ev: MouseEvent) => {
     const dt = (ev.clientX - startX) / props.pps;
     const newTime = Math.round(clampToObj(origTime + dt) * 100) / 100;
     if (newTime === currentTime) return;
