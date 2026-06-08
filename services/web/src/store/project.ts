@@ -11,8 +11,134 @@
  */
 
 import { createPinia, defineStore, setActivePinia } from 'pinia';
+import type {
+  SceneObject,
+  Clip,
+  Track,
+  Group,
+  Camera3d,
+  KeyframeDefaults,
+} from '@manim/codegen';
 import api, { connectJobWebSocket } from '../api.js';
 import { presetVertices } from '../engine/polygonVertices.js';
+
+// ─── Local store-only interfaces ─────────────────────────────────────────────
+
+export interface Asset {
+  id: string;
+  name: string;
+  filename: string;
+  type: 'image' | 'svg';
+  dataUrl?: string | null;
+  width?: number;
+  height?: number;
+  serverFilename?: string | null;
+}
+
+interface StoreStage {
+  width: number;
+  height: number;
+  backgroundColor: string;
+  backgroundOpacity: number;
+  backgroundImage: string | null;
+  gridVisible: boolean;
+  gridSize: number;
+  gridColor: string;
+  gridOpacity: number;
+  snapEnabled: boolean;
+  snapToGrid: boolean;
+  snapToCenter: boolean;
+  snapToObjects: boolean;
+}
+
+interface StoreCamera3d extends Camera3d {
+  phi: number;
+  theta: number;
+  zoom: number;
+  view: string;
+  focalDistance: number;
+}
+
+interface StoreGroup extends Group {
+  id: string;
+  name: string;
+  childIds: string[];
+  margin: number;
+  collapsed: boolean;
+}
+
+export interface StoreProject {
+  id: string | null;
+  name: string;
+  editorMode: string;
+  codeSource: string;
+  stage: StoreStage;
+  assets: Asset[];
+  objects: SceneObject[];
+  groups: StoreGroup[];
+  tracks: Track[];
+  sceneDuration: number;
+  cameraType: 'static' | 'moving';
+  cameraTrack: Clip[];
+  keyframeDefaults: KeyframeDefaults;
+  sceneType: '2d' | '3d';
+  camera3d: StoreCamera3d;
+}
+
+interface FrameState {
+  objectOverrides: Record<string, unknown>;
+  morphShapes: unknown[];
+  hiddenIds: Set<string>;
+}
+
+interface History {
+  past: string[];
+  future: string[];
+}
+
+interface SelectedKeyframeId {
+  objId: string;
+  prop: string;
+  time: number;
+}
+
+interface StoreKeyframe {
+  time: number;
+  value: number;
+  easing: { type: string; handles?: number[] };
+  pinned?: 'start' | 'end';
+}
+
+interface State {
+  project: StoreProject;
+  selectedObjectIds: string[];
+  selectedClipId: string | null;
+  selectedKeyframeId: SelectedKeyframeId | null;
+  activeTool: string;
+  playbackTime: number;
+  playbackPlaying: boolean;
+  playbackLoop: boolean;
+  frameState: FrameState;
+  showExportDialog: boolean;
+  exportCode: string;
+  showRenderDialog: boolean;
+  renderJobId: string | null;
+  renderStatus: string | null;
+  renderError: string | null;
+  renderQuality: string;
+  renderVideoUrl: string | null;
+  renderLog: string;
+  showProjectBrowser: boolean;
+  serverProjects: unknown[];
+  apiAvailable: boolean | null;
+  history: History;
+  clipboard: SceneObject[];
+  isDirty: boolean;
+  error: string | null;
+  loading: boolean;
+  savingToServer: boolean;
+  theme: string;
+}
 
 const MAX_HISTORY = 50;
 // Default timeline duration (seconds) for an object with no explicit duration.
@@ -30,7 +156,7 @@ class MainScene(Scene):
         self.wait()
 `;
 
-function createDefaultProject(editorMode = 'visual') {
+function createDefaultProject(editorMode = 'visual'): StoreProject {
   return {
     id: null,
     name: 'My Animation',
@@ -82,7 +208,7 @@ export function uid(prefix = 'id') {
 }
 
 let _objectAddCount = 0;
-function nextPosition(stageW, stageH) {
+function nextPosition(stageW: number, stageH: number): { x: number; y: number } {
   const positions = [
     { x: stageW * 0.35, y: stageH * 0.5 },
     { x: stageW * 0.65, y: stageH * 0.5 },
@@ -95,7 +221,7 @@ function nextPosition(stageW, stageH) {
   return pos;
 }
 
-let _pollDisconnect = null;
+let _pollDisconnect: (() => void) | null = null;
 
 // ─── Entrance / Exit animation types ─────────────────────────────────────────
 
@@ -245,7 +371,7 @@ export const pinia = createPinia();
 setActivePinia(pinia);
 
 const useProjectStore = defineStore('project', {
-  state: () => ({
+  state: (): State => ({
     project: createDefaultProject(),
     selectedObjectIds: [],
     selectedClipId: null,
@@ -298,17 +424,17 @@ const useProjectStore = defineStore('project', {
       }
       return null;
     },
-    objectById: (state) => (id) => state.project.objects.find((o) => o.id === id) || null,
-    assetById: (state) => (id) => state.project.assets.find((a) => a.id === id) || null,
-    clipById: (state) => (id) => {
+    objectById: (state) => (id: string) => state.project.objects.find((o) => o.id === id) || null,
+    assetById: (state) => (id: string) => state.project.assets.find((a) => a.id === id) || null,
+    clipById: (state) => (id: string) => {
       for (const track of state.project.tracks) {
         const clip = track.clips.find((c) => c.id === id);
         if (clip) return clip;
       }
       return null;
     },
-    groupById: (state) => (id) => (state.project.groups || []).find((g) => g.id === id) || null,
-    objectGroup: (state) => (objId) =>
+    groupById: (state) => (id: string) => (state.project.groups || []).find((g) => g.id === id) || null,
+    objectGroup: (state) => (objId: string) =>
       (state.project.groups || []).find((g) => g.childIds && g.childIds.includes(objId)) || null,
     computedDuration: (state) => {
       let maxEnd = 5;
@@ -340,9 +466,9 @@ const useProjectStore = defineStore('project', {
     // Objects
     // ══════════════════════════════════════════════════════════════════════════
 
-    addObject(type, x, y, extraProps = {}) {
+    addObject(type: string, x?: number, y?: number, extraProps: Record<string, unknown> = {}): SceneObject {
       const stage = this.project.stage;
-      const d = SHAPE_DEFAULTS[type] || SHAPE_DEFAULTS.circle;
+      const d = SHAPE_DEFAULTS[type as keyof typeof SHAPE_DEFAULTS] || SHAPE_DEFAULTS.circle;
       const pos =
         x !== undefined && y !== undefined ? { x, y } : nextPosition(stage.width, stage.height);
 
@@ -386,9 +512,9 @@ const useProjectStore = defineStore('project', {
         ray: 'Ray',
         coord_point: 'Coord Point',
       };
-      const displayName = nameMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
+      const displayName = (nameMap as Record<string, string>)[type] || type.charAt(0).toUpperCase() + type.slice(1);
 
-      const obj = {
+      const obj: SceneObject = {
         id: uid('obj'),
         type,
         name: `${displayName} ${this.project.objects.length + 1}`,
@@ -554,7 +680,7 @@ const useProjectStore = defineStore('project', {
       return obj;
     },
 
-    addImageObject(assetId, x, y) {
+    addImageObject(assetId: string, x?: number, y?: number) {
       const asset = this.project.assets.find((a) => a.id === assetId);
       if (!asset) return null;
 
@@ -573,7 +699,7 @@ const useProjectStore = defineStore('project', {
       });
     },
 
-    updateObject(id, updates) {
+    updateObject(id: string, updates: Record<string, unknown>) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       for (const key of Object.keys(updates)) {
@@ -583,7 +709,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setPolygonVertices(id, vertices) {
+    setPolygonVertices(id: string, vertices: [number, number][]) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(vertices) || vertices.length < 3) return;
       obj.vertices = vertices.map(([x, y]) => [Math.round(x), Math.round(y)]);
@@ -591,54 +717,57 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setMatrixCell(id, r, c, value) {
+    setMatrixCell(id: string, r: number, c: number, value: unknown) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(obj.matrixData)) return;
-      if (!obj.matrixData[r] || obj.matrixData[r][c] === undefined) return;
-      obj.matrixData[r][c] = String(value);
+      const md = obj.matrixData as string[][];
+      if (!md[r] || md[r][c] === undefined) return;
+      md[r][c] = String(value);
       this.isDirty = true;
       this._debouncedCommit();
     },
 
-    addMatrixRow(id) {
+    addMatrixRow(id: string) {
       const obj = this.project.objects.find((o) => o.id === id);
-      if (!obj || !Array.isArray(obj.matrixData) || !obj.matrixData[0]) return;
-      obj.matrixData.push(new Array(obj.matrixData[0].length).fill('0'));
+      if (!obj || !Array.isArray(obj.matrixData) || !(obj.matrixData as string[][])[0]) return;
+      const md = obj.matrixData as string[][];
+      md.push(new Array(md[0].length).fill('0'));
       this.isDirty = true;
       this.commitState();
     },
 
-    removeMatrixRow(id) {
+    removeMatrixRow(id: string) {
       const obj = this.project.objects.find((o) => o.id === id);
-      if (!obj || !Array.isArray(obj.matrixData) || obj.matrixData.length <= 1) return;
-      obj.matrixData.pop();
+      if (!obj || !Array.isArray(obj.matrixData) || (obj.matrixData as string[][]).length <= 1) return;
+      (obj.matrixData as string[][]).pop();
       this.isDirty = true;
       this.commitState();
     },
 
-    addMatrixColumn(id) {
+    addMatrixColumn(id: string) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !Array.isArray(obj.matrixData)) return;
-      obj.matrixData.forEach((row) => row.push('0'));
+      (obj.matrixData as string[][]).forEach((row) => row.push('0'));
       this.isDirty = true;
       this.commitState();
     },
 
-    removeMatrixColumn(id) {
+    removeMatrixColumn(id: string) {
       const obj = this.project.objects.find((o) => o.id === id);
+      const md = obj ? (obj.matrixData as string[][] | undefined) : undefined;
       if (
         !obj ||
-        !Array.isArray(obj.matrixData) ||
-        !obj.matrixData[0] ||
-        obj.matrixData[0].length <= 1
+        !Array.isArray(md) ||
+        !md[0] ||
+        md[0].length <= 1
       )
         return;
-      obj.matrixData.forEach((row) => row.pop());
+      md.forEach((row) => row.pop());
       this.isDirty = true;
       this.commitState();
     },
 
-    setMatrixBracket(id, bracket) {
+    setMatrixBracket(id: string, bracket: string) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !['[', '(', '|'].includes(bracket)) return;
       obj.bracket = bracket;
@@ -646,67 +775,71 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setTableCell(id, r, c, value) {
+    setTableCell(id: string, r: number, c: number, value: unknown) {
       const obj = this.objectById(id);
+      const cd = obj ? (obj.cellData as string[][] | undefined) : undefined;
       if (
         !obj ||
-        !Array.isArray(obj.cellData) ||
-        !obj.cellData[r] ||
-        obj.cellData[r][c] === undefined
+        !Array.isArray(cd) ||
+        !cd[r] ||
+        cd[r][c] === undefined
       )
         return;
-      obj.cellData[r][c] = String(value);
+      cd[r][c] = String(value);
       this.isDirty = true;
       this._debouncedCommit();
     },
-    addTableRow(id) {
+    addTableRow(id: string) {
       const obj = this.objectById(id);
-      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0]) return;
-      obj.cellData.push(new Array(obj.cellData[0].length).fill('0'));
+      const cd = obj ? (obj.cellData as string[][] | undefined) : undefined;
+      if (!obj || !Array.isArray(cd) || !cd[0]) return;
+      cd.push(new Array(cd[0].length).fill('0'));
       this.isDirty = true;
       this.commitState();
     },
-    removeTableRow(id) {
+    removeTableRow(id: string) {
       const obj = this.objectById(id);
-      if (!obj || !Array.isArray(obj.cellData) || obj.cellData.length <= 1) return;
-      obj.cellData.pop();
-      if (Array.isArray(obj.rowLabels) && obj.rowLabels.length > obj.cellData.length)
-        obj.rowLabels.splice(obj.cellData.length);
+      const cd = obj ? (obj.cellData as string[][] | undefined) : undefined;
+      if (!obj || !Array.isArray(cd) || cd.length <= 1) return;
+      cd.pop();
+      if (Array.isArray(obj.rowLabels) && (obj.rowLabels as string[]).length > cd.length)
+        (obj.rowLabels as string[]).splice(cd.length);
       this.isDirty = true;
       this.commitState();
     },
-    addTableColumn(id) {
+    addTableColumn(id: string) {
       const obj = this.objectById(id);
       if (!obj || !Array.isArray(obj.cellData)) return;
-      obj.cellData.forEach((row) => row.push('0'));
+      (obj.cellData as string[][]).forEach((row) => row.push('0'));
       this.isDirty = true;
       this.commitState();
     },
-    removeTableColumn(id) {
+    removeTableColumn(id: string) {
       const obj = this.objectById(id);
-      if (!obj || !Array.isArray(obj.cellData) || !obj.cellData[0] || obj.cellData[0].length <= 1)
+      const cd = obj ? (obj.cellData as string[][] | undefined) : undefined;
+      if (!obj || !Array.isArray(cd) || !cd[0] || cd[0].length <= 1)
         return;
-      obj.cellData.forEach((row) => row.pop());
-      if (Array.isArray(obj.colLabels) && obj.colLabels.length > obj.cellData[0].length)
-        obj.colLabels.splice(obj.cellData[0].length);
+      cd.forEach((row) => row.pop());
+      if (Array.isArray(obj.colLabels) && (obj.colLabels as string[]).length > cd[0].length)
+        (obj.colLabels as string[]).splice(cd[0].length);
       this.isDirty = true;
       this.commitState();
     },
-    setTableMathMode(id, on) {
+    setTableMathMode(id: string, on: boolean) {
       const o = this.objectById(id);
       if (!o) return;
       o.mathMode = !!on;
       this.isDirty = true;
       this.commitState();
     },
-    setTableRowLabels(id, arr) {
+    setTableRowLabels(id: string, arr: unknown[]) {
       const o = this.objectById(id);
       if (!o || !Array.isArray(arr)) return;
       o.rowLabels = arr.map((s) => String(s));
       this.isDirty = true;
       this._debouncedCommit();
     },
-    setTableColLabels(id, arr) {
+    setTableColLabels(id: string, arr: unknown[]) {
       const o = this.objectById(id);
       if (!o || !Array.isArray(arr)) return;
       o.colLabels = arr.map((s) => String(s));
@@ -714,7 +847,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setRelationalPoint(id, key, pt) {
+    setRelationalPoint(id: string, key: string, pt: [number, number]) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || !['p1', 'p2', 'vertex', 'point1', 'point2'].includes(key)) return;
       if (obj[key] === undefined || !Array.isArray(pt) || pt.length !== 2) return;
@@ -723,7 +856,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setAngleRightMode(id, on) {
+    setAngleRightMode(id: string, on: boolean) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || obj.type !== 'angle') return;
       obj.rightAngle = !!on;
@@ -731,7 +864,7 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    setAngleRadius(id, r) {
+    setAngleRadius(id: string, r: unknown) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj || obj.type !== 'angle') return;
       const v = Number(r);
@@ -741,7 +874,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setRelationalLabel(id, label) {
+    setRelationalLabel(id: string, label: unknown) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       obj.label = String(label == null ? '' : label);
@@ -749,7 +882,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setGradient(id, gradient) {
+    setGradient(id: string, gradient: { colors: string[]; angle?: number } | null | undefined) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (gradient && Array.isArray(gradient.colors) && gradient.colors.length >= 2) {
@@ -761,7 +894,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setCornerRadius(id, px) {
+    setCornerRadius(id: string, px: unknown) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       const r = Number(px);
@@ -771,7 +904,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setDash(id, dash) {
+    setDash(id: string, dash: { numDashes?: unknown; ratio?: unknown } | null | undefined) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (dash) {
@@ -785,16 +918,16 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setShadow(id, shadow) {
+    setShadow(id: string, shadow: { color?: unknown; opacity?: unknown; dx?: unknown; dy?: unknown; blur?: unknown } | null | undefined) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       if (shadow) {
         obj.shadow = {
           color: typeof shadow.color === 'string' ? shadow.color : '#000000',
-          opacity: Number.isFinite(shadow.opacity) ? shadow.opacity : 0.4,
-          dx: Number.isFinite(shadow.dx) ? shadow.dx : 8,
-          dy: Number.isFinite(shadow.dy) ? shadow.dy : 8,
-          blur: Number.isFinite(shadow.blur) ? shadow.blur : 12,
+          opacity: Number.isFinite(shadow.opacity) ? (shadow.opacity as number) : 0.4,
+          dx: Number.isFinite(shadow.dx) ? (shadow.dx as number) : 8,
+          dy: Number.isFinite(shadow.dy) ? (shadow.dy as number) : 8,
+          blur: Number.isFinite(shadow.blur) ? (shadow.blur as number) : 12,
         };
       } else {
         delete obj.shadow;
@@ -803,39 +936,39 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    setCounterValue(objId, v) {
+    setCounterValue(objId: string, v: unknown) {
       const o = this.objectById(objId);
       if (!o) return;
       o.value = Number(v) || 0;
       this.commitState();
     },
-    setCounterDecimals(objId, n) {
+    setCounterDecimals(objId: string, n: unknown) {
       const o = this.objectById(objId);
       if (!o) return;
       o.numDecimals = Math.max(0, Math.floor(Number(n) || 0));
       this.commitState();
     },
-    setCounterSuffix(objId, s) {
+    setCounterSuffix(objId: string, s: unknown) {
       const o = this.objectById(objId);
       if (!o) return;
       o.suffix = String(s ?? '');
       this.commitState();
     },
-    setCounterInteger(objId, on) {
+    setCounterInteger(objId: string, on: boolean) {
       const o = this.objectById(objId);
       if (!o) return;
       o.useInteger = !!on;
       this.commitState();
     },
 
-    setPolarRadiusMax(id, v) {
+    setPolarRadiusMax(id: string, v: unknown) {
       const o = this.objectById(id);
       if (!o) return;
       o.radiusMax = Math.max(1, Number(v) || 4);
       this.isDirty = true;
       this._debouncedCommit();
     },
-    setPolarRadiusStep(id, v) {
+    setPolarRadiusStep(id: string, v: unknown) {
       const o = this.objectById(id);
       if (!o) return;
       const n = Number(v);
@@ -843,7 +976,7 @@ const useProjectStore = defineStore('project', {
       this.isDirty = true;
       this._debouncedCommit();
     },
-    setPolarAzimuth(id, v) {
+    setPolarAzimuth(id: string, v: unknown) {
       const o = this.objectById(id);
       if (!o) return;
       o.azimuthUnits = Math.max(1, Math.trunc(Number(v) || 12));
@@ -851,70 +984,77 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    addGraphVertex(id, name) {
+    addGraphVertex(id: string, name: unknown) {
       const o = this.objectById(id);
       if (!o) return;
-      const v = String(name || `V${o.vertices.length + 1}`);
-      if (o.vertices.includes(v)) return;
-      o.vertices.push(v);
-      o.positions[v] = [0, 0];
+      const verts = o.vertices as string[];
+      const positions = o.positions as Record<string, [number, number]>;
+      const v = String(name || `V${verts.length + 1}`);
+      if (verts.includes(v)) return;
+      verts.push(v);
+      positions[v] = [0, 0];
       this.isDirty = true;
       this.commitState();
     },
-    removeGraphVertex(id, v) {
+    removeGraphVertex(id: string, v: string) {
       const o = this.objectById(id);
       if (!o) return;
-      o.vertices = o.vertices.filter((x) => x !== v);
-      o.edges = o.edges.filter((e) => e[0] !== v && e[1] !== v);
-      delete o.positions[v];
+      o.vertices = (o.vertices as string[]).filter((x) => x !== v);
+      o.edges = (o.edges as [string, string][]).filter((e) => e[0] !== v && e[1] !== v);
+      delete (o.positions as Record<string, unknown>)[v];
       this.isDirty = true;
       this.commitState();
     },
-    renameGraphVertex(id, oldV, newV) {
+    renameGraphVertex(id: string, oldV: string, newV: unknown) {
       const o = this.objectById(id);
       if (!o) return;
       const nv = String(newV);
-      if (!nv || o.vertices.includes(nv)) return;
-      o.vertices = o.vertices.map((x) => (x === oldV ? nv : x));
-      o.edges = o.edges.map((e) => [e[0] === oldV ? nv : e[0], e[1] === oldV ? nv : e[1]]);
-      if (o.positions[oldV]) {
-        o.positions[nv] = o.positions[oldV];
-        delete o.positions[oldV];
+      const verts = o.vertices as string[];
+      const edges = o.edges as [string, string][];
+      const positions = o.positions as Record<string, unknown>;
+      if (!nv || verts.includes(nv)) return;
+      o.vertices = verts.map((x) => (x === oldV ? nv : x));
+      o.edges = edges.map((e) => [e[0] === oldV ? nv : e[0], e[1] === oldV ? nv : e[1]]);
+      if (positions[oldV]) {
+        positions[nv] = positions[oldV];
+        delete positions[oldV];
       }
       this.isDirty = true;
       this.commitState();
     },
-    addGraphEdge(id, a, b) {
+    addGraphEdge(id: string, a: string, b: string) {
       const o = this.objectById(id);
-      if (!o || !o.vertices.includes(a) || !o.vertices.includes(b)) return;
+      const verts = o ? (o.vertices as string[]) : [];
+      const edges = o ? (o.edges as [string, string][]) : [];
+      if (!o || !verts.includes(a) || !verts.includes(b)) return;
       if (a === b) return;
-      if (o.edges.some((e) => e[0] === a && e[1] === b)) return;
-      o.edges.push([a, b]);
+      if (edges.some((e) => e[0] === a && e[1] === b)) return;
+      edges.push([a, b]);
       this.isDirty = true;
       this.commitState();
     },
-    removeGraphEdge(id, a, b) {
+    removeGraphEdge(id: string, a: string, b: string) {
       const o = this.objectById(id);
       if (!o) return;
-      o.edges = o.edges.filter((e) => !(e[0] === a && e[1] === b));
+      o.edges = (o.edges as [string, string][]).filter((e) => !(e[0] === a && e[1] === b));
       this.isDirty = true;
       this.commitState();
     },
-    setGraphVertexPosition(id, v, pt) {
+    setGraphVertexPosition(id: string, v: string, pt: [number, number]) {
       const o = this.objectById(id);
       if (!o || !Array.isArray(pt) || pt.length !== 2) return;
-      o.positions[v] = [Math.round(pt[0]), Math.round(pt[1])];
+      (o.positions as Record<string, [number, number]>)[v] = [Math.round(pt[0]), Math.round(pt[1])];
       this.isDirty = true;
       this._debouncedCommit();
     },
-    setGraphDirected(id, on) {
+    setGraphDirected(id: string, on: boolean) {
       const o = this.objectById(id);
       if (!o) return;
       o.directed = !!on;
       this.isDirty = true;
       this.commitState();
     },
-    setGraphShowLabels(id, on) {
+    setGraphShowLabels(id: string, on: boolean) {
       const o = this.objectById(id);
       if (!o) return;
       o.showLabels = !!on;
@@ -922,14 +1062,14 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    setFieldExpr(id, axis, expr) {
+    setFieldExpr(id: string, axis: string, expr: unknown) {
       const o = this.objectById(id);
       if (!o || (axis !== 'fx' && axis !== 'fy')) return;
       o[axis] = String(expr);
       this.isDirty = true;
       this._debouncedCommit();
     },
-    setFieldRange(id, axis, range) {
+    setFieldRange(id: string, axis: string, range: unknown[]) {
       const o = this.objectById(id);
       if (!o || (axis !== 'xRange' && axis !== 'yRange') || !Array.isArray(range)) return;
       o[axis] = range.map(Number);
@@ -937,7 +1077,7 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    deleteObject(id) {
+    deleteObject(id: string) {
       const idx = this.project.objects.findIndex((o) => o.id === id);
       if (idx === -1) return;
       this.project.objects.splice(idx, 1);
@@ -965,7 +1105,7 @@ const useProjectStore = defineStore('project', {
     // Groups
     // ══════════════════════════════════════════════════════════════════════════
 
-    groupObjects(ids) {
+    groupObjects(ids: string[]) {
       if (!ids || ids.length < 2) {
         this.setError('Select at least 2 objects to group');
         return null;
@@ -991,7 +1131,7 @@ const useProjectStore = defineStore('project', {
       return group;
     },
 
-    ungroupObjects(groupId) {
+    ungroupObjects(groupId: string) {
       if (!this.project.groups) return;
       const idx = this.project.groups.findIndex((g) => g.id === groupId);
       if (idx !== -1) {
@@ -1001,11 +1141,11 @@ const useProjectStore = defineStore('project', {
       }
     },
 
-    updateGroup(groupId, updates) {
+    updateGroup(groupId: string, updates: Record<string, unknown>) {
       const group = (this.project.groups || []).find((g) => g.id === groupId);
       if (!group) return;
       for (const key of Object.keys(updates)) {
-        group[key] = updates[key];
+        (group as Record<string, unknown>)[key] = updates[key];
       }
       this.isDirty = true;
     },
@@ -1014,14 +1154,14 @@ const useProjectStore = defineStore('project', {
     // Assets
     // ══════════════════════════════════════════════════════════════════════════
 
-    async uploadAsset(file) {
+    async uploadAsset(file: File): Promise<Asset> {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-          const dataUrl = e.target.result;
+          const dataUrl = (e.target as FileReader).result as string;
           const img = new Image();
           img.onload = () => {
-            const asset = {
+            const asset: Asset = {
               id: uid('asset'),
               name: file.name.replace(/\.[^.]+$/, ''),
               filename: file.name,
@@ -1043,7 +1183,7 @@ const useProjectStore = defineStore('project', {
       });
     },
 
-    removeAsset(id) {
+    removeAsset(id: string) {
       const idx = this.project.assets.findIndex((a) => a.id === id);
       if (idx !== -1) {
         this.project.assets.splice(idx, 1);
@@ -1055,7 +1195,7 @@ const useProjectStore = defineStore('project', {
     // Selection
     // ══════════════════════════════════════════════════════════════════════════
 
-    selectObject(id, addToSelection = false) {
+    selectObject(id: string | null | undefined, addToSelection = false) {
       if (!id) {
         this.selectedObjectIds = [];
         this.selectedClipId = null;
@@ -1071,7 +1211,7 @@ const useProjectStore = defineStore('project', {
       this.selectedClipId = null;
     },
 
-    selectClip(clipId) {
+    selectClip(clipId: string | null) {
       this.selectedClipId = clipId;
       this.selectedObjectIds = [];
     },
@@ -1081,7 +1221,7 @@ const useProjectStore = defineStore('project', {
       this.selectedClipId = null;
     },
 
-    setActiveTool(tool) {
+    setActiveTool(tool: string) {
       this.activeTool = tool;
     },
 
@@ -1089,46 +1229,50 @@ const useProjectStore = defineStore('project', {
     // Clips
     // ══════════════════════════════════════════════════════════════════════════
 
-    addGraph(objId, graphData = {}) {
+    addGraph(objId: string, graphData: Record<string, unknown> = {}) {
       const obj = this.objectById(objId);
       if (!obj || obj.type !== 'axes') return null;
       if (!obj.graphs) obj.graphs = [];
-      const graph = {
+      const graphs = obj.graphs as Array<Record<string, unknown>>;
+      const xRange = obj.xRange as number[] | undefined;
+      const graph: Record<string, unknown> = {
         id: uid('graph'),
         expression: graphData.expression || 'x**2',
         color: graphData.color || '#f59e0b',
-        xMin: graphData.xMin ?? obj.xRange?.[0] ?? -5,
-        xMax: graphData.xMax ?? obj.xRange?.[1] ?? 5,
+        xMin: graphData.xMin ?? xRange?.[0] ?? -5,
+        xMax: graphData.xMax ?? xRange?.[1] ?? 5,
         strokeWidth: graphData.strokeWidth || 3,
       };
-      obj.graphs.push(graph);
+      graphs.push(graph);
       this.isDirty = true;
       this.commitState();
       return graph;
     },
 
-    removeGraph(objId, graphId) {
+    removeGraph(objId: string, graphId: string) {
       const obj = this.objectById(objId);
       if (!obj || !obj.graphs) return;
-      const idx = obj.graphs.findIndex((g) => g.id === graphId);
+      const graphs = obj.graphs as Array<{ id?: string }>;
+      const idx = graphs.findIndex((g) => g.id === graphId);
       if (idx !== -1) {
-        obj.graphs.splice(idx, 1);
+        graphs.splice(idx, 1);
         this.isDirty = true;
         this.commitState();
       }
     },
 
-    updateGraph(objId, graphId, updates) {
+    updateGraph(objId: string, graphId: string, updates: Record<string, unknown>) {
       const obj = this.objectById(objId);
       if (!obj || !obj.graphs) return;
-      const graph = obj.graphs.find((g) => g.id === graphId);
+      const graphs = obj.graphs as Array<Record<string, unknown> & { id?: string }>;
+      const graph = graphs.find((g) => g.id === graphId);
       if (!graph) return;
       for (const key of Object.keys(updates)) graph[key] = updates[key];
       this.isDirty = true;
       this.commitState();
     },
 
-    addClip(trackIndex, clipData) {
+    addClip(trackIndex: number, clipData: Partial<Clip> & Record<string, unknown>) {
       while (this.project.tracks.length <= trackIndex) {
         this.project.tracks.push({
           id: `track_${this.project.tracks.length + 1}`,
@@ -1143,40 +1287,40 @@ const useProjectStore = defineStore('project', {
           clips: [],
         });
       }
-      const clip = {
+      const clip: Clip = {
         id: uid('clip'),
         type: 'transform',
         startTime: 0,
         duration: 1.5,
         easing: 'ease_in_out',
-        sourceId: null,
-        targetId: null,
+        sourceId: undefined,
+        targetId: undefined,
         params: {},
+        parallel: false,
+        lag_ratio: 0,
         overshoot: 0,
         settle: 1.0,
         morphQuality: 'medium',
-        parallel: false,
-        lag_ratio: 0,
         ...clipData,
-      };
+      } as Clip;
       this.project.tracks[trackIndex].clips.push(clip);
       this.isDirty = true;
       this.commitState();
       return clip;
     },
 
-    updateClip(clipId, updates) {
+    updateClip(clipId: string, updates: Record<string, unknown>) {
       for (const track of this.project.tracks) {
         const clip = track.clips.find((c) => c.id === clipId);
         if (clip) {
-          for (const key of Object.keys(updates)) clip[key] = updates[key];
+          for (const key of Object.keys(updates)) (clip as Record<string, unknown>)[key] = updates[key];
           this.isDirty = true;
           return;
         }
       }
     },
 
-    deleteClip(clipId) {
+    deleteClip(clipId: string) {
       for (const track of this.project.tracks) {
         const idx = track.clips.findIndex((c) => c.id === clipId);
         if (idx !== -1) {
@@ -1189,7 +1333,7 @@ const useProjectStore = defineStore('project', {
       }
     },
 
-    setClipAudio(clipId, audioData) {
+    setClipAudio(clipId: string, audioData: import('@manim/codegen').AudioConfig) {
       for (const track of this.project.tracks) {
         const clip = track.clips.find((c) => c.id === clipId);
         if (clip) {
@@ -1208,7 +1352,7 @@ const useProjectStore = defineStore('project', {
       }
     },
 
-    removeClipAudio(clipId) {
+    removeClipAudio(clipId: string) {
       for (const track of this.project.tracks) {
         const clip = track.clips.find((c) => c.id === clipId);
         if (clip && clip.audio) {
@@ -1251,12 +1395,12 @@ const useProjectStore = defineStore('project', {
         targetId,
         morphQuality: 'medium',
       });
-      this.selectedClipId = clip.id;
+      this.selectedClipId = clip.id ?? null;
       this.selectedObjectIds = [];
       return clip;
     },
 
-    setClipMatchTerms(clipId, on) {
+    setClipMatchTerms(clipId: string, on: boolean) {
       const clip = this.clipById(clipId);
       if (!clip) return;
       if (on) clip.matchTerms = true;
@@ -1264,7 +1408,7 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    createAnimation(type, params = {}) {
+    createAnimation(type: string, params: Record<string, unknown> = {}) {
       if (this.selectedObjectIds.length !== 1) {
         this.setError('Select 1 object to animate');
         return null;
@@ -1291,7 +1435,7 @@ const useProjectStore = defineStore('project', {
         sourceId,
         params,
       });
-      this.selectedClipId = clip.id;
+      this.selectedClipId = clip.id ?? null;
       return clip;
     },
 
@@ -1299,24 +1443,26 @@ const useProjectStore = defineStore('project', {
     // Alignment (3x3 grid)
     // ══════════════════════════════════════════════════════════════════════════
 
-    alignObject(objId, anchor) {
+    alignObject(objId: string, anchor: string) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       const stage = this.project.stage;
       const pad = 50;
+      const w = (obj.width as number) ?? 0;
+      const h = (obj.height as number) ?? 0;
 
-      const positions = {
-        TOP_LEFT: { x: pad + obj.width / 2, y: pad + obj.height / 2 },
-        TOP: { x: stage.width / 2, y: pad + obj.height / 2 },
-        TOP_RIGHT: { x: stage.width - pad - obj.width / 2, y: pad + obj.height / 2 },
-        LEFT: { x: pad + obj.width / 2, y: stage.height / 2 },
+      const positions: Record<string, { x: number; y: number }> = {
+        TOP_LEFT: { x: pad + w / 2, y: pad + h / 2 },
+        TOP: { x: stage.width / 2, y: pad + h / 2 },
+        TOP_RIGHT: { x: stage.width - pad - w / 2, y: pad + h / 2 },
+        LEFT: { x: pad + w / 2, y: stage.height / 2 },
         CENTER: { x: stage.width / 2, y: stage.height / 2 },
-        RIGHT: { x: stage.width - pad - obj.width / 2, y: stage.height / 2 },
-        BOTTOM_LEFT: { x: pad + obj.width / 2, y: stage.height - pad - obj.height / 2 },
-        BOTTOM: { x: stage.width / 2, y: stage.height - pad - obj.height / 2 },
+        RIGHT: { x: stage.width - pad - w / 2, y: stage.height / 2 },
+        BOTTOM_LEFT: { x: pad + w / 2, y: stage.height - pad - h / 2 },
+        BOTTOM: { x: stage.width / 2, y: stage.height - pad - h / 2 },
         BOTTOM_RIGHT: {
-          x: stage.width - pad - obj.width / 2,
-          y: stage.height - pad - obj.height / 2,
+          x: stage.width - pad - w / 2,
+          y: stage.height - pad - h / 2,
         },
       };
 
@@ -1330,13 +1476,13 @@ const useProjectStore = defineStore('project', {
     // Playback
     // ══════════════════════════════════════════════════════════════════════════
 
-    setPlaybackTime(t) {
+    setPlaybackTime(t: number) {
       this.playbackTime = t;
     },
-    setPlaybackPlaying(p) {
+    setPlaybackPlaying(p: boolean) {
       this.playbackPlaying = p;
     },
-    setFrameState(s) {
+    setFrameState(s: FrameState) {
       this.frameState = s;
     },
 
@@ -1344,8 +1490,8 @@ const useProjectStore = defineStore('project', {
     // Stage
     // ══════════════════════════════════════════════════════════════════════════
 
-    updateStage(u) {
-      for (const k of Object.keys(u)) this.project.stage[k] = u[k];
+    updateStage(u: Partial<StoreStage>) {
+      for (const k of Object.keys(u)) (this.project.stage as Record<string, unknown>)[k] = (u as Record<string, unknown>)[k];
       this.isDirty = true;
     },
     toggleGrid() {
@@ -1363,9 +1509,9 @@ const useProjectStore = defineStore('project', {
       return JSON.stringify(JSON.parse(JSON.stringify(this.project)), null, 2);
     },
 
-    importJSON(jsonStr) {
+    importJSON(jsonStr: string) {
       try {
-        const data = JSON.parse(jsonStr);
+        const data = JSON.parse(jsonStr) as Record<string, unknown>;
         if (!data.stage || !Array.isArray(data.objects)) throw new Error('Invalid project');
         if (!data.tracks) data.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
         if (!data.assets) data.assets = [];
@@ -1374,7 +1520,7 @@ const useProjectStore = defineStore('project', {
         if (data.codeSource === undefined) data.codeSource = '';
         if (!('cameraType' in data)) data.cameraType = 'static';
         if (!Array.isArray(data.cameraTrack)) data.cameraTrack = [];
-        this.project = data;
+        this.project = data as unknown as StoreProject;
         this.selectedObjectIds = [];
         this.selectedClipId = null;
         this.isDirty = false;
@@ -1384,7 +1530,7 @@ const useProjectStore = defineStore('project', {
         this.commitState();
         return true;
       } catch (err) {
-        this.error = `Could not open project: ${err.message}`;
+        this.error = `Could not open project: ${(err as Error).message}`;
         return false;
       }
     },
@@ -1401,19 +1547,19 @@ const useProjectStore = defineStore('project', {
       this.isDirty = false;
     },
 
-    loadFromFile() {
+    loadFromFile(): Promise<boolean> {
       return new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json';
         input.onchange = (e) => {
-          const file = e.target.files[0];
+          const file = (e.target as HTMLInputElement).files?.[0];
           if (!file) {
             resolve(false);
             return;
           }
           const reader = new FileReader();
-          reader.onload = (ev) => resolve(this.importJSON(ev.target.result));
+          reader.onload = (ev) => resolve(this.importJSON((ev.target as FileReader).result as string));
           reader.onerror = () => {
             this.error = 'Failed to read file';
             resolve(false);
@@ -1472,11 +1618,11 @@ const useProjectStore = defineStore('project', {
       try {
         // 1. Create on server if no project ID
         if (!this.project.id) {
-          const created = await api.projects.create(this.project.name, this.project.editorMode);
+          const created = await api.projects.create(this.project.name, this.project.editorMode) as { id: string };
           this.project.id = created.id;
         }
 
-        const projectId = this.project.id;
+        const projectId = this.project.id as string;
 
         // 2. Upload any assets that need syncing
         for (const asset of this.project.assets) {
@@ -1486,7 +1632,7 @@ const useProjectStore = defineStore('project', {
                 name: asset.filename || asset.name || 'asset',
                 type: asset.type,
                 data: asset.dataUrl,
-              });
+              }) as { filename: string };
               asset.serverFilename = result.filename;
             } catch (err) {
               console.warn('[saveToServer] Asset upload failed:', asset.name, err);
@@ -1510,7 +1656,7 @@ const useProjectStore = defineStore('project', {
 
         return projectId;
       } catch (err) {
-        this.error = `Save to server failed: ${err.message}`;
+        this.error = `Save to server failed: ${(err as Error).message}`;
         throw err;
       } finally {
         this.loading = false;
@@ -1521,15 +1667,15 @@ const useProjectStore = defineStore('project', {
     /**
      * Load a project from the server by ID.
      */
-    async loadFromServer(id) {
+    async loadFromServer(id: string) {
       this.loading = true;
       try {
-        const project = await api.projects.get(id);
+        const project = await api.projects.get(id) as Record<string, unknown>;
 
         // For each asset, create a displayable URL
-        for (const asset of project.assets || []) {
+        for (const asset of (project.assets as Record<string, unknown>[] | undefined) || []) {
           if (asset.filename && !asset.dataUrl) {
-            asset.dataUrl = api.assets.getUrl(id, asset.filename);
+            asset.dataUrl = api.assets.getUrl(id, asset.filename as string);
             asset.serverFilename = asset.filename;
           }
         }
@@ -1541,7 +1687,7 @@ const useProjectStore = defineStore('project', {
         if (!('cameraType' in project)) project.cameraType = 'static';
         if (!Array.isArray(project.cameraTrack)) project.cameraTrack = [];
 
-        this.project = project;
+        this.project = project as unknown as StoreProject;
         this.selectedObjectIds = [];
         this.selectedClipId = null;
         this.isDirty = false;
@@ -1552,7 +1698,7 @@ const useProjectStore = defineStore('project', {
         this.renderVideoUrl = null;
         return true;
       } catch (err) {
-        this.error = `Load from server failed: ${err.message}`;
+        this.error = `Load from server failed: ${(err as Error).message}`;
         return false;
       } finally {
         this.loading = false;
@@ -1564,11 +1710,11 @@ const useProjectStore = defineStore('project', {
      */
     async listServerProjects() {
       try {
-        const list = await api.projects.list();
+        const list = await api.projects.list() as unknown[];
         this.serverProjects = list || [];
         return list;
       } catch (err) {
-        this.error = `Could not list projects: ${err.message}`;
+        this.error = `Could not list projects: ${(err as Error).message}`;
         this.serverProjects = [];
         return [];
       }
@@ -1577,9 +1723,9 @@ const useProjectStore = defineStore('project', {
     /**
      * Delete a project from the server (project + assets + renders).
      */
-    async deleteServerProject(id) {
+    async deleteServerProject(id: string) {
       await api.projects.delete(id);
-      this.serverProjects = this.serverProjects.filter((p) => p.id !== id);
+      this.serverProjects = this.serverProjects.filter((p) => (p as Record<string, unknown>).id !== id);
       if (this.project.id === id) {
         this.project.id = null;
       }
@@ -1606,15 +1752,15 @@ const useProjectStore = defineStore('project', {
 
         // 2. Trigger render (code mode sends raw source; visual mode uses compiled pipeline)
         this.renderStatus = 'queued';
-        let result;
+        let result: { jobId: string };
         if (this.project.editorMode === 'code') {
           result = await api.projects.renderCode(projectId, {
             quality,
             codeSource: this.project.codeSource,
             sceneName: 'MainScene',
-          });
+          }) as { jobId: string };
         } else {
-          result = await api.projects.render(projectId, quality);
+          result = await api.projects.render(projectId, quality) as { jobId: string };
         }
         this.renderJobId = result.jobId;
 
@@ -1622,27 +1768,27 @@ const useProjectStore = defineStore('project', {
         this._startPollRender(result.jobId, projectId);
       } catch (err) {
         this.renderStatus = 'failed';
-        this.renderError = err.message;
+        this.renderError = (err as Error).message;
       }
     },
 
     /** @private Start WebSocket subscription for a render job */
-    _startPollRender(jobId, projectId) {
+    _startPollRender(jobId: string, projectId: string) {
       this._stopPollRender();
 
-      _pollDisconnect = connectJobWebSocket(jobId, (msg) => {
+      _pollDisconnect = connectJobWebSocket(jobId, (msg: Record<string, unknown>) => {
         if (msg.status === 'running') {
           this.renderStatus = 'running';
-          if (msg.stdout) this.renderLog = msg.stdout;
+          if (msg.stdout) this.renderLog = msg.stdout as string;
         } else if (msg.status === 'completed') {
           this.renderStatus = 'completed';
           this.renderVideoUrl = api.renders.getLatestUrl(projectId);
-          this.renderLog = msg.stdout || '';
+          this.renderLog = (msg.stdout as string) || '';
           this._stopPollRender();
         } else if (msg.status === 'failed') {
           this.renderStatus = 'failed';
-          this.renderError = msg.error || msg.stderr || 'Render failed';
-          this.renderLog = (msg.stdout || '') + '\n' + (msg.stderr || '');
+          this.renderError = (msg.error as string) || (msg.stderr as string) || 'Render failed';
+          this.renderLog = ((msg.stdout as string) || '') + '\n' + ((msg.stderr as string) || '');
           this._stopPollRender();
         }
       });
@@ -1680,26 +1826,26 @@ const useProjectStore = defineStore('project', {
     },
 
     _debouncedCommit: (() => {
-      let timer = null;
-      return function () {
-        clearTimeout(timer);
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      return function (this: { commitState: () => void }) {
+        clearTimeout(timer ?? undefined);
         timer = setTimeout(() => this.commitState(), 400);
       };
     })(),
 
     undo() {
       if (this.history.past.length <= 1) return;
-      const current = this.history.past.pop();
+      const current = this.history.past.pop()!;
       this.history.future.push(current);
       const prev = this.history.past[this.history.past.length - 1];
-      const data = JSON.parse(prev);
-      this.project.objects = data.objects;
-      this.project.groups = data.groups || [];
-      this.project.tracks = data.tracks;
-      this.project.cameraTrack = data.cameraTrack || [];
-      this.project.cameraType = data.cameraType ?? this.project.cameraType;
-      this.project.sceneType = data.sceneType ?? this.project.sceneType;
-      if (data.camera3d) this.project.camera3d = data.camera3d;
+      const data = JSON.parse(prev) as Record<string, unknown>;
+      this.project.objects = data.objects as SceneObject[];
+      this.project.groups = (data.groups as StoreGroup[]) || [];
+      this.project.tracks = data.tracks as Track[];
+      this.project.cameraTrack = (data.cameraTrack as Clip[]) || [];
+      this.project.cameraType = (data.cameraType as 'static' | 'moving') ?? this.project.cameraType;
+      this.project.sceneType = (data.sceneType as '2d' | '3d') ?? this.project.sceneType;
+      if (data.camera3d) this.project.camera3d = data.camera3d as StoreCamera3d;
       this.selectedObjectIds = [];
       this.selectedClipId = null;
       this.isDirty = true;
@@ -1707,16 +1853,16 @@ const useProjectStore = defineStore('project', {
 
     redo() {
       if (this.history.future.length === 0) return;
-      const next = this.history.future.pop();
+      const next = this.history.future.pop()!;
       this.history.past.push(next);
-      const data = JSON.parse(next);
-      this.project.objects = data.objects;
-      this.project.groups = data.groups || [];
-      this.project.tracks = data.tracks;
-      this.project.cameraTrack = data.cameraTrack || [];
-      this.project.cameraType = data.cameraType ?? this.project.cameraType;
-      this.project.sceneType = data.sceneType ?? this.project.sceneType;
-      if (data.camera3d) this.project.camera3d = data.camera3d;
+      const data = JSON.parse(next) as Record<string, unknown>;
+      this.project.objects = data.objects as SceneObject[];
+      this.project.groups = (data.groups as StoreGroup[]) || [];
+      this.project.tracks = data.tracks as Track[];
+      this.project.cameraTrack = (data.cameraTrack as Clip[]) || [];
+      this.project.cameraType = (data.cameraType as 'static' | 'moving') ?? this.project.cameraType;
+      this.project.sceneType = (data.sceneType as '2d' | '3d') ?? this.project.sceneType;
+      if (data.camera3d) this.project.camera3d = data.camera3d as StoreCamera3d;
       this.selectedObjectIds = [];
       this.selectedClipId = null;
       this.isDirty = true;
@@ -1760,14 +1906,14 @@ const useProjectStore = defineStore('project', {
     clearError() {
       this.error = null;
     },
-    setError(msg) {
+    setError(msg: string) {
       this.error = msg;
       setTimeout(() => {
         if (this.error === msg) this.error = null;
       }, 4000);
     },
 
-    setTheme(id) {
+    setTheme(id: string) {
       this.theme = id;
       document.documentElement.setAttribute('data-theme', id);
       try {
@@ -1775,7 +1921,7 @@ const useProjectStore = defineStore('project', {
       } catch {}
     },
 
-    addPathMoveClip(sourceId, pathPoints) {
+    addPathMoveClip(sourceId: string, pathPoints: import('@manim/codegen').PathPoint[]) {
       if (!sourceId || !pathPoints || pathPoints.length < 2) return null;
       // Find first empty track
       let trackIndex = 0;
@@ -1825,7 +1971,7 @@ const useProjectStore = defineStore('project', {
         duration: 2,
         easing: 'ease_in_out_cubic',
       });
-      this.selectedClipId = clip.id;
+      this.selectedClipId = clip.id ?? null;
       return clip;
     },
 
@@ -1833,28 +1979,28 @@ const useProjectStore = defineStore('project', {
     // Camera
     // ══════════════════════════════════════════════════════════════════════════
 
-    setCameraType(type) {
+    setCameraType(type: 'static' | 'moving') {
       this.project.cameraType = type;
       if (!this.project.cameraTrack) this.project.cameraTrack = [];
       this.isDirty = true;
       this.commitState();
     },
 
-    setSceneType(type) {
+    setSceneType(type: '2d' | '3d') {
       this.project.sceneType = type;
       this.isDirty = true;
       this.commitState();
     },
 
-    setCamera3d(params) {
+    setCamera3d(params: Partial<StoreCamera3d>) {
       Object.assign(this.project.camera3d, params);
       this.isDirty = true;
       this.commitState();
     },
 
-    addCameraMoveClip(params = {}) {
+    addCameraMoveClip(params: { startTime?: number; duration?: number; easing?: string; targetX?: number; targetY?: number; zoom?: number } = {}) {
       if (!this.project.cameraTrack) this.project.cameraTrack = [];
-      const clip = {
+      const clip: Clip = {
         id: uid('cam'),
         type: 'camera_move',
         startTime: params.startTime ?? (this.playbackTime || 0),
@@ -1872,19 +2018,20 @@ const useProjectStore = defineStore('project', {
       return clip;
     },
 
-    updateCameraClip(clipId, updates) {
+    updateCameraClip(clipId: string, updates: { params?: Record<string, unknown> } & Record<string, unknown>) {
       const clip = this.project.cameraTrack?.find((c) => c.id === clipId);
       if (!clip) return;
       if (updates.params) {
-        for (const k of Object.keys(updates.params)) clip.params[k] = updates.params[k];
+        if (!clip.params) clip.params = {};
+        for (const k of Object.keys(updates.params)) (clip.params as Record<string, unknown>)[k] = (updates.params)[k];
       }
       const topLevel = Object.keys(updates).filter((k) => k !== 'params');
-      for (const k of topLevel) clip[k] = updates[k];
+      for (const k of topLevel) (clip as Record<string, unknown>)[k] = updates[k];
       this.isDirty = true;
       this.commitState();
     },
 
-    deleteCameraClip(clipId) {
+    deleteCameraClip(clipId: string) {
       if (!this.project.cameraTrack) return;
       const idx = this.project.cameraTrack.findIndex((c) => c.id === clipId);
       if (idx !== -1) {
@@ -1898,17 +2045,18 @@ const useProjectStore = defineStore('project', {
     // Keyframes
     // ══════════════════════════════════════════════════════════════════════════
 
-    addKeyframe(objId, prop, time, value) {
+    addKeyframe(objId: string, prop: string, time: number, value: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframes) obj.keyframes = {};
-      if (!obj.keyframes[prop]) obj.keyframes[prop] = [];
-      const existing = obj.keyframes[prop].findIndex((k) => Math.abs(k.time - time) < 0.01);
+      const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
+      if (!kfMap[prop]) kfMap[prop] = [];
+      const existing = kfMap[prop].findIndex((k) => Math.abs(k.time - time) < 0.01);
       if (existing >= 0) {
-        obj.keyframes[prop][existing].value = value;
+        kfMap[prop][existing].value = value;
       } else {
-        obj.keyframes[prop].push({ time, value, easing: { type: 'linear' } });
-        obj.keyframes[prop].sort((a, b) => a.time - b.time);
+        kfMap[prop].push({ time, value, easing: { type: 'linear' } });
+        kfMap[prop].sort((a, b) => a.time - b.time);
       }
       this.isDirty = true;
       this.commitState();
@@ -1919,20 +2067,21 @@ const useProjectStore = defineStore('project', {
     // value) so a lone keyframe isn't a no-op in opt-in mode and the user gets a
     // baseline to animate from. `time` is clamped to the visible interval and
     // every insert is upserted within 0.01s tolerance. One commit for the lot.
-    addKeyframeScaffold(objId, prop, time) {
+    addKeyframeScaffold(objId: string, prop: string, time: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
-      const val = obj[prop] ?? 0;
+      const val = (obj[prop] as number) ?? 0;
       const start = obj.enterTime || 0;
       const end = start + (obj.duration ?? 3);
       const t = Math.round(Math.max(start, Math.min(end, time)) * 100) / 100;
-      const isFirst = !obj.keyframes?.[prop]?.length;
+      const isFirst = !(obj.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.length;
       if (!obj.keyframes) obj.keyframes = {};
-      if (!obj.keyframes[prop]) obj.keyframes[prop] = [];
-      const arr = obj.keyframes[prop];
+      const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
+      if (!kfMap[prop]) kfMap[prop] = [];
+      const arr = kfMap[prop];
       // `pinned: 'start'|'end'` marks the boundary keyframes — they are locked to
       // the object's edges (not draggable) and follow them on move/resize.
-      const upsert = (tt, pinned) => {
+      const upsert = (tt: number, pinned?: 'start' | 'end') => {
         const i = arr.findIndex((k) => Math.abs(k.time - tt) < 0.01);
         if (i >= 0) {
           arr[i].value = val;
@@ -1955,12 +2104,14 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    removeKeyframe(objId, prop, time) {
+    removeKeyframe(objId: string, prop: string, time: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
-      if (!obj?.keyframes?.[prop]) return;
-      obj.keyframes[prop] = obj.keyframes[prop].filter((k) => Math.abs(k.time - time) >= 0.01);
-      if (obj.keyframes[prop].length === 0) delete obj.keyframes[prop];
-      if (obj.keyframes && Object.keys(obj.keyframes).length === 0) delete obj.keyframes;
+      if (!obj?.keyframes) return;
+      const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
+      if (!kfMap[prop]) return;
+      kfMap[prop] = kfMap[prop].filter((k) => Math.abs(k.time - time) >= 0.01);
+      if (kfMap[prop].length === 0) delete kfMap[prop];
+      if (Object.keys(kfMap).length === 0) delete obj.keyframes;
       this.isDirty = true;
       this.commitState();
     },
@@ -1971,9 +2122,10 @@ const useProjectStore = defineStore('project', {
     //   remain — the boundaries only make sense as a pair around real keys;
     // - if ONLY the two pinned boundaries are left, deleting either clears the
     //   whole property (both boundaries go together).
-    deleteKeyframe(objId, prop, time) {
+    deleteKeyframe(objId: string, prop: string, time: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
-      const arr = obj?.keyframes?.[prop];
+      const kfMap = obj?.keyframes as Record<string, StoreKeyframe[]> | undefined;
+      const arr = kfMap?.[prop];
       if (!arr) return;
       const kf = arr.find((k) => Math.abs(k.time - time) < 0.01);
       if (!kf) return;
@@ -1983,8 +2135,8 @@ const useProjectStore = defineStore('project', {
       }
       if (arr.some((k) => !k.pinned)) return; // middle keyframes still present → block
       // only the boundaries remain → drop the property entirely
-      delete obj.keyframes[prop];
-      if (obj.keyframes && Object.keys(obj.keyframes).length === 0) delete obj.keyframes;
+      delete kfMap![prop];
+      if (kfMap && Object.keys(kfMap).length === 0) delete obj!.keyframes;
       const sel = this.selectedKeyframeId;
       if (sel && sel.objId === objId && sel.prop === prop) this.selectedKeyframeId = null;
       this.isDirty = true;
@@ -1993,15 +2145,16 @@ const useProjectStore = defineStore('project', {
 
     // Shift every keyframe of an object in time by `delta` (clamped at 0) so the
     // keyframes travel with the object bar when it is dragged left/right.
-    shiftKeyframes(objId, delta) {
+    shiftKeyframes(objId: string, delta: number) {
       if (!delta) return;
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj?.keyframes) return;
-      for (const prop of Object.keys(obj.keyframes)) {
-        for (const kf of obj.keyframes[prop]) {
+      const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
+      for (const prop of Object.keys(kfMap)) {
+        for (const kf of kfMap[prop]) {
           kf.time = Math.max(0, Math.round((kf.time + delta) * 100) / 100);
         }
-        obj.keyframes[prop].sort((a, b) => a.time - b.time);
+        kfMap[prop].sort((a, b) => a.time - b.time);
       }
       this.isDirty = true;
       this._debouncedCommit();
@@ -2012,15 +2165,16 @@ const useProjectStore = defineStore('project', {
     // Pinned boundary keyframes snap exactly to the edges — outward as well as
     // inward, so expanding the bar drags them back out to the new edge. Regular
     // keyframes are clamped inside the interval.
-    clampKeyframesToRange(objId) {
+    clampKeyframesToRange(objId: string) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj?.keyframes) return;
+      const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
       const start = obj.enterTime || 0;
       const end = start + (obj.duration ?? 3);
       let changed = false;
-      for (const prop of Object.keys(obj.keyframes)) {
-        const seen = [];
-        const next = [...obj.keyframes[prop]]
+      for (const prop of Object.keys(kfMap)) {
+        const seen: number[] = [];
+        const next = [...kfMap[prop]]
           .map((kf) => {
             const target =
               kf.pinned === 'start'
@@ -2042,7 +2196,7 @@ const useProjectStore = defineStore('project', {
             seen.push(kf.time);
             return true;
           });
-        obj.keyframes[prop] = next;
+        kfMap[prop] = next;
       }
       if (changed) {
         this.isDirty = true;
@@ -2056,14 +2210,15 @@ const useProjectStore = defineStore('project', {
     // they slide/scale with the edge being dragged; pinned boundaries snap to
     // the new edges. `origKeyframes` is a snapshot taken before the resize began
     // so repeated calls during a drag remap from the original (no compounding).
-    rescaleKeyframes(objId, origKeyframes, oldStart, oldEnd, newStart, newEnd) {
+    rescaleKeyframes(objId: string, origKeyframes: Record<string, StoreKeyframe[]>, oldStart: number, oldEnd: number, newStart: number, newEnd: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj || !origKeyframes) return;
       const oldSpan = oldEnd - oldStart || 1;
-      const map = (t) => newStart + ((t - oldStart) / oldSpan) * (newEnd - newStart);
+      const map = (t: number) => newStart + ((t - oldStart) / oldSpan) * (newEnd - newStart);
       if (!obj.keyframes) obj.keyframes = {};
+      const kfMap = obj.keyframes as Record<string, StoreKeyframe[]>;
       for (const prop of Object.keys(origKeyframes)) {
-        obj.keyframes[prop] = origKeyframes[prop]
+        kfMap[prop] = origKeyframes[prop]
           .map((kf) => {
             const target =
               kf.pinned === 'start' ? newStart : kf.pinned === 'end' ? newEnd : map(kf.time);
@@ -2078,25 +2233,25 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
-    updateKeyframeValue(objId, prop, time, value) {
+    updateKeyframeValue(objId: string, prop: string, time: number, value: number) {
       const obj = this.project.objects.find((o) => o.id === objId);
-      const kf = obj?.keyframes?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
+      const kf = (obj?.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
       if (!kf) return;
       kf.value = value;
       this.isDirty = true;
       this.commitState();
     },
 
-    updateKeyframeEasing(objId, prop, time, easing) {
+    updateKeyframeEasing(objId: string, prop: string, time: number, easing: { type: string; handles?: number[] }) {
       const obj = this.project.objects.find((o) => o.id === objId);
-      const kf = obj?.keyframes?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
+      const kf = (obj?.keyframes as Record<string, StoreKeyframe[]> | undefined)?.[prop]?.find((k) => Math.abs(k.time - time) < 0.01);
       if (!kf) return;
       kf.easing = easing;
       this.isDirty = true;
       this.commitState();
     },
 
-    setKeyframeMode(objId, prop, mode) {
+    setKeyframeMode(objId: string, prop: string, mode: string) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframeMode) obj.keyframeMode = {};
@@ -2105,7 +2260,7 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    setKeyframeCodegen(objId, prop, codegenMode) {
+    setKeyframeCodegen(objId: string, prop: string, codegenMode: import('@manim/codegen').KeyframeCodegenMode) {
       const obj = this.project.objects.find((o) => o.id === objId);
       if (!obj) return;
       if (!obj.keyframeCodegen) obj.keyframeCodegen = {};
@@ -2114,7 +2269,7 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
-    selectKeyframe(objId, prop, time) {
+    selectKeyframe(objId: string | null | undefined, prop: string | null | undefined, time: number | null | undefined) {
       this.selectedKeyframeId =
         objId && prop != null && time != null ? { objId, prop, time } : null;
     },
