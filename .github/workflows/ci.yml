@@ -28,6 +28,8 @@ jobs:
         run: npm run test:unit --workspace services/web
       - name: Engine tests
         run: npm test --workspace services/web
+      - name: API tests
+        run: npm test --workspace services/api
 
   python:
     runs-on: ubuntu-latest
