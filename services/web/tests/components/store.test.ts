@@ -28,6 +28,24 @@ describe('addObject', () => {
   });
 });
 
+describe('notify / error toasts', () => {
+  it('notify sets a transient notice; clearNotice clears it', () => {
+    expect(store.notice).toBe(null);
+    store.notify('Saved');
+    expect(store.notice).toBe('Saved');
+    store.clearNotice();
+    expect(store.notice).toBe(null);
+  });
+
+  it('setError sets the error; clearError clears it (separate channel from notice)', () => {
+    store.setError('Boom');
+    expect(store.error).toBe('Boom');
+    expect(store.notice).toBe(null);
+    store.clearError();
+    expect(store.error).toBe(null);
+  });
+});
+
 describe('deleteObject', () => {
   it('removes object and its clips', () => {
     const obj = store.addObject('circle', 960, 540);

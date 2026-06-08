@@ -615,7 +615,17 @@
             </button>
           </div>
           <div class="flex-1 overflow-y-auto p-4">
-            <div v-if="serverProjects.length === 0" class="text-center py-8 text-studio-text-muted">
+            <div
+              v-if="serverLoading"
+              class="text-center py-8 text-studio-text-muted text-sm"
+              role="status"
+            >
+              Loading project…
+            </div>
+            <div
+              v-else-if="serverProjects.length === 0"
+              class="text-center py-8 text-studio-text-muted"
+            >
               <p class="text-sm mb-1">No projects on server</p>
               <p class="text-[11px]">Render a project first to create it on the server.</p>
             </div>
@@ -713,6 +723,32 @@
         </button>
       </div>
     </transition>
+
+    <!-- Success / info Toast -->
+    <transition name="slide-up">
+      <div
+        v-if="notice"
+        class="fixed bottom-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl shadow-xl flex items-center gap-3"
+        style="
+          z-index: var(--z-overlay);
+          background: var(--studio-surface);
+          border: 1px solid rgb(var(--c-success) / 0.4);
+          color: var(--studio-text);
+        "
+        role="status"
+      >
+        <span style="color: var(--studio-success)">&#10003;</span>
+        <span class="text-sm">{{ notice }}</span>
+        <button
+          class="ml-2"
+          style="color: var(--studio-text-muted)"
+          aria-label="Dismiss notification"
+          @click="clearNotice"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -766,6 +802,8 @@ const codeArea = ref<HTMLTextAreaElement | null>(null);
 const projectId = computed(() => store.project.id);
 const isCodeMode = computed(() => store.project.editorMode === 'code');
 const error = computed(() => store.error);
+const notice = computed(() => store.notice);
+const serverLoading = computed(() => store.loading);
 const showExport = computed(() => store.showExportDialog);
 const exportCode = computed(() => store.exportCode);
 const hasImages = computed(() =>
@@ -1226,6 +1264,9 @@ function formatRenderDate(filename: string) {
 // ── Error ──
 function clearError() {
   store.clearError();
+}
+function clearNotice() {
+  store.clearNotice();
 }
 </script>
 

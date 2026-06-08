@@ -137,6 +137,7 @@ interface State {
   clipboard: SceneObject[];
   isDirty: boolean;
   error: string | null;
+  notice: string | null;
   loading: boolean;
   savingToServer: boolean;
   theme: string;
@@ -403,6 +404,7 @@ const useProjectStore = defineStore('project', {
     clipboard: [],
     isDirty: false,
     error: null,
+    notice: null,
     loading: false,
     savingToServer: false,
     theme:
@@ -1662,6 +1664,7 @@ const useProjectStore = defineStore('project', {
         // 4. Save to server
         await api.projects.update(projectId, serverProject);
         this.isDirty = false;
+        this.notify('Project saved to server');
 
         return projectId;
       } catch (err) {
@@ -1705,6 +1708,7 @@ const useProjectStore = defineStore('project', {
         this.renderStatus = null;
         this.renderError = null;
         this.renderVideoUrl = null;
+        this.notify('Project loaded');
         return true;
       } catch (err) {
         this.error = `Load from server failed: ${(err as Error).message}`;
@@ -1922,6 +1926,16 @@ const useProjectStore = defineStore('project', {
       setTimeout(() => {
         if (this.error === msg) this.error = null;
       }, 4000);
+    },
+    clearNotice() {
+      this.notice = null;
+    },
+    /** Transient success/info toast (auto-clears). Distinct from the error toast. */
+    notify(msg: string) {
+      this.notice = msg;
+      setTimeout(() => {
+        if (this.notice === msg) this.notice = null;
+      }, 3000);
     },
 
     setTheme(id: string) {
