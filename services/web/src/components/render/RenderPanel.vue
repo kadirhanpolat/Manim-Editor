@@ -85,7 +85,7 @@
     </div>
 
     <!-- Video Preview -->
-    <VideoPreview v-if="hasRender" :project-id="projectId" :key="renderKey" />
+    <VideoPreview v-if="hasRender && projectId" :project-id="projectId" :key="renderKey" />
 
     <div v-else-if="!isRendering" class="text-center text-studio-text-muted py-4">
       <div class="text-2xl mb-2 opacity-30">🎥</div>
@@ -94,7 +94,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import { QUALITY_PRESETS } from '../../constants/animations.js';
@@ -131,34 +131,39 @@ async function copyLogs() {
     copied.value = false;
   }, 1500);
 }
-let pollInterval = null;
-const jobData = ref(null);
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+const jobData = ref<Record<string, unknown> | null>(null);
 const hasRender = ref(false);
 const renderKey = ref(0);
 
 const projectId = computed(() => store.project.id);
 const hasElements = computed(() => store.project.objects.length > 0);
 const renderStatus = computed(() => store.renderStatus);
-const isRendering = computed(() => ['queued', 'running'].includes(renderStatus.value));
+const isRendering = computed(() => !!renderStatus.value && ['queued', 'running'].includes(renderStatus.value));
 const hasPendingAudio = computed(() => store.hasPendingAudio);
 
 const statusClass = computed(() => {
-  const classes = {
+  const classes: Record<string, string> = {
     queued: 'bg-studio-warning/20 text-studio-warning',
     running: 'bg-studio-accent/20 text-studio-accent',
     completed: 'bg-studio-success/20 text-studio-success',
     failed: 'bg-studio-error/20 text-studio-error',
   };
-  return classes[renderStatus.value] || 'bg-studio-border';
+  return (renderStatus.value && classes[renderStatus.value]) || 'bg-studio-border';
 });
 
 const statusIcon = computed(() => {
-  const icons = { queued: '⏳', running: '🔄', completed: '✅', failed: '❌' };
-  return icons[renderStatus.value] || '•';
+  const icons: Record<string, string> = {
+    queued: '⏳',
+    running: '🔄',
+    completed: '✅',
+    failed: '❌',
+  };
+  return (renderStatus.value && icons[renderStatus.value]) || '•';
 });
 
-const hasLogs = computed(() => jobData.value?.stdout || jobData.value?.stderr);
-const jobLogs = computed(() => jobData.value?.stderr || jobData.value?.stdout || '');
+const hasLogs = computed(() => jobData.value?.['stdout'] || jobData.value?.['stderr']);
+const jobLogs = computed(() => (jobData.value?.['stderr'] || jobData.value?.['stdout'] || '') as string);
 
 watch(renderStatus, (status) => {
   if (status === 'completed') {
@@ -174,11 +179,15 @@ onBeforeUnmount(() => {
   stopPolling();
 });
 
+// RenderPanel uses legacy store methods (triggerRender/pollRenderStatus) not typed in store
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const storeAny = store as any;
+
 async function checkExistingRender() {
   if (!projectId.value) return;
   try {
-    const info = await renders.getInfo(projectId.value);
-    hasRender.value = info.hasLatest;
+    const info = await renders.getInfo(projectId.value) as { hasLatest?: boolean };
+    hasRender.value = !!info.hasLatest;
   } catch {
     /* ignore */
   }
@@ -187,7 +196,7 @@ async function checkExistingRender() {
 async function startRender() {
   if (isRendering.value || !hasElements.value || hasPendingAudio.value) return;
   try {
-    await store.triggerRender(quality.value);
+    await storeAny.triggerRender(quality.value);
     startPolling();
   } catch (err) {
     console.error('Render failed:', err);
@@ -197,10 +206,10 @@ async function startRender() {
 function startPolling() {
   stopPolling();
   pollInterval = setInterval(async () => {
-    const status = await store.pollRenderStatus();
+    const status = await storeAny.pollRenderStatus() as Record<string, unknown> | null;
     if (status) {
       jobData.value = status;
-      if (['completed', 'failed'].includes(status.status)) {
+      if (['completed', 'failed'].includes(status['status'] as string)) {
         stopPolling();
       }
     }

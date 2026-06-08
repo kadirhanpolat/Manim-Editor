@@ -60,9 +60,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
+import type { Asset } from '../../store/project.js';
 import api from '../../api.js';
 import AssetUploader from './AssetUploader.vue';
 
@@ -73,27 +74,27 @@ const showUploader = ref(false);
 const projectId = computed(() => store.project.id);
 const assets = computed(() => store.project.assets || []);
 
-function getAssetUrl(asset) {
-  return api.assets.getUrl(projectId.value, asset.filename);
+function getAssetUrl(asset: Asset) {
+  return api.assets.getUrl(projectId.value ?? '', asset.filename);
 }
 
-function onDragStart(asset, e) {
-  e.dataTransfer.setData('application/json', JSON.stringify(asset));
-  e.dataTransfer.effectAllowed = 'copy';
+function onDragStart(asset: Asset, e: DragEvent) {
+  e.dataTransfer!.setData('application/json', JSON.stringify(asset));
+  e.dataTransfer!.effectAllowed = 'copy';
 }
 
-async function deleteAsset(asset) {
+async function deleteAsset(asset: Asset) {
   if (!confirm('Delete this asset?')) return;
   try {
-    await api.assets.delete(projectId.value, asset.filename);
+    await api.assets.delete(projectId.value ?? '', asset.filename);
     store.removeAsset(asset.id);
   } catch (err) {
     console.error('Failed to delete asset:', err);
   }
 }
 
-function onAssetUploaded(asset) {
-  store.addAsset(asset);
+function onAssetUploaded(asset: Asset) {
+  (store as unknown as { addAsset: (a: Asset) => void }).addAsset(asset);
   showUploader.value = false;
 }
 </script>

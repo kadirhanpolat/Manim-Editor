@@ -19,7 +19,7 @@
       <div v-if="!uploading">
         <div class="text-4xl mb-3 opacity-50">📤</div>
         <p class="text-sm text-studio-text-muted mb-2">Drag files here or</p>
-        <button @click="fileInput.click()" class="btn btn-primary text-sm">
+        <button @click="fileInput?.click()" class="btn btn-primary text-sm">
           Browse Files
         </button>
         <p class="text-xs text-studio-text-muted mt-3">PNG, JPG, SVG (max 50MB)</p>
@@ -37,35 +37,39 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
+import type { Asset } from '../../store/project.js';
 import api from '../../api.js';
 
-const emit = defineEmits(['uploaded', 'close']);
+const emit = defineEmits<{
+  uploaded: [asset: Asset];
+  close: [];
+}>();
 
 const store = useProjectStore();
 
-const fileInput = ref(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
 const uploading = ref(false);
 const uploadProgress = ref('');
-const error = ref(null);
+const error = ref<string | null>(null);
 
 const projectId = computed(() => store.project.id);
 
-function onDrop(e) {
+function onDrop(e: DragEvent) {
   isDragging.value = false;
-  const files = Array.from(e.dataTransfer.files);
+  const files = Array.from(e.dataTransfer?.files ?? []);
   uploadFiles(files);
 }
 
-function onFileSelect(e) {
-  const files = Array.from(e.target.files);
+function onFileSelect(e: Event) {
+  const files = Array.from((e.target as HTMLInputElement).files ?? []);
   uploadFiles(files);
 }
 
-async function uploadFiles(files) {
+async function uploadFiles(files: File[]) {
   if (!projectId.value || files.length === 0) return;
 
   uploading.value = true;
@@ -76,10 +80,10 @@ async function uploadFiles(files) {
     uploadProgress.value = `${i + 1}/${files.length}`;
 
     try {
-      const asset = await api.assets.upload(projectId.value, file);
+      const asset = await api.assets.upload(projectId.value, file) as Asset;
       emit('uploaded', asset);
     } catch (err) {
-      error.value = `Failed to upload ${file.name}: ${err.message}`;
+      error.value = `Failed to upload ${file.name}: ${err instanceof Error ? err.message : String(err)}`;
       break;
     }
   }

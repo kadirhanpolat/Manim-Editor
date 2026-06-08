@@ -1,4 +1,5 @@
 // type -> settings component. Each per-type task adds one import + one entry.
+import type { Component } from 'vue';
 import DotGridSettings from './DotGridSettings.vue';
 import StarSettings from './StarSettings.vue';
 import PolygonSettings from './PolygonSettings.vue';
@@ -22,7 +23,7 @@ import RaySettings from './RaySettings.vue';
 import CoordPointSettings from './CoordPointSettings.vue';
 import BezierSettings from './BezierSettings.vue';
 import NumberLineSettings from './NumberLineSettings.vue';
-const REGISTRY = {
+const REGISTRY: Record<string, Component> = {
   dot_grid: DotGridSettings,
   star: StarSettings,
   polygon: PolygonSettings,
@@ -49,6 +50,6 @@ const REGISTRY = {
   coord_point: CoordPointSettings,
   bezier: BezierSettings,
 };
-export function settingsComponentFor(type) {
-  return REGISTRY[type] || null;
+export function settingsComponentFor(type: string): Component | null {
+  return REGISTRY[type] ?? null;
 }

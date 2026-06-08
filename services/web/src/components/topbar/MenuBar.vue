@@ -159,28 +159,30 @@
   <div v-if="openMenuId" class="menubar-backdrop" @mousedown="closeMenu"></div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
+import type { Menu, MenuItem } from './menus.js';
 
 const props = defineProps({
-  menus: { type: Array, required: true },
+  menus: { type: Array as () => Menu[], required: true },
   collapsed: { type: Boolean, default: false },
 });
 const menus = computed(() => props.menus);
 
-const openMenuId = ref(null);
+const openMenuId = ref<string | null>(null);
 const focusIdx = ref(-1);
-const hoveredSub = ref(null);
-let _hoverSwitchedAt = null;
+const hoveredSub = ref<string | null | undefined>(null);
+let _hoverSwitchedAt: number | null = null;
 
-const anchorRefs = reactive({});
-function setAnchorRef(id, el) {
-  if (el) anchorRefs[id] = el;
+const anchorRefs = reactive<Record<string, Element>>({});
+function setAnchorRef(id: string, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof Element) anchorRefs[id] = el;
   else delete anchorRefs[id];
 }
 
 // ── Menu interaction (moved verbatim from Topbar) ──
-function toggleMenu(id) {
+function toggleMenu(id: string) {
   if (_hoverSwitchedAt && Date.now() - _hoverSwitchedAt < 300) return;
   if (openMenuId.value === id) {
     closeMenu();
@@ -190,7 +192,7 @@ function toggleMenu(id) {
   focusIdx.value = -1;
   hoveredSub.value = null;
 }
-function hoverMenu(id) {
+function hoverMenu(id: string) {
   if (openMenuId.value && openMenuId.value !== id) {
     openMenuId.value = id;
     focusIdx.value = -1;
@@ -203,12 +205,12 @@ function closeMenu() {
   focusIdx.value = -1;
   hoveredSub.value = null;
 }
-function executeItem(item) {
+function executeItem(item: MenuItem) {
   if (item.disabled && item.disabled()) return;
   if (item.action) item.action();
   if (item.type !== 'toggle' && item.type !== 'submenu') closeMenu();
 }
-function onLabelKey(e, menuIndex) {
+function onLabelKey(e: KeyboardEvent, menuIndex: number) {
   const ids = menus.value.map((m) => m.id);
   if (e.key === 'ArrowRight') {
     e.preventDefault();
@@ -231,7 +233,7 @@ function onLabelKey(e, menuIndex) {
     closeMenu();
   }
 }
-function focusLabel(index) {
+function focusLabel(index: number) {
   const id = menus.value[index]?.id;
   if (!id) return;
   nextTick(() => {
@@ -240,7 +242,7 @@ function focusLabel(index) {
     if (btn) btn.focus();
   });
 }
-function onDropdownKey(e, menuIndex) {
+function onDropdownKey(e: KeyboardEvent, menuIndex: number) {
   const menu = menus.value[menuIndex];
   if (!menu) return;
   const items = menu.items;
@@ -271,7 +273,11 @@ function onDropdownKey(e, menuIndex) {
     focusLabel(prev);
   }
 }
-function nextFocusable(current, dir, items) {
+function nextFocusable(
+  current: number,
+  dir: number,
+  items?: MenuItem[]
+): number {
   const menu = items || menus.value.find((m) => m.id === openMenuId.value)?.items || [];
   let i = current + dir;
   while (i >= 0 && i < menu.length) {
@@ -280,7 +286,7 @@ function nextFocusable(current, dir, items) {
   }
   return current;
 }
-function _globalKey(e) {
+function _globalKey(e: KeyboardEvent) {
   if (openMenuId.value && e.key === 'Escape') {
     closeMenu();
     e.preventDefault();

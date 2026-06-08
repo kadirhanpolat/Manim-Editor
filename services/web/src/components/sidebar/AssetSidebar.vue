@@ -156,7 +156,7 @@
           @click="onAssetClick(asset)"
           :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
         >
-          <img :src="asset.dataUrl" :alt="asset.name" class="w-full h-14 object-contain rounded" />
+          <img :src="asset.dataUrl ?? undefined" :alt="asset.name" class="w-full h-14 object-contain rounded" />
           <span class="asset-label">{{ asset.name }}</span>
           <button
             v-if="isCodeMode"
@@ -232,7 +232,7 @@
           @click="onAssetClick(asset)"
           :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
         >
-          <img :src="asset.dataUrl" :alt="asset.name" class="w-full h-14 object-contain rounded" />
+          <img :src="asset.dataUrl ?? undefined" :alt="asset.name" class="w-full h-14 object-contain rounded" />
           <span class="asset-label">{{ asset.name }}</span>
           <button
             v-if="isCodeMode"
@@ -295,9 +295,10 @@
   </aside>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
+import type { Asset } from '../../store/project.js';
 
 const store = useProjectStore();
 
@@ -577,57 +578,63 @@ const isCodeMode = computed(() => store.project.editorMode === 'code');
 const is3D = computed(() => store.project.sceneType === '3d');
 const canTransform = computed(() => store.selectedObjectIds.length === 2);
 
-function addShape(type) {
+function addShape(type: string) {
   const obj = store.addObject(type);
   store.selectObject(obj.id);
 }
 
-function onDragStart(type, e) {
-  e.dataTransfer.setData('application/x-shape-type', type);
-  e.dataTransfer.effectAllowed = 'copy';
+function onDragStart(type: string, e: DragEvent) {
+  e.dataTransfer!.setData('application/x-shape-type', type);
+  e.dataTransfer!.effectAllowed = 'copy';
   const el = document.createElement('div');
   el.style.cssText =
     'width:40px;height:40px;background:var(--studio-accent-subtle);border:2px solid var(--studio-accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--studio-text);pointer-events:none;position:fixed;top:-100px;';
   el.textContent = type.charAt(0).toUpperCase();
   document.body.appendChild(el);
-  e.dataTransfer.setDragImage(el, 20, 20);
+  e.dataTransfer!.setDragImage(el, 20, 20);
   setTimeout(() => document.body.removeChild(el), 0);
 }
 
-function onDragStartAsset(assetId, e) {
-  e.dataTransfer.setData('application/x-asset-id', assetId);
-  e.dataTransfer.effectAllowed = 'copy';
+function onDragStartAsset(assetId: string, e: DragEvent) {
+  e.dataTransfer!.setData('application/x-asset-id', assetId);
+  e.dataTransfer!.effectAllowed = 'copy';
 }
 
 function onDragEnd() {
   // Cleanup if needed
 }
 
-async function handleUploadImages(e) {
-  const files = Array.from(e.target.files || []).filter((f) => !f.type.includes('svg'));
+async function handleUploadImages(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files || []).filter((f) => !f.type.includes('svg'));
   for (const file of files) {
     try {
       await store.uploadAsset(file);
     } catch (err) {
-      store.setError(`Upload failed: ${err.message}`);
+      store.setError(
+        `Upload failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
-  e.target.value = '';
+  input.value = '';
 }
 
-async function handleUploadSvgs(e) {
-  const files = Array.from(e.target.files || []).filter((f) => f.type.includes('svg'));
+async function handleUploadSvgs(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files || []).filter((f) => f.type.includes('svg'));
   for (const file of files) {
     try {
       await store.uploadAsset(file);
     } catch (err) {
-      store.setError(`Upload failed: ${err.message}`);
+      store.setError(
+        `Upload failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
-  e.target.value = '';
+  input.value = '';
 }
 
-function onAssetClick(asset) {
+function onAssetClick(asset: Asset) {
   if (isCodeMode.value) {
     copyAssetPath(asset);
   } else {
@@ -635,7 +642,7 @@ function onAssetClick(asset) {
   }
 }
 
-function copyAssetPath(asset) {
+function copyAssetPath(asset: Asset) {
   const filename = asset.serverFilename || asset.filename || asset.name;
   const snippet = `"${filename}"`;
   navigator.clipboard.writeText(snippet).then(() => {
@@ -643,12 +650,12 @@ function copyAssetPath(asset) {
   });
 }
 
-function addAssetToStage(assetId) {
+function addAssetToStage(assetId: string) {
   const obj = store.addImageObject(assetId);
   if (obj) store.selectObject(obj.id);
 }
 
-function removeAsset(id) {
+function removeAsset(id: string) {
   if (confirm('Remove this asset?')) {
     store.removeAsset(id);
   }
@@ -657,7 +664,7 @@ function removeAsset(id) {
 function createTransform() {
   if (!canTransform.value) return;
   const clip = store.createTransform();
-  if (clip) store.selectClip(clip.id);
+  if (clip) store.selectClip(clip.id ?? null);
 }
 </script>
 

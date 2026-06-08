@@ -22,8 +22,8 @@
         <input
           class="tb-project-input"
           :value="projectName"
-          @change="updateName($event.target.value)"
-          @keydown.enter="$event.target.blur()"
+          @change="updateName(($event.target as HTMLInputElement).value)"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
           placeholder="Project name"
           title="Project name"
         />
@@ -125,7 +125,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import { generateManimScript } from '../../export/manim.js';
@@ -143,10 +143,10 @@ const collapsed = ref(false);
 const showNewProjectDialog = ref(false);
 
 // Non-reactive instance vars
-let _resizeObs = null;
+let _resizeObs: ResizeObserver | null = null;
 
 // Template refs
-const root = ref(null);
+const root = ref<HTMLDivElement | null>(null);
 
 // Computed store properties
 const project = computed(() => store.project);
@@ -207,7 +207,7 @@ function checkCollapse() {
 }
 
 // ── Actions ──
-function updateName(name) {
+function updateName(name: string) {
   store.project.name = name.trim() || 'My Animation';
   store.isDirty = true;
 }
@@ -247,7 +247,9 @@ async function saveToServer() {
       return;
     }
     await store.saveToServer();
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
 function browseServer() {
   store.showProjectBrowser = true;

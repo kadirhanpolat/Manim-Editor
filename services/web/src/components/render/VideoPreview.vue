@@ -39,7 +39,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import api from '../../api.js';
 
@@ -47,10 +47,13 @@ const props = defineProps({
   projectId: { type: String, required: true },
 });
 
-const emit = defineEmits(['ready']);
+const emit = defineEmits<{
+  ready: [refreshFn: () => void];
+}>();
 
 const loading = ref(true);
 const error = ref(false);
+const video = ref<HTMLVideoElement | null>(null);
 const cacheBuster = ref(Date.now());
 
 const videoUrl = computed(() => {

@@ -9,7 +9,8 @@
     "pretest": "npm run build:codegen --prefix ../..",
     "test": "tsx tests/engine.test.mjs",
     "test:unit": "vitest run",
-    "test:unit:watch": "vitest"
+    "test:unit:watch": "vitest",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@manim/codegen": "*",

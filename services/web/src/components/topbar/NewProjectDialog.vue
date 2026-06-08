@@ -90,10 +90,11 @@
   </transition>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import TEMPLATES from '../../templates/index.js';
+import type { Template } from '../../templates/index.js';
 
 const props = defineProps({ show: { type: Boolean, default: false } });
 const emit = defineEmits(['close']);
@@ -102,8 +103,8 @@ const store = useProjectStore();
 const templates = TEMPLATES;
 const newProjectName = ref('My Animation');
 const newProjectMode = ref('visual');
-const newProjectTemplate = ref(null);
-const npNameInput = ref(null);
+const newProjectTemplate = ref<Template | null>(null);
+const npNameInput = ref<HTMLInputElement | null>(null);
 
 watch(
   () => props.show,
@@ -123,9 +124,9 @@ function confirmNewProject() {
   const name = newProjectName.value.trim() || 'My Animation';
   const tpl = newProjectTemplate.value;
   if (tpl && tpl.project) {
-    const projectData = tpl.project();
-    projectData.name = name;
-    projectData.id = null;
+    const projectData = tpl.project() as unknown as Record<string, unknown>;
+    projectData['name'] = name;
+    projectData['id'] = null;
     store._stopPollRender();
     store.playbackTime = 0;
     store.playbackPlaying = false;

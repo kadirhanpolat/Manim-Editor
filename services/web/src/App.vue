@@ -686,7 +686,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import hljs from 'highlight.js';
 import * as api from './api.js';
@@ -704,7 +704,7 @@ const store = useProjectStore();
 // ── Reactive state ──
 const copied = ref(false);
 const selectedQuality = ref('high');
-const renderHistory = ref([]);
+const renderHistory = ref<Array<{ name: string; url: string }>>([]);
 const stageViewMode = ref('canvas');
 const stageCode = ref('# Add objects to see generated Manim code');
 const stageCopied = ref(false);
@@ -722,12 +722,12 @@ const qualities = [
 ];
 
 // Non-reactive timer IDs
-let _stageCodeTimer = null;
-let _parseMessageTimer = null;
+let _stageCodeTimer: ReturnType<typeof setTimeout> | undefined;
+let _parseMessageTimer: ReturnType<typeof setTimeout> | undefined;
 
 // Template refs
-const highlightPre = ref(null);
-const codeArea = ref(null);
+const highlightPre = ref<HTMLPreElement | null>(null);
+const codeArea = ref<HTMLTextAreaElement | null>(null);
 
 // ── Computed ──
 const projectId = computed(() => store.project.id);
@@ -747,23 +747,36 @@ const renderStatus = computed(() => store.renderStatus);
 const renderError = computed(() => store.renderError);
 const renderVideoUrl = computed(() => store.renderVideoUrl);
 const renderLog = computed(() => store.renderLog);
+interface ServerProject {
+  id: string;
+  name: string;
+  editorMode?: string;
+  objectsCount?: number;
+}
 const showProjectBrowser = computed(() => store.showProjectBrowser);
-const serverProjects = computed(() => store.serverProjects);
+const serverProjects = computed(() => store.serverProjects as ServerProject[]);
 
 const renderStatusText = computed(() => {
-  const map = {
+  const map: Record<string, string> = {
     uploading: 'Uploading assets to server...',
     saving: 'Saving project...',
     queued: 'In render queue, waiting for worker...',
     running: 'Manim is rendering (this can take 30s-2min)...',
     failed: 'Render failed',
   };
-  return map[store.renderStatus] || 'Processing...';
+  return (store.renderStatus && map[store.renderStatus]) || 'Processing...';
 });
 
 const renderProgress = computed(() => {
-  const map = { uploading: 15, saving: 30, queued: 45, running: 70, completed: 100, failed: 100 };
-  return map[store.renderStatus] || 0;
+  const map: Record<string, number> = {
+    uploading: 15,
+    saving: 30,
+    queued: 45,
+    running: 70,
+    completed: 100,
+    failed: 100,
+  };
+  return (store.renderStatus && map[store.renderStatus]) || 0;
 });
 
 const highlightedCode = computed(() => {
@@ -778,7 +791,7 @@ const highlightedCode = computed(() => {
 watch(
   () => store.project.keyframeDefaults,
   (defaults) => {
-    getPlaybackEngine().setKeyframeDefaults(defaults);
+    if (defaults?.mode != null) getPlaybackEngine().setKeyframeDefaults({ mode: defaults.mode });
   },
   { immediate: true, deep: true }
 );
@@ -845,8 +858,8 @@ onBeforeUnmount(() => {
 });
 
 // ── Methods ──
-function handleKeydown(e) {
-  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+function handleKeydown(e: KeyboardEvent) {
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) return;
 
   if ((e.key === 'v' || e.key === 'V') && !e.ctrlKey && !e.metaKey) {
     store.setActiveTool('select');
@@ -923,10 +936,10 @@ function togglePlayback() {
     store.setPlaybackPlaying(false);
   } else {
     engine.play(
-      store.project.tracks,
-      store.project.objects,
+      store.project.tracks as never,
+      store.project.objects as never,
       store.computedDuration,
-      store.project.cameraTrack || []
+      (store.project.cameraTrack || []) as never
     );
     store.setPlaybackPlaying(true);
   }
@@ -1018,13 +1031,13 @@ function copyRenderLog() {
 function closeProjectBrowser() {
   store.showProjectBrowser = false;
 }
-async function openServerProject(id) {
+async function openServerProject(id: string) {
   if (store.isDirty && !confirm('Discard unsaved changes?')) return;
   const ok = await store.loadFromServer(id);
   if (ok) store.showProjectBrowser = false;
 }
 
-async function deleteServerProject(id, name) {
+async function deleteServerProject(id: string, name: string) {
   if (
     !confirm(
       `Delete "${name}" from the server?\n\nThis will remove the project, its assets, and all renders. This cannot be undone.`
@@ -1034,7 +1047,7 @@ async function deleteServerProject(id, name) {
   try {
     await store.deleteServerProject(id);
   } catch (err) {
-    store.setError('Delete failed: ' + err.message);
+    store.setError('Delete failed: ' + (err instanceof Error ? err.message : String(err)));
   }
 }
 
@@ -1055,7 +1068,8 @@ function updateStageCode() {
     stageCode.value = generateManimScript(store.project);
     codeEdited.value = false;
   } catch (err) {
-    stageCode.value = '# Error generating code: ' + err.message;
+    stageCode.value =
+      '# Error generating code: ' + (err instanceof Error ? err.message : String(err));
   }
 }
 function _debouncedUpdateCode() {
@@ -1070,13 +1084,13 @@ function syncCodeScroll() {
     pre.scrollLeft = ta.scrollLeft;
   }
 }
-function escapeHtml(text) {
+function escapeHtml(text: string) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
-function onCodeInput(e) {
-  stageCode.value = e.target.value;
+function onCodeInput(e: Event) {
+  stageCode.value = (e.target as HTMLTextAreaElement).value;
   if (isCodeMode.value) {
     store.project.codeSource = stageCode.value;
     store.isDirty = true;
@@ -1124,7 +1138,8 @@ function applyCodeToCanvas() {
       stageViewMode.value = 'canvas';
     }, 800);
   } catch (err) {
-    parseMessage.value = 'Parse error: ' + err.message;
+    parseMessage.value =
+      'Parse error: ' + (err instanceof Error ? err.message : String(err));
     parseMessageOk.value = false;
     _clearParseMsg();
   }
@@ -1159,13 +1174,14 @@ function downloadStageCode() {
 
 // ── Render history ──
 async function loadRenderHistory() {
+  if (!projectId.value) return;
   try {
-    const info = await api.renders.getInfo(projectId.value);
+    const info = await api.renders.getInfo(projectId.value) as { history?: Array<{ name: string; url: string }> };
     renderHistory.value = info.history || [];
   } catch {}
 }
 
-function formatRenderDate(filename) {
+function formatRenderDate(filename: string) {
   const m = filename.match(/render_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
   if (!m) return filename;
   return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
