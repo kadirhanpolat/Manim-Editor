@@ -16,7 +16,7 @@
         <input
           type="checkbox"
           data-test="counter-integer"
-          :checked="!!(obj.useInteger)"
+          :checked="!!obj.useInteger"
           @change="onIntegerChange($event)"
         />
         <span class="text-[11px] text-studio-text-muted">Integer mode (whole numbers)</span>

@@ -63,13 +63,15 @@ const label = computed(() => {
 const typeIcon = computed(() => (ICONS as Record<string, string>)[props.clip.type] || '');
 const typeClass = computed(
   () =>
-    ({
-      transform: 'clip-transform',
-      move: 'clip-move',
-      scale: 'clip-scale',
-      fade: 'clip-fade',
-      rotate: 'clip-rotate',
-    } as Record<string, string>)[props.clip.type] || 'clip-default'
+    (
+      ({
+        transform: 'clip-transform',
+        move: 'clip-move',
+        scale: 'clip-scale',
+        fade: 'clip-fade',
+        rotate: 'clip-rotate',
+      }) as Record<string, string>
+    )[props.clip.type] || 'clip-default'
 );
 const clipStyle = computed(() => ({
   left: `${props.clip.startTime * props.pps}px`,
@@ -85,7 +87,9 @@ function onDown(e: MouseEvent) {
     st = props.clip.startTime;
   const move = (ev: MouseEvent) => {
     const dt = (ev.clientX - sx) / props.pps;
-    store.updateClip(props.clip.id as string, { startTime: Math.max(0, Math.round((st + dt) * 10) / 10) });
+    store.updateClip(props.clip.id as string, {
+      startTime: Math.max(0, Math.round((st + dt) * 10) / 10),
+    });
   };
   const up = () => {
     document.removeEventListener('mousemove', move);
@@ -106,7 +110,9 @@ function resize(dir: 'left' | 'right', e: MouseEvent) {
         duration: Math.max(0.1, Math.round((sd - dt) * 10) / 10),
       });
     } else {
-      store.updateClip(props.clip.id as string, { duration: Math.max(0.1, Math.round((sd + dt) * 10) / 10) });
+      store.updateClip(props.clip.id as string, {
+        duration: Math.max(0.1, Math.round((sd + dt) * 10) / 10),
+      });
     }
   };
   const up = () => {

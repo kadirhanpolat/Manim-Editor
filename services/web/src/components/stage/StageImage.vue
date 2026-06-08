@@ -27,7 +27,9 @@ const image = ref<HTMLImageElement | null>(null);
 const imageLoaded = ref(false);
 
 const assetId = computed(() => props.element.assetId as string | undefined);
-const asset = computed(() => store.project.assets.find((a: Record<string, unknown>) => a.id === assetId.value));
+const asset = computed(() =>
+  store.project.assets.find((a: Record<string, unknown>) => a.id === assetId.value)
+);
 
 const imageUrl = computed(() => {
   if (!asset.value || !store.project.id) return null;

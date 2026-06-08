@@ -1,17 +1,8 @@
 <template>
   <div class="flex items-center gap-2">
     <span class="text-[10px] text-studio-text-muted w-12">{{ label }}</span>
-    <input
-      type="color"
-      class="color-input"
-      :value="value || '#ffffff'"
-      @input="onInput($event)"
-    />
-    <input
-      class="input input-sm flex-1"
-      :value="value"
-      @change="onInput($event)"
-    />
+    <input type="color" class="color-input" :value="value || '#ffffff'" @input="onInput($event)" />
+    <input class="input input-sm flex-1" :value="value" @change="onInput($event)" />
   </div>
 </template>
 

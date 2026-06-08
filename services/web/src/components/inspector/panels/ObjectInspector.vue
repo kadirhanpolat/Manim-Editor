@@ -8,7 +8,11 @@
 
   <!-- Name -->
   <Section label="Name">
-    <input class="input input-sm" :value="obj.name" @change="u('name', ($event.target as HTMLInputElement).value)" />
+    <input
+      class="input input-sm"
+      :value="obj.name"
+      @change="u('name', ($event.target as HTMLInputElement).value)"
+    />
   </Section>
 
   <!-- 3D position / rotation / type params (3D objects only) -->

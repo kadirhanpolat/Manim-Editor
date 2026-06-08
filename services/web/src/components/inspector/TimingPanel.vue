@@ -37,9 +37,7 @@
         ></div>
       </div>
       <div class="flex justify-between mt-1">
-        <span class="text-[10px] text-studio-text-muted"
-          >{{ timing.start.toFixed(1) }}s</span
-        >
+        <span class="text-[10px] text-studio-text-muted">{{ timing.start.toFixed(1) }}s</span>
         <span class="text-[10px] text-studio-text-muted">{{ endTime.toFixed(1) }}s</span>
       </div>
     </div>

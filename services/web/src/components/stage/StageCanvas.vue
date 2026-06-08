@@ -851,7 +851,9 @@ const sortedObjects = computed(() =>
 const selectedObjectIds = computed(() => store.selectedObjectIds);
 const gridVisible = computed(() => store.project.stage.gridVisible);
 const frameState = computed(() => store.frameState);
-const morphShapes = computed(() => (frameState.value.morphShapes || []) as import('../../engine/types.js').MorphState[]);
+const morphShapes = computed(
+  () => (frameState.value.morphShapes || []) as import('../../engine/types.js').MorphState[]
+);
 
 // bgConfig / gridLines / centerH / centerV — delegated to chrome.js (declared after ctx).
 
@@ -958,7 +960,7 @@ onBeforeUnmount(() => {
 // ── Methods ──
 function eff(obj: SceneObject): SceneObject {
   const ov = frameState.value.objectOverrides[obj.id] as Overrides | undefined;
-  return ov ? applyOverrides(obj as unknown as StageObject, ov) as unknown as SceneObject : obj;
+  return ov ? (applyOverrides(obj as unknown as StageObject, ov) as unknown as SceneObject) : obj;
 }
 
 // 3D nesnenin geçerli (override dahil) konumu — playback path_move/move override'larını yansıtır
@@ -1008,8 +1010,13 @@ const ctx = computed(() => ({
   eff,
   eff3d,
   live,
-  applyEffects: (cfg: Record<string, unknown>, obj: SceneObject, w: number, h: number, centered: boolean) =>
-    effects.applyEffects(cfg, obj, w, h, centered, vs.value),
+  applyEffects: (
+    cfg: Record<string, unknown>,
+    obj: SceneObject,
+    w: number,
+    h: number,
+    centered: boolean
+  ) => effects.applyEffects(cfg, obj, w, h, centered, vs.value),
   hexToRgba: effects.hexToRgba,
   themeAccent: themeAccent.value,
   themeSurface: themeSurface.value,
@@ -1038,7 +1045,10 @@ const floorGridIso = computed(() => chrome.floorGridIso(ctx.value));
 // ── overlays.js delegating computeds ──
 const emphasisOverlays = computed(() => overlays.emphasisOverlays(objects.value, ctx.value));
 const path3dPolylines = computed(() =>
-  overlays.path3dPolylines(store.project.tracks as unknown as import('../../engine/types.js').Track[] || [], ctx.value)
+  overlays.path3dPolylines(
+    (store.project.tracks as unknown as import('../../engine/types.js').Track[]) || [],
+    ctx.value
+  )
 );
 const morphCfg = (m: import('../../engine/types.js').MorphState) => overlays.morphCfg(m, ctx.value);
 const rectCfg = (o: SceneObject) => shapes2d.rectCfg(o, ctx.value);
@@ -1082,7 +1092,8 @@ const graphLabelConfigs = (o: SceneObject) => dataObjects.graphLabelConfigs(o, c
 const vectorFieldHitCfg = (o: SceneObject) => dataObjects.vectorFieldHitCfg(o, ctx.value);
 const vectorFieldArrows = (o: SceneObject) => dataObjects.vectorFieldArrows(o, ctx.value);
 const relationalHitCfg = (o: SceneObject) => relational.relationalHitCfg(o, ctx.value);
-const relationalLabelCfg = (o: SceneObject, anchor: [number, number]) => relational.relationalLabelCfg(o, anchor, ctx.value);
+const relationalLabelCfg = (o: SceneObject, anchor: [number, number]) =>
+  relational.relationalLabelCfg(o, anchor, ctx.value);
 const braceLineCfg = (o: SceneObject) => relational.braceLineCfg(o, ctx.value);
 const vectorComponentsCfgs = (o: SceneObject) => relational.vectorComponentsCfgs(o, ctx.value);
 const rayCfgs = (o: SceneObject) => relational.rayCfgs(o, ctx.value);

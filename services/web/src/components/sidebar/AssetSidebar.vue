@@ -156,7 +156,11 @@
           @click="onAssetClick(asset)"
           :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
         >
-          <img :src="asset.dataUrl ?? undefined" :alt="asset.name" class="w-full h-14 object-contain rounded" />
+          <img
+            :src="asset.dataUrl ?? undefined"
+            :alt="asset.name"
+            class="w-full h-14 object-contain rounded"
+          />
           <span class="asset-label">{{ asset.name }}</span>
           <button
             v-if="isCodeMode"
@@ -232,7 +236,11 @@
           @click="onAssetClick(asset)"
           :title="isCodeMode ? 'Click to copy file path' : 'Drag or click to add ' + asset.name"
         >
-          <img :src="asset.dataUrl ?? undefined" :alt="asset.name" class="w-full h-14 object-contain rounded" />
+          <img
+            :src="asset.dataUrl ?? undefined"
+            :alt="asset.name"
+            class="w-full h-14 object-contain rounded"
+          />
           <span class="asset-label">{{ asset.name }}</span>
           <button
             v-if="isCodeMode"
@@ -611,9 +619,7 @@ async function handleUploadImages(e: Event) {
     try {
       await store.uploadAsset(file);
     } catch (err) {
-      store.setError(
-        `Upload failed: ${err instanceof Error ? err.message : String(err)}`
-      );
+      store.setError(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
   input.value = '';
@@ -626,9 +632,7 @@ async function handleUploadSvgs(e: Event) {
     try {
       await store.uploadAsset(file);
     } catch (err) {
-      store.setError(
-        `Upload failed: ${err instanceof Error ? err.message : String(err)}`
-      );
+      store.setError(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
   input.value = '';

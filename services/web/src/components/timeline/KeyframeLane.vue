@@ -113,13 +113,16 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: 'openEasingPopup', payload: {
-    objId: string;
-    prop: string;
-    k1: Keyframe;
-    k2: Keyframe;
-    event: { clientX: number; clientY: number };
-  }): void;
+  (
+    e: 'openEasingPopup',
+    payload: {
+      objId: string;
+      prop: string;
+      k1: Keyframe;
+      k2: Keyframe;
+      event: { clientX: number; clientY: number };
+    }
+  ): void;
 }>();
 
 const store = useProjectStore();
@@ -168,7 +171,12 @@ function addKfAt(clientX: number): void {
   if (!el) return;
   const rect = el.getBoundingClientRect();
   const t = Math.round(clampToObj((clientX - rect.left) / props.pps) * 100) / 100;
-  store.addKeyframe(props.objId, props.prop, t, (obj.value?.[props.prop] as number | undefined) ?? 0);
+  store.addKeyframe(
+    props.objId,
+    props.prop,
+    t,
+    (obj.value?.[props.prop] as number | undefined) ?? 0
+  );
 }
 function onDblClick(e: MouseEvent): void {
   addKfAt(e.clientX);

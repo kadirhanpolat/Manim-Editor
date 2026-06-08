@@ -15,7 +15,7 @@
           }}</span>
         </button>
         <div v-if="obj.gradient" class="mt-1.5 space-y-1.5">
-          <div v-for="(c, i) in (obj.gradient.colors ?? [])" :key="i" class="flex items-center gap-2">
+          <div v-for="(c, i) in obj.gradient.colors ?? []" :key="i" class="flex items-center gap-2">
             <input
               type="color"
               class="color-input"
@@ -300,7 +300,10 @@ function addGradientStop() {
 function removeGradientStop(i: number) {
   const g = obj.value.gradient;
   if (!g || (g.colors ?? []).length <= 2) return;
-  store.setGradient(obj.value.id, { angle: g.angle, colors: (g.colors ?? []).filter((_, j) => j !== i) });
+  store.setGradient(obj.value.id, {
+    angle: g.angle,
+    colors: (g.colors ?? []).filter((_, j) => j !== i),
+  });
 }
 function setGradientAngle(deg: unknown) {
   const g = obj.value.gradient;
@@ -315,23 +318,38 @@ function onCornerRadiusChange(e: Event) {
 }
 function onShadowColorInput(e: Event) {
   if (!obj.value.shadow) return;
-  store.setShadow(obj.value.id, { ...obj.value.shadow, color: (e.target as HTMLInputElement).value });
+  store.setShadow(obj.value.id, {
+    ...obj.value.shadow,
+    color: (e.target as HTMLInputElement).value,
+  });
 }
 function onShadowOpacityInput(e: Event) {
   if (!obj.value.shadow) return;
-  store.setShadow(obj.value.id, { ...obj.value.shadow, opacity: Number((e.target as HTMLInputElement).value) });
+  store.setShadow(obj.value.id, {
+    ...obj.value.shadow,
+    opacity: Number((e.target as HTMLInputElement).value),
+  });
 }
 function onShadowDxInput(e: Event) {
   if (!obj.value.shadow) return;
-  store.setShadow(obj.value.id, { ...obj.value.shadow, dx: Number((e.target as HTMLInputElement).value) });
+  store.setShadow(obj.value.id, {
+    ...obj.value.shadow,
+    dx: Number((e.target as HTMLInputElement).value),
+  });
 }
 function onShadowDyInput(e: Event) {
   if (!obj.value.shadow) return;
-  store.setShadow(obj.value.id, { ...obj.value.shadow, dy: Number((e.target as HTMLInputElement).value) });
+  store.setShadow(obj.value.id, {
+    ...obj.value.shadow,
+    dy: Number((e.target as HTMLInputElement).value),
+  });
 }
 function onShadowBlurInput(e: Event) {
   if (!obj.value.shadow) return;
-  store.setShadow(obj.value.id, { ...obj.value.shadow, blur: Number((e.target as HTMLInputElement).value) });
+  store.setShadow(obj.value.id, {
+    ...obj.value.shadow,
+    blur: Number((e.target as HTMLInputElement).value),
+  });
 }
 function onFillOpacityInput(e: Event) {
   u('fillOpacity', Number((e.target as HTMLInputElement).value));

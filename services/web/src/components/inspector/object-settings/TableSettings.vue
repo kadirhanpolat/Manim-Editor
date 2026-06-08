@@ -88,10 +88,22 @@ function onMathMode(e: Event) {
 }
 function onRowLabels(e: Event) {
   const val = (e.target as HTMLInputElement).value;
-  store.setTableRowLabels(obj.id, val.split(',').map((s) => s.trim()).filter((s) => s.length));
+  store.setTableRowLabels(
+    obj.id,
+    val
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length)
+  );
 }
 function onColLabels(e: Event) {
   const val = (e.target as HTMLInputElement).value;
-  store.setTableColLabels(obj.id, val.split(',').map((s) => s.trim()).filter((s) => s.length));
+  store.setTableColLabels(
+    obj.id,
+    val
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length)
+  );
 }
 </script>

@@ -18,7 +18,9 @@
         <input
           type="number"
           :value="inDur"
-          @input="updateAnim('in', 'duration', parseFloat(($event.target as HTMLInputElement).value))"
+          @input="
+            updateAnim('in', 'duration', parseFloat(($event.target as HTMLInputElement).value))
+          "
           min="0.1"
           step="0.1"
           class="input text-sm w-20"
@@ -41,7 +43,9 @@
         <input
           type="number"
           :value="outDur"
-          @input="updateAnim('out', 'duration', parseFloat(($event.target as HTMLInputElement).value))"
+          @input="
+            updateAnim('out', 'duration', parseFloat(($event.target as HTMLInputElement).value))
+          "
           min="0.1"
           step="0.1"
           class="input text-sm w-20"
@@ -68,10 +72,10 @@ type AnimDir = Record<string, Record<string, unknown>>;
 const entranceAnims = computed(() => getEntranceAnimationsForType(props.element.type));
 const exitAnims = computed(() => getExitAnimationsForType(props.element.type));
 const animField = computed(() => (props.element as unknown as { anim?: AnimDir }).anim);
-const inType = computed(() => animField.value?.['in']?.['type'] as string || 'FADE_IN');
-const inDur = computed(() => animField.value?.['in']?.['duration'] as number || 0.5);
-const outType = computed(() => animField.value?.['out']?.['type'] as string || 'FADE_OUT');
-const outDur = computed(() => animField.value?.['out']?.['duration'] as number || 0.5);
+const inType = computed(() => (animField.value?.['in']?.['type'] as string) || 'FADE_IN');
+const inDur = computed(() => (animField.value?.['in']?.['duration'] as number) || 0.5);
+const outType = computed(() => (animField.value?.['out']?.['type'] as string) || 'FADE_OUT');
+const outDur = computed(() => (animField.value?.['out']?.['duration'] as number) || 0.5);
 
 function updateAnim(dir: string, key: string, val: unknown) {
   const curr = animField.value?.[dir] || {};

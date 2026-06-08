@@ -3,7 +3,7 @@
     <textarea
       class="input input-sm resize-none"
       rows="3"
-      :value="obj.content as string || ''"
+      :value="(obj.content as string) || ''"
       @input="onContent($event)"
       placeholder="Enter text..."
     ></textarea>
@@ -83,7 +83,10 @@
         </div>
       </div>
       <div class="grid grid-cols-2 gap-1.5">
-        <FontSelector :value="(obj.fontFamily as string | undefined) ?? 'Roboto'" @input="u('fontFamily', $event)" />
+        <FontSelector
+          :value="(obj.fontFamily as string | undefined) ?? 'Roboto'"
+          @input="u('fontFamily', $event)"
+        />
         <div>
           <span class="text-[9px] text-studio-text-muted/50">Weight</span>
           <select

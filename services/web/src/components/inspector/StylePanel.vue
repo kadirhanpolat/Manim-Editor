@@ -74,7 +74,7 @@ const props = defineProps({ element: { type: Object as () => SceneObject, requir
 const emit = defineEmits(['update']);
 
 type Style = Record<string, unknown>;
-const style = computed(() => (props.element as unknown as { style: Style }).style ?? {} as Style);
+const style = computed(() => (props.element as unknown as { style: Style }).style ?? ({} as Style));
 
 function updateStyle(key: string, value: unknown) {
   emit('update', { style: { ...style.value, [key]: value } });

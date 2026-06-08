@@ -1138,8 +1138,7 @@ function applyCodeToCanvas() {
       stageViewMode.value = 'canvas';
     }, 800);
   } catch (err) {
-    parseMessage.value =
-      'Parse error: ' + (err instanceof Error ? err.message : String(err));
+    parseMessage.value = 'Parse error: ' + (err instanceof Error ? err.message : String(err));
     parseMessageOk.value = false;
     _clearParseMsg();
   }
@@ -1176,7 +1175,9 @@ function downloadStageCode() {
 async function loadRenderHistory() {
   if (!projectId.value) return;
   try {
-    const info = await api.renders.getInfo(projectId.value) as { history?: Array<{ name: string; url: string }> };
+    const info = (await api.renders.getInfo(projectId.value)) as {
+      history?: Array<{ name: string; url: string }>;
+    };
     renderHistory.value = info.history || [];
   } catch {}
 }

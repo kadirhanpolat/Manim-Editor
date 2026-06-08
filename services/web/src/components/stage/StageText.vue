@@ -21,7 +21,10 @@ const textConfig = computed(() => {
   return {
     ...props.config,
     text: (props.element.content as string | undefined) || 'Text',
-    fontSize: ((style?.size as number | undefined) || 48) * ((props.config.scaleX as number | undefined) || 1) * 0.5,
+    fontSize:
+      ((style?.size as number | undefined) || 48) *
+      ((props.config.scaleX as number | undefined) || 1) *
+      0.5,
     fill: (style?.color as string | undefined) || '#ffffff',
     fontFamily: (style?.font as string | undefined) || 'sans-serif',
     align: 'center',

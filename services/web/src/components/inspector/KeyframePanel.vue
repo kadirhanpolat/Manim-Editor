@@ -30,7 +30,9 @@
       <select
         :value="mode"
         class="text-[10px] bg-studio-bg border border-studio-border rounded px-1 py-0.5"
-        @change="store.setKeyframeMode(kf!.objId, kf!.prop, ($event.target as HTMLSelectElement).value)"
+        @change="
+          store.setKeyframeMode(kf!.objId, kf!.prop, ($event.target as HTMLSelectElement).value)
+        "
       >
         <option value="opt-in">Opt-in</option>
         <option value="override">Override</option>
@@ -59,9 +61,7 @@ const obj = computed(() => (kf.value ? store.objectById(kf.value.objId) : null))
 const kfData = computed(() => {
   const kfv = kf.value;
   if (!kfv || !obj.value?.keyframes?.[kfv.prop]) return null;
-  return (
-    obj.value.keyframes[kfv.prop].find((k) => Math.abs(k.time - kfv.time) < 0.01) || null
-  );
+  return obj.value.keyframes[kfv.prop].find((k) => Math.abs(k.time - kfv.time) < 0.01) || null;
 });
 
 const mode = computed(() => {

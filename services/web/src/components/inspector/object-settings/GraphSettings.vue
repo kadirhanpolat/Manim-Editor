@@ -5,19 +5,11 @@
       <!-- Toggles -->
       <div class="flex gap-3">
         <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="!!(obj.directed)"
-            @change="onDirectedChange($event)"
-          />
+          <input type="checkbox" :checked="!!obj.directed" @change="onDirectedChange($event)" />
           Directed
         </label>
         <label class="flex items-center gap-1.5 text-[11px] text-studio-text-muted cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="!!(obj.showLabels)"
-            @change="onShowLabelsChange($event)"
-          />
+          <input type="checkbox" :checked="!!obj.showLabels" @change="onShowLabelsChange($event)" />
           Labels
         </label>
       </div>

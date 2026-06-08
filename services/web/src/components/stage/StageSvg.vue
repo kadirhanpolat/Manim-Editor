@@ -30,7 +30,9 @@ const svgImage = ref<HTMLImageElement | null>(null);
 const svgLoaded = ref(false);
 
 const assetId = computed(() => props.element.assetId as string | undefined);
-const asset = computed(() => store.project.assets.find((a: Record<string, unknown>) => a.id === assetId.value));
+const asset = computed(() =>
+  store.project.assets.find((a: Record<string, unknown>) => a.id === assetId.value)
+);
 
 const svgUrl = computed(() => {
   if (!asset.value || !store.project.id) return null;
@@ -51,7 +53,10 @@ const placeholderConfig = computed(() => ({
   width: 100,
   height: 100,
   fill: 'transparent',
-  stroke: ((props.element.style as Record<string, unknown> | undefined)?.strokeColor as string | undefined) || '#6366f1',
+  stroke:
+    ((props.element.style as Record<string, unknown> | undefined)?.strokeColor as
+      | string
+      | undefined) || '#6366f1',
   strokeWidth: 2,
   dash: [4, 4],
   cornerRadius: 4,

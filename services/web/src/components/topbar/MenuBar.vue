@@ -273,11 +273,7 @@ function onDropdownKey(e: KeyboardEvent, menuIndex: number) {
     focusLabel(prev);
   }
 }
-function nextFocusable(
-  current: number,
-  dir: number,
-  items?: MenuItem[]
-): number {
+function nextFocusable(current: number, dir: number, items?: MenuItem[]): number {
   const menu = items || menus.value.find((m) => m.id === openMenuId.value)?.items || [];
   let i = current + dir;
   while (i >= 0 && i < menu.length) {

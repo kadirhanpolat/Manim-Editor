@@ -26,7 +26,11 @@
   </Section>
 
   <Section label="Easing">
-    <select class="select text-xs" :value="clip.easing" @change="uc('easing', ($event.target as HTMLSelectElement).value)">
+    <select
+      class="select text-xs"
+      :value="clip.easing"
+      @change="uc('easing', ($event.target as HTMLSelectElement).value)"
+    >
       <option v-for="e in easings" :key="e.value" :value="e.value">{{ e.label }}</option>
     </select>
   </Section>

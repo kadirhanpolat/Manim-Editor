@@ -19,8 +19,16 @@
         />
       </div>
       <div class="grid grid-cols-2 gap-1.5">
-        <Num label="t min" :value="(obj.tMin as number | undefined) ?? 0" @input="u('tMin', $event)" />
-        <Num label="t max" :value="(obj.tMax as number | undefined) ?? 6.283" @input="u('tMax', $event)" />
+        <Num
+          label="t min"
+          :value="(obj.tMin as number | undefined) ?? 0"
+          @input="u('tMin', $event)"
+        />
+        <Num
+          label="t max"
+          :value="(obj.tMax as number | undefined) ?? 6.283"
+          @input="u('tMax', $event)"
+        />
       </div>
     </div>
   </Section>

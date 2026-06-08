@@ -55,7 +55,11 @@
         <label class="block text-xs text-studio-text-muted mb-1">Rotation Axis</label>
         <select
           :value="selectedClip.axis ?? 'Z'"
-          @change="store.updateClip(selectedClip!.id!, { axis: ($event.target as HTMLSelectElement).value as 'X' | 'Y' | 'Z' })"
+          @change="
+            store.updateClip(selectedClip!.id!, {
+              axis: ($event.target as HTMLSelectElement).value as 'X' | 'Y' | 'Z',
+            })
+          "
           class="select text-sm w-full"
         >
           <option value="X">X (RIGHT)</option>
@@ -73,7 +77,12 @@
           <input
             type="checkbox"
             :checked="!!selectedClip.matchTerms"
-            @change="store.setClipMatchTerms(selectedClip!.id!, ($event.target as HTMLInputElement).checked)"
+            @change="
+              store.setClipMatchTerms(
+                selectedClip!.id!,
+                ($event.target as HTMLInputElement).checked
+              )
+            "
             class="w-3.5 h-3.5"
           />
           <span class="text-xs text-studio-text-muted">Match terms</span>
@@ -95,7 +104,9 @@
               class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
               :value="selectedClip.from ?? 0"
               @change="
-                store.updateClip(selectedClip!.id!, { from: Number(($event.target as HTMLInputElement).value) });
+                store.updateClip(selectedClip!.id!, {
+                  from: Number(($event.target as HTMLInputElement).value),
+                });
                 store.commitState();
               "
             />
@@ -108,7 +119,9 @@
               class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
               :value="selectedClip.to ?? 100"
               @change="
-                store.updateClip(selectedClip!.id!, { to: Number(($event.target as HTMLInputElement).value) });
+                store.updateClip(selectedClip!.id!, {
+                  to: Number(($event.target as HTMLInputElement).value),
+                });
                 store.commitState();
               "
             />

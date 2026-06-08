@@ -22,7 +22,12 @@
         :min="5"
         @input="u('dotSpacing', $event)"
       />
-      <Num label="Radius" :value="(obj.dotRadius as number | undefined) ?? 5" :min="1" @input="u('dotRadius', $event)" />
+      <Num
+        label="Radius"
+        :value="(obj.dotRadius as number | undefined) ?? 5"
+        :min="1"
+        @input="u('dotRadius', $event)"
+      />
     </div>
   </Section>
 </template>

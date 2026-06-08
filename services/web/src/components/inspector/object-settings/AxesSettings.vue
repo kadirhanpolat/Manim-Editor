@@ -3,18 +3,8 @@
   <Section label="Axes Range">
     <div class="space-y-1.5">
       <div class="grid grid-cols-3 gap-1">
-        <Num
-          label="X Min"
-          :value="xRange[0]"
-          :step="1"
-          @input="uRange('xRange', 0, $event)"
-        />
-        <Num
-          label="X Max"
-          :value="xRange[1]"
-          :step="1"
-          @input="uRange('xRange', 1, $event)"
-        />
+        <Num label="X Min" :value="xRange[0]" :step="1" @input="uRange('xRange', 0, $event)" />
+        <Num label="X Max" :value="xRange[1]" :step="1" @input="uRange('xRange', 1, $event)" />
         <Num
           label="X Step"
           :value="xRange[2]"
@@ -24,18 +14,8 @@
         />
       </div>
       <div class="grid grid-cols-3 gap-1">
-        <Num
-          label="Y Min"
-          :value="yRange[0]"
-          :step="1"
-          @input="uRange('yRange', 0, $event)"
-        />
-        <Num
-          label="Y Max"
-          :value="yRange[1]"
-          :step="1"
-          @input="uRange('yRange', 1, $event)"
-        />
+        <Num label="Y Min" :value="yRange[0]" :step="1" @input="uRange('yRange', 0, $event)" />
+        <Num label="Y Max" :value="yRange[1]" :step="1" @input="uRange('yRange', 1, $event)" />
         <Num
           label="Y Step"
           :value="yRange[2]"
@@ -169,9 +149,30 @@ interface GraphEntry {
   color?: string;
   xMin?: number;
   xMax?: number;
-  area?: { enabled?: boolean; xMin?: number; xMax?: number; opacity?: number; color?: string; [k: string]: unknown };
-  riemann?: { enabled?: boolean; xMin?: number; xMax?: number; dx?: number; type?: string; color?: string; [k: string]: unknown };
-  tangent?: { enabled?: boolean; x?: number; length?: number; color?: string; [k: string]: unknown };
+  area?: {
+    enabled?: boolean;
+    xMin?: number;
+    xMax?: number;
+    opacity?: number;
+    color?: string;
+    [k: string]: unknown;
+  };
+  riemann?: {
+    enabled?: boolean;
+    xMin?: number;
+    xMax?: number;
+    dx?: number;
+    type?: string;
+    color?: string;
+    [k: string]: unknown;
+  };
+  tangent?: {
+    enabled?: boolean;
+    x?: number;
+    length?: number;
+    color?: string;
+    [k: string]: unknown;
+  };
 }
 
 const props = defineProps({ obj: { type: Object as () => SceneObject, required: true } });
@@ -242,7 +243,9 @@ function toggleGraphTangent(graph: GraphEntry) {
   const existing = graph.tangent || {};
   const on = !existing.enabled;
   const midX =
-    Number.isFinite(graph.xMin) && Number.isFinite(graph.xMax) ? ((graph.xMin ?? 0) + (graph.xMax ?? 0)) / 2 : 0;
+    Number.isFinite(graph.xMin) && Number.isFinite(graph.xMax)
+      ? ((graph.xMin ?? 0) + (graph.xMax ?? 0)) / 2
+      : 0;
   store.updateGraph(obj.id, graph.id, {
     tangent: on
       ? { x: midX, length: 2, color: graph.color, ...existing, enabled: true }

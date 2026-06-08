@@ -139,7 +139,9 @@ const renderKey = ref(0);
 const projectId = computed(() => store.project.id);
 const hasElements = computed(() => store.project.objects.length > 0);
 const renderStatus = computed(() => store.renderStatus);
-const isRendering = computed(() => !!renderStatus.value && ['queued', 'running'].includes(renderStatus.value));
+const isRendering = computed(
+  () => !!renderStatus.value && ['queued', 'running'].includes(renderStatus.value)
+);
 const hasPendingAudio = computed(() => store.hasPendingAudio);
 
 const statusClass = computed(() => {
@@ -163,7 +165,9 @@ const statusIcon = computed(() => {
 });
 
 const hasLogs = computed(() => jobData.value?.['stdout'] || jobData.value?.['stderr']);
-const jobLogs = computed(() => (jobData.value?.['stderr'] || jobData.value?.['stdout'] || '') as string);
+const jobLogs = computed(
+  () => (jobData.value?.['stderr'] || jobData.value?.['stdout'] || '') as string
+);
 
 watch(renderStatus, (status) => {
   if (status === 'completed') {
@@ -186,7 +190,7 @@ const storeAny = store as any;
 async function checkExistingRender() {
   if (!projectId.value) return;
   try {
-    const info = await renders.getInfo(projectId.value) as { hasLatest?: boolean };
+    const info = (await renders.getInfo(projectId.value)) as { hasLatest?: boolean };
     hasRender.value = !!info.hasLatest;
   } catch {
     /* ignore */
@@ -206,7 +210,7 @@ async function startRender() {
 function startPolling() {
   stopPolling();
   pollInterval = setInterval(async () => {
-    const status = await storeAny.pollRenderStatus() as Record<string, unknown> | null;
+    const status = (await storeAny.pollRenderStatus()) as Record<string, unknown> | null;
     if (status) {
       jobData.value = status;
       if (['completed', 'failed'].includes(status['status'] as string)) {

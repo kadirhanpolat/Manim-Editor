@@ -94,8 +94,16 @@ const store = useProjectStore();
 const cam = computed(() => store.project.camera3d ?? {});
 const isPerspective = computed(() => (cam.value.view ?? 'perspective') === 'perspective');
 
-function setPhi(e: Event) { store.project.camera3d.phi = Number((e.target as HTMLInputElement).value); }
-function setTheta(e: Event) { store.project.camera3d.theta = Number((e.target as HTMLInputElement).value); }
-function setZoom(e: Event) { store.project.camera3d.zoom = Number((e.target as HTMLInputElement).value); }
-function setFocalDistance(e: Event) { store.setCamera3d({ focalDistance: parseFloat((e.target as HTMLInputElement).value) || 8 }); }
+function setPhi(e: Event) {
+  store.project.camera3d.phi = Number((e.target as HTMLInputElement).value);
+}
+function setTheta(e: Event) {
+  store.project.camera3d.theta = Number((e.target as HTMLInputElement).value);
+}
+function setZoom(e: Event) {
+  store.project.camera3d.zoom = Number((e.target as HTMLInputElement).value);
+}
+function setFocalDistance(e: Event) {
+  store.setCamera3d({ focalDistance: parseFloat((e.target as HTMLInputElement).value) || 8 });
+}
 </script>

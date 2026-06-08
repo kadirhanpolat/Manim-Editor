@@ -1,7 +1,8 @@
 <template>
   <Section label="Bezier Curve">
     <p class="text-[10px] text-studio-text-muted">
-      {{ ((obj.vertices as unknown[] | undefined) ?? []).length }} anchors · drag them on the canvas to reshape.
+      {{ ((obj.vertices as unknown[] | undefined) ?? []).length }} anchors · drag them on the canvas
+      to reshape.
     </p>
     <div class="flex gap-1.5 mt-1.5">
       <button
