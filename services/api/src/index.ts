@@ -51,7 +51,12 @@ app.use('/api/fonts', fontsRouter);
 app.use('/api/audio', audioRouter);
 
 app.use(
-  (err: { status?: number; message?: string }, _req: Request, res: Response, _next: NextFunction) => {
+  (
+    err: { status?: number; message?: string },
+    _req: Request,
+    res: Response,
+    _next: NextFunction
+  ) => {
     console.error('[API Error]', err);
     res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
   }

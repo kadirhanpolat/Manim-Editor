@@ -9,9 +9,7 @@ import { validateProject } from './validator.js';
 import { normalizeProject } from './normalizer.js';
 import { generatePythonCode } from './codegen.js';
 
-export type CompileResult =
-  | { success: true; code: string }
-  | { success: false; errors: string[] };
+export type CompileResult = { success: true; code: string } | { success: false; errors: string[] };
 
 /**
  * Compile a project JSON to Manim Python code.

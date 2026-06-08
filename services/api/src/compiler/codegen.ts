@@ -5,7 +5,10 @@
 import { generateScene, objectCode, EASING_MAP } from '@manim/codegen';
 import type { Project, SceneObject } from '@manim/codegen';
 
-export function generatePythonCode(project: Project & { _assetMap?: Record<string, { filename?: string }> }, assetsPath: string): string {
+export function generatePythonCode(
+  project: Project & { _assetMap?: Record<string, { filename?: string }> },
+  assetsPath: string
+): string {
   const assetMap = project._assetMap ?? {};
   const resolveAsset = (obj: SceneObject, ext: string): string => {
     const assetId = obj['assetId'] as string | undefined;

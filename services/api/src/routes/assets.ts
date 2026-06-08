@@ -57,32 +57,36 @@ const upload = multer({
  * Upload an asset to a project.
  * POST /api/assets/:projectId
  */
-router.post('/:projectId', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.file) {
-      return void res.status(400).json({ error: 'No file uploaded' });
+router.post(
+  '/:projectId',
+  upload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.file) {
+        return void res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const file = req.file;
+
+      // Determine asset type
+      const assetType = file.mimetype === 'image/svg+xml' ? 'svg' : 'image';
+
+      // Create asset record
+      const asset = {
+        id: `asset_${uuidv4().split('-')[0]}`,
+        type: assetType,
+        filename: file.filename,
+        originalName: file.originalname,
+        size: file.size,
+        mimetype: file.mimetype,
+      };
+
+      res.status(201).json(asset);
+    } catch (err) {
+      next(err);
     }
-
-    const file = req.file;
-
-    // Determine asset type
-    const assetType = file.mimetype === 'image/svg+xml' ? 'svg' : 'image';
-
-    // Create asset record
-    const asset = {
-      id: `asset_${uuidv4().split('-')[0]}`,
-      type: assetType,
-      filename: file.filename,
-      originalName: file.originalname,
-      size: file.size,
-      mimetype: file.mimetype,
-    };
-
-    res.status(201).json(asset);
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 /**
  * List assets for a project.
@@ -129,7 +133,12 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
  */
 router.get('/:projectId/:filename', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filePath = path.join(req.dataDir, 'assets', req.params['projectId'], req.params['filename']);
+    const filePath = path.join(
+      req.dataDir,
+      'assets',
+      req.params['projectId'],
+      req.params['filename']
+    );
 
     await fs.access(filePath);
     res.sendFile(filePath);
@@ -189,7 +198,12 @@ router.post('/:projectId/base64', async (req: Request, res: Response, next: Next
  */
 router.delete('/:projectId/:filename', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filePath = path.join(req.dataDir, 'assets', req.params['projectId'], req.params['filename']);
+    const filePath = path.join(
+      req.dataDir,
+      'assets',
+      req.params['projectId'],
+      req.params['filename']
+    );
 
     await fs.unlink(filePath);
     res.status(204).send();

@@ -50,43 +50,49 @@ const audioUpload = multer({
  * POST /api/audio/upload
  * Body: multipart, field "file"
  */
-router.post('/upload', audioUpload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.file) return void res.status(400).json({ error: 'No file uploaded' });
-
-    const filePath = req.file.path;
-    let duration = 0;
-
+router.post(
+  '/upload',
+  audioUpload.single('file'),
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { stdout } = await execFileAsync('ffprobe', [
-        '-v',
-        'quiet',
-        '-print_format',
-        'json',
-        '-show_streams',
-        filePath,
-      ]);
-      const data = JSON.parse(stdout) as { streams?: Array<{ codec_type: string; duration?: string }> };
-      for (const stream of data.streams ?? []) {
-        if (stream.codec_type === 'audio') {
-          duration = parseFloat(stream.duration ?? '0');
-          break;
-        }
-      }
-    } catch (e) {
-      console.error('[audio] ffprobe failed:', (e as Error).message);
-    }
+      if (!req.file) return void res.status(400).json({ error: 'No file uploaded' });
 
-    res.status(201).json({
-      audioId: path.basename(filePath),
-      src: `/data/assets/audio/${path.basename(filePath)}`,
-      duration,
-      status: 'ready',
-    });
-  } catch (err) {
-    next(err);
+      const filePath = req.file.path;
+      let duration = 0;
+
+      try {
+        const { stdout } = await execFileAsync('ffprobe', [
+          '-v',
+          'quiet',
+          '-print_format',
+          'json',
+          '-show_streams',
+          filePath,
+        ]);
+        const data = JSON.parse(stdout) as {
+          streams?: Array<{ codec_type: string; duration?: string }>;
+        };
+        for (const stream of data.streams ?? []) {
+          if (stream.codec_type === 'audio') {
+            duration = parseFloat(stream.duration ?? '0');
+            break;
+          }
+        }
+      } catch (e) {
+        console.error('[audio] ffprobe failed:', (e as Error).message);
+      }
+
+      res.status(201).json({
+        audioId: path.basename(filePath),
+        src: `/data/assets/audio/${path.basename(filePath)}`,
+        duration,
+        status: 'ready',
+      });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 /**
  * Create a TTS audio job.

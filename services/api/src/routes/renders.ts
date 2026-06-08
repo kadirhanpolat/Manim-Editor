@@ -119,16 +119,17 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
     );
 
     res.json({
-      renders: hasLatest && latestStats
-        ? [
-            {
-              name: 'latest.mp4',
-              size: latestStats.size,
-              modifiedAt: latestStats.mtime,
-              url: `/api/renders/${req.params['projectId']}/latest.mp4`,
-            },
-          ]
-        : [],
+      renders:
+        hasLatest && latestStats
+          ? [
+              {
+                name: 'latest.mp4',
+                size: latestStats.size,
+                modifiedAt: latestStats.mtime,
+                url: `/api/renders/${req.params['projectId']}/latest.mp4`,
+              },
+            ]
+          : [],
       hasLatest,
       history: history.filter(Boolean),
     });

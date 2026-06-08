@@ -60,7 +60,9 @@ export function normalizeProject(project: unknown): NormalizedProject {
 
   // ── Asset lookup map ──
   const assetMap: Record<string, { id: string; filename?: string; [k: string]: unknown }> = {};
-  for (const asset of (norm['assets'] as Array<{ id: string; filename?: string; [k: string]: unknown }> | undefined) ?? []) {
+  for (const asset of (norm['assets'] as
+    | Array<{ id: string; filename?: string; [k: string]: unknown }>
+    | undefined) ?? []) {
     assetMap[asset.id] = asset;
   }
   norm['_assetMap'] = assetMap;

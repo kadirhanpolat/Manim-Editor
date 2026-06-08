@@ -289,7 +289,9 @@ async function fetchGoogleFonts(): Promise<FontEntry[]> {
       return FALLBACK_FONTS;
     }
 
-    const data = await response.json() as { items?: Array<{ family: string; category: string; variants?: string[] }> };
+    const data = (await response.json()) as {
+      items?: Array<{ family: string; category: string; variants?: string[] }>;
+    };
 
     if (!data.items || !Array.isArray(data.items)) {
       console.warn('[Fonts] Invalid response from Google Fonts API, using fallback');
