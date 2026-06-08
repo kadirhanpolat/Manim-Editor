@@ -78,7 +78,9 @@
         </div>
 
         <!-- Canvas view (hidden in code-only mode) -->
-        <StageCanvas v-show="stageViewMode === 'canvas' && !isCodeMode" />
+        <ErrorBoundary label="canvas"
+          ><StageCanvas v-show="stageViewMode === 'canvas' && !isCodeMode"
+        /></ErrorBoundary>
 
         <!-- Code view -->
         <div
@@ -230,11 +232,11 @@
           </div>
         </div>
       </div>
-      <PropertiesPanel v-if="!isCodeMode" />
+      <ErrorBoundary v-if="!isCodeMode" label="properties panel"><PropertiesPanel /></ErrorBoundary>
     </div>
 
     <!-- Bottom Timeline (hidden in code-only mode) -->
-    <Timeline v-if="!isCodeMode" />
+    <ErrorBoundary v-if="!isCodeMode" label="timeline"><Timeline /></ErrorBoundary>
 
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- Export Dialog (client-side .py download) -->
@@ -728,6 +730,7 @@ import AssetSidebar from './components/sidebar/AssetSidebar.vue';
 import StageCanvas from './components/stage/StageCanvas.vue';
 import PropertiesPanel from './components/inspector/PropertiesPanel.vue';
 import Timeline from './components/timeline/Timeline.vue';
+import ErrorBoundary from './components/ErrorBoundary.vue';
 
 const store = useProjectStore();
 
