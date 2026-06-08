@@ -15,8 +15,9 @@
   <img src="https://img.shields.io/badge/vue-3-4FC08D?logo=vue.js&logoColor=white" alt="Vue">
   <img src="https://img.shields.io/badge/manim-CE-orange?logo=python&logoColor=white" alt="Manim">
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
+  <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.16.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.17.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -292,6 +293,12 @@ Project
 ```
 Manim-docker/
 +-- docker-compose.yml
++-- tsconfig.base.json                 # shared strict TS config
++-- eslint.config.js / .prettierrc.json
++-- packages/
+|   +-- manim-codegen/                 # Shared Manim codegen (strict TS) — single source of truth
+|       +-- src/                       # constants/helpers/objects/objects3d/clips/keyframes/index/types (.ts)
+|       +-- dist/                      # tsc build output (consumed by api/renderer; git-ignored)
 +-- services/
     +-- web/                          # Vue frontend
     |   +-- src/
@@ -299,13 +306,14 @@ Manim-docker/
     |   |   +-- api.js                # API client
     |   |   +-- store/project.js      # State, history, clipboard, theme
     |   |   +-- styles/main.css       # Theme tokens, light/dark palettes
-    |   |   +-- engine/               # Playback engine
-    |   |   |   +-- geometry.js       # Shape point generation
-    |   |   |   +-- easing.js         # 17 easing functions
-    |   |   |   +-- transform.js      # Morph interpolation
-    |   |   |   +-- playback.js       # rAF loop
-    |   |   |   +-- blending.js       # Multi-track blending
-    |   |   +-- export/manim.js       # Client-side .py generator
+    |   |   +-- engine/               # Playback engine (strict TypeScript)
+    |   |   |   +-- types.ts          # Shared engine domain types
+    |   |   |   +-- geometry.ts       # Shape point generation
+    |   |   |   +-- easing.ts         # 17 easing functions
+    |   |   |   +-- transform.ts      # Morph interpolation
+    |   |   |   +-- playback.ts       # rAF loop
+    |   |   |   +-- blending.ts       # Multi-track blending
+    |   |   +-- export/manim.js       # Client-side .py generator + .py parser
     |   |   +-- components/
     |   |       +-- topbar/           # Desktop menubar (File, Edit, View, Tools, Help)
     |   |       +-- sidebar/          # Shapes, assets, transform
@@ -387,8 +395,16 @@ All Docker containers run with **least-privilege non-root users**:
 
 ```bash
 cd services/web
-npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation)
+npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
 npm run test:unit # 515 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, object-library extensions (Surface, Prism, Integer counter, Ray, Coord Point, Vector Components, Bezier, Tangent), UI-tools audit (palette reachability, MotionPicker clips, interaction tools), codegen→valid-Python checks, + StageCanvas config-builder characterization snapshots)
+```
+
+Code quality gates (run from the repo root):
+
+```bash
+npm run typecheck     # build @manim/codegen + strict vue-tsc over services/web
+npm run format:check  # Prettier (.js/.ts/.vue/.json/.css)
+npm run lint          # ESLint
 ```
 
 The shared codegen package has its own suite (run from the repo root):
@@ -429,8 +445,9 @@ keyboard tools, transform gating) against the running app.
 
 - **Frontend**: Vue 3, Pinia, Konva.js, Tailwind CSS (with CSS-variable theming), Vite
 - **Backend**: Node.js 20, Express, Multer, Zod, Redis
+- **Language/tooling**: TypeScript (strict; `@manim/codegen` + web engine migrated), ESLint, Prettier, vue-tsc, tsx, Vitest
 - **Renderer**: Python, Manim Community Edition
-- **Infrastructure**: Docker Compose, Nginx, Alpine Linux
+- **Infrastructure**: Docker Compose, Nginx, Alpine Linux, GitHub Actions CI
 
 ---
 
@@ -442,7 +459,36 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.16.0 (current)
+### v3.17.0 (current)
+
+Tooling foundation + strict TypeScript migration (phases 0–2) — an internal
+code-quality initiative with **zero user-facing behavior change**; the generated
+Manim Python remains byte-identical (guarded by the codegen parity suites).
+
+- **Phase 0 — tooling:** ESLint 9 (flat config) + Prettier + `.editorconfig` +
+  Ruff/Black (`pyproject.toml`) + root `lint`/`format`/`format:check` scripts +
+  **GitHub Actions CI** (format-check, typecheck, web unit + engine tests, Python
+  lint) + `.gitattributes` (LF) to fix Windows CRLF/Prettier conflicts.
+- **Phase 1 — `@manim/codegen` → TypeScript:** the shared codegen package is now
+  strict TS (`constants`/`helpers`/`objects`/`objects3d`/`clips`/`keyframes`/`index`
+  + a new `types.ts` domain model), built to `dist/` via `tsc`. Web consumes the TS
+  source (via the `source` export condition + an existence-checked `.js`→`.ts`
+  resolver plugin); api/renderer consume the built `dist/`.
+- **Phase 2 — web engine → TypeScript:** all nine `services/web/src/engine/*`
+  modules (easing, geometry, keyframe, mathExpr, polygonVertices, projection3d,
+  transform, blending, playback) + a shared `engine/types.ts` are now strict TS.
+  Engine tests run via `tsx`. Caught and fixed several latent issues surfaced by
+  strict mode (dead imports, unused params). Prettier globs extended to cover `.ts`.
+- **Import-specifier convention:** TS source keeps `.js` extensions on relative
+  imports (bundler/resolver remap to `.ts`); consumers are unchanged.
+- **Type safety:** strict `tsconfig` (no implicit `any`, unused-locals/params, etc.);
+  `npm run typecheck` (build codegen + `vue-tsc` over web) is a CI gate.
+- **Tests/gates:** **515 unit + 114 engine** (web) + **6** `@manim/codegen` +
+  **9** Playwright E2E, all green; typecheck + format-check clean; Vite prod build
+  verified. Specs/plans under `docs/superpowers/{specs,plans}/2026-06-08-*`.
+  (Phases 3–7 — store/parser, Vue components, API service, tests/e2e, deps/docs — remain.)
+
+### v3.16.0
 
 UI-tools audit — a systematic pass over **every add/clip/tool UI surface**
 (palette → store → preview → inspector → codegen → `.py` round-trip), verified

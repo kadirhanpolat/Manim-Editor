@@ -25,11 +25,18 @@ docker compose --profile coqui up      # + Coqui TTS service
 
 ```bash
 cd services/web && npm run test:unit   # 515 unit tests (store, components, export)
-cd services/web && npm test            # 114 engine tests (easing, geometry, transform, keyframe)
+cd services/web && npm test            # 114 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 # Both must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
 cd e2e && npm test                     # 9 Playwright smoke tests (auto-boots dev server :5188)
+```
+
+Tooling (run from repo root):
+```bash
+npm run typecheck      # build:codegen + vue-tsc over services/web (strict) — must pass before commit
+npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
+npm run lint           # ESLint (not yet a CI gate — Phase 6)
 ```
 
 - `e2e/` is a **standalone package OUTSIDE the npm workspaces** (own `node_modules` so Playwright never perturbs web/api hoisting). Drives the real app via a DEV-only `window.__projectStore` hook (`services/web/src/main.js`, stripped from prod). Dedicated port **5188**.
@@ -42,8 +49,9 @@ cd e2e && npm test                     # 9 Playwright smoke tests (auto-boots de
 | File | Purpose |
 |------|---------|
 | `services/web/src/store/project.js` | Pinia store — all project state, actions, getters (`useProjectStore()`); exports `uid()` |
-| `services/web/src/engine/playback.js` | 60fps rAF playback engine — evaluates clips, computes frame state |
-| `packages/manim-codegen/src/` | **Single source of truth for codegen** — `constants.js`, `helpers.js`, `objects.js`, `objects3d.js`, `clips.js`, `keyframes.js`, `index.js` (`generateScene`) |
+| `services/web/src/engine/playback.ts` | 60fps rAF playback engine — evaluates clips, computes frame state |
+| `services/web/src/engine/types.ts` | Shared engine domain types (`Point`, `StageObject`, `Clip`, `ClipParams`, `Overrides`, `FrameState`, `TimedClip`, …) |
+| `packages/manim-codegen/src/` | **Single source of truth for codegen** — `constants.ts`, `helpers.ts`, `objects.ts`, `objects3d.ts`, `clips.ts`, `keyframes.ts`, `index.ts` (`generateScene`), `types.ts` |
 | `services/api/src/compiler/codegen.js` | Thin server wrapper over `@manim/codegen` (server asset paths via `resolveAsset`) |
 | `services/web/src/export/manim.js` | Thin client generator wrapper + the web-only `.py` **parser** (`parseManimScript`) |
 | `services/web/src/components/stage/StageCanvas.vue` | Thin orchestrator (~544 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders |
@@ -55,13 +63,13 @@ cd e2e && npm test                     # 9 Playwright smoke tests (auto-boots de
 | `services/web/src/components/inspector/{Position3DPanel,AudioPanel,KeyframePanel}.vue` | 3D pos/rot editor; per-clip audio; selected-keyframe editor |
 | `services/web/src/components/topbar/{Topbar,MenuBar,NewProjectDialog}.vue` + `menus.js` | Menubar orchestrator + reusable dropdown widget + new-project modal. **Menu items live in `menus.js`** (`buildMenus(ctx)`). |
 | `services/web/src/components/timeline/Timeline.vue` + `KeyframeLanesPanel/KeyframeLane/KeyframeEasingPopup.vue` | Multi-track timeline + camera track + per-property keyframe lanes + Bezier easing editor |
-| `services/web/src/engine/keyframe.js` | `interpolateKeyframes`, `getKeyframeRange`, Bezier solver |
+| `services/web/src/engine/keyframe.ts` | `interpolateKeyframes`, `getKeyframeRange`, Bezier solver |
 | `services/api/src/routes/audio.js` + `services/api/src/ws.js` | Audio upload/TTS/callback/delete endpoints; WebSocket push for render+audio events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
 
 ## Codegen — single source of truth (`@manim/codegen`)
 
-All Manim Python generation lives in the **`@manim/codegen`** npm-workspace package (`packages/manim-codegen/src/`): `constants.js` (EASING_MAP, FRAME_*, *_TYPES), `helpers.js` (`vn`, `hex`, `safe*`, `gradientLine`, `shadowLines`, …), `objects.js` (`objectCode`), `objects3d.js` (`objectCode3d`), `clips.js` (`transformExpr`, `emphasisExpr`), `keyframes.js` (`generateKeyframeSteps`), `index.js` (`generateScene`).
+All Manim Python generation lives in the **`@manim/codegen`** npm-workspace package (`packages/manim-codegen/src/`, **strict TypeScript**): `constants.ts` (EASING_MAP, FRAME_*, *_TYPES), `helpers.ts` (`vn`, `hex`, `safe*`, `gradientLine`, `shadowLines`, …), `objects.ts` (`objectCode`), `objects3d.ts` (`objectCode3d`), `clips.ts` (`transformExpr`, `emphasisExpr`), `keyframes.ts` (`generateKeyframeSteps`), `index.ts` (`generateScene`), `types.ts` (domain model). Built to `dist/` via `tsc`; web consumes the TS source (via the `source` export condition), api/renderer consume `dist/`.
 
 Both services are **thin wrappers** calling `generateScene(project, { resolveAsset })` — the only intentional divergence is `resolveAsset` (server file path vs client placeholder). The **`.py` parser** (`parseManimScript`) is web-only, in `manim.js`.
 
@@ -71,7 +79,7 @@ Both services are **thin wrappers** calling `generateScene(project, { resolveAss
 
 The codegen test suite asserts the generated Python is stable. When touching codegen, keep these consistent and re-run `manim-export.test.js`, `effects-codegen.test.js`, `phase26-effects-codegen.test.js`:
 - Generator helpers that historically had byte-identical copies (`emphasisExpr`, `transformExpr`, the `count`/`counter`/`matrix`/`brace`/`angle`/`table`/`graph`/`vector_field` cases, `safeMatrixEntry`, `safeLatex`, `fillOpacityExpr`, `strokeOpacityArg`, `gradientLine`, `dashedLines`, `shadowLines`, `roundCornersLine`, `SHADOW_TYPES`) now live **once** in `@manim/codegen`; the parity/round-trip tests remain as regression guards.
-- The math whitelist exists in two places that must stay in sync: `safeMathExpr` (`@manim/codegen/helpers.js`, used by codegen) and `engine/mathExpr.js` `isSafeExpr`/`compileExpr` (preview). Whitelist:
+- The math whitelist exists in two places that must stay in sync: `safeMathExpr` (`@manim/codegen/helpers.ts`, used by codegen) and `engine/mathExpr.ts` `isSafeExpr`/`compileExpr` (preview). Whitelist:
   ```js
   if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(expr)) return 'x**2';
   if (/import|eval|exec|open|__/.test(expr)) return 'x**2';
@@ -131,7 +139,7 @@ clip.audio = {
 
 - **`axes`**: `graphs: []` array, each `{ id, expression, color, xMin, xMax, strokeWidth }`. Each graph also has optional `area` (`get_area`), `riemann` (`get_riemann_rectangles`), `tangent` (`TangentLine`, alpha from `x`).
 - **Geometry**: `annulus`/`arc`/`sector`/`double_arrow` → `Annulus`/`Arc`/`Sector`/`DoubleArrow`; radii in px (via `FRAME_WIDTH`), angles in deg → `<deg> * DEGREES`.
-- **`polygon_free`** (`Polygon`): `obj.vertices` (object-relative px) + draggable canvas handles; presets in `engine/polygonVertices.js`.
+- **`polygon_free`** (`Polygon`): `obj.vertices` (object-relative px) + draggable canvas handles; presets in `engine/polygonVertices.ts`.
 - **`bezier`**: smooth open curve through draggable anchor `vertices`. Emits `VMobject()` + `set_points_smoothly([…])` + `set_stroke`. **Parser builds from the `set_points_smoothly` line, not `VMobject()`** (shared with `path_move` path).
 - **`parametric`** (`ParametricFunction`): `xExpr`/`yExpr` (t-based), `tMin`/`tMax`; `safeMathExpr`-guarded.
 - **`matrix`** (`Matrix`): source of truth `matrixData` (2D string array) + `bracket` (`[`|`(`|`|`); rows/cols derived. Single-line `Matrix([[…]])` (+ `left/right_bracket` for non-default) then `.set_color`. Entries sanitized by `safeMatrixEntry` (no eval). Actions: `setMatrixCell`, `add/removeMatrixRow/Column`, `setMatrixBracket` (guards at 1×1).
@@ -206,9 +214,20 @@ store.project.camera3d  = { phi:75, theta:-45, zoom:1.0, projection:'orthographi
 ```
 - Actions: `setSceneType(type)`, `setCamera3d(params)` (both `commitState()`).
 - **Split viewport** when `3d`: left iso (`iso(x3d,y3d,z3d,…)`), right top/XZ (`top(x3d,z3d,…)`). Drag updates `x3d/z3d`.
-- **Preview projection** (`engine/projection3d.js`, pure/testable): `project3D` + `unprojectIso`, ortho + perspective (Manim Z-up spherical camera). `StageCanvas.iso()` delegates via a `cam3d` computed. `playback.computeFrame` lerps 3D `camera_move` (`{phi,theta,zoom}`, detected by `'phi' in params`) into `cameraState{is3d:true}`; `setCamera3dBase` seeds the resting angle. Projection mode editable in `Scene3DPanel.vue`.
+- **Preview projection** (`engine/projection3d.ts`, pure/testable): `project3D` + `unprojectIso`, ortho + perspective (Manim Z-up spherical camera). `StageCanvas.iso()` delegates via a `cam3d` computed. `playback.computeFrame` lerps 3D `camera_move` (`{phi,theta,zoom}`, detected by `'phi' in params`) into `cameraState{is3d:true}`; `setCamera3dBase` seeds the resting angle. Projection mode editable in `Scene3DPanel.vue`.
 - **Known constraint**: projection mode is preview-only — perspective preview diverges slightly from render; perspective iso drag uses the ortho inverse (minor imprecision at extreme angles).
 - Design spec: `docs/superpowers/specs/2026-06-03-3d-scene-design.md`.
+
+## TypeScript migration (in progress)
+
+Multi-phase, strict-TS migration of the whole codebase. **Phases 0–2 done** (on `main`); phases 3–7 remain. Spec: `docs/superpowers/specs/2026-06-08-tooling-strict-ts-migration-design.md`.
+
+- **What's TypeScript now:** `@manim/codegen/src/*` (Phase 1) and `services/web/src/engine/*` (Phase 2, incl. `types.ts`). Everything else (`store/project.js`, `export/manim.js`, `api.js`, `*.vue`, `configs/*.js`, `services/api/*`, tests) is still `.js`/`.vue` — phases 3–6.
+- **Import-specifier rule (critical):** in `.ts` source, relative imports KEEP the `.js` extension (`import { x } from './types.js'`). The Vite/Vitest `resolve-ts-from-js` plugin + the `source` export condition remap `.js`→`.ts` at runtime; `moduleResolution: "bundler"` does the same at typecheck. **Do not "fix" these to `.ts`.** Consumers of engine/codegen also keep importing `…/foo.js` unchanged.
+- **Config:** root `tsconfig.base.json` (strict, `allowJs`, `noUnusedLocals/Parameters`, …). `services/web/tsconfig.json` = bundler resolution + DOM lib + `checkJs:false` (still-`.js` files aren't type-checked, so migration is safe file-by-file) + `include:["src/**/*.ts"]` (auto-covers files as they migrate). `packages/manim-codegen/tsconfig.json` = NodeNext + declaration emit.
+- **Domain model:** wide interfaces (`SceneObject`/`StageObject` with optional type-specific fields + `[k:string]:unknown`); discriminated-union refinement deferred to Phase 4.
+- **Engine test** (`tests/engine.test.mjs`) runs via **`tsx`** (plain `node` can't load `.ts`); `pretest` still builds codegen `dist/` (it imports `manim.js` → codegen barrel → `dist/`).
+- **Recurring strict landmines:** dead imports/params → `noUnusedLocals/Parameters` (prefix `_` or delete); `new Map(arr.map(o=>[id,o]))` needs a `:[string,T]` tuple annotation; `Number.isFinite(x)` doesn't narrow `number|undefined` → cast; TS can't narrow array elements from a flag → branch-local `as T[]`; class fields must be declared (constructor assignment alone is insufficient). Memory: `strict-ts-migration-initiative`.
 
 ## Stack Notes (history)
 
