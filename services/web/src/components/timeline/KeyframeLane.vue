@@ -8,6 +8,7 @@
       <button
         class="flex-shrink-0 text-sm font-bold text-studio-accent/80 hover:text-studio-accent leading-none px-1.5"
         title="Playhead konumuna keyframe ekle"
+        aria-label="Add keyframe at playhead"
         @click.stop="addAtPlayhead"
       >
         +

@@ -1,6 +1,7 @@
 <template>
   <aside
     class="w-72 bg-studio-surface border-l border-studio-border flex flex-col flex-shrink-0 overflow-y-auto"
+    aria-label="Properties panel"
   >
     <!-- Selected keyframe editor (self-gates on a selected keyframe) -->
     <KeyframePanel />

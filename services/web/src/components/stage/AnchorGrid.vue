@@ -6,6 +6,7 @@
         :key="anchor"
         :class="['anchor-btn', { active: value === anchor }]"
         :title="anchor"
+        :aria-label="anchor.replace('_', ' ').toLowerCase()"
         @click="$emit('input', anchor)"
       >
         {{ labels[anchor] }}

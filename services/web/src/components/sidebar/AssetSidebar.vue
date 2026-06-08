@@ -1,6 +1,7 @@
 <template>
   <aside
     class="w-56 bg-studio-surface border-r border-studio-border flex flex-col flex-shrink-0 overflow-y-auto"
+    aria-label="Assets and shapes"
   >
     <!-- ═══ Shapes (visual mode only) ═══ -->
     <div v-if="!isCodeMode" class="p-3 border-b border-studio-border">
@@ -166,6 +167,7 @@
             v-if="isCodeMode"
             class="asset-copy-path"
             title="Copy file path"
+            aria-label="Copy file path"
             @click.stop="copyAssetPath(asset)"
           >
             <svg
@@ -180,7 +182,7 @@
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
-          <button class="asset-remove" title="Remove" @click.stop="removeAsset(asset.id)">
+          <button class="asset-remove" title="Remove" aria-label="Remove image asset" @click.stop="removeAsset(asset.id)">
             &times;
           </button>
         </div>
@@ -246,6 +248,7 @@
             v-if="isCodeMode"
             class="asset-copy-path"
             title="Copy file path"
+            aria-label="Copy file path"
             @click.stop="copyAssetPath(asset)"
           >
             <svg
@@ -260,7 +263,7 @@
               <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
-          <button class="asset-remove" title="Remove" @click.stop="removeAsset(asset.id)">
+          <button class="asset-remove" title="Remove" aria-label="Remove SVG asset" @click.stop="removeAsset(asset.id)">
             &times;
           </button>
         </div>

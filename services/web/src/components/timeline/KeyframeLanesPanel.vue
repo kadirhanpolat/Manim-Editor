@@ -17,6 +17,7 @@
           :key="p"
           class="text-studio-accent/70 hover:text-studio-accent leading-none"
           :title="`${p} için keyframe ekle`"
+          :aria-label="`Add ${p} keyframe lane`"
           @click="addPropLane(p)"
         >
           + {{ p }}

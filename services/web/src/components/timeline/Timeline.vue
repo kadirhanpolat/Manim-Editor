@@ -33,13 +33,13 @@
 
       <!-- Zoom -->
       <div class="flex items-center gap-1">
-        <button class="text-studio-text-muted hover:text-studio-text text-xs px-1" @click="zoomOut">
+        <button class="text-studio-text-muted hover:text-studio-text text-xs px-1" aria-label="Zoom out timeline" @click="zoomOut">
           -
         </button>
         <span class="text-[10px] text-studio-text-muted w-10 text-center tabular-nums"
           >{{ Math.round(pps) }}px/s</span
         >
-        <button class="text-studio-text-muted hover:text-studio-text text-xs px-1" @click="zoomIn">
+        <button class="text-studio-text-muted hover:text-studio-text text-xs px-1" aria-label="Zoom in timeline" @click="zoomIn">
           +
         </button>
       </div>
@@ -147,6 +147,7 @@
             <button
               class="ml-auto text-[10px] text-studio-accent hover:opacity-80 leading-none"
               title="Add camera clip at playhead"
+              aria-label="Add camera clip at playhead"
               @click="addCameraClip"
             >
               +

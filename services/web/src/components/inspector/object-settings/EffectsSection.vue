@@ -25,6 +25,7 @@
             <button
               v-if="(obj.gradient.colors ?? []).length > 2"
               class="text-studio-error text-xs px-1"
+              :aria-label="'Remove gradient stop ' + (i + 1)"
               @click="removeGradientStop(i)"
             >
               ✕
@@ -42,6 +43,7 @@
               step="1"
               class="flex-1 accent-studio-accent"
               :value="obj.gradient.angle ?? 135"
+              aria-label="Gradient angle"
               @input="onGradientAngleInput($event)"
             />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
@@ -139,6 +141,7 @@
           step="0.01"
           class="flex-1 accent-studio-accent"
           :value="obj.fillOpacity ?? 1"
+          aria-label="Fill opacity"
           @input="onFillOpacityInput($event)"
         />
         <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
@@ -156,6 +159,7 @@
           step="0.01"
           class="flex-1 accent-studio-accent"
           :value="obj.strokeOpacity ?? 1"
+          aria-label="Stroke opacity"
           @input="onStrokeOpacityInput($event)"
         />
         <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
@@ -182,6 +186,7 @@
               step="1"
               class="flex-1 accent-studio-accent"
               :value="obj.dash.numDashes"
+              aria-label="Dash density"
               @input="onDashFieldInput('numDashes', $event)"
             />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">{{
@@ -197,6 +202,7 @@
               step="0.05"
               class="flex-1 accent-studio-accent"
               :value="obj.dash.ratio"
+              aria-label="Dash ratio"
               @input="onDashFieldInput('ratio', $event)"
             />
             <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums">{{

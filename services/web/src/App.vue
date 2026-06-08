@@ -8,7 +8,7 @@
     <Topbar />
 
     <!-- Main: Sidebar | Canvas/Code | Properties -->
-    <div class="flex-1 flex overflow-hidden min-h-0">
+    <div class="flex-1 flex overflow-hidden min-h-0" role="main">
       <AssetSidebar />
       <div class="flex-1 min-w-0 flex flex-col relative" style="background: var(--studio-bg)">
         <!-- Stage / Code toggle pill (hidden in code-only mode) -->
@@ -192,6 +192,7 @@
               autocomplete="off"
               autocorrect="off"
               autocapitalize="off"
+              aria-label="Manim Python scene code"
               @input="onCodeInput"
               @scroll="syncCodeScroll"
             ></textarea>
@@ -247,6 +248,9 @@
       >
         <div
           class="rounded-xl w-[700px] max-h-[80vh] flex flex-col shadow-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-dialog-title"
           style="background: var(--studio-surface); border: 1px solid var(--studio-border)"
         >
           <div
@@ -254,12 +258,12 @@
             style="border-bottom: 1px solid var(--studio-border)"
           >
             <div>
-              <h2 class="text-base font-semibold">Export to Manim</h2>
+              <h2 id="export-dialog-title" class="text-base font-semibold">Export to Manim</h2>
               <p class="text-[11px] mt-0.5" style="color: var(--studio-text-muted)">
                 Download a self-contained scene.py
               </p>
             </div>
-            <button class="text-lg" style="color: var(--studio-text-muted)" @click="closeExport">
+            <button class="text-lg" style="color: var(--studio-text-muted)" aria-label="Close" @click="closeExport">
               &times;
             </button>
           </div>
@@ -348,6 +352,9 @@
       >
         <div
           class="rounded-xl w-[540px] max-h-[85vh] flex flex-col shadow-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="render-dialog-title"
           style="background: var(--studio-surface); border: 1px solid var(--studio-border)"
         >
           <div
@@ -355,12 +362,12 @@
             style="border-bottom: 1px solid var(--studio-border)"
           >
             <div>
-              <h2 class="text-base font-semibold">Render with Manim</h2>
+              <h2 id="render-dialog-title" class="text-base font-semibold">Render with Manim</h2>
               <p class="text-[11px] mt-0.5" style="color: var(--studio-text-muted)">
                 High-quality render via Docker
               </p>
             </div>
-            <button class="text-lg" style="color: var(--studio-text-muted)" @click="closeRender">
+            <button class="text-lg" style="color: var(--studio-text-muted)" aria-label="Close" @click="closeRender">
               &times;
             </button>
           </div>
@@ -571,6 +578,9 @@
       >
         <div
           class="rounded-xl w-[500px] max-h-[70vh] flex flex-col shadow-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="project-browser-title"
           style="background: var(--studio-surface); border: 1px solid var(--studio-border)"
         >
           <div
@@ -578,7 +588,7 @@
             style="border-bottom: 1px solid var(--studio-border)"
           >
             <div>
-              <h2 class="text-base font-semibold">Server Projects</h2>
+              <h2 id="project-browser-title" class="text-base font-semibold">Server Projects</h2>
               <p class="text-[11px] mt-0.5" style="color: var(--studio-text-muted)">
                 Load a project from the Docker server
               </p>
@@ -586,6 +596,7 @@
             <button
               class="text-lg"
               style="color: var(--studio-text-muted)"
+              aria-label="Close"
               @click="closeProjectBrowser"
             >
               &times;
@@ -622,6 +633,7 @@
                   <button
                     class="p-1.5 rounded-md text-studio-text-muted opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all"
                     title="Delete project"
+                    aria-label="Delete project"
                     @click.stop="deleteServerProject(p.id, p.name)"
                   >
                     <svg
@@ -643,6 +655,7 @@
                   <button
                     class="p-1.5 rounded-md text-studio-text-muted hover:text-studio-accent transition-colors"
                     title="Open project"
+                    aria-label="Open project"
                     @click="openServerProject(p.id)"
                   >
                     <svg
@@ -678,7 +691,7 @@
       >
         <span style="color: var(--studio-danger)">!</span>
         <span class="text-sm">{{ error }}</span>
-        <button class="ml-2" style="color: var(--studio-text-muted)" @click="clearError">
+        <button class="ml-2" style="color: var(--studio-text-muted)" aria-label="Dismiss notification" @click="clearError">
           &times;
         </button>
       </div>

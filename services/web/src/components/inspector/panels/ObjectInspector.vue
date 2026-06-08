@@ -64,6 +64,7 @@
           :key="anchor"
           class="anchor-btn"
           :title="anchor.replace('_', ' ')"
+          :aria-label="'Align to ' + anchor.replace('_', ' ').toLowerCase()"
           @click="align(anchor)"
         >
           {{ anchorLabels[anchor] }}
@@ -117,6 +118,7 @@
         step="0.01"
         class="flex-1 accent-studio-accent"
         :value="obj.opacity"
+        aria-label="Object opacity"
         @input="u('opacity', Number(($event.target as HTMLInputElement).value))"
       />
       <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"

@@ -44,6 +44,7 @@
         step="0.01"
         class="flex-1 accent-purple-500"
         :value="clip.overshoot || 0"
+        aria-label="Animation overshoot"
         @input="uc('overshoot', Number(($event.target as HTMLInputElement).value))"
       />
       <span class="text-[10px] text-studio-text-muted w-8 text-right"
@@ -107,6 +108,7 @@
       step="0.01"
       class="w-full accent-orange-500"
       :value="clip.params?.targetOpacity ?? 0"
+      aria-label="Target opacity"
       @input="up('targetOpacity', Number(($event.target as HTMLInputElement).value))"
     />
   </Section>

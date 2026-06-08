@@ -1,6 +1,6 @@
 <template>
   <div ref="root" class="menubar-root">
-    <header class="menubar-header">
+    <header class="menubar-header" aria-label="Application toolbar">
       <!-- Brand: official logo from assets (public folder) -->
       <div class="menubar-brand">
         <img
@@ -24,6 +24,7 @@
           :value="projectName"
           placeholder="Project name"
           title="Project name"
+          aria-label="Project name"
           @change="updateName(($event.target as HTMLInputElement).value)"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
@@ -49,11 +50,12 @@
           class="tb-toggle"
           :class="{ on: project.cameraType === 'moving' }"
           title="Toggle Moving Camera (MovingCameraScene)"
+          aria-label="Toggle Moving Camera (MovingCameraScene)"
           @click="toggleCamera"
         >
           🎥
         </button>
-        <button class="tb-toggle" :class="{ on: gridVisible }" title="Grid" @click="toggleGrid">
+        <button class="tb-toggle" :class="{ on: gridVisible }" title="Grid" aria-label="Grid" @click="toggleGrid">
           <svg
             width="11"
             height="11"
@@ -69,7 +71,7 @@
             <line x1="15" y1="3" x2="15" y2="21" />
           </svg>
         </button>
-        <button class="tb-toggle" :class="{ on: snapEnabled }" title="Snap" @click="toggleSnap">
+        <button class="tb-toggle" :class="{ on: snapEnabled }" title="Snap" aria-label="Snap" @click="toggleSnap">
           <svg
             width="11"
             height="11"

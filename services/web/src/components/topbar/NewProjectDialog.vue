@@ -2,8 +2,13 @@
   <!-- New Project dialog -->
   <transition name="menu-pop">
     <div v-if="show" class="np-overlay" @click.self="cancelNewProject">
-      <div class="np-dialog">
-        <h2 class="np-title">New Project</h2>
+      <div
+        class="np-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="np-dialog-title"
+      >
+        <h2 id="np-dialog-title" class="np-title">New Project</h2>
 
         <label class="np-label">Project Name</label>
         <input
