@@ -74,9 +74,9 @@ describe('annotation store — cascade delete', () => {
 
     store.deleteObject(circle.id);
 
-    expect(store.project.objects.find(o => o.id === ann1.id)).toBeUndefined();
-    expect(store.project.objects.find(o => o.id === ann2.id)).toBeUndefined();
-    expect(store.project.objects.find(o => o.id === circle.id)).toBeUndefined();
+    expect(store.project.objects.find((o) => o.id === ann1.id)).toBeUndefined();
+    expect(store.project.objects.find((o) => o.id === ann2.id)).toBeUndefined();
+    expect(store.project.objects.find((o) => o.id === circle.id)).toBeUndefined();
   });
 
   it('deleting a non-targeted object does not cascade to unrelated annotations', () => {
@@ -90,6 +90,6 @@ describe('annotation store — cascade delete', () => {
 
     store.deleteObject(rect.id);
 
-    expect(store.project.objects.find(o => o.id === ann.id)).toBeDefined();
+    expect(store.project.objects.find((o) => o.id === ann.id)).toBeDefined();
   });
 });
