@@ -1,4 +1,4 @@
-import { FRAME_WIDTH } from './constants.js';
+import { FRAME_WIDTH, ANNOTATION_TYPES } from './constants.js';
 import { rfOpt, rtOpt, vn, hex, stageToManim, pathPointsPy, isSystemFont } from './helpers.js';
 import { objectCode } from './objects.js';
 import { objectCode3d } from './objects3d.js';
@@ -106,8 +106,13 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   // ── Object definitions ──
   const obj3DTypes = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'];
   const oMap: Record<string, SceneObject> = {};
+  // Annotations must emit after their targets; sort non-annotations first
+  const sortedObjects = [
+    ...(project.objects || []).filter((o) => !ANNOTATION_TYPES.has(o.type)),
+    ...(project.objects || []).filter((o) => ANNOTATION_TYPES.has(o.type)),
+  ];
   L.push(`${indent}# Objects`);
-  for (const o of project.objects) {
+  for (const o of sortedObjects) {
     oMap[o.id] = o;
     if (obj3DTypes.includes(o.type)) {
       objectCode3d(o).forEach((l) => L.push(indent + l));

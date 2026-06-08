@@ -161,3 +161,20 @@ describe('annotation codegen', () => {
     expect(s).toMatch(/stroke_color="#ef4444"/);
   });
 });
+
+describe('annotation codegen — topological sort', () => {
+  it('annotation is always emitted after its target regardless of array order', () => {
+    // Annotation placed BEFORE target in the array
+    const ann = baseObj('ann1', 'surrounding_rect', {
+      color: '#facc15', strokeWidth: 2, buff: 10, cornerRadius: 0, targetId: 'circle1',
+    });
+    const circle = baseObj('circle1', 'circle', { width: 120, height: 120 });
+    const s = generateManimScript(makeProject([ann, circle]));
+    const lines = s.split('\n');
+    const circleIdx = lines.findIndex(l => l.includes('circle1 = Circle'));
+    const annIdx = lines.findIndex(l => l.includes('ann1 = SurroundingRectangle'));
+    expect(circleIdx).toBeGreaterThan(-1);
+    expect(annIdx).toBeGreaterThan(-1);
+    expect(annIdx).toBeGreaterThan(circleIdx);
+  });
+});
