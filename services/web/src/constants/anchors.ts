@@ -67,10 +67,9 @@ export function anchorToStagePosition(
   anchor: string,
   stageWidth: number,
   stageHeight: number,
-  padding = 50,
+  padding = 50
 ): { x: number; y: number } {
-  const pos =
-    ANCHOR_POSITIONS[anchor as AnchorName] ?? ANCHOR_POSITIONS.CENTER;
+  const pos = ANCHOR_POSITIONS[anchor as AnchorName] ?? ANCHOR_POSITIONS.CENTER;
 
   // Map -1..1 to padding..width-padding
   const x = ((pos.x + 1) / 2) * (stageWidth - padding * 2) + padding;

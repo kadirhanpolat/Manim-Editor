@@ -16,7 +16,15 @@ const AXIS_COLORS = { x: '#f87171', y: '#4ade80', z: '#60a5fa' };
 // Orthographic-forced projection for the faint reference gizmo.
 // Uses the resting camera (cam3d) but forces orthographic mode so the axes
 // remain a clean symmetric cross regardless of the perspective setting.
-function isoRef(x3d: number, y3d: number, z3d: number, cx: number, cy: number, scale: number, cam3d: Cam3D): IsoPoint {
+function isoRef(
+  x3d: number,
+  y3d: number,
+  z3d: number,
+  cx: number,
+  cy: number,
+  scale: number,
+  cam3d: Cam3D
+): IsoPoint {
   const c = cam3d;
   return project3D(
     { x3d, y3d, z3d },
@@ -30,8 +38,14 @@ function isoRef(x3d: number, y3d: number, z3d: number, cx: number, cy: number, s
 // Liang–Barsky segment clip to rect [rx0,ry0,rx1,ry1].
 // Returns trimmed [x0,y0,x1,y1] or null if fully outside.
 function _clipSeg(
-  x0: number, y0: number, x1: number, y1: number,
-  rx0: number, ry0: number, rx1: number, ry1: number
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rx0: number,
+  ry0: number,
+  rx1: number,
+  ry1: number
 ): number[] | null {
   let t0 = 0,
     t1 = 1;
@@ -57,7 +71,12 @@ function _clipSeg(
 }
 
 // Build a clipped axis segment config.
-function _axCfg(a: IsoPoint, b: IsoPoint, stroke: string, r: number[]): Record<string, unknown> | null {
+function _axCfg(
+  a: IsoPoint,
+  b: IsoPoint,
+  stroke: string,
+  r: number[]
+): Record<string, unknown> | null {
   const c = _clipSeg(a.px, a.py, b.px, b.py, r[0], r[1], r[2], r[3]);
   return c
     ? { points: c, stroke, strokeWidth: 1.5, opacity: 0.3, dash: [5, 5], listening: false }
@@ -73,7 +92,12 @@ function _gridCfg(a: IsoPoint, b: IsoPoint, r: number[]): Record<string, unknown
 }
 
 // Build an axis label config (returns null if the point falls outside the rect).
-function _lblCfg(p: IsoPoint, text: string, fill: string, r: number[]): Record<string, unknown> | null {
+function _lblCfg(
+  p: IsoPoint,
+  text: string,
+  fill: string,
+  r: number[]
+): Record<string, unknown> | null {
   if (p.px < r[0] || p.px > r[2] || p.py < r[1] || p.py > r[3]) return null;
   return {
     x: p.px + 4,

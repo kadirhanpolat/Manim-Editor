@@ -50,7 +50,11 @@ export function useGoogleFonts() {
     fontsToLoad.forEach((f) => previewStylesLoaded.add(f.family));
   }
 
-  async function load({ search = '', category = 'all', reset = false }: LoadOptions = {}): Promise<void> {
+  async function load({
+    search = '',
+    category = 'all',
+    reset = false,
+  }: LoadOptions = {}): Promise<void> {
     if (loading.value) return;
 
     loading.value = true;

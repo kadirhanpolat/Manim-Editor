@@ -21,7 +21,11 @@ export function relationalHitCfg(obj: SceneObject, ctx: StageCtx): Record<string
   };
 }
 
-export function relationalLabelCfg(obj: SceneObject, anchor: [number, number], ctx: StageCtx): Record<string, unknown> {
+export function relationalLabelCfg(
+  obj: SceneObject,
+  anchor: [number, number],
+  ctx: StageCtx
+): Record<string, unknown> {
   return {
     x: anchor[0] - 12,
     y: anchor[1] - 8,
@@ -106,7 +110,8 @@ export function angleArcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unk
     p2 = (obj.point2 as [number, number] | undefined) || [-40, -60];
   const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
   const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const r = (((obj.radius as number | undefined) || 0.6) / 14.222) * (ctx.stg.width as number) * z * 0.5;
+  const r =
+    (((obj.radius as number | undefined) || 0.6) / 14.222) * (ctx.stg.width as number) * z * 0.5;
   const pts: number[] = [];
   let start = a1,
     end = a2;
@@ -116,7 +121,12 @@ export function angleArcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unk
     const a = start + (end - start) * (i / steps);
     pts.push(v[0] * z + Math.cos(a) * r, v[1] * z + Math.sin(a) * r);
   }
-  return { points: pts, stroke: (obj.stroke as string | undefined) || '#fbbf24', strokeWidth: 2, listening: false };
+  return {
+    points: pts,
+    stroke: (obj.stroke as string | undefined) || '#fbbf24',
+    strokeWidth: 2,
+    listening: false,
+  };
 }
 
 export function angleSquareCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
@@ -219,7 +229,9 @@ export function coordPointCfgs(
   ctx: StageCtx
 ): { dot: Record<string, unknown>; label: Record<string, unknown> } {
   const col = (obj.fill as string | undefined) || '#fbbf24';
-  const d = Number.isFinite(obj.decimals as number) ? Math.max(0, Math.trunc(obj.decimals as number)) : 1;
+  const d = Number.isFinite(obj.decimals as number)
+    ? Math.max(0, Math.trunc(obj.decimals as number))
+    : 1;
   const mx = ((obj.x ?? 0) / (ctx.stg.width as number) - 0.5) * 14.222;
   const my = -((obj.y ?? 0) / (ctx.stg.height as number) - 0.5) * 8;
   return {

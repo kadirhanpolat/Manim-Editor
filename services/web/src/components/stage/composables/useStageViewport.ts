@@ -24,10 +24,7 @@ function getCs(store: ProjectStore): LiveCameraState | null {
   );
 }
 
-export function useStageViewport(
-  store: ProjectStore,
-  container: Ref<HTMLElement | null>
-) {
+export function useStageViewport(store: ProjectStore, container: Ref<HTMLElement | null>) {
   // ── Reactive state ──
   const containerWidth = ref(800);
   const containerHeight = ref(500);
@@ -65,18 +62,21 @@ export function useStageViewport(
 
   // Fixed orthographic angles for the named axis views (Z-up convention).
   const VIEW_ANGLES: Record<string, { phi: number; theta: number }> = {
-    top:    { phi: 0,   theta: -90 }, // look down +Z onto XY (X right, Y up)
+    top: { phi: 0, theta: -90 }, // look down +Z onto XY (X right, Y up)
     bottom: { phi: 180, theta: -90 }, // look up
-    front:  { phi: 90,  theta: -90 }, // XZ plane (X right, Z up)
-    back:   { phi: 90,  theta:  90 },
-    right:  { phi: 90,  theta:   0 }, // YZ plane (Y right, Z up)
-    left:   { phi: 90,  theta: 180 },
+    front: { phi: 90, theta: -90 }, // XZ plane (X right, Z up)
+    back: { phi: 90, theta: 90 },
+    right: { phi: 90, theta: 0 }, // YZ plane (Y right, Z up)
+    left: { phi: 90, theta: 180 },
   };
 
   const cam3d = computed((): Cam3D & Record<string, unknown> => {
     const base = (store.project?.camera3d ?? {}) as Partial<{
-      zoom: number; focalDistance: number; view: string;
-      phi: number; theta: number;
+      zoom: number;
+      focalDistance: number;
+      view: string;
+      phi: number;
+      theta: number;
     }>;
     const zoom = base.zoom ?? 1;
     const fd = base.focalDistance ?? 8;
@@ -106,9 +106,7 @@ export function useStageViewport(
   });
 
   // Single-canvas 3D viewport — centered on the visible black backdrop (ox/oy/vs).
-  const proj3DScale = computed(
-    () => (Math.min(stg.value.width, stg.value.height) * vs.value) / 12
-  );
+  const proj3DScale = computed(() => (Math.min(stg.value.width, stg.value.height) * vs.value) / 12);
   const projCx = computed(() => ox.value + (stg.value.width * vs.value) / 2);
   const projCy = computed(() => oy.value + (stg.value.height * vs.value) / 2);
 
@@ -164,8 +162,7 @@ export function useStageViewport(
     obj?: Partial<{ x3d: number; y3d: number; z3d: number }>
   ): Record<string, number> {
     const c = cam3d.value;
-    const view =
-      (store.project.camera3d as Partial<{ view: string }>)?.view ?? 'perspective';
+    const view = (store.project.camera3d as Partial<{ view: string }>)?.view ?? 'perspective';
     const cs = getCs(store);
     if (view === 'perspective' || (cs && cs.is3d)) {
       const r = unprojectIso(
@@ -186,13 +183,20 @@ export function useStageViewport(
     const sx = (px - projCx.value) / s;
     const sy = (projCy.value - py) / s; // +screen up
     switch (view) {
-      case 'top':    return { x3d: _r3(sx),  y3d: _r3(sy)  };
-      case 'bottom': return { x3d: _r3(sx),  y3d: _r3(-sy) };
-      case 'front':  return { x3d: _r3(sx),  z3d: _r3(sy)  };
-      case 'back':   return { x3d: _r3(-sx), z3d: _r3(sy)  };
-      case 'right':  return { y3d: _r3(sx),  z3d: _r3(sy)  };
-      case 'left':   return { y3d: _r3(-sx), z3d: _r3(sy)  };
-      default:       return { x3d: _r3(sx),  y3d: _r3(sy)  };
+      case 'top':
+        return { x3d: _r3(sx), y3d: _r3(sy) };
+      case 'bottom':
+        return { x3d: _r3(sx), y3d: _r3(-sy) };
+      case 'front':
+        return { x3d: _r3(sx), z3d: _r3(sy) };
+      case 'back':
+        return { x3d: _r3(-sx), z3d: _r3(sy) };
+      case 'right':
+        return { y3d: _r3(sx), z3d: _r3(sy) };
+      case 'left':
+        return { y3d: _r3(-sx), z3d: _r3(sy) };
+      default:
+        return { x3d: _r3(sx), y3d: _r3(sy) };
     }
   }
 

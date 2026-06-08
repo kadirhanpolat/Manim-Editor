@@ -61,10 +61,7 @@ export function applyEffects(
   if (dash) {
     const peri = centered ? Math.PI * Math.max(w, h) : h === 0 ? w : 2 * (w + h);
     const on = Math.max(2, (peri / Math.max(2, dash.numDashes ?? 2)) * (dash.ratio ?? 0.5));
-    const off = Math.max(
-      2,
-      (peri / Math.max(2, dash.numDashes ?? 2)) * (1 - (dash.ratio ?? 0.5))
-    );
+    const off = Math.max(2, (peri / Math.max(2, dash.numDashes ?? 2)) * (1 - (dash.ratio ?? 0.5)));
     cfg.dash = [on, off];
   }
   // drop shadow (Konva native; blur is preview-only — Manim has no blur)

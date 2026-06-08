@@ -11,7 +11,12 @@ let _measureCtx: CanvasRenderingContext2D | null = null;
 
 // ── measureTextWidth ──────────────────────────────────────────────────────────
 // Pure function — no ctx needed; uses an offscreen canvas.
-export function measureTextWidth(text: string, fontSize: number, fontFamily: string, fontStyle: string): number {
+export function measureTextWidth(
+  text: string,
+  fontSize: number,
+  fontFamily: string,
+  fontStyle: string
+): number {
   if (!_measureCanvas) {
     _measureCanvas = document.createElement('canvas');
     _measureCtx = _measureCanvas.getContext('2d');
@@ -27,7 +32,9 @@ export function counterText(obj: SceneObject, ctx: StageCtx): string {
   const ov = ctx.frameState.objectOverrides[obj.id] as Record<string, unknown> | undefined;
   const raw = ov && 'value' in ov ? (ov.value as number) : ((obj.value as number | undefined) ?? 0);
   const numDecimalsRaw = obj.numDecimals as number | undefined;
-  const dec = Number.isFinite(numDecimalsRaw) ? Math.max(0, Math.trunc(numDecimalsRaw as number)) : 0;
+  const dec = Number.isFinite(numDecimalsRaw)
+    ? Math.max(0, Math.trunc(numDecimalsRaw as number))
+    : 0;
   return raw.toFixed(dec) + ((obj.suffix as string | undefined) || '');
 }
 
@@ -82,7 +89,8 @@ export function counterCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkn
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
-  const fontSize = ((e.fontSize as number | undefined) || (e.height as number | undefined) || 48) * ctx.vs;
+  const fontSize =
+    ((e.fontSize as number | undefined) || (e.height as number | undefined) || 48) * ctx.vs;
   const text = counterText(obj, ctx);
   const textWidth = measureTextWidth(text, fontSize, 'Arial', '');
   const rot = L ? L.rotation : e.rotation || 0;
@@ -108,7 +116,8 @@ export function counterCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkn
 // ── latexBgCfg ────────────────────────────────────────────────────────────────
 export function latexBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const ow = obj.width as number, oh = obj.height as number;
+  const ow = obj.width as number,
+    oh = obj.height as number;
   const w = L ? L.w : ow * ctx.vs,
     h = L ? L.h : oh * ctx.vs;
   // listening:true → this rect is the group's hit area so the LaTeX box can be
@@ -130,7 +139,8 @@ export function latexBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkn
 // ── latexTextCfg ──────────────────────────────────────────────────────────────
 export function latexTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const ow = obj.width as number, oh = obj.height as number;
+  const ow = obj.width as number,
+    oh = obj.height as number;
   const w = L ? L.w : ow * ctx.vs,
     h = L ? L.h : oh * ctx.vs;
   // Approximate Unicode preview of the raw LaTeX (Manim does the real MathTex).
@@ -154,7 +164,8 @@ export function latexTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, un
 // ── latexBadgeCfg ─────────────────────────────────────────────────────────────
 export function latexBadgeCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const ow = obj.width as number, oh = obj.height as number;
+  const ow = obj.width as number,
+    oh = obj.height as number;
   const w = L ? L.w : ow * ctx.vs,
     h = L ? L.h : oh * ctx.vs;
   return {

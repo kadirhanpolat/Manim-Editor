@@ -134,7 +134,7 @@ export async function loadFonts(fontFamilies: string[]): Promise<boolean[]> {
  * Preload fonts used in a project
  */
 export async function preloadProjectFonts(
-  objects: Array<{ type?: string; fontFamily?: string }> | null | undefined,
+  objects: Array<{ type?: string; fontFamily?: string }> | null | undefined
 ): Promise<void> {
   const fonts = new Set<string>();
 

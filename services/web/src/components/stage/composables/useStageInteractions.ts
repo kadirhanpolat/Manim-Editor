@@ -121,10 +121,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     const obj = store.objectById(store.selectedObjectIds[0]);
     if (!obj) return null;
     const c = s2c(obj.x ?? 0, obj.y ?? 0);
-    if (
-      (obj.type === 'polygon_free' || obj.type === 'bezier') &&
-      Array.isArray(obj['vertices'])
-    ) {
+    if ((obj.type === 'polygon_free' || obj.type === 'bezier') && Array.isArray(obj['vertices'])) {
       return {
         id: obj.id,
         kind: 'vertices',
@@ -177,9 +174,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     const bounds = [];
     for (const group of groups) {
       if (!group.childIds || group.childIds.length === 0) continue;
-      const anySelected = group.childIds.some((cid) =>
-        store.selectedObjectIds.includes(cid)
-      );
+      const anySelected = group.childIds.some((cid) => store.selectedObjectIds.includes(cid));
       if (!anySelected) continue;
 
       let minX = Infinity,
@@ -359,11 +354,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
   function onDrag3DEnd(objId: string, e: KonvaEvt): void {
     const node = e.target;
     const obj = store.project.objects.find((o) => o.id === objId);
-    const patch = unprojectView(
-      node.x!(),
-      node.y!(),
-      obj as unknown as Record<string, unknown>
-    );
+    const patch = unprojectView(node.x!(), node.y!(), obj as unknown as Record<string, unknown>);
     if (patch) store.updateObject(objId, patch);
     store.commitState();
     node.position?.({ x: 0, y: 0 });

@@ -8,7 +8,8 @@ import type { StageCtx } from './context.js';
 
 export function axesBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const ow = obj.width as number, oh = obj.height as number;
+  const ow = obj.width as number,
+    oh = obj.height as number;
   const w = L ? L.w : ow * ctx.vs,
     h = L ? L.h : oh * ctx.vs;
   // listening:true → this rect is the group's hit area so the axes can be
@@ -118,9 +119,14 @@ export function axesYTicks(obj: SceneObject, ctx: StageCtx): Record<string, unkn
   return ticks;
 }
 
-export function axesLabelCfg(obj: SceneObject, axis: string, ctx: StageCtx): Record<string, unknown> {
+export function axesLabelCfg(
+  obj: SceneObject,
+  axis: string,
+  ctx: StageCtx
+): Record<string, unknown> {
   const L = ctx.live(obj);
-  const ow = obj.width as number, oh = obj.height as number;
+  const ow = obj.width as number,
+    oh = obj.height as number;
   const w = L ? L.w : ow * ctx.vs,
     h = L ? L.h : oh * ctx.vs;
   if (axis === 'x') {
@@ -196,7 +202,11 @@ export function axesGraphCurves(obj: SceneObject, ctx: StageCtx): Record<string,
 export function axesAreaRiemann(
   obj: SceneObject,
   ctx: StageCtx
-): { areas: Record<string, unknown>[]; rects: Record<string, unknown>[]; tangents: Record<string, unknown>[] } {
+): {
+  areas: Record<string, unknown>[];
+  rects: Record<string, unknown>[];
+  tangents: Record<string, unknown>[];
+} {
   const graphs = obj.graphs as Array<Record<string, unknown>> | undefined;
   if (!graphs || graphs.length === 0) return { areas: [], rects: [], tangents: [] };
   const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1],
@@ -233,7 +243,8 @@ export function axesAreaRiemann(
         areas.push({
           points: pts,
           closed: true,
-          fill: (area.color as string | undefined) || (graph.color as string | undefined) || '#f59e0b',
+          fill:
+            (area.color as string | undefined) || (graph.color as string | undefined) || '#f59e0b',
           opacity: (area.opacity as number | undefined) ?? 0.5,
           listening: false,
         });
@@ -245,9 +256,7 @@ export function axesAreaRiemann(
       const r1 = Number.isFinite(riemann.xMax as number) ? (riemann.xMax as number) : xMax;
       const dxRaw = riemann.dx as number | undefined;
       const dx =
-        Number.isFinite(dxRaw) && (dxRaw as number) > 0
-          ? (dxRaw as number)
-          : (r1 - r0) / 10;
+        Number.isFinite(dxRaw) && (dxRaw as number) > 0 ? (dxRaw as number) : (r1 - r0) / 10;
       const type = (riemann.type as string | undefined) || 'left';
       for (let x = r0; x < r1 - 1e-9; x += dx) {
         const sx = type === 'right' ? x + dx : type === 'center' ? x + dx / 2 : x;
@@ -260,7 +269,10 @@ export function axesAreaRiemann(
           y: toCy(y),
           width: right - left,
           height: cy0 - toCy(y),
-          fill: (riemann.color as string | undefined) || (graph.color as string | undefined) || '#f59e0b',
+          fill:
+            (riemann.color as string | undefined) ||
+            (graph.color as string | undefined) ||
+            '#f59e0b',
           opacity: 0.45,
           stroke: '#fff',
           strokeWidth: 0.5,
@@ -270,7 +282,9 @@ export function axesAreaRiemann(
     }
     const tangent = graph.tangent as Record<string, unknown> | undefined;
     if (tangent && tangent.enabled) {
-      const txVal = Number.isFinite(tangent.x as number) ? (tangent.x as number) : (xMin + xMax) / 2;
+      const txVal = Number.isFinite(tangent.x as number)
+        ? (tangent.x as number)
+        : (xMin + xMax) / 2;
       const h = (xMax - xMin) / 1000;
       const y0 = fn(txVal),
         slope = (fn(txVal + h) - fn(txVal - h)) / (2 * h);
@@ -280,16 +294,17 @@ export function axesAreaRiemann(
         const len = Math.hypot(dCx, dCy) || 1;
         const tangentLen = tangent.length as number | undefined;
         const half =
-          ((Number.isFinite(tangentLen) ? (tangentLen as number) : 2) * pw) /
-          (xMax - xMin) /
-          2;
+          ((Number.isFinite(tangentLen) ? (tangentLen as number) : 2) * pw) / (xMax - xMin) / 2;
         const ux = dCx / len,
           uy = dCy / len;
         const cx = toCx(txVal),
           cyy = toCy(y0);
         tangents.push({
           points: [cx - ux * half, cyy - uy * half, cx + ux * half, cyy + uy * half],
-          stroke: (tangent.color as string | undefined) || (graph.color as string | undefined) || '#f59e0b',
+          stroke:
+            (tangent.color as string | undefined) ||
+            (graph.color as string | undefined) ||
+            '#f59e0b',
           strokeWidth: 2,
           listening: false,
         });

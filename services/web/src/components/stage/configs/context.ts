@@ -69,7 +69,13 @@ export interface StageCtx {
    */
   live: (obj: SceneObject) => LiveTransform | null;
   /** Apply gradient/dash/shadow/cornerRadius effects to a Konva config. */
-  applyEffects: (cfg: Record<string, unknown>, obj: SceneObject, w: number, h: number, centered: boolean) => Record<string, unknown>;
+  applyEffects: (
+    cfg: Record<string, unknown>,
+    obj: SceneObject,
+    w: number,
+    h: number,
+    centered: boolean
+  ) => Record<string, unknown>;
   /** Convert a CSS hex colour to rgba(…) with the given alpha. */
   hexToRgba: (hex: string, a?: number) => string;
   /** Primary accent colour from the app theme (hex string). */
@@ -94,7 +100,14 @@ export interface StageCtx {
    * Isometric 3D→2D projection.
    * Returns canvas coords `{px, py}` for a 3D point.
    */
-  iso: (x3d: number, y3d: number, z3d: number, cx?: number, cy?: number, scale?: number) => IsoPoint;
+  iso: (
+    x3d: number,
+    y3d: number,
+    z3d: number,
+    cx?: number,
+    cy?: number,
+    scale?: number
+  ) => IsoPoint;
   /** Measure the rendered pixel width of a text string. */
   measureTextWidth: (text: string, font: string) => number;
   /** Currently active interaction tool ("select", "pen", …). */

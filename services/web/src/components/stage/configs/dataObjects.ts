@@ -76,12 +76,15 @@ export function dotGridHitCfg(obj: SceneObject, ctx: StageCtx): Record<string, u
 export function imageCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c((e.x ?? 0) - ew / 2, (e.y ?? 0) - eh / 2);
   const w = L ? L.w : ew * ctx.vs,
     h = L ? L.h : eh * ctx.vs,
     rot = L ? L.rotation : e.rotation || 0;
-  const imgMap = ctx.imageElements as Record<string, HTMLImageElement> | Map<string, HTMLImageElement>;
+  const imgMap = ctx.imageElements as
+    | Record<string, HTMLImageElement>
+    | Map<string, HTMLImageElement>;
   const assetId = obj.assetId as string | undefined;
   const image = imgMap instanceof Map ? imgMap.get(assetId ?? '') : imgMap[assetId ?? ''];
   return {
@@ -336,7 +339,10 @@ export function polarCircleConfigs(obj: SceneObject, ctx: StageCtx): Record<stri
   const rStepRaw = obj.radiusStep as number | undefined;
   const rMax = Number.isFinite(rMaxRaw) && (rMaxRaw as number) > 0 ? (rMaxRaw as number) : 4;
   const rStep = Number.isFinite(rStepRaw) && (rStepRaw as number) > 0 ? (rStepRaw as number) : 1;
-  const halfSize = (Math.min((obj.width as number | undefined) || 400, (obj.height as number | undefined) || 400) / 2) * ctx.vs;
+  const halfSize =
+    (Math.min((obj.width as number | undefined) || 400, (obj.height as number | undefined) || 400) /
+      2) *
+    ctx.vs;
   const rings = Math.floor(rMax / rStep);
   const col = (obj.stroke as string | undefined) || '#64748b';
   const sw = Math.max(0.5, ctx.vs);
@@ -359,9 +365,11 @@ export function polarCircleConfigs(obj: SceneObject, ctx: StageCtx): Record<stri
 
 export function polarSpokeConfigs(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {
   const azRaw = obj.azimuthUnits as number | undefined;
-  const az =
-    Number.isFinite(azRaw) && (azRaw as number) >= 1 ? Math.trunc(azRaw as number) : 12;
-  const halfSize = (Math.min((obj.width as number | undefined) || 400, (obj.height as number | undefined) || 400) / 2) * ctx.vs;
+  const az = Number.isFinite(azRaw) && (azRaw as number) >= 1 ? Math.trunc(azRaw as number) : 12;
+  const halfSize =
+    (Math.min((obj.width as number | undefined) || 400, (obj.height as number | undefined) || 400) /
+      2) *
+    ctx.vs;
   const col = (obj.stroke as string | undefined) || '#64748b';
   const sw = Math.max(0.5, ctx.vs);
   const configs: Record<string, unknown>[] = [];
@@ -504,7 +512,10 @@ function _compileField2(expr: string): ((x: number, y: number) => number) | null
     'const PI=Math.PI,TAU=2*Math.PI,E=Math.E;';
   try {
     // eslint-disable-next-line no-new-func
-    const fn = new Function('x', 'y', '"use strict";' + SCOPE2 + 'return (' + expr + ');') as (x: number, y: number) => unknown;
+    const fn = new Function('x', 'y', '"use strict";' + SCOPE2 + 'return (' + expr + ');') as (
+      x: number,
+      y: number
+    ) => unknown;
     const probe = fn(1, 1);
     if (typeof probe !== 'number') return null;
     return fn as (x: number, y: number) => number;

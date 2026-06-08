@@ -31,13 +31,28 @@ function shade(hex: string, f: number): string {
 }
 // Project world point (object-relative offset dx,dy,dz) to screen, minus the
 // object's projected centre `c` — i.e. coordinates inside a Konva group placed at c.
-function _rel(ctx: StageCtx, e3: Eff3dResult, dx: number, dy: number, dz: number, c: IsoPoint): [number, number] {
+function _rel(
+  ctx: StageCtx,
+  e3: Eff3dResult,
+  dx: number,
+  dy: number,
+  dz: number,
+  c: IsoPoint
+): [number, number] {
   const q = ctx.iso(e3.x3d + dx, e3.y3d + dy, e3.z3d + dz, ctx.projCx, ctx.projCy, ctx.proj3DScale);
   return [q.px - c.px, q.py - c.py];
 }
 // Project a circle of radius R (in the plane perpendicular to `axis`, offset
 // `off` along it) → array of [x,y] points relative to centre c.
-function _circlePts(ctx: StageCtx, e3: Eff3dResult, R: number, axis: string, off: number, c: IsoPoint, N = 28): [number, number][] {
+function _circlePts(
+  ctx: StageCtx,
+  e3: Eff3dResult,
+  R: number,
+  axis: string,
+  off: number,
+  c: IsoPoint,
+  N = 28
+): [number, number][] {
   const out: [number, number][] = [];
   for (let i = 0; i < N; i++) {
     const a = (i / N) * 2 * Math.PI,
@@ -78,8 +93,14 @@ function _hull(pts: [number, number][]): [number, number][] {
 // Clip segment (x0,y0)-(x1,y1) to rect [rx0,ry0,rx1,ry1]; returns trimmed
 // [x0,y0,x1,y1] or null if fully outside.
 function _clipSeg(
-  x0: number, y0: number, x1: number, y1: number,
-  rx0: number, ry0: number, rx1: number, ry1: number
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rx0: number,
+  ry0: number,
+  rx1: number,
+  ry1: number
 ): number[] | null {
   let t0 = 0,
     t1 = 1;
@@ -109,10 +130,13 @@ function _clipSeg(
 export function sphere3dCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const e3 = ctx.eff3d(obj);
   const p = ctx.iso(e3.x3d, e3.y3d, e3.z3d, ctx.projCx, ctx.projCy, ctx.proj3DScale);
-  const cam3dZoom = (ctx.cam3d as Record<string, unknown>).zoom as number ?? 1;
+  const cam3dZoom = ((ctx.cam3d as Record<string, unknown>).zoom as number) ?? 1;
   const r = Math.max(
     4,
-    ((obj.radius as number | undefined) ?? 0.5) * ctx.proj3DScale * cam3dZoom * perspectiveScale(e3, ctx.cam3d)
+    ((obj.radius as number | undefined) ?? 0.5) *
+      ctx.proj3DScale *
+      cam3dZoom *
+      perspectiveScale(e3, ctx.cam3d)
   );
   const isSelected = (ctx.selectedObjectIds || []).includes(obj.id);
   const fill = (obj.fill as string | undefined) ?? '#e67700';
@@ -135,7 +159,13 @@ export function sphere3dCfg(obj: SceneObject, ctx: StageCtx): Record<string, unk
 // A real box — 6 faces, painter-sorted (far→near), shaded by how much each face
 // normal points toward the camera. Returned relative to the centre. (hx,hy,hz) are
 // the half-extents; cube passes equal ones, prism passes per-axis dimensions.
-function boxFaces(obj: SceneObject, ctx: StageCtx, hx: number, hy: number, hz: number): Record<string, unknown>[] {
+function boxFaces(
+  obj: SceneObject,
+  ctx: StageCtx,
+  hx: number,
+  hy: number,
+  hz: number
+): Record<string, unknown>[] {
   const e3 = ctx.eff3d(obj);
   const c = ctx.iso(e3.x3d, e3.y3d, e3.z3d, ctx.projCx, ctx.projCy, ctx.proj3DScale);
   const fill = (obj.fill as string | undefined) ?? '#3b5bdb',
@@ -199,7 +229,13 @@ export function cube3dFaces(obj: SceneObject, ctx: StageCtx): Record<string, unk
 }
 
 export function prism3dFaces(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {
-  return boxFaces(obj, ctx, ((obj.dimX as number | undefined) ?? 2) / 2, ((obj.dimY as number | undefined) ?? 1) / 2, ((obj.dimZ as number | undefined) ?? 1) / 2);
+  return boxFaces(
+    obj,
+    ctx,
+    ((obj.dimX as number | undefined) ?? 2) / 2,
+    ((obj.dimY as number | undefined) ?? 1) / 2,
+    ((obj.dimZ as number | undefined) ?? 1) / 2
+  );
 }
 
 // Projected centre of a 3D object — used to position a Konva group whose

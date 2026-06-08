@@ -8,13 +8,14 @@ import type { StageCtx } from './context.js';
 export function rectCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c((e.x ?? 0) - ew / 2, (e.y ?? 0) - eh / 2);
   const w = L ? L.w : ew * ctx.vs,
     h = L ? L.h : eh * ctx.vs,
     rot = L ? L.rotation : e.rotation || 0;
   const cr = obj.cornerRadius as number | undefined;
-  const crPx = ((cr != null && cr > 0) ? cr : obj.type === 'square' ? 4 : 2) * ctx.vs;
+  const crPx = (cr != null && cr > 0 ? cr : obj.type === 'square' ? 4 : 2) * ctx.vs;
   const cfg: Record<string, unknown> = {
     x: p.x,
     y: p.y,
@@ -38,7 +39,8 @@ export function rectCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown
 export function circleCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   const r = L ? Math.min(L.w, L.h) / 2 : (Math.min(ew, eh) / 2) * ctx.vs;
   const rot = L ? L.rotation : e.rotation || 0;
@@ -63,7 +65,8 @@ export function circleCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkno
 export function ellipseCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   const rx = L ? L.w / 2 : (ew / 2) * ctx.vs,
     ry = L ? L.h / 2 : (eh / 2) * ctx.vs,
@@ -105,7 +108,8 @@ export function dotCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown>
 export function heartCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   const w = L ? L.w : ew * ctx.vs;
   const h = L ? L.h : eh * ctx.vs;
@@ -134,7 +138,9 @@ export function heartCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknow
         const py =
           -((13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 15) *
           hh;
-        i === 0 ? (ctx2.moveTo as (x: number, y: number) => void)(px, py) : (ctx2.lineTo as (x: number, y: number) => void)(px, py);
+        i === 0
+          ? (ctx2.moveTo as (x: number, y: number) => void)(px, py)
+          : (ctx2.lineTo as (x: number, y: number) => void)(px, py);
       }
       (ctx2.closePath as () => void)();
       (ctx2.fillStrokeShape as (shape: unknown) => void)(shape);
@@ -145,7 +151,8 @@ export function heartCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknow
 export function triangleCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   const hw = L ? L.w / 2 : (ew / 2) * ctx.vs,
     hh = L ? L.h / 2 : (eh / 2) * ctx.vs,
@@ -291,7 +298,8 @@ export function parametricCfg(obj: SceneObject, ctx: StageCtx): Record<string, u
 export function starCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   const outerRadius = L ? Math.min(L.w, L.h) / 2 : (Math.min(ew, eh) / 2) * ctx.vs;
   const inner = ((obj.innerRatio as number | undefined) || 0.4) * outerRadius;
@@ -319,7 +327,8 @@ export function starCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown
 export function polygonCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const ew = e.width as number, eh = e.height as number;
+  const ew = e.width as number,
+    eh = e.height as number;
   const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   const r = L ? Math.min(L.w, L.h) / 2 : (Math.min(ew, eh) / 2) * ctx.vs;
   const rot = L ? L.rotation : e.rotation || 0;
@@ -455,7 +464,13 @@ export function arcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown>
     hitStrokeWidth: 12,
     sceneFunc: (ctx2: Record<string, unknown>, shape: unknown) => {
       (ctx2.beginPath as () => void)();
-      (ctx2.arc as (x: number, y: number, r: number, a0: number, a1: number) => void)(0, 0, r, -a1, -a0);
+      (ctx2.arc as (x: number, y: number, r: number, a0: number, a1: number) => void)(
+        0,
+        0,
+        r,
+        -a1,
+        -a0
+      );
       (ctx2.strokeShape as (shape: unknown) => void)(shape);
     },
   };
