@@ -21,7 +21,7 @@
           step="0.01"
           class="flex-1 accent-studio-accent"
           :value="stg.backgroundOpacity ?? 1"
-          @input="uStage('backgroundOpacity', Number($event.target.value))"
+          @input="uStage('backgroundOpacity', Number(($event.target as HTMLInputElement).value))"
         />
         <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
           >{{ Math.round((stg.backgroundOpacity ?? 1) * 100) }}%</span
@@ -38,7 +38,7 @@
           <input
             type="checkbox"
             :checked="stg.gridVisible"
-            @change="uStage('gridVisible', $event.target.checked)"
+            @change="uStage('gridVisible', ($event.target as HTMLInputElement).checked)"
             class="accent-studio-accent"
           />
           <span class="text-[10px] text-studio-text-muted">Visible</span>
@@ -61,7 +61,7 @@
             max="1"
             step="0.02"
             :value="stg.gridOpacity ?? 0.12"
-            @change="uStage('gridOpacity', Number($event.target.value))"
+            @change="uStage('gridOpacity', Number(($event.target as HTMLInputElement).value))"
           />
         </div>
       </div>
@@ -80,7 +80,7 @@
         <input
           type="checkbox"
           :checked="stg.snapEnabled"
-          @change="uStage('snapEnabled', $event.target.checked)"
+          @change="uStage('snapEnabled', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
         />
         <span class="text-[10px] text-studio-text-muted">Snap enabled</span>
@@ -89,7 +89,7 @@
         <input
           type="checkbox"
           :checked="stg.snapToGrid"
-          @change="uStage('snapToGrid', $event.target.checked)"
+          @change="uStage('snapToGrid', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
         />
         <span class="text-[10px] text-studio-text-muted">Snap to grid</span>
@@ -98,7 +98,7 @@
         <input
           type="checkbox"
           :checked="stg.snapToCenter"
-          @change="uStage('snapToCenter', $event.target.checked)"
+          @change="uStage('snapToCenter', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
         />
         <span class="text-[10px] text-studio-text-muted">Snap to center</span>
@@ -107,7 +107,7 @@
         <input
           type="checkbox"
           :checked="stg.snapToObjects"
-          @change="uStage('snapToObjects', $event.target.checked)"
+          @change="uStage('snapToObjects', ($event.target as HTMLInputElement).checked)"
           class="accent-studio-accent"
         />
         <span class="text-[10px] text-studio-text-muted">Snap to objects</span>
@@ -163,7 +163,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../../store/project.js';
 import Section from '../ui/Section.vue';
@@ -176,16 +176,16 @@ const stg = computed(() => store.project.stage);
 const groups = computed(() => store.project.groups || []);
 const objs = computed(() => store.project.objects);
 
-function uStage(k, v) {
+function uStage(k: string, v: unknown) {
   store.updateStage({ [k]: v });
 }
-function ungroup(groupId) {
+function ungroup(groupId: string) {
   store.ungroupObjects(groupId);
 }
-function isSel(id) {
+function isSel(id: string) {
   return store.selectedObjectIds.includes(id);
 }
-function selObj(id, e) {
+function selObj(id: string, e: MouseEvent) {
   store.selectObject(id, e.shiftKey || e.ctrlKey);
 }
 </script>

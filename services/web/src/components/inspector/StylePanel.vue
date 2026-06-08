@@ -10,8 +10,8 @@
           <label class="block text-xs text-studio-text-muted mb-1">Font Size</label>
           <input
             type="number"
-            :value="element.style.size"
-            @input="updateStyle('size', parseInt($event.target.value))"
+            :value="style.size as number"
+            @input="updateStyle('size', parseInt(($event.target as HTMLInputElement).value))"
             min="8"
             max="200"
             class="input text-sm"
@@ -19,7 +19,7 @@
         </div>
         <div>
           <label class="block text-xs text-studio-text-muted mb-1">Color</label>
-          <ColorInput :value="element.style.color" @change="updateStyle('color', $event)" />
+          <ColorInput :value="style.color as string" @change="updateStyle('color', $event)" />
         </div>
       </div>
     </template>
@@ -30,15 +30,15 @@
         <div class="flex items-center gap-3">
           <input
             type="range"
-            :value="element.style.opacity || 1"
-            @input="updateStyle('opacity', parseFloat($event.target.value))"
+            :value="(style.opacity as number | undefined) || 1"
+            @input="updateStyle('opacity', parseFloat(($event.target as HTMLInputElement).value))"
             min="0"
             max="1"
             step="0.1"
             class="flex-1"
           />
           <span class="text-sm text-studio-text-muted w-12"
-            >{{ Math.round((element.style.opacity || 1) * 100) }}%</span
+            >{{ Math.round(((style.opacity as number | undefined) || 1) * 100) }}%</span
           >
         </div>
       </div>
@@ -49,14 +49,14 @@
         <div>
           <label class="block text-xs text-studio-text-muted mb-1">Stroke</label>
           <ColorInput
-            :value="element.style.strokeColor || '#ffffff'"
+            :value="(style.strokeColor as string | undefined) || '#ffffff'"
             @change="updateStyle('strokeColor', $event)"
           />
         </div>
         <div>
           <label class="block text-xs text-studio-text-muted mb-1">Fill</label>
           <ColorInput
-            :value="element.style.fillColor || '#ffffff'"
+            :value="(style.fillColor as string | undefined) || '#ffffff'"
             @change="updateStyle('fillColor', $event)"
           />
         </div>
@@ -65,13 +65,18 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from 'vue';
 import ColorInput from './ColorInput.vue';
+import type { SceneObject } from '@manim/codegen';
 
-const props = defineProps({ element: { type: Object, required: true } });
+const props = defineProps({ element: { type: Object as () => SceneObject, required: true } });
 const emit = defineEmits(['update']);
 
-function updateStyle(key, value) {
-  emit('update', { style: { ...props.element.style, [key]: value } });
+type Style = Record<string, unknown>;
+const style = computed(() => (props.element as unknown as { style: Style }).style ?? {} as Style);
+
+function updateStyle(key: string, value: unknown) {
+  emit('update', { style: { ...style.value, [key]: value } });
 }
 </script>

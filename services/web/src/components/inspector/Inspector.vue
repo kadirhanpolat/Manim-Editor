@@ -24,8 +24,8 @@
       <div v-if="selectedElement.type === 'text'" class="px-4 py-3 border-b border-studio-border">
         <label class="block text-xs text-studio-text-muted mb-2">Content</label>
         <textarea
-          :value="selectedElement.content"
-          @input="updateContent($event.target.value)"
+          :value="(selectedElement.content as string | undefined) ?? ''"
+          @input="updateContent(($event.target as HTMLTextAreaElement).value)"
           class="input text-sm resize-none"
           rows="2"
           placeholder="Enter text..."
@@ -55,7 +55,7 @@
         <label class="block text-xs text-studio-text-muted mb-1">Rotation Axis</label>
         <select
           :value="selectedClip.axis ?? 'Z'"
-          @change="store.updateClip(selectedClip.id, { axis: $event.target.value })"
+          @change="store.updateClip(selectedClip!.id!, { axis: ($event.target as HTMLSelectElement).value as 'X' | 'Y' | 'Z' })"
           class="select text-sm w-full"
         >
           <option value="X">X (RIGHT)</option>
@@ -73,7 +73,7 @@
           <input
             type="checkbox"
             :checked="!!selectedClip.matchTerms"
-            @change="store.setClipMatchTerms(selectedClip.id, $event.target.checked)"
+            @change="store.setClipMatchTerms(selectedClip!.id!, ($event.target as HTMLInputElement).checked)"
             class="w-3.5 h-3.5"
           />
           <span class="text-xs text-studio-text-muted">Match terms</span>
@@ -95,7 +95,7 @@
               class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
               :value="selectedClip.from ?? 0"
               @change="
-                store.updateClip(selectedClip.id, { from: Number($event.target.value) });
+                store.updateClip(selectedClip!.id!, { from: Number(($event.target as HTMLInputElement).value) });
                 store.commitState();
               "
             />
@@ -108,7 +108,7 @@
               class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
               :value="selectedClip.to ?? 100"
               @change="
-                store.updateClip(selectedClip.id, { to: Number($event.target.value) });
+                store.updateClip(selectedClip!.id!, { to: Number(($event.target as HTMLInputElement).value) });
                 store.commitState();
               "
             />
@@ -122,8 +122,8 @@
               class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
               :value="selectedClip.duration ?? 2"
               @change="
-                store.updateClip(selectedClip.id, {
-                  duration: Math.max(0.1, Number($event.target.value)),
+                store.updateClip(selectedClip!.id!, {
+                  duration: Math.max(0.1, Number(($event.target as HTMLInputElement).value)),
                 });
                 store.commitState();
               "
@@ -163,8 +163,9 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 import LayoutPanel from './LayoutPanel.vue';
 import StylePanel from './StylePanel.vue';
@@ -184,17 +185,17 @@ const RASTER_TYPES = new Set(['image', 'svg_asset']);
 const bothNonRaster = computed(() => {
   const c = selectedClip.value;
   if (!c || c.type !== 'transform') return false;
-  const s = store.objectById(c.sourceId);
-  const t = store.objectById(c.targetId);
+  const s = store.objectById(c.sourceId ?? '');
+  const t = store.objectById(c.targetId ?? '');
   return s && t && !RASTER_TYPES.has(s.type) && !RASTER_TYPES.has(t.type);
 });
 
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
-const is3DObject = computed(() => OBJ_3D_TYPES.includes(selectedElement.value?.type));
+const is3DObject = computed(() => OBJ_3D_TYPES.includes(selectedElement.value?.type ?? ''));
 
 const typeBadgeClass = computed(() => {
   if (!selectedElement.value) return '';
-  const classes = {
+  const classes: Record<string, string> = {
     text: 'bg-indigo-600 text-white',
     image: 'bg-emerald-600 text-white',
     svg: 'bg-amber-600 text-white',
@@ -202,13 +203,13 @@ const typeBadgeClass = computed(() => {
   return classes[selectedElement.value.type] || 'bg-slate-600 text-white';
 });
 
-function updateElement(updates) {
+function updateElement(updates: Partial<SceneObject>) {
   if (!selectedElement.value) return;
   store.updateObject(selectedElement.value.id, updates);
 }
 
-function updateContent(content) {
-  updateElement({ content });
+function updateContent(content: string) {
+  updateElement({ content } as Partial<SceneObject>);
 }
 
 function deleteElement() {

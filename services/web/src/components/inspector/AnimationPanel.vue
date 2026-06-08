@@ -8,7 +8,7 @@
       <label class="block text-xs text-studio-text-muted mb-2">Entrance</label>
       <select
         :value="inType"
-        @change="updateAnim('in', 'type', $event.target.value)"
+        @change="updateAnim('in', 'type', ($event.target as HTMLSelectElement).value)"
         class="select text-sm mb-2"
       >
         <option v-for="a in entranceAnims" :key="a.type" :value="a.type">{{ a.label }}</option>
@@ -18,7 +18,7 @@
         <input
           type="number"
           :value="inDur"
-          @input="updateAnim('in', 'duration', parseFloat($event.target.value))"
+          @input="updateAnim('in', 'duration', parseFloat(($event.target as HTMLInputElement).value))"
           min="0.1"
           step="0.1"
           class="input text-sm w-20"
@@ -31,7 +31,7 @@
       <label class="block text-xs text-studio-text-muted mb-2">Exit</label>
       <select
         :value="outType"
-        @change="updateAnim('out', 'type', $event.target.value)"
+        @change="updateAnim('out', 'type', ($event.target as HTMLSelectElement).value)"
         class="select text-sm mb-2"
       >
         <option v-for="a in exitAnims" :key="a.type" :value="a.type">{{ a.label }}</option>
@@ -41,7 +41,7 @@
         <input
           type="number"
           :value="outDur"
-          @input="updateAnim('out', 'duration', parseFloat($event.target.value))"
+          @input="updateAnim('out', 'duration', parseFloat(($event.target as HTMLInputElement).value))"
           min="0.1"
           step="0.1"
           class="input text-sm w-20"
@@ -52,25 +52,29 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import {
   getEntranceAnimationsForType,
   getExitAnimationsForType,
 } from '../../constants/animations.js';
 
-const props = defineProps({ element: { type: Object, required: true } });
+const props = defineProps({ element: { type: Object as () => SceneObject, required: true } });
 const emit = defineEmits(['update']);
+
+type AnimDir = Record<string, Record<string, unknown>>;
 
 const entranceAnims = computed(() => getEntranceAnimationsForType(props.element.type));
 const exitAnims = computed(() => getExitAnimationsForType(props.element.type));
-const inType = computed(() => props.element.anim?.in?.type || 'FADE_IN');
-const inDur = computed(() => props.element.anim?.in?.duration || 0.5);
-const outType = computed(() => props.element.anim?.out?.type || 'FADE_OUT');
-const outDur = computed(() => props.element.anim?.out?.duration || 0.5);
+const animField = computed(() => (props.element as unknown as { anim?: AnimDir }).anim);
+const inType = computed(() => animField.value?.['in']?.['type'] as string || 'FADE_IN');
+const inDur = computed(() => animField.value?.['in']?.['duration'] as number || 0.5);
+const outType = computed(() => animField.value?.['out']?.['type'] as string || 'FADE_OUT');
+const outDur = computed(() => animField.value?.['out']?.['duration'] as number || 0.5);
 
-function updateAnim(dir, key, val) {
-  const curr = props.element.anim?.[dir] || {};
-  emit('update', { anim: { ...props.element.anim, [dir]: { ...curr, [key]: val } } });
+function updateAnim(dir: string, key: string, val: unknown) {
+  const curr = animField.value?.[dir] || {};
+  emit('update', { anim: { ...animField.value, [dir]: { ...curr, [key]: val } } });
 }
 </script>

@@ -20,7 +20,7 @@
         type="number"
         :value="kfData?.value ?? ''"
         class="w-20 text-[10px] font-mono text-right bg-studio-bg border border-studio-border rounded px-1 py-0.5"
-        @change="updateValue(+$event.target.value)"
+        @change="updateValue(+($event.target as HTMLInputElement).value)"
       />
     </div>
 
@@ -30,7 +30,7 @@
       <select
         :value="mode"
         class="text-[10px] bg-studio-bg border border-studio-border rounded px-1 py-0.5"
-        @change="store.setKeyframeMode(kf.objId, kf.prop, $event.target.value)"
+        @change="store.setKeyframeMode(kf!.objId, kf!.prop, ($event.target as HTMLSelectElement).value)"
       >
         <option value="opt-in">Opt-in</option>
         <option value="override">Override</option>
@@ -48,7 +48,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 
@@ -57,9 +57,10 @@ const kf = computed(() => store.selectedKeyframeId);
 const obj = computed(() => (kf.value ? store.objectById(kf.value.objId) : null));
 
 const kfData = computed(() => {
-  if (!kf.value || !obj.value?.keyframes?.[kf.value.prop]) return null;
+  const kfv = kf.value;
+  if (!kfv || !obj.value?.keyframes?.[kfv.prop]) return null;
   return (
-    obj.value.keyframes[kf.value.prop].find((k) => Math.abs(k.time - kf.value.time) < 0.01) || null
+    obj.value.keyframes[kfv.prop].find((k) => Math.abs(k.time - kfv.time) < 0.01) || null
   );
 });
 
@@ -74,7 +75,7 @@ const modeColor = computed(
   () => ({ override: '#ffd700', additive: '#ff9d42', 'opt-in': '#60a5fa' })[mode.value] || '#60a5fa'
 );
 
-function updateValue(val) {
+function updateValue(val: number) {
   if (!kf.value || !Number.isFinite(val)) return;
   store.updateKeyframeValue(kf.value.objId, kf.value.prop, kf.value.time, val);
 }

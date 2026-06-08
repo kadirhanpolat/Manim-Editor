@@ -95,11 +95,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, nextTick, onBeforeUnmount } from 'vue';
 import { useGoogleFonts } from './useGoogleFonts.js';
 
-const props = defineProps({
+defineProps({
   value: {
     type: String,
     default: 'Roboto',
@@ -108,8 +108,8 @@ const props = defineProps({
 const emit = defineEmits(['input']);
 
 // Template refs
-const input = ref(null);
-const fontList = ref(null);
+const input = ref<HTMLInputElement | null>(null);
+const fontList = ref<HTMLDivElement | null>(null);
 
 // UI state (the data layer lives in useGoogleFonts)
 const isOpen = ref(false);
@@ -124,7 +124,7 @@ const categories = ref([
   { id: 'handwriting', label: 'Script' },
   { id: 'monospace', label: 'Mono' },
 ]);
-const debounceTimer = ref(null);
+const debounceTimer = ref<ReturnType<typeof setTimeout> | undefined>(undefined);
 
 // Font data layer (fetch + pagination + preview styles)
 const { fonts, loading, hasMore, load } = useGoogleFonts();
@@ -134,8 +134,8 @@ function reload(reset = true) {
 
 const filteredFonts = computed(() => fonts.value);
 
-function onInput(event) {
-  searchQuery.value = event.target.value;
+function onInput(event: Event) {
+  searchQuery.value = (event.target as HTMLInputElement).value;
   highlightedIndex.value = -1;
 
   // Debounce search
@@ -161,7 +161,7 @@ function onBlur() {
   }, 200);
 }
 
-function onKeydown(event) {
+function onKeydown(event: KeyboardEvent) {
   switch (event.key) {
     case 'ArrowDown':
       event.preventDefault();
@@ -194,21 +194,21 @@ function onKeydown(event) {
 function scrollToHighlighted() {
   nextTick(() => {
     const list = fontList.value;
-    const item = list?.children[highlightedIndex.value];
+    const item = list?.children[highlightedIndex.value] as HTMLElement | undefined;
     if (item) {
       item.scrollIntoView({ block: 'nearest' });
     }
   });
 }
 
-function selectFont(family) {
+function selectFont(family: string) {
   emit('input', family);
   isOpen.value = false;
   searchQuery.value = '';
   highlightedIndex.value = -1;
 }
 
-function selectCategory(category) {
+function selectCategory(category: string) {
   selectedCategory.value = category;
   highlightedIndex.value = -1;
   reload(true);

@@ -142,6 +142,7 @@ export interface Clip {
     targetX?: number;
     targetY?: number;
     targetScaleX?: number;
+    targetScaleY?: number;
     targetOpacity?: number;
     targetRotation?: number;
     zoom?: number;
@@ -149,6 +150,10 @@ export interface Clip {
     theta?: number;
     [k: string]: unknown;
   };
+
+  // morph/overshoot
+  overshoot?: number;
+  morphQuality?: string;
 
   // rotate (3D)
   axis?: 'X' | 'Y' | 'Z';

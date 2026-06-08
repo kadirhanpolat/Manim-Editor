@@ -27,7 +27,7 @@
   </aside>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import KeyframePanel from './KeyframePanel.vue';

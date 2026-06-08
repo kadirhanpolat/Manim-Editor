@@ -9,8 +9,8 @@
         <label class="block text-xs text-studio-text-muted mb-1">Start (s)</label>
         <input
           type="number"
-          :value="element.timing.start"
-          @input="updateTiming('start', parseFloat($event.target.value))"
+          :value="timing.start"
+          @input="updateTiming('start', parseFloat(($event.target as HTMLInputElement).value))"
           min="0"
           step="0.1"
           class="input text-sm"
@@ -20,8 +20,8 @@
         <label class="block text-xs text-studio-text-muted mb-1">Duration (s)</label>
         <input
           type="number"
-          :value="element.timing.duration"
-          @input="updateTiming('duration', parseFloat($event.target.value))"
+          :value="timing.duration"
+          @input="updateTiming('duration', parseFloat(($event.target as HTMLInputElement).value))"
           min="0.1"
           step="0.1"
           class="input text-sm"
@@ -38,7 +38,7 @@
       </div>
       <div class="flex justify-between mt-1">
         <span class="text-[10px] text-studio-text-muted"
-          >{{ element.timing.start.toFixed(1) }}s</span
+          >{{ timing.start.toFixed(1) }}s</span
         >
         <span class="text-[10px] text-studio-text-muted">{{ endTime.toFixed(1) }}s</span>
       </div>
@@ -46,26 +46,30 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 
-const props = defineProps({ element: { type: Object, required: true } });
+const props = defineProps({ element: { type: Object as () => SceneObject, required: true } });
 const emit = defineEmits(['update']);
 
 const store = useProjectStore();
 
-const endTime = computed(() => props.element.timing.start + props.element.timing.duration);
+type Timing = { start: number; duration: number };
+const timing = computed(() => (props.element as unknown as { timing: Timing }).timing);
+
+const endTime = computed(() => timing.value.start + timing.value.duration);
 const totalDuration = computed(() => store.computedDuration);
 const previewStyle = computed(() => {
-  const start = (props.element.timing.start / totalDuration.value) * 100;
-  const width = (props.element.timing.duration / totalDuration.value) * 100;
+  const start = (timing.value.start / totalDuration.value) * 100;
+  const width = (timing.value.duration / totalDuration.value) * 100;
   return { marginLeft: start + '%', width: width + '%' };
 });
 
-function updateTiming(key, value) {
+function updateTiming(key: string, value: number) {
   emit('update', {
-    timing: { ...props.element.timing, [key]: Math.max(key === 'duration' ? 0.1 : 0, value || 0) },
+    timing: { ...timing.value, [key]: Math.max(key === 'duration' ? 0.1 : 0, value || 0) },
   });
 }
 </script>

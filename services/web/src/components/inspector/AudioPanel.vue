@@ -25,7 +25,7 @@
     <!-- File upload -->
     <div v-if="localType === 'file'" class="mb-3">
       <label class="block text-xs text-studio-text-muted mb-1">Audio file</label>
-      <div v-if="hasAudio && audio.type === 'file'" class="flex items-center gap-2 text-xs">
+      <div v-if="hasAudio && audio?.type === 'file'" class="flex items-center gap-2 text-xs">
         <span class="text-studio-accent">&#10003;</span>
         <span class="text-studio-text truncate">{{ audioFilename }}</span>
         <span class="text-studio-text-muted">{{ formattedDuration }}</span>
@@ -64,16 +64,16 @@
           <span v-else>Generate</span>
         </button>
       </div>
-      <div v-if="hasAudio && audio.status === 'ready'" class="mt-2 text-xs text-studio-accent">
+      <div v-if="hasAudio && audio?.status === 'ready'" class="mt-2 text-xs text-studio-accent">
         &#10003; Ready ({{ formattedDuration }})
       </div>
       <div
-        v-if="hasAudio && audio.status === 'pending'"
+        v-if="hasAudio && audio?.status === 'pending'"
         class="mt-2 text-xs text-studio-text-muted"
       >
         &#8987; Generating...
       </div>
-      <div v-if="hasAudio && audio.status === 'error'" class="mt-2 text-xs text-studio-error">
+      <div v-if="hasAudio && audio?.status === 'error'" class="mt-2 text-xs text-studio-error">
         &#9888; Failed. Try again.
       </div>
     </div>
@@ -121,29 +121,30 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
+import type { Clip } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
 import api, { connectAudioWebSocket } from '../../api.js';
 
-const props = defineProps({ clip: { type: Object, required: true } });
+const props = defineProps({ clip: { type: Object as () => Clip, required: true } });
 
 const store = useProjectStore();
 
-const localType = ref(props.clip.audio?.type || 'file');
+const localType = ref<'file' | 'gtts' | 'coqui'>(props.clip.audio?.type || 'file');
 const localText = ref(props.clip.audio?.text || '');
 const localLang = ref(props.clip.audio?.lang || 'tr');
-const localSyncMode = ref(props.clip.audio?.syncMode || 'auto');
+const localSyncMode = ref<'auto' | 'manual'>(props.clip.audio?.syncMode || 'auto');
 const localOffset = ref(props.clip.audio?.offset || 0);
 const ttsLoading = ref(false);
-const wsDisconnect = ref(null);
+const wsDisconnect = ref<(() => void) | null>(null);
 
-const sourceOptions = [
+const sourceOptions: { value: 'file' | 'gtts' | 'coqui'; label: string }[] = [
   { value: 'file', label: 'File' },
   { value: 'gtts', label: 'gTTS' },
   { value: 'coqui', label: 'Coqui' },
 ];
-const syncOptions = [
+const syncOptions: { value: 'auto' | 'manual'; label: string }[] = [
   { value: 'auto', label: 'Auto' },
   { value: 'manual', label: 'Manual' },
 ];
@@ -164,15 +165,15 @@ const audioFilename = computed(() => {
 });
 const formattedDuration = computed(() => {
   if (audio.value?.duration == null) return '';
-  return `${parseFloat(audio.value.duration).toFixed(1)}s`;
+  return `${Number(audio.value.duration).toFixed(1)}s`;
 });
 
-async function onFileChange(e) {
-  const file = e.target.files[0];
+async function onFileChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
   try {
     const result = await api.audio.upload(file, props.clip.id);
-    store.setClipAudio(props.clip.id, {
+    store.setClipAudio(props.clip.id!, {
       type: 'file',
       src: result.src,
       duration: result.duration,
@@ -189,7 +190,7 @@ async function generateTTS() {
   if (!localText.value.trim() || ttsLoading.value) return;
   ttsLoading.value = true;
   try {
-    store.setClipAudio(props.clip.id, {
+    store.setClipAudio(props.clip.id!, {
       type: localType.value,
       text: localText.value,
       lang: localLang.value,
@@ -198,16 +199,16 @@ async function generateTTS() {
       status: 'pending',
     });
 
-    const { jobId } = await api.audio.tts(
-      props.clip.id,
+    const { jobId } = (await api.audio.tts(
+      props.clip.id!,
       localType.value,
       localText.value,
       localLang.value
-    );
+    )) as { jobId: string };
 
     wsDisconnect.value = connectAudioWebSocket(jobId, (data) => {
       if (data.event === 'audio_ready') {
-        store.setClipAudio(props.clip.id, {
+        store.setClipAudio(props.clip.id!, {
           type: localType.value,
           text: localText.value,
           lang: localLang.value,
@@ -218,7 +219,7 @@ async function generateTTS() {
           status: 'ready',
         });
       } else {
-        store.setClipAudio(props.clip.id, {
+        store.setClipAudio(props.clip.id!, {
           ...(props.clip.audio || {}),
           status: 'error',
         });
@@ -227,23 +228,23 @@ async function generateTTS() {
       ttsLoading.value = false;
     });
   } catch (err) {
-    store.setClipAudio(props.clip.id, { ...(props.clip.audio || {}), status: 'error' });
+    store.setClipAudio(props.clip.id!, { ...(props.clip.audio || {}), status: 'error' });
     ttsLoading.value = false;
   }
 }
 
 function onSyncModeChange() {
   if (!hasAudio.value) return;
-  store.setClipAudio(props.clip.id, { ...props.clip.audio, syncMode: localSyncMode.value });
+  store.setClipAudio(props.clip.id!, { ...props.clip.audio, syncMode: localSyncMode.value });
 }
 
 function onOffsetChange() {
   if (!hasAudio.value) return;
-  store.setClipAudio(props.clip.id, { ...props.clip.audio, offset: localOffset.value });
+  store.setClipAudio(props.clip.id!, { ...props.clip.audio, offset: localOffset.value });
 }
 
 function removeAudio() {
-  store.removeClipAudio(props.clip.id);
+  store.removeClipAudio(props.clip.id!);
   localType.value = 'file';
   localText.value = '';
   ttsLoading.value = false;

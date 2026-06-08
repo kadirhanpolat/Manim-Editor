@@ -83,7 +83,7 @@
         <input
           type="number"
           data-testid="xRange-min"
-          :value="element.xRange?.[0] ?? -3"
+          :value="getRange('xRange')[0] ?? -3"
           @input="updateRange('xRange', 0, $event)"
           step="1"
           class="input text-sm w-16"
@@ -92,7 +92,7 @@
         <input
           type="number"
           data-testid="xRange-max"
-          :value="element.xRange?.[1] ?? 3"
+          :value="getRange('xRange')[1] ?? 3"
           @input="updateRange('xRange', 1, $event)"
           step="1"
           class="input text-sm w-16"
@@ -103,7 +103,7 @@
         <input
           type="number"
           data-testid="yRange-min"
-          :value="element.yRange?.[0] ?? -3"
+          :value="getRange('yRange')[0] ?? -3"
           @input="updateRange('yRange', 0, $event)"
           step="1"
           class="input text-sm w-16"
@@ -112,7 +112,7 @@
         <input
           type="number"
           data-testid="yRange-max"
-          :value="element.yRange?.[1] ?? 3"
+          :value="getRange('yRange')[1] ?? 3"
           @input="updateRange('yRange', 1, $event)"
           step="1"
           class="input text-sm w-16"
@@ -123,7 +123,7 @@
         <input
           type="number"
           data-testid="zRange-min"
-          :value="element.zRange?.[0] ?? -3"
+          :value="getRange('zRange')[0] ?? -3"
           @input="updateRange('zRange', 0, $event)"
           step="1"
           class="input text-sm w-16"
@@ -132,7 +132,7 @@
         <input
           type="number"
           data-testid="zRange-max"
-          :value="element.zRange?.[1] ?? 3"
+          :value="getRange('zRange')[1] ?? 3"
           @input="updateRange('zRange', 1, $event)"
           step="1"
           class="input text-sm w-16"
@@ -144,8 +144,8 @@
       <input
         type="text"
         data-testid="surface-zexpr"
-        :value="element.zExpr ?? 'x**2 - y**2'"
-        @input="$emit('update', { zExpr: $event.target.value })"
+        :value="(element.zExpr as string | undefined) ?? 'x**2 - y**2'"
+        @input="$emit('update', { zExpr: ($event.target as HTMLInputElement).value })"
         class="input text-sm w-full"
         placeholder="x**2 - y**2"
       />
@@ -154,7 +154,7 @@
         <input
           type="number"
           data-testid="surface-x-min"
-          :value="element.xRange?.[0] ?? -2"
+          :value="getRange('xRange')[0] ?? -2"
           @input="updateRange('xRange', 0, $event)"
           step="0.5"
           class="input text-sm w-16"
@@ -163,7 +163,7 @@
         <input
           type="number"
           data-testid="surface-x-max"
-          :value="element.xRange?.[1] ?? 2"
+          :value="getRange('xRange')[1] ?? 2"
           @input="updateRange('xRange', 1, $event)"
           step="0.5"
           class="input text-sm w-16"
@@ -174,7 +174,7 @@
         <input
           type="number"
           data-testid="surface-y-min"
-          :value="element.yRange?.[0] ?? -2"
+          :value="getRange('yRange')[0] ?? -2"
           @input="updateRange('yRange', 0, $event)"
           step="0.5"
           class="input text-sm w-16"
@@ -183,7 +183,7 @@
         <input
           type="number"
           data-testid="surface-y-max"
-          :value="element.yRange?.[1] ?? 2"
+          :value="getRange('yRange')[1] ?? 2"
           @input="updateRange('yRange', 1, $event)"
           step="0.5"
           class="input text-sm w-16"
@@ -225,17 +225,24 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({ element: { type: Object, required: true } });
+<script setup lang="ts">
+import type { SceneObject } from '@manim/codegen';
+
+const props = defineProps({ element: { type: Object as () => SceneObject, required: true } });
 const emit = defineEmits(['update']);
 
-function update(key, e) {
-  emit('update', { [key]: parseFloat(e.target.value) || 0 });
+function update(key: string, e: Event) {
+  emit('update', { [key]: parseFloat((e.target as HTMLInputElement).value) || 0 });
 }
 
-function updateRange(field, idx, e) {
-  const range = [...(props.element[field] ?? [-3, 3, 1])];
-  range[idx] = parseFloat(e.target.value) || 0;
+function getRange(field: string): number[] {
+  const val = (props.element as unknown as Record<string, unknown>)[field];
+  return (val as number[] | undefined) ?? [-3, 3, 1];
+}
+
+function updateRange(field: string, idx: number, e: Event) {
+  const range = [...getRange(field)];
+  range[idx] = parseFloat((e.target as HTMLInputElement).value) || 0;
   emit('update', { [field]: range });
 }
 </script>

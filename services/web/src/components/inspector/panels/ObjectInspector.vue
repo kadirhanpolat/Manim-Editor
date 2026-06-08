@@ -8,7 +8,7 @@
 
   <!-- Name -->
   <Section label="Name">
-    <input class="input input-sm" :value="obj.name" @change="u('name', $event.target.value)" />
+    <input class="input input-sm" :value="obj.name" @change="u('name', ($event.target as HTMLInputElement).value)" />
   </Section>
 
   <!-- 3D position / rotation / type params (3D objects only) -->
@@ -75,7 +75,7 @@
         class="input input-sm flex-1"
         type="number"
         :value="obj.rotation || 0"
-        @change="u('rotation', Number($event.target.value))"
+        @change="u('rotation', Number(($event.target as HTMLInputElement).value))"
       />
       <span class="text-[10px] text-studio-text-muted">deg</span>
     </div>
@@ -94,7 +94,7 @@
           min="0"
           step="0.5"
           :value="obj.strokeWidth"
-          @change="u('strokeWidth', Number($event.target.value))"
+          @change="u('strokeWidth', Number(($event.target as HTMLInputElement).value))"
         />
       </div>
     </div>
@@ -113,7 +113,7 @@
         step="0.01"
         class="flex-1 accent-studio-accent"
         :value="obj.opacity"
-        @input="u('opacity', Number($event.target.value))"
+        @input="u('opacity', Number(($event.target as HTMLInputElement).value))"
       />
       <span class="text-[10px] text-studio-text-muted w-8 text-right tabular-nums"
         >{{ Math.round((obj.opacity ?? 1) * 100) }}%</span
@@ -152,7 +152,7 @@
       type="number"
       min="0"
       :value="obj.zOrder || 0"
-      @change="u('zOrder', Number($event.target.value))"
+      @change="u('zOrder', Number(($event.target as HTMLInputElement).value))"
     />
   </Section>
 
@@ -172,7 +172,7 @@
       <select
         class="select text-xs"
         :value="obj.enterAnim || 'fade_in'"
-        @change="u('enterAnim', $event.target.value)"
+        @change="u('enterAnim', ($event.target as HTMLSelectElement).value)"
       >
         <option v-for="a in enterAnims" :key="a.value" :value="a.value">
           {{ a.icon }} {{ a.label }}
@@ -187,7 +187,7 @@
           max="5"
           step="0.1"
           :value="obj.enterAnimDur || 0.5"
-          @change="u('enterAnimDur', Number($event.target.value))"
+          @change="u('enterAnimDur', Number(($event.target as HTMLInputElement).value))"
         />
         <span class="text-[9px] text-studio-text-muted">s</span>
       </div>
@@ -201,7 +201,7 @@
       <select
         class="select text-xs"
         :value="obj.exitAnim || 'fade_out'"
-        @change="u('exitAnim', $event.target.value)"
+        @change="u('exitAnim', ($event.target as HTMLSelectElement).value)"
       >
         <option v-for="a in exitAnims" :key="a.value" :value="a.value">
           {{ a.icon }} {{ a.label }}
@@ -216,7 +216,7 @@
           max="5"
           step="0.1"
           :value="obj.exitAnimDur || 0.5"
-          @change="u('exitAnimDur', Number($event.target.value))"
+          @change="u('exitAnimDur', Number(($event.target as HTMLInputElement).value))"
         />
         <span class="text-[9px] text-studio-text-muted">s</span>
       </div>
@@ -231,7 +231,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { settingsComponentFor } from '../object-settings/index.js';
 import { useProjectStore } from '../../../store/project.js';
@@ -252,13 +252,13 @@ const anchorLabels = ANCHOR_LABELS;
 const enterAnims = ENTER_ANIMS;
 const exitAnims = EXIT_ANIMS;
 
-const obj = computed(() => store.selectedObject);
+const obj = computed(() => store.selectedObject!);
 const { u, uSize } = useObjectUpdate(() => obj.value);
 const settingsComp = computed(() => settingsComponentFor(obj.value?.type));
 
 const OBJ_3D_TYPES = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d'];
 const is3DObject = computed(() => !!obj.value && OBJ_3D_TYPES.includes(obj.value.type));
-function onObj3DUpdate(payload) {
+function onObj3DUpdate(payload: Record<string, unknown>) {
   if (obj.value) store.updateObject(obj.value.id, payload);
 }
 
@@ -275,7 +275,7 @@ const exitAnimDesc = computed(() => {
 const objGroup = computed(() => (obj.value ? store.objectGroup(obj.value.id) : null));
 const typeLabel = computed(() => {
   if (!obj.value) return '';
-  const m = {
+  const m: Record<string, string> = {
     dot_grid: 'Dot Grid',
     svg_asset: 'SVG',
     rectangle: 'Rectangle',
@@ -286,7 +286,7 @@ const typeLabel = computed(() => {
   return m[obj.value.type] || obj.value.type;
 });
 const typeBadge = computed(() => {
-  const m = {
+  const m: Record<string, string> = {
     heart: 'bg-pink-600 text-white',
     square: 'bg-blue-600 text-white',
     rectangle: 'bg-blue-600 text-white',
@@ -305,17 +305,17 @@ const typeBadge = computed(() => {
     latex: 'bg-purple-600 text-white',
     axes: 'bg-emerald-600 text-white',
   };
-  return m[obj.value?.type] || 'bg-gray-600 text-white';
+  return m[obj.value?.type ?? ''] || 'bg-gray-600 text-white';
 });
 const effectiveSize = computed(() => {
   if (!obj.value) return 0;
   return Math.min(obj.value.width || 0, obj.value.height || 0) || 1;
 });
 
-function align(anchor) {
+function align(anchor: string) {
   if (obj.value) store.alignObject(obj.value.id, anchor);
 }
-function ungroup(groupId) {
+function ungroup(groupId: string) {
   store.ungroupObjects(groupId);
 }
 function del() {

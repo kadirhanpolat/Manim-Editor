@@ -10,12 +10,12 @@
     <div class="grid grid-cols-2 gap-1.5">
       <Num
         label="X"
-        :value="(cameraClip.params && cameraClip.params.targetX) || 0"
+        :value="(cc.params && cc.params.targetX) || 0"
         @input="updateCameraClip('targetX', $event)"
       />
       <Num
         label="Y"
-        :value="(cameraClip.params && cameraClip.params.targetY) || 0"
+        :value="(cc.params && cc.params.targetY) || 0"
         @input="updateCameraClip('targetY', $event)"
       />
     </div>
@@ -24,7 +24,7 @@
   <Section label="Zoom">
     <Num
       label="Zoom"
-      :value="(cameraClip.params && cameraClip.params.zoom) || 1"
+      :value="(cc.params && cc.params.zoom) || 1"
       :min="0.1"
       :step="0.1"
       @input="updateCameraClip('zoom', $event)"
@@ -35,14 +35,14 @@
     <div class="grid grid-cols-2 gap-1.5">
       <Num
         label="Start (s)"
-        :value="cameraClip.startTime"
+        :value="cc.startTime"
         :min="0"
         :step="0.1"
         @input="uca('startTime', $event)"
       />
       <Num
         label="Duration (s)"
-        :value="cameraClip.duration"
+        :value="cc.duration"
         :min="0.1"
         :step="0.1"
         @input="uca('duration', $event)"
@@ -53,8 +53,8 @@
   <Section label="Easing">
     <select
       class="select text-xs"
-      :value="cameraClip.easing || 'ease_in_out'"
-      @change="uca('easing', $event.target.value)"
+      :value="cc.easing || 'ease_in_out'"
+      @change="uca('easing', ($event.target as HTMLSelectElement).value)"
     >
       <option v-for="e in easings" :key="e.value" :value="e.value">{{ e.label }}</option>
     </select>
@@ -65,7 +65,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../../store/project.js';
 import { EASING_LIST } from '../../../engine/easing.js';
@@ -78,18 +78,20 @@ const cameraClip = computed(() => {
   if (!store.selectedClipId) return null;
   return store.project.cameraTrack?.find((c) => c.id === store.selectedClipId) || null;
 });
+// cameraClip is guaranteed non-null when this component is rendered (guarded by parent)
+const cc = computed(() => cameraClip.value!);
 
-function updateCameraClip(param, value) {
+function updateCameraClip(param: string, value: unknown) {
   if (!cameraClip.value) return;
-  store.updateCameraClip(cameraClip.value.id, { params: { [param]: value } });
+  store.updateCameraClip(cameraClip.value.id!, { params: { [param]: value } });
 }
-function uca(key, value) {
+function uca(key: string, value: unknown) {
   if (!cameraClip.value) return;
-  store.updateCameraClip(cameraClip.value.id, { [key]: value });
+  store.updateCameraClip(cameraClip.value.id!, { [key]: value });
 }
 function delCameraClip() {
   if (!cameraClip.value) return;
-  store.deleteCameraClip(cameraClip.value.id);
+  store.deleteCameraClip(cameraClip.value.id!);
   store.selectedClipId = null;
 }
 </script>

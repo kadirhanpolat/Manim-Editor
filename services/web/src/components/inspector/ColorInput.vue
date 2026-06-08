@@ -22,7 +22,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 
 const HEX_REGEX = /^#[0-9A-F]{6}$/i;
@@ -52,16 +52,16 @@ watch(
   }
 );
 
-function handleColorPicker(event) {
-  const value = event.target.value;
+function handleColorPicker(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
   displayValue.value = value;
   isValid.value = true;
   emit('input', value);
   emit('change', value);
 }
 
-function handleTextInput(event) {
-  let value = event.target.value;
+function handleTextInput(event: Event) {
+  let value = (event.target as HTMLInputElement).value;
 
   // Auto-add # if missing and user types hex chars
   if (value && !value.startsWith('#') && /^[0-9A-F]/i.test(value)) {

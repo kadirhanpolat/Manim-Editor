@@ -7,7 +7,7 @@
     <!-- Anchor Grid -->
     <div class="mb-4">
       <label class="block text-xs text-studio-text-muted mb-2">Position Anchor</label>
-      <AnchorGrid :value="element.layout.anchor" @input="updateAnchor" />
+      <AnchorGrid :value="layout.anchor" @input="updateAnchor" />
     </div>
 
     <!-- Offset -->
@@ -16,8 +16,8 @@
         <label class="block text-xs text-studio-text-muted mb-1">Offset X</label>
         <input
           type="number"
-          :value="element.layout.offset[0]"
-          @input="updateOffsetX($event.target.value)"
+          :value="layout.offset[0]"
+          @input="updateOffsetX(($event.target as HTMLInputElement).value)"
           step="0.1"
           class="input text-sm"
         />
@@ -26,8 +26,8 @@
         <label class="block text-xs text-studio-text-muted mb-1">Offset Y</label>
         <input
           type="number"
-          :value="element.layout.offset[1]"
-          @input="updateOffsetY($event.target.value)"
+          :value="layout.offset[1]"
+          @input="updateOffsetY(($event.target as HTMLInputElement).value)"
           step="0.1"
           class="input text-sm"
         />
@@ -40,8 +40,8 @@
       <div class="flex items-center gap-3">
         <input
           type="range"
-          :value="element.layout.scale"
-          @input="updateScale($event.target.value)"
+          :value="layout.scale"
+          @input="updateScale(($event.target as HTMLInputElement).value)"
           min="0.1"
           max="3"
           step="0.1"
@@ -49,8 +49,8 @@
         />
         <input
           type="number"
-          :value="element.layout.scale"
-          @input="updateScale($event.target.value)"
+          :value="layout.scale"
+          @input="updateScale(($event.target as HTMLInputElement).value)"
           min="0.1"
           max="3"
           step="0.1"
@@ -61,37 +61,49 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import AnchorGrid from '../stage/AnchorGrid.vue';
+import { computed } from 'vue';
+import type { SceneObject } from '@manim/codegen';
 
-const props = defineProps({ element: { type: Object, required: true } });
+const props = defineProps({ element: { type: Object as () => SceneObject, required: true } });
 const emit = defineEmits(['update']);
 
-function updateAnchor(anchor) {
-  emit('update', { layout: { ...props.element.layout, anchor } });
+type Layout = { anchor: string; offset: [number, number]; scale: number };
+
+const layout = computed(() => (props.element as unknown as { layout: Layout }).layout);
+
+function getLayout(): Layout {
+  return layout.value;
 }
 
-function updateOffsetX(value) {
+function updateAnchor(anchor: string) {
+  emit('update', { layout: { ...getLayout(), anchor } });
+}
+
+function updateOffsetX(value: string) {
+  const layout = getLayout();
   emit('update', {
     layout: {
-      ...props.element.layout,
-      offset: [parseFloat(value) || 0, props.element.layout.offset[1]],
+      ...layout,
+      offset: [parseFloat(value) || 0, layout.offset[1]],
     },
   });
 }
 
-function updateOffsetY(value) {
+function updateOffsetY(value: string) {
+  const layout = getLayout();
   emit('update', {
     layout: {
-      ...props.element.layout,
-      offset: [props.element.layout.offset[0], parseFloat(value) || 0],
+      ...layout,
+      offset: [layout.offset[0], parseFloat(value) || 0],
     },
   });
 }
 
-function updateScale(value) {
+function updateScale(value: string) {
   emit('update', {
-    layout: { ...props.element.layout, scale: Math.max(0.1, parseFloat(value) || 1) },
+    layout: { ...getLayout(), scale: Math.max(0.1, parseFloat(value) || 1) },
   });
 }
 </script>

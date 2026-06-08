@@ -20,7 +20,7 @@
           max="180"
           step="1"
           :value="cam.phi ?? 75"
-          @input="store.project.camera3d.phi = Number($event.target.value)"
+          @input="setPhi($event)"
           @change="store.commitState()"
           class="w-full accent-studio-accent"
         />
@@ -37,7 +37,7 @@
           max="180"
           step="1"
           :value="cam.theta ?? -45"
-          @input="store.project.camera3d.theta = Number($event.target.value)"
+          @input="setTheta($event)"
           @change="store.commitState()"
           class="w-full accent-studio-accent"
         />
@@ -56,7 +56,7 @@
         max="3"
         step="0.05"
         :value="cam.zoom ?? 1"
-        @input="store.project.camera3d.zoom = Number($event.target.value)"
+        @input="setZoom($event)"
         @change="store.commitState()"
         class="w-full accent-studio-accent"
       />
@@ -68,7 +68,7 @@
         type="number"
         data-testid="focal-distance"
         :value="cam.focalDistance ?? 8"
-        @change="store.setCamera3d({ focalDistance: parseFloat($event.target.value) || 8 })"
+        @change="setFocalDistance($event)"
         min="2"
         step="1"
         class="input text-sm w-24"
@@ -87,10 +87,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 const store = useProjectStore();
 const cam = computed(() => store.project.camera3d ?? {});
 const isPerspective = computed(() => (cam.value.view ?? 'perspective') === 'perspective');
+
+function setPhi(e: Event) { store.project.camera3d.phi = Number((e.target as HTMLInputElement).value); }
+function setTheta(e: Event) { store.project.camera3d.theta = Number((e.target as HTMLInputElement).value); }
+function setZoom(e: Event) { store.project.camera3d.zoom = Number((e.target as HTMLInputElement).value); }
+function setFocalDistance(e: Event) { store.setCamera3d({ focalDistance: parseFloat((e.target as HTMLInputElement).value) || 8 }); }
 </script>
