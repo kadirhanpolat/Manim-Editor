@@ -216,17 +216,16 @@ export function surroundingRectCfg(
   };
 }
 
-export function underlineCfg(
-  obj: SceneObject,
-  ctx: StageCtx
-): Record<string, unknown> | null {
+export function underlineCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> | null {
   const bounds = ctx.objectBounds(obj.targetId as string);
   if (!bounds) return null;
   const buff = ((obj.buff as number | undefined) ?? 6) * ctx.vs;
   return {
     points: [
-      bounds.x, bounds.y + bounds.height + buff,
-      bounds.x + bounds.width, bounds.y + bounds.height + buff,
+      bounds.x,
+      bounds.y + bounds.height + buff,
+      bounds.x + bounds.width,
+      bounds.y + bounds.height + buff,
     ],
     stroke: (obj.color as string | undefined) || '#f97316',
     strokeWidth: ((obj.strokeWidth as number | undefined) ?? 2) * ctx.vs,
@@ -234,10 +233,7 @@ export function underlineCfg(
   };
 }
 
-export function crossCfg(
-  obj: SceneObject,
-  ctx: StageCtx
-): Array<Record<string, unknown>> | null {
+export function crossCfg(obj: SceneObject, ctx: StageCtx): Array<Record<string, unknown>> | null {
   const bounds = ctx.objectBounds(obj.targetId as string);
   if (!bounds) return null;
   const stroke = (obj.color as string | undefined) || '#ef4444';
@@ -245,11 +241,15 @@ export function crossCfg(
   return [
     {
       points: [bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height],
-      stroke, strokeWidth, listening: false,
+      stroke,
+      strokeWidth,
+      listening: false,
     },
     {
       points: [bounds.x + bounds.width, bounds.y, bounds.x, bounds.y + bounds.height],
-      stroke, strokeWidth, listening: false,
+      stroke,
+      strokeWidth,
+      listening: false,
     },
   ];
 }

@@ -19,7 +19,11 @@
       </div>
 
       <!-- Color -->
-      <ColorRow label="Renk" :value="(obj.color as string) ?? '#ffffff'" @input="onColorChange($event)" />
+      <ColorRow
+        label="Renk"
+        :value="(obj.color as string) ?? '#ffffff'"
+        @input="onColorChange($event)"
+      />
 
       <!-- strokeWidth -->
       <div class="grid grid-cols-2 gap-1.5">
@@ -68,9 +72,7 @@ const props = defineProps({ obj: { type: Object as () => SceneObject, required: 
 const store = useProjectStore();
 const { u } = useObjectUpdate(() => props.obj);
 
-const otherObjects = computed(() =>
-  store.project.objects.filter((o) => o.id !== props.obj.id),
-);
+const otherObjects = computed(() => store.project.objects.filter((o) => o.id !== props.obj.id));
 
 function onTargetChange(e: Event) {
   store.setAnnotationTarget(props.obj.id, (e.target as HTMLSelectElement).value);

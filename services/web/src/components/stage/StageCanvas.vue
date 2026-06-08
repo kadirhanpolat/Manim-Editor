@@ -484,18 +484,12 @@
 
             <!-- Surrounding Rect annotation -->
             <template v-if="obj.type === 'surrounding_rect'">
-              <v-rect
-                v-if="surroundingRectCfg(obj)"
-                :config="surroundingRectCfg(obj)"
-              />
+              <v-rect v-if="surroundingRectCfg(obj)" :config="surroundingRectCfg(obj)" />
             </template>
 
             <!-- Underline annotation -->
             <template v-if="obj.type === 'underline'">
-              <v-line
-                v-if="underlineCfg(obj)"
-                :config="underlineCfg(obj)"
-              />
+              <v-line v-if="underlineCfg(obj)" :config="underlineCfg(obj)" />
             </template>
 
             <!-- Cross annotation (two diagonal lines) -->

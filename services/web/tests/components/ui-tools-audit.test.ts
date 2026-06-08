@@ -47,6 +47,9 @@ const REGISTERED_TYPES = [
   'ray',
   'coord_point',
   'bezier',
+  'surrounding_rect',
+  'underline',
+  'cross',
 ];
 
 // Asset-only types — intentionally NOT a shape button (added via asset upload).

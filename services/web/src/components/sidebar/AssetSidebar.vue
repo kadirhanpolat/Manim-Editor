@@ -474,6 +474,24 @@ const shapes = [
     color: '#fbbf24',
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M4 20L18 6"/><path d="M9 20a7 7 0 0 1 3-5"/></svg>',
   },
+  {
+    type: 'surrounding_rect',
+    label: 'Çerçeve',
+    color: '#f97316',
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>',
+  },
+  {
+    type: 'underline',
+    label: 'Altı Çizgi',
+    color: '#22d3ee',
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="4" y="14" font-size="13" font-style="italic" fill="currentColor" stroke="none">x</text><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+  },
+  {
+    type: 'cross',
+    label: 'Üstü Çizili',
+    color: '#f43f5e',
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>',
+  },
 ];
 
 // Data & Coordinate shapes — Table, NumberPlane, ComplexPlane, PolarPlane, Graph, VectorField
