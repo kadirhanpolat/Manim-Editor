@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.19.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.20.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -58,6 +58,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **NumberPlane / NumberLine** -- Coordinate grid and number line as standalone shape types, addable from the sidebar with their own range/length inspectors
 - **Geometry, calculus & data objects** -- Annulus, Arc, Sector, Double Arrow, Free Polygon (with draggable canvas vertex handles + Trapezoid/Parallelogram presets), Parametric curves (`x(t)`/`y(t)` over a `t`-range), Matrix (per-cell grid editor with `[ ]` / `( )` / `| |` bracket styles), and per-graph Area-under-curve / Riemann-rectangle overlays on Axes -- all render in Manim and round-trip through `.py` export/import
 - **Relational objects** -- Brace (bracket between two draggable points with an optional LaTeX label) and Angle (angle/right-angle mark from a vertex + two draggable endpoints, with arc radius and optional LaTeX label); both are self-contained (defined by their own points) and round-trip through `.py`
+- **Math annotation objects** -- Three new bound-annotation types that target any scene object and derive their position from it automatically: **Surrounding Rectangle** (`SurroundingRectangle` — yellow box around a formula), **Underline** (`Underline` — line under a term), and **Cross** (`Cross` — red X through an expression). Each links to a target via a target picker in the Inspector; deleting the target auto-removes its annotations. All three round-trip through `.py` export/import
 - **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square plus polygon/triangle/star via native `round_corners`), separate fill/stroke opacity, dashed stroke, and a configurable drop shadow (color/opacity/offset, with preview-only blur); controls appear only for shapes that support them; all render in Manim and round-trip through `.py` export/import
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
 
@@ -252,7 +253,7 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`, `surrounding_rect`, `underline`, `cross`
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`, `prism` — only when `sceneType: '3d'`
 
@@ -396,7 +397,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test           # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 555 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, + characterization snapshots)
+npm run test:unit  # 570 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -462,7 +463,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.19.0 (current)
+### v3.20.0 (current)
+
+Math annotation tools — three new "bound annotation" object types that reference a target scene object and derive their position from it, designed for marking up formulas and expressions in math education videos.
+
+- **`surrounding_rect`** (`SurroundingRectangle`): draws a box around a target object with configurable `buff` padding and `cornerRadius`. Default color yellow.
+- **`underline`** (`Underline`): draws a line below a target object with configurable `buff` offset. Default color orange.
+- **`cross`** (`Cross`): draws an X through a target object to mark it as wrong/cancelled. Default color red.
+- **Target binding**: each annotation links to another scene object via a target picker in the Inspector. Position is derived automatically from the target's bounding box — no manual positioning. Deleting the target cascade-deletes all bound annotations.
+- **Codegen**: annotations emit `SurroundingRectangle(target)` / `Underline(target)` / `Cross(target, stroke_color=…)` referencing the target by Python variable name; `move_to` is never emitted. A topological sort in `generateScene` guarantees annotations always follow their targets in the output.
+- **Round-trip**: all three types parse back from `.py` via regex branches in `parseManimScript`; buff/cornerRadius convert between px and Manim units.
+- **Tests**: +15 unit tests (store seeding + `setAnnotationTarget` + cascade delete, codegen exact-string assertions, topological sort, round-trip); totals now **570 web unit + 114 engine + 43 api + 6 codegen + 9 e2e**.
+
+### v3.19.0
 
 Post-migration hardening + deployment fixes — quality/robustness work on top of the
 TypeScript codebase, plus real fixes surfaced by deploying it. No user-facing behavior

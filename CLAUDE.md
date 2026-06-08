@@ -134,7 +134,7 @@ clip.audio = {
 
 > **Adding a new object type** touches: generator (`@manim/codegen` once + `manim.ts` parser), **canvas preview** (a `fn(obj, ctx)` builder in the matching `configs/*.ts` + a one-line `<template>` branch + compat wrapper in `StageCanvas.vue` + a snapshot in `tests/components/stage/`), **store** (`project.ts` defaults/actions), **inspector** (one `<Type>Settings.vue` in `object-settings/` + one `index.ts` registry line; cross-cutting controls in `EffectsSection.vue`/`TextSettings.vue`), **palette** (a card in `components/sidebar/AssetSidebar.vue`'s `shapes`/`shapesData`/`shapes3D` array — the **only** live add UI; `Toolbar.vue` was removed). `tests/components/ui-tools-audit.test.ts` fails if a registered type has no palette card.
 
-**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`
+**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`, `surrounding_rect`, `underline`, `cross`
 
 **3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`, `prism`
 
@@ -158,7 +158,11 @@ clip.audio = {
 - **3D `prism`** (`Prism`): `dimX`/`dimY`/`dimZ` (Manim units) → `Prism(dimensions=[…])`. Preview shares `boxFaces` with cube.
 - **3D `surface`** (z=f(x,y)): `zExpr` (`safeMathExpr`), `xRange`/`yRange` (=u/v range). Emits `Surface(lambda x,y: np.array([x,y,<zExpr>]), u_range, v_range, resolution)`. Preview = iso wireframe (render = filled surface). Registered in `obj3DTypes`, store `is3D`, `Position3DPanel`.
 - **3D common fields**: `x3d/y3d/z3d` (pos), `rx/ry/rz` (rot deg), `resolution`, `sideLength` (cube), `radius` (sphere/cone/cylinder/torus), `height` (cone/cylinder), `majorRadius/minorRadius` (torus), `xRange/yRange/zRange` (axes3d).
-- `matrix`/`table`/`brace`/`angle`/`counter`/`graph`/`vector_field`/`vector_components` are in **neither** `GRADIENT_TYPES` nor `DASH_TYPES`.
+- **`surrounding_rect`** (`SurroundingRectangle`): `targetId` (refs another object), `color`, `strokeWidth`, `buff` (px padding), `cornerRadius`. Codegen: `SurroundingRectangle(target, color=…, stroke_width=…, buff=…, corner_radius=…)`. No `move_to` emitted — position is derived from the target Mobject. Cascade-deleted when target is deleted. Inspector: target picker + color/strokeWidth/buff/cornerRadius. `AnnotationSettings.vue` (shared with underline/cross).
+- **`underline`** (`Underline`): `targetId`, `color`, `strokeWidth`, `buff`. Codegen: `Underline(target, color=…, stroke_width=…, buff=…)`. No `move_to`.
+- **`cross`** (`Cross`): `targetId`, `color`, `strokeWidth`. Codegen: `Cross(target, stroke_color=…, stroke_width=…)`. No `move_to`.
+- **Annotation pattern**: All three are "bound annotations" — their canvas position is computed from `ctx.objectBounds(targetId)` (new `StageCtx` method). `generateScene` applies a topological sort so annotations always emit after their targets (prevents Python NameError). `ANNOTATION_TYPES` set in `@manim/codegen/constants.ts` gates the post-construction block (round_corners/gradient/dashed/shadow/move_to are all skipped). Store action: `setAnnotationTarget(objId, targetId)`. None are in `GRADIENT_TYPES`, `DASH_TYPES`, or `SHADOW_TYPES`.
+- `matrix`/`table`/`brace`/`angle`/`counter`/`graph`/`vector_field`/`vector_components`/`surrounding_rect`/`underline`/`cross` are in **neither** `GRADIENT_TYPES` nor `DASH_TYPES`.
 
 ## Camera Animations
 
