@@ -2,14 +2,16 @@
 // Each function takes (obj, ctx) where ctx is a StageCtx resolved-value object.
 // No Vue refs, no reactive imports — all live values come through ctx.
 import { latexToUnicode } from '../../../utils/latexPreview.js';
+import type { SceneObject } from '@manim/codegen';
+import type { StageCtx } from './context.js';
 
 // Module-level canvas used for text measurement (lazy-initialised).
-let _measureCanvas = null;
-let _measureCtx = null;
+let _measureCanvas: HTMLCanvasElement | null = null;
+let _measureCtx: CanvasRenderingContext2D | null = null;
 
 // ── measureTextWidth ──────────────────────────────────────────────────────────
 // Pure function — no ctx needed; uses an offscreen canvas.
-export function measureTextWidth(text, fontSize, fontFamily, fontStyle) {
+export function measureTextWidth(text: string, fontSize: number, fontFamily: string, fontStyle: string): number {
   if (!_measureCanvas) {
     _measureCanvas = document.createElement('canvas');
     _measureCtx = _measureCanvas.getContext('2d');
@@ -21,26 +23,28 @@ export function measureTextWidth(text, fontSize, fontFamily, fontStyle) {
 
 // ── counterText ───────────────────────────────────────────────────────────────
 // Pure formatter — reads obj fields and frameState from ctx.
-export function counterText(obj, ctx) {
-  const ov = ctx.frameState.objectOverrides[obj.id];
-  const raw = ov && 'value' in ov ? ov.value : (obj.value ?? 0);
-  const dec = Number.isFinite(obj.numDecimals) ? Math.max(0, Math.trunc(obj.numDecimals)) : 0;
-  return raw.toFixed(dec) + (obj.suffix || '');
+export function counterText(obj: SceneObject, ctx: StageCtx): string {
+  const ov = ctx.frameState.objectOverrides[obj.id] as Record<string, unknown> | undefined;
+  const raw = ov && 'value' in ov ? (ov.value as number) : ((obj.value as number | undefined) ?? 0);
+  const numDecimalsRaw = obj.numDecimals as number | undefined;
+  const dec = Number.isFinite(numDecimalsRaw) ? Math.max(0, Math.trunc(numDecimalsRaw as number)) : 0;
+  return raw.toFixed(dec) + ((obj.suffix as string | undefined) || '');
 }
 
 // ── textCfg ───────────────────────────────────────────────────────────────────
-export function textCfg(obj, ctx) {
+export function textCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x, e.y);
+  const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
   // Match Manim Text font_size: at 1080p, font_size N ≈ N px; scale by vs for stage→canvas
-  const manimFontScale = (e.fontSize || 48) * ctx.vs;
-  const fontFamily = e.fontFamily || 'Arial';
+  const manimFontScale = ((e.fontSize as number | undefined) || 48) * ctx.vs;
+  const fontFamily = (e.fontFamily as string | undefined) || 'Arial';
   const fontStyle =
-    (e.fontWeight === 'bold' ? 'bold ' : '') + (e.fontStyle === 'italic' ? 'italic ' : '');
-  const rawContent = e.content || 'Text';
-  const ov = ctx.frameState.objectOverrides[obj.id];
-  const twFrac = ov && ov._typewriter !== undefined ? ov._typewriter : null;
+    ((e.fontWeight as string | undefined) === 'bold' ? 'bold ' : '') +
+    ((e.fontStyle as string | undefined) === 'italic' ? 'italic ' : '');
+  const rawContent = (e.content as string | undefined) || 'Text';
+  const ov = ctx.frameState.objectOverrides[obj.id] as Record<string, unknown> | undefined;
+  const twFrac = ov && ov._typewriter !== undefined ? (ov._typewriter as number) : null;
   const text =
     twFrac !== null
       ? rawContent.slice(
@@ -48,7 +52,7 @@ export function textCfg(obj, ctx) {
           Math.max(0, Math.min(rawContent.length, Math.round(rawContent.length * twFrac)))
         )
       : rawContent;
-  const align = e.textAlign || 'center';
+  const align = (e.textAlign as string | undefined) || 'center';
   const textWidth = measureTextWidth(text, manimFontScale, fontFamily, fontStyle);
   let offsetX = 0;
   if (align === 'center') offsetX = textWidth / 2;
@@ -74,11 +78,11 @@ export function textCfg(obj, ctx) {
 }
 
 // ── counterCfg ────────────────────────────────────────────────────────────────
-export function counterCfg(obj, ctx) {
+export function counterCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
   const e = ctx.eff(obj);
-  const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x, e.y);
-  const fontSize = (e.fontSize || e.height || 48) * ctx.vs;
+  const p = L ? { x: L.x, y: L.y } : ctx.s2c(e.x ?? 0, e.y ?? 0);
+  const fontSize = ((e.fontSize as number | undefined) || (e.height as number | undefined) || 48) * ctx.vs;
   const text = counterText(obj, ctx);
   const textWidth = measureTextWidth(text, fontSize, 'Arial', '');
   const rot = L ? L.rotation : e.rotation || 0;
@@ -102,10 +106,11 @@ export function counterCfg(obj, ctx) {
 }
 
 // ── latexBgCfg ────────────────────────────────────────────────────────────────
-export function latexBgCfg(obj, ctx) {
+export function latexBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const w = L ? L.w : obj.width * ctx.vs,
-    h = L ? L.h : obj.height * ctx.vs;
+  const ow = obj.width as number, oh = obj.height as number;
+  const w = L ? L.w : ow * ctx.vs,
+    h = L ? L.h : oh * ctx.vs;
   // listening:true → this rect is the group's hit area so the LaTeX box can be
   // selected/dragged on the canvas (the text/badge stay non-listening).
   return {
@@ -123,21 +128,22 @@ export function latexBgCfg(obj, ctx) {
 }
 
 // ── latexTextCfg ──────────────────────────────────────────────────────────────
-export function latexTextCfg(obj, ctx) {
+export function latexTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const w = L ? L.w : obj.width * ctx.vs,
-    h = L ? L.h : obj.height * ctx.vs;
+  const ow = obj.width as number, oh = obj.height as number;
+  const w = L ? L.w : ow * ctx.vs,
+    h = L ? L.h : oh * ctx.vs;
   // Approximate Unicode preview of the raw LaTeX (Manim does the real MathTex).
   return {
     x: -w / 2,
     y: -h / 2,
     width: w,
     height: h,
-    text: latexToUnicode(obj.latex || 'E = mc^2'),
+    text: latexToUnicode((obj.latex as string | undefined) || 'E = mc^2'),
     fontSize: Math.max(12, 18 * ctx.vs),
     fontFamily: 'serif',
     fontStyle: 'italic',
-    fill: obj.fill || '#ffffff',
+    fill: (obj.fill as string | undefined) || '#ffffff',
     align: 'center',
     verticalAlign: 'middle',
     padding: 8,
@@ -146,10 +152,11 @@ export function latexTextCfg(obj, ctx) {
 }
 
 // ── latexBadgeCfg ─────────────────────────────────────────────────────────────
-export function latexBadgeCfg(obj, ctx) {
+export function latexBadgeCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
-  const w = L ? L.w : obj.width * ctx.vs,
-    h = L ? L.h : obj.height * ctx.vs;
+  const ow = obj.width as number, oh = obj.height as number;
+  const w = L ? L.w : ow * ctx.vs,
+    h = L ? L.h : oh * ctx.vs;
   return {
     x: -w / 2 + 4,
     y: -h / 2 + 4,

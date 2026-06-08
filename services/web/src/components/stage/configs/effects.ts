@@ -3,7 +3,9 @@
 // applyEffects receives `vs` (zoom scale, already resolved) as the last param
 // so the function has no closure dependency on the SFC.
 
-export function hexToRgba(h, a) {
+import type { SceneObject } from '@manim/codegen';
+
+export function hexToRgba(h: string, a?: number): string {
   if (typeof h !== 'string' || !h.startsWith('#')) return h;
   let s = h.slice(1);
   if (s.length === 3)
@@ -22,14 +24,23 @@ export function hexToRgba(h, a) {
 /** Mutates a Konva config with gradient / cornerRadius / dashed / per-channel alpha.
  *  centered = shape origin is its center (circle/star/polygon/triangle) vs top-left (rect).
  *  vs = resolved zoom scale (ctx.vs). */
-export function applyEffects(cfg, obj, w, h, centered, vs) {
+export function applyEffects(
+  cfg: Record<string, unknown>,
+  obj: SceneObject,
+  w: number,
+  h: number,
+  centered: boolean,
+  vs: number
+): Record<string, unknown> {
   // per-channel opacity → baked into rgba colors (node opacity stays the master)
-  if (obj.fillOpacity != null && obj.fillOpacity !== 1 && cfg.fill)
-    cfg.fill = hexToRgba(cfg.fill, obj.fillOpacity);
-  if (obj.strokeOpacity != null && obj.strokeOpacity !== 1 && cfg.stroke)
-    cfg.stroke = hexToRgba(cfg.stroke, obj.strokeOpacity);
+  const fillOpacity = obj.fillOpacity as number | undefined;
+  const strokeOpacity = obj.strokeOpacity as number | undefined;
+  if (fillOpacity != null && fillOpacity !== 1 && cfg.fill)
+    cfg.fill = hexToRgba(cfg.fill as string, fillOpacity);
+  if (strokeOpacity != null && strokeOpacity !== 1 && cfg.stroke)
+    cfg.stroke = hexToRgba(cfg.stroke as string, strokeOpacity);
   // gradient
-  const g = obj.gradient;
+  const g = obj.gradient as { colors?: string[]; angle?: number } | undefined;
   if (g && Array.isArray(g.colors) && g.colors.length >= 2) {
     const rad = ((g.angle ?? 135) * Math.PI) / 180;
     const dx = (Math.cos(rad) * w) / 2,
@@ -38,35 +49,40 @@ export function applyEffects(cfg, obj, w, h, centered, vs) {
       cy = centered ? 0 : h / 2;
     cfg.fillLinearGradientStartPoint = { x: cx - dx, y: cy - dy };
     cfg.fillLinearGradientEndPoint = { x: cx + dx, y: cy + dy };
-    const stops = [];
-    const ga = obj.fillOpacity != null && obj.fillOpacity !== 1 ? obj.fillOpacity : null;
+    const stops: unknown[] = [];
+    const ga = fillOpacity != null && fillOpacity !== 1 ? fillOpacity : null;
     g.colors.forEach((c, i) => {
-      stops.push(i / (g.colors.length - 1), ga != null ? hexToRgba(c, ga) : c);
+      stops.push(i / (g.colors!.length - 1), ga != null ? hexToRgba(c, ga) : c);
     });
     cfg.fillLinearGradientColorStops = stops;
   }
   // dashed stroke (Konva keeps fill underneath, matching the render's VGroup)
-  if (obj.dash) {
+  const dash = obj.dash as { numDashes?: number; ratio?: number } | undefined;
+  if (dash) {
     const peri = centered ? Math.PI * Math.max(w, h) : h === 0 ? w : 2 * (w + h);
-    const on = Math.max(2, (peri / Math.max(2, obj.dash.numDashes)) * (obj.dash.ratio ?? 0.5));
+    const on = Math.max(2, (peri / Math.max(2, dash.numDashes ?? 2)) * (dash.ratio ?? 0.5));
     const off = Math.max(
       2,
-      (peri / Math.max(2, obj.dash.numDashes)) * (1 - (obj.dash.ratio ?? 0.5))
+      (peri / Math.max(2, dash.numDashes ?? 2)) * (1 - (dash.ratio ?? 0.5))
     );
     cfg.dash = [on, off];
   }
   // drop shadow (Konva native; blur is preview-only — Manim has no blur)
-  if (obj.shadow) {
-    cfg.shadowColor = obj.shadow.color || '#000000';
-    cfg.shadowOpacity = obj.shadow.opacity ?? 0.4;
-    cfg.shadowBlur = (obj.shadow.blur ?? 12) * vs;
-    cfg.shadowOffset = { x: (obj.shadow.dx ?? 8) * vs, y: (obj.shadow.dy ?? 8) * vs };
+  const shadow = obj.shadow as
+    | { color?: string; opacity?: number; dx?: number; dy?: number; blur?: number }
+    | undefined;
+  if (shadow) {
+    cfg.shadowColor = shadow.color || '#000000';
+    cfg.shadowOpacity = shadow.opacity ?? 0.4;
+    cfg.shadowBlur = (shadow.blur ?? 12) * vs;
+    cfg.shadowOffset = { x: (shadow.dx ?? 8) * vs, y: (shadow.dy ?? 8) * vs };
   }
   // corner rounding for polygon/triangle/star — rect/square round via rectCfg before applyEffects
-  if (obj.cornerRadius > 0) {
+  const cornerRadius = obj.cornerRadius as number | undefined;
+  if (cornerRadius != null && cornerRadius > 0) {
     if (obj.type === 'star' || obj.type === 'polygon') {
       // Konva Star and RegularPolygon support native cornerRadius
-      cfg.cornerRadius = obj.cornerRadius * vs;
+      cfg.cornerRadius = cornerRadius * vs;
     } else if (obj.type === 'triangle') {
       // Konva Line (closed) has no cornerRadius; use tension as an approximation
       cfg.tension = 0.35;
