@@ -14,8 +14,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # Not published to the host: the app reaches redis over the internal Docker
+    # network (REDIS_URL=redis://redis:6379). Publishing 6379 only invited host
+    # port clashes with other local projects. Add a `ports` mapping back if you
+    # need redis-cli from the host.
     volumes:
       - redis_data:/data
     healthcheck:

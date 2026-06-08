@@ -6,6 +6,9 @@ WORKDIR /app
 # Install from the root workspace manifests (all must be present for the
 # "workspaces" globs); scope to web + the shared codegen package.
 COPY package*.json ./
+# Shared strict-TS base config — services/web/tsconfig.json `extends` it, and vite's
+# esbuild transform resolves that `extends` during `vite build`, so it must be present.
+COPY tsconfig.base.json ./
 COPY packages/manim-codegen/package.json packages/manim-codegen/package.json
 COPY services/api/package.json services/api/package.json
 COPY services/web/package.json services/web/package.json
