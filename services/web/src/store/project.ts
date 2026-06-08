@@ -82,6 +82,15 @@ interface FrameState {
   objectOverrides: Record<string, unknown>;
   morphShapes: unknown[];
   hiddenIds: Set<string>;
+  // Set by the playback engine each frame (2D pan/zoom or 3D phi/theta/zoom).
+  cameraState?: {
+    is3d?: boolean;
+    x?: number;
+    y?: number;
+    zoom?: number;
+    phi?: number;
+    theta?: number;
+  } | null;
 }
 
 interface History {

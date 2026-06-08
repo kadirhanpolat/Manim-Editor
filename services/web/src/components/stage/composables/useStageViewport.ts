@@ -19,9 +19,7 @@ interface LiveCameraState {
 type ProjectStore = ReturnType<typeof useProjectStore>;
 
 function getCs(store: ProjectStore): LiveCameraState | null {
-  return (
-    (store.frameState as unknown as { cameraState?: LiveCameraState | null }).cameraState ?? null
-  );
+  return store.frameState.cameraState ?? null;
 }
 
 export function useStageViewport(store: ProjectStore, container: Ref<HTMLElement | null>) {

@@ -21,7 +21,10 @@ async function request(endpoint: string, options: RequestInit = {}): Promise<unk
   });
 
   if (!response.ok) {
-    const error: any = await response.json().catch(() => ({ error: response.statusText }));
+    const error = (await response.json().catch(() => ({ error: response.statusText }))) as {
+      error?: string;
+      message?: string;
+    };
     throw new Error(error.error || error.message || `Request failed (${response.status})`);
   }
 
@@ -86,7 +89,10 @@ export const assets = {
     });
 
     if (!response.ok) {
-      const error: any = await response.json().catch(() => ({ error: response.statusText }));
+      const error = (await response.json().catch(() => ({ error: response.statusText }))) as {
+        error?: string;
+        message?: string;
+      };
       throw new Error(error.error || 'Upload failed');
     }
     return response.json();
@@ -136,7 +142,9 @@ export const audio = {
       body: formData,
     });
     if (!response.ok) {
-      const err: any = await response.json().catch(() => ({ error: response.statusText }));
+      const err = (await response.json().catch(() => ({ error: response.statusText }))) as {
+        error?: string;
+      };
       throw new Error(err.error || 'Audio upload failed');
     }
     return response.json();

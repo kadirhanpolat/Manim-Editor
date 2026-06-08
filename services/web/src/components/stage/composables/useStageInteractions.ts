@@ -191,8 +191,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
       }
       if (minX === Infinity) continue;
 
-      const margin =
-        ((group as unknown as Record<string, unknown>)['margin'] as number | undefined) ?? 10;
+      const margin = group.margin ?? 10;
       const p1 = s2c(minX - margin, minY - margin);
       const w = (maxX - minX + margin * 2) * vs.value;
       const h = (maxY - minY + margin * 2) * vs.value;

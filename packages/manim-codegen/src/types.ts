@@ -182,6 +182,9 @@ export interface Clip {
 export interface Group {
   id: string;
   childIds?: string[];
+  name?: string;
+  margin?: number;
+  collapsed?: boolean;
 }
 
 export interface KeyframeDefaults {
