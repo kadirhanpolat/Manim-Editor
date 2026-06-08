@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.17.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.18.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -323,15 +323,15 @@ Manim-docker/
     |   +-- nginx.conf
     |   +-- Dockerfile
     |
-    +-- api/                          # Node.js backend
+    +-- api/                          # Node.js backend (strict TypeScript, run via tsx)
     |   +-- src/
-    |   |   +-- index.js              # Express server
-    |   |   +-- queue.js              # Redis queue
-    |   |   +-- routes/               # REST endpoints
+    |   |   +-- index.ts              # Express server
+    |   |   +-- queue.ts              # Redis queue
+    |   |   +-- routes/               # REST endpoints (.ts)
     |   |   +-- compiler/             # Manim code generation
-    |   |       +-- validator.js      # Zod schema validation
-    |   |       +-- normalizer.js     # Data normalization
-    |   |       +-- codegen.js        # Python code generation
+    |   |       +-- validator.ts      # Zod schema validation
+    |   |       +-- normalizer.ts     # Data normalization
+    |   |       +-- codegen.ts        # Python code generation (wraps @manim/codegen)
     |   +-- Dockerfile
     |
     +-- renderer/                     # Manim worker (manim-voiceover)
@@ -399,12 +399,12 @@ npm test          # 114 engine tests (easing, geometry, transform, blending, key
 npm run test:unit # 515 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, object-library extensions (Surface, Prism, Integer counter, Ray, Coord Point, Vector Components, Bezier, Tangent), UI-tools audit (palette reachability, MotionPicker clips, interaction tools), codegen→valid-Python checks, + StageCanvas config-builder characterization snapshots)
 ```
 
-Code quality gates (run from the repo root):
+Code quality gates (run from the repo root — all enforced in CI):
 
 ```bash
-npm run typecheck     # build @manim/codegen + strict vue-tsc over services/web
+npm run lint          # ESLint (errors fail CI; warnings allowed)
+npm run typecheck     # build @manim/codegen + vue-tsc (web) + tsc (api), all strict
 npm run format:check  # Prettier (.js/.ts/.vue/.json/.css)
-npm run lint          # ESLint
 ```
 
 The shared codegen package has its own suite (run from the repo root):
@@ -459,7 +459,32 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.17.0 (current)
+### v3.18.0 (current)
+
+Strict TypeScript migration **complete** (phases 3–7) — the entire codebase is now
+TypeScript with lint + typecheck CI gates. **Zero user-facing behavior change**;
+generated Manim Python stays byte-identical (codegen parity suites green).
+
+- **Frontend → TS:** the Pinia store, the `.py` parser/generator (`export/manim`),
+  the API client, all stage config builders + composables, constants/utils/templates,
+  and **all 67 Vue components** (`<script setup lang="ts">`) are strict TypeScript.
+  The Vite entry is `main.ts` (+ `vite-env.d.ts`).
+- **Backend → TS:** the whole Express API (`services/api/src/*`) is strict TypeScript,
+  run via `tsx` (dev `tsx watch`, start `tsx`).
+- **Shared domain model:** `@manim/codegen` exports the typed model (`Project`,
+  `SceneObject`, `Clip`, …) consumed across web + api.
+- **Tooling & gates:** `allowJs:false`; ESLint is a CI gate (errors fail);
+  `npm run typecheck` covers codegen + web (`vue-tsc`) + api (`tsc`); all tests +
+  e2e are `.ts`. CI: lint → format → typecheck → web unit → engine → (python lint).
+- **Dependency audit:** patched the production-runtime advisories
+  (`express-rate-limit`, and `path-to-regexp`/`qs`/`picomatch`/`ip-address` via
+  npm `overrides`). Remaining advisories are dev-only tooling (esbuild/vite/vitest
+  dev-server) or non-applicable (`uuid` v3/v5/v6 — only v4 is used); fixing them is
+  breaking and deferred under the local single-user threat model.
+- **Tests/gates:** **515 unit + 114 engine** (web) + **6** `@manim/codegen` +
+  **9** Playwright E2E, all green; lint 0 errors; typecheck 0 errors; prod build OK.
+
+### v3.17.0
 
 Tooling foundation + strict TypeScript migration (phases 0–2) — an internal
 code-quality initiative with **zero user-facing behavior change**; the generated

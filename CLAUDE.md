@@ -32,11 +32,11 @@ cd e2e && npm install && npx playwright install chromium   # first time only
 cd e2e && npm test                     # 9 Playwright smoke tests (auto-boots dev server :5188)
 ```
 
-Tooling (run from repo root):
+Tooling (run from repo root) — all are CI gates:
 ```bash
-npm run typecheck      # build:codegen + vue-tsc over services/web (strict) — must pass before commit
+npm run lint           # ESLint (errors fail CI; warnings allowed)
+npm run typecheck      # build:codegen + vue-tsc (web) + tsc (api), all strict
 npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
-npm run lint           # ESLint (not yet a CI gate — Phase 6)
 ```
 
 - `e2e/` is a **standalone package OUTSIDE the npm workspaces** (own `node_modules` so Playwright never perturbs web/api hoisting). Drives the real app via a DEV-only `window.__projectStore` hook (`services/web/src/main.js`, stripped from prod). Dedicated port **5188**.
@@ -218,16 +218,22 @@ store.project.camera3d  = { phi:75, theta:-45, zoom:1.0, projection:'orthographi
 - **Known constraint**: projection mode is preview-only — perspective preview diverges slightly from render; perspective iso drag uses the ortho inverse (minor imprecision at extreme angles).
 - Design spec: `docs/superpowers/specs/2026-06-03-3d-scene-design.md`.
 
-## TypeScript migration (in progress)
+## TypeScript
 
-Multi-phase, strict-TS migration of the whole codebase. **Phases 0–2 done** (on `main`); phases 3–7 remain. Spec: `docs/superpowers/specs/2026-06-08-tooling-strict-ts-migration-design.md`.
+The whole codebase is **strict TypeScript** (migration complete — phases 0–7). Spec: `docs/superpowers/specs/2026-06-08-tooling-strict-ts-migration-design.md`.
 
-- **What's TypeScript now:** `@manim/codegen/src/*` (Phase 1) and `services/web/src/engine/*` (Phase 2, incl. `types.ts`). Everything else (`store/project.js`, `export/manim.js`, `api.js`, `*.vue`, `configs/*.js`, `services/api/*`, tests) is still `.js`/`.vue` — phases 3–6.
-- **Import-specifier rule (critical):** in `.ts` source, relative imports KEEP the `.js` extension (`import { x } from './types.js'`). The Vite/Vitest `resolve-ts-from-js` plugin + the `source` export condition remap `.js`→`.ts` at runtime; `moduleResolution: "bundler"` does the same at typecheck. **Do not "fix" these to `.ts`.** Consumers of engine/codegen also keep importing `…/foo.js` unchanged.
-- **Config:** root `tsconfig.base.json` (strict, `allowJs`, `noUnusedLocals/Parameters`, …). `services/web/tsconfig.json` = bundler resolution + DOM lib + `checkJs:false` (still-`.js` files aren't type-checked, so migration is safe file-by-file) + `include:["src/**/*.ts"]` (auto-covers files as they migrate). `packages/manim-codegen/tsconfig.json` = NodeNext + declaration emit.
-- **Domain model:** wide interfaces (`SceneObject`/`StageObject` with optional type-specific fields + `[k:string]:unknown`); discriminated-union refinement deferred to Phase 4.
-- **Engine test** (`tests/engine.test.mjs`) runs via **`tsx`** (plain `node` can't load `.ts`); `pretest` still builds codegen `dist/` (it imports `manim.js` → codegen barrel → `dist/`).
-- **Recurring strict landmines:** dead imports/params → `noUnusedLocals/Parameters` (prefix `_` or delete); `new Map(arr.map(o=>[id,o]))` needs a `:[string,T]` tuple annotation; `Number.isFinite(x)` doesn't narrow `number|undefined` → cast; TS can't narrow array elements from a flag → branch-local `as T[]`; class fields must be declared (constructor assignment alone is insufficient). Memory: `strict-ts-migration-initiative`.
+- **What's TypeScript:** everything — `@manim/codegen/src/*`, all `services/web/src/*` (`.ts` + `.vue` with `<script setup lang="ts">`), all `services/api/src/*`, and all tests (`*.test.ts`, e2e `*.spec.ts`). Only build/tooling configs (`*.config.js`, `eslint.config.js`) and the tsx-run `engine.test.mjs` stay `.js`/`.mjs`.
+- **Import-specifier rule (critical):** in `.ts`/`lang=ts` source, relative imports KEEP the `.js` extension (`import { x } from './types.js'`). The Vite/Vitest `resolve-ts-from-js` plugin + the `source` export condition remap `.js`→`.ts` at runtime; `moduleResolution` (`bundler` for web, `NodeNext` for api/codegen) does the same at typecheck. **Do not "fix" these to `.ts`.**
+- **Config:** root `tsconfig.base.json` (strict, **`allowJs:false`**, `noUnusedLocals/Parameters`, …). `services/web/tsconfig.json` = bundler resolution + DOM lib + `checkJs:false` + `include:["src/**/*.ts","src/**/*.vue"]` (a `.vue` is strict-checked only once it has `lang="ts"`). `services/api/tsconfig.json` = NodeNext + `types:["node"]` + `noEmit` (api runs via **`tsx`**). `packages/manim-codegen/tsconfig.json` = NodeNext + declaration emit to `dist/`. `services/web/src/vite-env.d.ts` declares `import.meta.env` + `Window.__projectStore`.
+- **Gates (all in CI):** `npm run lint` (ESLint — **errors fail**, warnings allowed), `npm run format:check`, `npm run typecheck` (= build codegen + `vue-tsc` web + `tsc` api). `npm run test:unit` + `npm test` + codegen tests.
+- **Domain model:** wide interfaces — `@manim/codegen` `SceneObject` (common visual/layout fields typed + `[k:string]:unknown` for type-specific fields → cast those: `(obj.matrixData as string[][])`), `Clip`, `Project`, etc. (re-exported from the barrel). Engine has its own `engine/types.ts` (`StageObject`/`Clip`/`FrameState`/`TimedClip`…); engine↔codegen bridging uses `as unknown as` in a few stage/timeline spots. Discriminated-union refinement still deferred.
+- **`.vue` migration pattern:** keep runtime `defineProps({ obj:{ type: Object as () => SceneObject } })`/`defineEmits`; move `$event.target.*` to script handlers with `(e.target as HTMLInputElement)`; Konva events typed `(e: any)` (eslint `no-explicit-any` is `warn`).
+- **ESLint policy** (`eslint.config.js`): `no-unused-vars` ignores `^_`; `vue/no-template-key` is **off** (Vue 3 build requires the key on `<template v-for>`), as are `multi-word-component-names` and `vue/no-deprecated-filter` (false-positive on `lang=ts` union casts); `website/**` ignored.
+- **Recurring strict landmines:** dead imports/params → prefix `_` or delete; `new Map(arr.map(o=>[id,o]))` needs `:[string,T]` tuple annotation; `Number.isFinite(x)` doesn't narrow `number|undefined` → cast; array-element narrowing from a flag → branch-local `as T[]`; class fields must be declared. Memory: `strict-ts-migration-initiative`.
+
+## Stack Notes (history)
+
+- **Strict TypeScript migration**: complete (whole codebase `.ts`/`lang=ts`; lint+typecheck CI gates; `allowJs:false`). See the TypeScript section above. Spec: `docs/superpowers/specs/2026-06-08-tooling-strict-ts-migration-design.md`.
 
 ## Stack Notes (history)
 
