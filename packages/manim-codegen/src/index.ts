@@ -541,3 +541,24 @@ export { generateKeyframeSteps } from './keyframes.js';
 export { transformExpr, emphasisExpr } from './clips.js';
 export * from './constants.js';
 export * from './helpers.js';
+export type {
+  Project,
+  SceneObject,
+  Clip,
+  Track,
+  Group,
+  Stage,
+  Camera3d,
+  AudioConfig,
+  Keyframe,
+  PathPoint,
+  ResolveAsset,
+  GradientEffect,
+  DashEffect,
+  ShadowEffect,
+  KeyframeMap,
+  KeyframeCodegenMode,
+  KeyframeDefaults,
+  GeneratedStep,
+  GenerateOptions,
+} from './types.js';

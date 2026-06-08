@@ -17,19 +17,20 @@ import {
   FRAME_X_RADIUS,
   generateScene,
 } from '@manim/codegen';
+import type { Project, SceneObject, Clip } from '@manim/codegen';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-const EASING_REV = {};
-for (const [k, val] of Object.entries(EASING_MAP)) EASING_REV[val] = k;
+const EASING_REV: Record<string, string> = {};
+for (const [k, val] of Object.entries(EASING_MAP)) EASING_REV[val as string] = k;
 
-function manimToStage(mx, my, w, h) {
+function manimToStage(mx: number, my: number, w: number, h: number): { x: number; y: number } {
   return { x: (mx / FRAME_WIDTH + 0.5) * w, y: (-my / FRAME_HEIGHT + 0.5) * h };
 }
 
 /** Inverse of @manim/codegen `latexUnit`: restore a DecimalNumber `unit` back to the
     raw suffix (un-double backslashes, then drop the LaTeX escape before specials). */
-function unescapeUnit(s) {
+export function unescapeUnit(s: unknown): string {
   return String(s == null ? '' : s)
     .replace(/\\\\/g, '\\')
     .replace(/\\([%&#_${}])/g, '$1');
@@ -39,8 +40,9 @@ function unescapeUnit(s) {
 // CODEGEN: project → Manim Python (thin wrapper — logic lives in @manim/codegen)
 // ═════════════════════════════════════════════════════════════════════════════
 
-export function generateManimScript(project) {
-  const resolveAsset = (obj, ext) => `${obj.name || (ext === 'svg' ? 'asset' : 'image')}.${ext}`;
+export function generateManimScript(project: Project): string {
+  const resolveAsset = (obj: SceneObject, ext: string): string =>
+    `${obj.name || (ext === 'svg' ? 'asset' : 'image')}.${ext}`;
   return generateScene(project, { resolveAsset });
 }
 
@@ -48,38 +50,66 @@ export function generateManimScript(project) {
 // PARSER: Manim Python → project JSON
 // ═════════════════════════════════════════════════════════════════════════════
 
+/** Partial result type returned by the parser (subset of Project). */
+interface ParsedProject {
+  objects: SceneObject[];
+  tracks: { id: string; name: string; clips: Clip[] }[];
+  stage: { backgroundColor: string; width: number; height: number };
+  sceneType: '2d' | '3d';
+  cameraType: 'static' | 'moving';
+  cameraTrack: Clip[];
+}
+
+/** Partial clip used internally by parseAnimExpr. */
+interface ParsedAnimClip {
+  type: string;
+  sourceId: string;
+  targetId?: string;
+  matchTerms?: boolean;
+  params?: Record<string, unknown>;
+}
+
+/** Pending path point in Manim coordinates. */
+interface ManimPoint {
+  mx: number;
+  my: number;
+  mz: number;
+}
+
 /**
  * Parse Manim Python code back into project objects, tracks, and stage.
  */
-export function parseManimScript(code, sw = 1920, sh = 1080) {
+export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProject {
   const lines = code.split('\n').map((l) => l.trim());
-  const objects = [];
-  const clips = [];
-  const varMap = {};
-  const objById = {};
-  const graphVarMap = {};
-  const relLineMap = {}; // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
-  const vcPending = {}; // <prefix> → { vx, vy } for vector_components, resolved on its VGroup line
-  const rayPending = {}; // <prefix> → { angle, length } for ray, resolved on its VGroup line
-  const coordPending = {}; // <prefix> → { decimals } for coord_point, resolved on its VGroup line
-  const pendingShadow = {}; // base var → { color, opacity, dx, dy } awaiting its VGroup line
-  const pendingCount = {}; // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
+  const objects: SceneObject[] = [];
+  const clips: Clip[] = [];
+  const varMap: Record<string, string> = {};
+  const objById: Record<string, SceneObject> = {};
+  const graphVarMap: Record<string, Record<string, unknown>> = {};
+  const relLineMap: Record<string, { start: [number, number]; end: [number, number] }> = {}; // <var> → { start: [mx, my], end: [mx, my] } for angle helper Lines
+  const vcPending: Record<string, { vx: number; vy: number }> = {}; // <prefix> → { vx, vy } for vector_components, resolved on its VGroup line
+  const rayPending: Record<string, { angle: number; length: number }> = {}; // <prefix> → { angle, length } for ray, resolved on its VGroup line
+  const coordPending: Record<string, { decimals: number }> = {}; // <prefix> → { decimals } for coord_point, resolved on its VGroup line
+  const pendingShadow: Record<string, { color: string; opacity: number; dx: number; dy: number }> =
+    {}; // base var → { color, opacity, dx, dy } awaiting its VGroup line
+  const pendingCount: Record<string, { from: number; objVar?: string }> = {}; // _count_<cn> var → { from, objVar } awaiting self.play(animate.set_value)
 
   let bgColor = '#000000';
-  let cameraType = 'static';
-  let sceneType = '2d';
-  const cameraTrack = [];
+  let cameraType: 'static' | 'moving' = 'static';
+  let sceneType: '2d' | '3d' = '2d';
+  const cameraTrack: Clip[] = [];
   let ct = 0;
   let clipIdx = 0;
   let objIdx = 0;
 
-  const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${(objIdx++).toString(36)}`;
+  const uid = (prefix: string): string =>
+    `${prefix}_${Date.now().toString(36)}_${(objIdx++).toString(36)}`;
 
-  const pendingPaths = {}; // varName → [{ mx, my, mz }]
+  const pendingPaths: Record<string, ManimPoint[]> = {}; // varName → [{ mx, my, mz }]
 
-  function parseAnimExpr(expr) {
+  function parseAnimExpr(expr: string): ParsedAnimClip | null {
     expr = expr.trim();
-    let m2;
+    let m2: RegExpMatchArray | null;
     // obj.animate.move_to([x, y, 0])
     m2 = expr.match(/^(\w+)\.animate\.move_to\(\[([-\d.]+),\s*([-\d.]+),\s*0\]\)/);
     if (m2) {
@@ -212,7 +242,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const srcId = varMap[m2[2]],
         tgtId = varMap[m2[3]];
       if (!srcId || !tgtId) return null;
-      const clip = { type: 'transform', sourceId: srcId, targetId: tgtId };
+      const clip: ParsedAnimClip = { type: 'transform', sourceId: srcId, targetId: tgtId };
       if (animName === 'TransformMatchingTex' || animName === 'TransformMatchingShapes')
         clip.matchTerms = true;
       return clip;
@@ -221,7 +251,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
   }
 
   for (const line of lines) {
-    let m;
+    let m: RegExpMatchArray | null;
 
     // MovingCameraScene
     m = line.match(/^class\s+\w+\(MovingCameraScene\)/);
@@ -250,7 +280,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, sl] = m;
       const size = Math.round((parseFloat(sl) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'square',
         name,
@@ -285,7 +315,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const height = Math.round((parseFloat(h) / FRAME_HEIGHT) * sh);
       const type = Math.abs(parseFloat(w) - parseFloat(h)) < 0.01 ? 'square' : 'rectangle';
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type,
         name,
@@ -316,7 +346,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, w, h] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'rectangle',
         name,
@@ -347,7 +377,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, r] = m;
       const size = Math.round(((parseFloat(r) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'circle',
         name,
@@ -379,7 +409,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const innerRadius = Math.round((parseFloat(ri) / FRAME_WIDTH) * sw);
       const outerRadius = Math.round((parseFloat(ro) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'annulus',
         name,
@@ -414,7 +444,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, r, a0, sw_] = m;
       const radius = Math.round((parseFloat(r) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'arc',
         name,
@@ -450,7 +480,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, r, a0, sw_] = m;
       const radius = Math.round((parseFloat(r) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'sector',
         name,
@@ -486,7 +516,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, half, , color] = m;
       const width = Math.round(((parseFloat(half) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'double_arrow',
         name,
@@ -516,7 +546,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, w, h] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'ellipse',
         name,
@@ -547,7 +577,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, sc] = m;
       const size = Math.round((parseFloat(sc) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'triangle',
         name,
@@ -580,7 +610,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, arms, outerR, innerR] = m;
       const size = Math.round(((parseFloat(outerR) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'star',
         name,
@@ -613,7 +643,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, sides, sc] = m;
       const size = Math.round(((parseFloat(sc) * 2) / FRAME_WIDTH) * sw);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'polygon',
         name,
@@ -645,9 +675,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     );
     if (m) {
       const [, name, body] = m;
-      const verts = [];
+      const verts: [number, number][] = [];
       const re = /\[([-\d.]+),\s*([-\d.]+),\s*0\]/g;
-      let v;
+      let v: RegExpExecArray | null;
       while ((v = re.exec(body)) !== null) {
         verts.push([
           Math.round((parseFloat(v[1]) / FRAME_WIDTH) * sw),
@@ -659,7 +689,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const width = Math.max(...xs) - Math.min(...xs),
         height = Math.max(...ys) - Math.min(...ys);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'polygon_free',
         name,
@@ -691,7 +721,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\.set_points_smoothly\(\[(.+)\]\)/);
     if (m) {
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'bezier',
         name: m[1],
@@ -729,19 +759,19 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const vertices = (m[3].match(/"([^"]*)"/g) || []).map((s) => s.slice(1, -1));
       const edges = (m[4].match(/\("([^"]*)", "([^"]*)"\)/g) || []).map((t) => {
         const mm = t.match(/\("([^"]*)", "([^"]*)"\)/);
-        return [mm[1], mm[2]];
+        return [mm![1], mm![2]];
       });
-      const positions = {};
+      const positions: Record<string, [number, number]> = {};
       const layoutEntries = m[5].match(/"([^"]*)": \[([-\d.]+), ([-\d.]+), [-\d.]+\]/g) || [];
       for (const le of layoutEntries) {
         const e = le.match(/"([^"]*)": \[([-\d.]+), ([-\d.]+),/);
-        positions[e[1]] = [
-          Math.round((parseFloat(e[2]) / FRAME_WIDTH) * sw),
-          Math.round((-parseFloat(e[3]) / FRAME_HEIGHT) * sh),
+        positions[e![1]] = [
+          Math.round((parseFloat(e![2]) / FRAME_WIDTH) * sw),
+          Math.round((-parseFloat(e![3]) / FRAME_HEIGHT) * sh),
         ];
       }
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'graph',
         name: 'Graph',
@@ -779,12 +809,14 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const mathMode = m[2] === 'MathTable';
       const rowStrs = m[3].match(/\[[^\]]*\]/g) || [];
       const cellData = rowStrs.map((r) => (r.match(/"([^"]*)"/g) || []).map((q) => q.slice(1, -1)));
-      const labelList = (s) =>
+      const labelList = (s: string | undefined): string[] =>
         s
-          ? (s.match(/(?:MathTex|Text)\("([^"]*)"\)/g) || []).map((x) => x.match(/"([^"]*)"/)[1])
+          ? (s.match(/(?:MathTex|Text)\("([^"]*)"\)/g) || []).map(
+              (x) => x.match(/"([^"]*)"/)?.[1] ?? ''
+            )
           : [];
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'table',
         name: 'Table',
@@ -819,16 +851,16 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     );
     if (m) {
       const [, name, body, leftBracket] = m;
-      const rows = [];
+      const rows: string[][] = [];
       const rowRe = /\[([^\]]*)\]/g;
-      let rm;
+      let rm: RegExpExecArray | null;
       while ((rm = rowRe.exec(body))) {
         const cells = rm[1].match(/"([^"]*)"/g);
         rows.push(cells ? cells.map((c) => c.slice(1, -1)) : []);
       }
       const bracket = leftBracket === '(' ? '(' : leftBracket === '|' ? '|' : '[';
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'matrix',
         name,
@@ -875,7 +907,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m && m[1] === m[2] && vcPending[m[1]]) {
       const { vx, vy } = vcPending[m[1]];
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'vector_components',
         name: m[1],
@@ -915,7 +947,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m && m[1] === m[2] && rayPending[m[1]]) {
       const { length, angle } = rayPending[m[1]];
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'ray',
         name: m[1],
@@ -947,7 +979,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*VGroup\((\w+)_dot, \2_label\)/);
     if (m && m[1] === m[2] && coordPending[m[1]]) {
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'coord_point',
         name: m[1],
@@ -988,7 +1020,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, x1, y1, x2, y2] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'brace',
         name,
@@ -1029,12 +1061,12 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const L1 = relLineMap[l1],
         L2 = relLineMap[l2];
       if (L1 && L2) {
-        const toPx = (mp) => [
+        const toPx = (mp: [number, number]): [number, number] => [
           Math.round((mp[0] / FRAME_WIDTH) * sw),
           Math.round((-mp[1] / FRAME_HEIGHT) * sh),
         ];
         const id = uid('obj');
-        const obj = {
+        const obj: SceneObject = {
           id,
           type: 'angle',
           name,
@@ -1085,7 +1117,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\.round_corners\(radius=([-\d.]+)\)/);
     if (m) {
       const t = objById[varMap[m[1]]];
-      if (t && ['polygon', 'triangle', 'star'].includes(t.type)) {
+      if (t && ['polygon', 'triangle', 'star'].includes(t.type as string)) {
         t.cornerRadius = Math.round((parseFloat(m[2]) / FRAME_WIDTH) * sw);
       }
       continue;
@@ -1120,7 +1152,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     // Counter (Integer)
     m = line.match(/^(\w+) = Integer\((-?\d+)(?:, unit="([^"]*)")?\)/);
     if (m) {
-      const obj = {
+      const obj: SceneObject = {
         id: m[1],
         type: 'counter',
         name: 'Counter',
@@ -1156,7 +1188,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       // Use the variable name as the object id so count clip objectId round-trips correctly
       // (v(id) === id for obj_ ids since they only contain [a-z0-9_])
-      const obj = {
+      const obj: SceneObject = {
         id: m[1],
         type: 'counter',
         name: 'Counter',
@@ -1191,7 +1223,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, content, fontSize, color, fontFamily] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'text',
         name,
@@ -1223,7 +1255,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, r, color] = m;
       const size = r ? Math.round(((parseFloat(r) * 2) / FRAME_X_RADIUS) * sw) : 20;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'dot',
         name,
@@ -1251,7 +1283,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       /^(\w+) = ArrowVectorField\(lambda p: \(lambda x, y: np\.array\(\[(.*?), (.*?), 0\]\)\)\(p\[0\], p\[1\]\), x_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\], y_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\]\)/
     );
     if (m) {
-      const obj = {
+      const obj: SceneObject = {
         id: uid('obj'),
         type: 'vector_field',
         name: 'VectorField',
@@ -1301,7 +1333,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const xe = (splitAt >= 0 ? body.slice(0, splitAt) : body).trim();
       const ye = (splitAt >= 0 ? body.slice(splitAt + 1) : '0').trim();
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'parametric',
         name,
@@ -1334,7 +1366,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     m = line.match(/^(\w+)\s*=\s*ParametricFunction\(/);
     if (m) {
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'heart',
         name: m[1],
@@ -1364,10 +1396,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       /^(\w+)\s*=\s*ImageMobject\(["']([^"']+)["']\)(?:\.scale_to_fit_width\(([\d.]+)\))?/
     );
     if (m) {
-      const [, name, path, w] = m;
+      const [, name, , w] = m;
       const width = w ? Math.round((parseFloat(w) / FRAME_WIDTH) * sw) : 200;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'image',
         name,
@@ -1395,10 +1427,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       /^(\w+)\s*=\s*SVGMobject\(["']([^"']+)["']\)(?:\.scale_to_fit_width\(([\d.]+)\))?/
     );
     if (m) {
-      const [, name, path, w] = m;
+      const [, name, , w] = m;
       const width = w ? Math.round((parseFloat(w) / FRAME_WIDTH) * sw) : 200;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'svg_asset',
         name,
@@ -1428,7 +1460,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const [, name, rawLatex, color] = m;
       const latex = rawLatex.replace(/\\([\\"])/g, '$1');
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'latex',
         name,
@@ -1459,7 +1491,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'axes',
         name,
@@ -1493,7 +1525,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'numberplane',
         name,
@@ -1529,7 +1561,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, x0, x1, xs, y0, y1, ys] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'complex_plane',
         name,
@@ -1563,7 +1595,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, rMax, rStep, az] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'polar_plane',
         name,
@@ -1596,7 +1628,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, x0, x1, xs] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'numberline',
         name,
@@ -1631,7 +1663,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const axesId = varMap[axesVar];
       if (axesId && objById[axesId] && objById[axesId].type === 'axes') {
         if (!objById[axesId].graphs) objById[axesId].graphs = [];
-        const _g = {
+        const _g: Record<string, unknown> = {
           id: uid('graph').split('_').slice(-2).join('_'),
           expression: expr.trim(),
           color: color || '#F59E0B',
@@ -1639,7 +1671,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
           xMax: parseFloat(xMax),
           strokeWidth: sw2 ? parseFloat(sw2) : 3,
         };
-        objById[axesId].graphs.push(_g);
+        (objById[axesId].graphs as Record<string, unknown>[]).push(_g);
         graphVarMap[graphVar] = _g;
       }
       continue;
@@ -1652,11 +1684,11 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const g = graphVarMap[m[1]];
       if (g)
-        g.area = {
+        g['area'] = {
           enabled: true,
           xMin: parseFloat(m[2]),
           xMax: parseFloat(m[3]),
-          color: m[4] || g.color,
+          color: m[4] || g['color'],
           opacity: m[5] !== undefined ? parseFloat(m[5]) : 0.5,
         };
       continue;
@@ -1668,13 +1700,13 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const g = graphVarMap[m[1]];
       if (g)
-        g.riemann = {
+        g['riemann'] = {
           enabled: true,
           xMin: parseFloat(m[2]),
           xMax: parseFloat(m[3]),
           dx: parseFloat(m[4]),
           type: m[5],
-          color: m[6] || g.color,
+          color: m[6] || g['color'],
         };
       continue;
     }
@@ -1686,13 +1718,13 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const g = graphVarMap[m[1]];
       if (g) {
         const alpha = parseFloat(m[2]);
-        const gxMin = Number.isFinite(g.xMin) ? g.xMin : -5;
-        const gxMax = Number.isFinite(g.xMax) ? g.xMax : 5;
-        g.tangent = {
+        const gxMin = Number.isFinite(g['xMin'] as number) ? (g['xMin'] as number) : -5;
+        const gxMax = Number.isFinite(g['xMax'] as number) ? (g['xMax'] as number) : 5;
+        g['tangent'] = {
           enabled: true,
           x: gxMin + alpha * (gxMax - gxMin),
           length: parseFloat(m[3]),
-          color: m[4] || g.color,
+          color: m[4] || g['color'],
         };
       }
       continue;
@@ -1705,7 +1737,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, r, res] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'sphere',
         name,
@@ -1732,7 +1764,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, sl] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'cube',
         name,
@@ -1758,7 +1790,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, dx, dy, dz] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'prism',
         name,
@@ -1788,7 +1820,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, r, h, res] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'cone',
         name,
@@ -1818,7 +1850,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, r, h, res] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'cylinder',
         name,
@@ -1848,7 +1880,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, mr, mnr, res] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'torus',
         name,
@@ -1879,7 +1911,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const yrm = line.match(/y_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
       const zrm = line.match(/z_range=\[([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]/);
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'axes3d',
         name,
@@ -1909,7 +1941,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const [, name, zExpr, ux0, ux1, vy0, vy1, res] = m;
       const id = uid('obj');
-      const obj = {
+      const obj: SceneObject = {
         id,
         type: 'surface',
         name,
@@ -1984,7 +2016,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         objById[id].fill = m[2];
         if (m[3] !== undefined) {
           const op = parseFloat(m[3]);
-          const master = objById[id].opacity ?? 1;
+          const master = (objById[id].opacity as number | undefined) ?? 1;
           if (master > 0 && Math.abs(op - master) > 0.001)
             objById[id].fillOpacity = +(op / master).toFixed(3);
         }
@@ -2002,7 +2034,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         if (m[3]) objById[id].strokeWidth = parseFloat(m[3]);
         if (m[4] !== undefined) {
           const op = parseFloat(m[4]);
-          const master = objById[id].opacity ?? 1;
+          const master = (objById[id].opacity as number | undefined) ?? 1;
           if (master > 0) objById[id].strokeOpacity = +(op / master).toFixed(3);
         }
       }
@@ -2057,7 +2089,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const inner = line.substring(fnStart, end - 1);
 
       // Split inner content by ',' respecting bracket depth
-      const exprs = [];
+      const exprs: string[] = [];
       let cur = '',
         d = 0;
       for (const ch of inner) {
@@ -2073,7 +2105,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       }
       if (cur.trim() && !/^(lag_ratio|run_time|rate_func)/.test(cur.trim())) exprs.push(cur.trim());
 
-      const parsedClips = exprs.map((e) => parseAnimExpr(e)).filter(Boolean);
+      const parsedClips = exprs.map((e) => parseAnimExpr(e)).filter(Boolean) as ParsedAnimClip[];
       for (const pc of parsedClips) {
         clips.push({
           id: `clip_${clipIdx++}`,
@@ -2084,7 +2116,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
           easing: 'ease_in_out',
           parallel: true,
           lag_ratio: lagRatio,
-          params: pc.params,
+          params: pc.params as Clip['params'],
         });
       }
       if (parsedClips.length > 0) ct += dur;
@@ -2104,7 +2136,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         objById[id].enterTime = ct;
         objById[id].enterAnim = 'fade_in';
       }
-      ct += parseFloat(m[2] || 0.5);
+      ct += parseFloat(m[2] || '0.5');
       continue;
     }
 
@@ -2115,7 +2147,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         objById[id].enterTime = ct;
         objById[id].enterAnim = 'none';
       }
-      ct += parseFloat(m[2] || 1);
+      ct += parseFloat(m[2] || '1');
       continue;
     }
 
@@ -2126,7 +2158,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
         objById[id].enterTime = ct;
         objById[id].enterAnim = 'typewriter';
       }
-      ct += parseFloat(m[2] || 0.5);
+      ct += parseFloat(m[2] || '0.5');
       continue;
     }
 
@@ -2136,7 +2168,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       if (id && objById[id]) {
         objById[id].exitAnim = 'typewriter_out';
       }
-      ct += parseFloat(m[2] || 0.5);
+      ct += parseFloat(m[2] || '0.5');
       continue;
     }
 
@@ -2148,9 +2180,9 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const srcId = varMap[m[2]],
         tgtId = varMap[m[3]];
       if (srcId && tgtId) {
-        const dur = parseFloat(m[4] || 1);
+        const dur = parseFloat(m[4] || '1');
         const easing = m[5] ? EASING_REV[m[5]] || 'ease_in_out' : 'ease_in_out';
-        const clip = {
+        const clip: Clip = {
           id: `clip_${clipIdx++}`,
           type: 'transform',
           sourceId: srcId,
@@ -2171,7 +2203,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[3] || 1);
+        const dur = parseFloat(m[3] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'rotate',
@@ -2192,7 +2224,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[4] || 1);
+        const dur = parseFloat(m[4] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'indicate',
@@ -2213,7 +2245,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[6] || 1);
+        const dur = parseFloat(m[6] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'flash',
@@ -2239,7 +2271,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[5] || 1);
+        const dur = parseFloat(m[5] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'wiggle',
@@ -2264,7 +2296,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[6] || 1);
+        const dur = parseFloat(m[6] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'circumscribe',
@@ -2290,7 +2322,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[4] || 1);
+        const dur = parseFloat(m[4] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'focus_on',
@@ -2310,9 +2342,10 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m[1]];
       if (id && objById[id]) {
         objById[id].exitAnim = 'fade_out';
-        objById[id].duration = ct - (objById[id].enterTime || 0) + parseFloat(m[2] || 0.5);
+        objById[id].duration =
+          ct - ((objById[id].enterTime as number | undefined) || 0) + parseFloat(m[2] || '0.5');
       }
-      ct += parseFloat(m[2] || 0.5);
+      ct += parseFloat(m[2] || '0.5');
       continue;
     }
 
@@ -2323,7 +2356,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const id = varMap[m[1]];
       if (id) {
         const sp = manimToStage(parseFloat(m[2]), parseFloat(m[3]), sw, sh);
-        const dur = parseFloat(m[4] || 1);
+        const dur = parseFloat(m[4] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'move',
@@ -2342,7 +2375,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[3] || 1);
+        const dur = parseFloat(m[3] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'scale',
@@ -2363,7 +2396,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     if (m) {
       const id = varMap[m[1]];
       if (id) {
-        const dur = parseFloat(m[3] || 1);
+        const dur = parseFloat(m[3] || '1');
         clips.push({
           id: `clip_${clipIdx++}`,
           type: 'fade',
@@ -2384,7 +2417,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
     );
     if (m) {
       const [, mx, my, fw, rtStr] = m;
-      const dur = parseFloat(rtStr || 1);
+      const dur = parseFloat(rtStr || '1');
       const sp = manimToStage(parseFloat(mx), parseFloat(my), sw, sh);
       const zoom = parseFloat((FRAME_WIDTH / parseFloat(fw)).toFixed(4));
       cameraTrack.push({
@@ -2424,7 +2457,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       if (pc && pc.objVar) {
         const objectId = varMap[pc.objVar];
         const to = parseFloat(m[2]);
-        const dur = parseFloat(m[3] || 1);
+        const dur = parseFloat(m[3] || '1');
         const easing = m[4] ? EASING_REV[m[4]] || 'linear' : 'linear';
         if (objectId) {
           clips.push({
@@ -2481,7 +2514,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
       const objId = varMap[objVar];
       const pathPoints = pendingPaths[pathVar];
       if (objId && pathPoints && pathPoints.length >= 2) {
-        const dur = parseFloat(rtStr || 1);
+        const dur = parseFloat(rtStr || '1');
         const easing = rfStr ? EASING_REV[rfStr] || 'linear' : 'linear';
         const path = pathPoints.map((p) => {
           if (sceneType === '3d') {
@@ -2510,7 +2543,8 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 
   // Finalize object durations
   for (const obj of objects) {
-    if (obj.duration >= 10) obj.duration = Math.max(3, ct + 1 - (obj.enterTime || 0));
+    if ((obj.duration as number) >= 10)
+      obj.duration = Math.max(3, ct + 1 - ((obj.enterTime as number | undefined) || 0));
   }
 
   return {
@@ -2527,7 +2561,7 @@ export function parseManimScript(code, sw = 1920, sh = 1080) {
 // DOWNLOAD helper
 // ═════════════════════════════════════════════════════════════════════════════
 
-export function downloadManimScript(project) {
+export function downloadManimScript(project: Project): string {
   const script = generateManimScript(project);
   const blob = new Blob([script], { type: 'text/x-python' });
   const url = URL.createObjectURL(blob);
