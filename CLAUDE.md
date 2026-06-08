@@ -239,6 +239,15 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 
 - **Vue 3 + Pinia**: migration complete (Options API → `<script setup>`, `Vue.observable`/`Vue.set` → Pinia/direct assignment, `@vue/test-utils@2`, `@vue/compat` removed). Spec: `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`.
 
+## Security posture
+
+**Threat model: local, single-user, internet-closed.** Hardening is scoped to what protects a localhost app from malformed input/bugs — not multi-tenant concerns.
+
+- **Path traversal:** every route param interpolated into a filesystem path (`id`/`projectId`/`filename`/`audioId`) is validated by `isSafeSegment` (`services/api/src/util/paths.ts`) via `router.param` guards on each router → a `..`/separator/NUL/over-long value gets a 400 before any fs access (param callbacks run before route middleware incl. multer). Unit-tested in `services/api/tests/paths.test.ts`.
+- **Input validation:** project payloads go through the zod schema (`compiler/validator.ts`, tested in `compiler.test.ts`); asset upload enforces a mime allowlist; TTS checks required fields. Error responses are `{ error: '<message>' }` (no stack traces).
+- **Intentionally NOT added (YAGNI for a local app):** endpoint auth, CSP, CORS origin restriction (`cors()` stays open), per-route limits beyond the existing render rate-limit. Code-mode runs the user's own Python via the renderer — expected for a single-user local tool, not a sandbox-escape vuln in this model.
+- Containers run non-root (web=nginx, api=node); Helmet headers + render rate-limit are applied in `services/api`.
+
 ## Build / Environment Gotchas
 
 - **Vue 3 `<template v-for>` keys** must sit on the `<template>` tag, not child elements — a pure prod build (`npm run build`) errors otherwise. Watch in `MenuBar.vue` / `StageCanvas.vue`.
