@@ -5,17 +5,20 @@
       type="color"
       class="color-input"
       :value="value || '#ffffff'"
-      @input="$emit('input', $event.target.value)"
+      @input="onInput($event)"
     />
     <input
       class="input input-sm flex-1"
       :value="value"
-      @change="$emit('input', $event.target.value)"
+      @change="onInput($event)"
     />
   </div>
 </template>
 
-<script setup>
-defineProps(['label', 'value']);
-defineEmits(['input']);
+<script setup lang="ts">
+defineProps({ label: String, value: String });
+const emit = defineEmits(['input']);
+function onInput(e: Event) {
+  emit('input', (e.target as HTMLInputElement).value);
+}
 </script>

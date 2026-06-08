@@ -8,12 +8,12 @@
       :min="min"
       :max="max"
       :step="step"
-      @change="$emit('input', Number($event.target.value))"
+      @change="onInput($event)"
     />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 defineProps({
   label: String,
   value: [Number, String],
@@ -21,5 +21,8 @@ defineProps({
   max: { type: Number, default: undefined },
   step: { type: Number, default: 1 },
 });
-defineEmits(['input']);
+const emit = defineEmits(['input']);
+function onInput(e: Event) {
+  emit('input', Number((e.target as HTMLInputElement).value));
+}
 </script>
