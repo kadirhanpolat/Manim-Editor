@@ -5,9 +5,18 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { isSafeSegment } from '../util/paths.js';
 import { getJobStatus } from '../queue.js';
 
 const router = Router();
+
+// Reject unsafe (path-traversal) values in id/filename route params before FS use.
+for (const _p of ['jobId']) {
+  router.param(_p, (_req: Request, res: Response, next: NextFunction, val: string) => {
+    if (!isSafeSegment(val)) return void res.status(400).json({ error: 'Invalid path parameter' });
+    next();
+  });
+}
 
 /**
  * Get job status.

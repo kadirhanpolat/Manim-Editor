@@ -5,6 +5,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { isSafeSegment } from '../util/paths.js';
 import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
@@ -12,6 +13,14 @@ import type { FileFilterCallback } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
+
+// Reject unsafe (path-traversal) values in id/filename route params before FS use.
+for (const _p of ['projectId', 'filename']) {
+  router.param(_p, (_req: Request, res: Response, next: NextFunction, val: string) => {
+    if (!isSafeSegment(val)) return void res.status(400).json({ error: 'Invalid path parameter' });
+    next();
+  });
+}
 
 // Allowed file types
 const ALLOWED_TYPES: Record<string, string> = {

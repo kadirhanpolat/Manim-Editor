@@ -6,6 +6,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { isSafeSegment } from '../util/paths.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,6 +14,14 @@ import { compileProject } from '../compiler/index.js';
 import { enqueueRenderJob } from '../queue.js';
 
 const router = Router();
+
+// Reject unsafe (path-traversal) values in id/filename route params before FS use.
+for (const _p of ['id']) {
+  router.param(_p, (_req: Request, res: Response, next: NextFunction, val: string) => {
+    if (!isSafeSegment(val)) return void res.status(400).json({ error: 'Invalid path parameter' });
+    next();
+  });
+}
 
 function getProjectsDir(dataDir: string): string {
   return path.join(dataDir, 'projects');
