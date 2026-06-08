@@ -16,18 +16,8 @@
         :max="20"
         @input="u('gridRows', $event)"
       />
-      <Num
-        label="Spacing"
-        :value="o.dotSpacing ?? 40"
-        :min="5"
-        @input="u('dotSpacing', $event)"
-      />
-      <Num
-        label="Radius"
-        :value="o.dotRadius ?? 5"
-        :min="1"
-        @input="u('dotRadius', $event)"
-      />
+      <Num label="Spacing" :value="o.dotSpacing ?? 40" :min="5" @input="u('dotSpacing', $event)" />
+      <Num label="Radius" :value="o.dotRadius ?? 5" :min="1" @input="u('dotRadius', $event)" />
     </div>
   </Section>
 </template>

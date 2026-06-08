@@ -1,17 +1,8 @@
 <template>
   <Section label="Ray">
     <div class="grid grid-cols-2 gap-1.5">
-      <Num
-        label="Angle°"
-        :value="o.angle ?? 30"
-        @input="u('angle', $event)"
-      />
-      <Num
-        label="Length"
-        :value="o.length ?? 200"
-        :min="1"
-        @input="u('length', $event)"
-      />
+      <Num label="Angle°" :value="o.angle ?? 30" @input="u('angle', $event)" />
+      <Num label="Length" :value="o.length ?? 200" :min="1" @input="u('length', $event)" />
     </div>
     <p class="text-[10px] text-studio-text-muted mt-1.5">
       Source dot at the object position; arrow points at the angle (0° = right, CCW).

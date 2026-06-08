@@ -236,7 +236,7 @@ function update(key: string, e: Event) {
 }
 
 function getRange(field: string): number[] {
-  const val = (props.element as unknown as Record<string, unknown>)[field];
+  const val = props.element[field];
   return (val as number[] | undefined) ?? [-3, 3, 1];
 }
 

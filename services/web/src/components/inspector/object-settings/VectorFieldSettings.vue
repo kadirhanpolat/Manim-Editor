@@ -4,19 +4,11 @@
     <div class="space-y-1.5">
       <div class="flex items-center gap-2">
         <span class="text-[10px] text-studio-text-muted w-8">fx</span>
-        <input
-          class="input input-sm flex-1"
-          :value="o.fx"
-          @change="onFx($event)"
-        />
+        <input class="input input-sm flex-1" :value="o.fx" @change="onFx($event)" />
       </div>
       <div class="flex items-center gap-2">
         <span class="text-[10px] text-studio-text-muted w-8">fy</span>
-        <input
-          class="input input-sm flex-1"
-          :value="o.fy"
-          @change="onFy($event)"
-        />
+        <input class="input input-sm flex-1" :value="o.fy" @change="onFy($event)" />
       </div>
       <div class="grid grid-cols-3 gap-1.5">
         <Num label="x min" :value="xRange[0]" @input="setXRange(0, $event)" />

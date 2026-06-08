@@ -83,10 +83,7 @@
         </div>
       </div>
       <div class="grid grid-cols-2 gap-1.5">
-        <FontSelector
-          :value="o.fontFamily ?? 'Roboto'"
-          @input="u('fontFamily', $event)"
-        />
+        <FontSelector :value="o.fontFamily ?? 'Roboto'" @input="u('fontFamily', $event)" />
         <div>
           <span class="text-[9px] text-studio-text-muted/50">Weight</span>
           <select

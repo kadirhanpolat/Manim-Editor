@@ -2,22 +2,9 @@
   <!-- Arc / Sector settings -->
   <Section :label="o.type === 'arc' ? 'Arc' : 'Sector'">
     <div class="grid grid-cols-3 gap-1.5">
-      <Num
-        label="Radius"
-        :value="o.radius ?? 70"
-        :min="1"
-        @input="u('radius', $event)"
-      />
-      <Num
-        label="Start°"
-        :value="o.startAngle ?? 0"
-        @input="u('startAngle', $event)"
-      />
-      <Num
-        label="Sweep°"
-        :value="o.sweepAngle ?? 90"
-        @input="u('sweepAngle', $event)"
-      />
+      <Num label="Radius" :value="o.radius ?? 70" :min="1" @input="u('radius', $event)" />
+      <Num label="Start°" :value="o.startAngle ?? 0" @input="u('startAngle', $event)" />
+      <Num label="Sweep°" :value="o.sweepAngle ?? 90" @input="u('sweepAngle', $event)" />
     </div>
   </Section>
 </template>

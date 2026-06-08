@@ -1,13 +1,7 @@
 <template>
   <!-- Polygon settings -->
   <Section label="Polygon Settings">
-    <Num
-      label="Sides"
-      :value="o.sides ?? 6"
-      :min="3"
-      :max="20"
-      @input="u('sides', $event)"
-    />
+    <Num label="Sides" :value="o.sides ?? 6" :min="3" :max="20" @input="u('sides', $event)" />
   </Section>
 </template>
 
