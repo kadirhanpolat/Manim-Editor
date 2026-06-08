@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { isSafeSegment } from '../util/paths.js';
+import { isSafeSegment, isSafeSceneName } from '../util/paths.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -288,6 +288,14 @@ router.post('/:id/render-code', async (req: Request, res: Response, next: NextFu
 
     if (!codeSource || typeof codeSource !== 'string' || codeSource.trim().length === 0) {
       return void res.status(400).json({ error: 'codeSource is required and must be non-empty' });
+    }
+
+    // sceneName is forwarded to the manim CLI as an argv; restrict it to a Python
+    // class identifier so a crafted value can't be read as a manim flag.
+    if (!isSafeSceneName(sceneName)) {
+      return void res.status(400).json({
+        error: 'sceneName must be a valid scene class name (letters, digits, underscore)',
+      });
     }
 
     const projectDir = getProjectDir(req.dataDir, projectId);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeSegment } from '../src/util/paths.js';
+import { isSafeSegment, isSafeSceneName } from '../src/util/paths.js';
 
 describe('isSafeSegment', () => {
   it('accepts server-generated ids and filenames', () => {
@@ -40,5 +40,31 @@ describe('isSafeSegment', () => {
     expect(isSafeSegment(123)).toBe(false);
     expect(isSafeSegment({})).toBe(false);
     expect(isSafeSegment(['a'])).toBe(false);
+  });
+});
+
+describe('isSafeSceneName', () => {
+  it('accepts valid Python class identifiers', () => {
+    expect(isSafeSceneName('MainScene')).toBe(true);
+    expect(isSafeSceneName('Scene1')).toBe(true);
+    expect(isSafeSceneName('_private')).toBe(true);
+    expect(isSafeSceneName('my_scene_2')).toBe(true);
+  });
+
+  it('rejects manim-flag / argument-injection attempts', () => {
+    expect(isSafeSceneName('--config_file=/etc/x')).toBe(false);
+    expect(isSafeSceneName('-qk')).toBe(false);
+    expect(isSafeSceneName('Scene --flag')).toBe(false);
+    expect(isSafeSceneName('1Scene')).toBe(false); // can't start with a digit
+    expect(isSafeSceneName('Scene-2')).toBe(false); // hyphen not allowed
+    expect(isSafeSceneName('Scene.Sub')).toBe(false);
+  });
+
+  it('rejects empty, over-long, and non-string input', () => {
+    expect(isSafeSceneName('')).toBe(false);
+    expect(isSafeSceneName('A'.repeat(300))).toBe(false);
+    expect(isSafeSceneName(undefined)).toBe(false);
+    expect(isSafeSceneName(null)).toBe(false);
+    expect(isSafeSceneName(42)).toBe(false);
   });
 });
