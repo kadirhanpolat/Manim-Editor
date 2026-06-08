@@ -196,6 +196,64 @@ export function vectorComponentsCfgs(
   };
 }
 
+export function surroundingRectCfg(
+  obj: SceneObject,
+  ctx: StageCtx
+): Record<string, unknown> | null {
+  const bounds = ctx.objectBounds(obj.targetId as string);
+  if (!bounds) return null;
+  const buff = ((obj.buff as number | undefined) ?? 10) * ctx.vs;
+  return {
+    x: bounds.x - buff,
+    y: bounds.y - buff,
+    width: bounds.width + buff * 2,
+    height: bounds.height + buff * 2,
+    stroke: (obj.color as string | undefined) || '#facc15',
+    strokeWidth: ((obj.strokeWidth as number | undefined) ?? 2) * ctx.vs,
+    cornerRadius: ((obj.cornerRadius as number | undefined) ?? 0) * ctx.vs,
+    fill: 'transparent',
+    listening: false,
+  };
+}
+
+export function underlineCfg(
+  obj: SceneObject,
+  ctx: StageCtx
+): Record<string, unknown> | null {
+  const bounds = ctx.objectBounds(obj.targetId as string);
+  if (!bounds) return null;
+  const buff = ((obj.buff as number | undefined) ?? 6) * ctx.vs;
+  return {
+    points: [
+      bounds.x, bounds.y + bounds.height + buff,
+      bounds.x + bounds.width, bounds.y + bounds.height + buff,
+    ],
+    stroke: (obj.color as string | undefined) || '#f97316',
+    strokeWidth: ((obj.strokeWidth as number | undefined) ?? 2) * ctx.vs,
+    listening: false,
+  };
+}
+
+export function crossCfg(
+  obj: SceneObject,
+  ctx: StageCtx
+): Array<Record<string, unknown>> | null {
+  const bounds = ctx.objectBounds(obj.targetId as string);
+  if (!bounds) return null;
+  const stroke = (obj.color as string | undefined) || '#ef4444';
+  const strokeWidth = ((obj.strokeWidth as number | undefined) ?? 3) * ctx.vs;
+  return [
+    {
+      points: [bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height],
+      stroke, strokeWidth, listening: false,
+    },
+    {
+      points: [bounds.x + bounds.width, bounds.y, bounds.x, bounds.y + bounds.height],
+      stroke, strokeWidth, listening: false,
+    },
+  ];
+}
+
 // ray: a source dot + an arrow in the given direction (object-relative).
 export function rayCfgs(
   obj: SceneObject,

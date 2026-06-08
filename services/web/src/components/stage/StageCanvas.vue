@@ -482,6 +482,31 @@
               <v-text v-if="obj.label" :config="relationalLabelCfg(obj, angleLabelAnchor(obj))" />
             </v-group>
 
+            <!-- Surrounding Rect annotation -->
+            <template v-if="obj.type === 'surrounding_rect'">
+              <v-rect
+                v-if="surroundingRectCfg(obj)"
+                :config="surroundingRectCfg(obj)"
+              />
+            </template>
+
+            <!-- Underline annotation -->
+            <template v-if="obj.type === 'underline'">
+              <v-line
+                v-if="underlineCfg(obj)"
+                :config="underlineCfg(obj)"
+              />
+            </template>
+
+            <!-- Cross annotation (two diagonal lines) -->
+            <template v-if="obj.type === 'cross'">
+              <template v-if="crossCfg(obj)">
+                <template v-for="(lineCfg, _li) in crossCfg(obj)" :key="_li">
+                  <v-line :config="lineCfg" />
+                </template>
+              </template>
+            </template>
+
             <!-- Vector components (main + x/y arrows + dashed guides) -->
             <v-group
               v-if="obj.type === 'vector_components' && isVis(obj.id)"
@@ -1115,6 +1140,9 @@ const angleRayCfgs = (o: SceneObject) => relational.angleRayCfgs(o, ctx.value);
 const angleArcCfg = (o: SceneObject) => relational.angleArcCfg(o, ctx.value);
 const angleSquareCfg = (o: SceneObject) => relational.angleSquareCfg(o, ctx.value);
 const angleLabelAnchor = (o: SceneObject) => relational.angleLabelAnchor(o, ctx.value);
+const surroundingRectCfg = (o: SceneObject) => relational.surroundingRectCfg(o, ctx.value);
+const underlineCfg = (o: SceneObject) => relational.underlineCfg(o, ctx.value);
+const crossCfg = (o: SceneObject) => relational.crossCfg(o, ctx.value);
 const axesBgCfg = (o: SceneObject) => axes.axesBgCfg(o, ctx.value);
 const axesXLineCfg = (o: SceneObject) => axes.axesXLineCfg(o, ctx.value);
 const axesYLineCfg = (o: SceneObject) => axes.axesYLineCfg(o, ctx.value);
