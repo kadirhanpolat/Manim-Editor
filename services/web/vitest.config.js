@@ -26,5 +26,10 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.ts'],
     exclude: ['node_modules', 'tests/engine.test.mjs'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/main.ts', 'src/**/*.d.ts'],
+    },
   },
 });
