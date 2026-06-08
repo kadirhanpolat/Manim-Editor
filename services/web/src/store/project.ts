@@ -317,6 +317,9 @@ export const SHAPE_DEFAULTS = {
   },
   ray: { width: 200, height: 200, fill: '#22d3ee', stroke: '#22d3ee', strokeWidth: 2 },
   coord_point: { width: 60, height: 60, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
+  surrounding_rect: { width: 160, height: 80, fill: '#facc15', stroke: '#facc15', strokeWidth: 2, color: '#facc15', buff: 10, cornerRadius: 0, targetId: '' },
+  underline:        { width: 160, height: 20, fill: '#f97316', stroke: '#f97316', strokeWidth: 2, color: '#f97316', buff: 6, targetId: '' },
+  cross:            { width: 160, height: 80, fill: '#ef4444', stroke: '#ef4444', strokeWidth: 3, color: '#ef4444', targetId: '' },
 };
 
 export const SHAPE_COLORS = {
@@ -521,6 +524,9 @@ const useProjectStore = defineStore('project', {
         vector_components: 'Vector Comp',
         ray: 'Ray',
         coord_point: 'Coord Point',
+        surrounding_rect: 'Çerçeve',
+        underline: 'Altı Çizgi',
+        cross: 'Üstü Çizili',
       };
       const displayName =
         (nameMap as Record<string, string>)[type] || type.charAt(0).toUpperCase() + type.slice(1);
@@ -642,6 +648,9 @@ const useProjectStore = defineStore('project', {
         ...(type === 'complex_plane' ? { xRange: [-3, 3, 1], yRange: [-2, 2, 1] } : {}),
         ...(type === 'polar_plane' ? { radiusMax: 4, radiusStep: 1, azimuthUnits: 12 } : {}),
         ...(type === 'numberline' ? { xRange: [-5, 5, 1] } : {}),
+        ...(type === 'surrounding_rect' ? { color: '#facc15', buff: 10, cornerRadius: 0, targetId: '' } : {}),
+        ...(type === 'underline' ? { color: '#f97316', buff: 6, targetId: '' } : {}),
+        ...(type === 'cross' ? { color: '#ef4444', targetId: '' } : {}),
         ...extraProps,
       };
 
@@ -881,6 +890,13 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
+    setAnnotationTarget(objId: string, targetId: string) {
+      const obj = this.objectById(objId);
+      if (!obj) return;
+      obj.targetId = targetId;
+      this.commitState();
+    },
+
     setGradient(id: string, gradient: { colors: string[]; angle?: number } | null | undefined) {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
@@ -1101,6 +1117,17 @@ const useProjectStore = defineStore('project', {
         this.project.groups = this.project.groups.filter(
           (g) => g.childIds && g.childIds.length > 0
         );
+      }
+      // Cascade: remove annotation objects bound to this target
+      const ANNOTATION_TYPES = new Set(['surrounding_rect', 'underline', 'cross']);
+      const boundAnnotations = this.project.objects
+        .filter(o => ANNOTATION_TYPES.has(o.type as string) && o.targetId === id)
+        .map(o => o.id);
+      for (const annId of boundAnnotations) {
+        const ai = this.project.objects.findIndex(o => o.id === annId);
+        if (ai !== -1) this.project.objects.splice(ai, 1);
+        const si = this.selectedObjectIds.indexOf(annId);
+        if (si !== -1) this.selectedObjectIds.splice(si, 1);
       }
       this.isDirty = true;
       this.commitState();
