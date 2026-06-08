@@ -688,7 +688,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/core';
+import python from 'highlight.js/lib/languages/python';
+hljs.registerLanguage('python', python);
 import * as api from './api.js';
 import { useProjectStore } from './store/project.js';
 import { getPlaybackEngine } from './engine/playback.js';

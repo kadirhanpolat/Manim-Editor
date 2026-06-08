@@ -29,6 +29,19 @@ export default defineConfig({
       vue: 'vue/dist/vue.esm-bundler.js',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy, rarely-changing vendor libs into their own chunks so the
+        // browser caches them across app deploys and the entry chunk shrinks.
+        manualChunks: {
+          konva: ['konva', 'vue-konva'],
+          'vue-vendor': ['vue', 'pinia'],
+          highlight: ['highlight.js'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
