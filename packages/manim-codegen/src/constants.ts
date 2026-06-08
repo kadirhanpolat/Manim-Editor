@@ -72,3 +72,8 @@ export const SHADOW_TYPES: Set<string> = new Set([
   'text',
   'latex',
 ]);
+export const ANNOTATION_TYPES: Set<string> = new Set([
+  'surrounding_rect',
+  'underline',
+  'cross',
+]);

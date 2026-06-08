@@ -23,6 +23,7 @@ import {
   FRAME_X_RADIUS,
   FRAME_Y_RADIUS,
   GRADIENT_TYPES,
+  ANNOTATION_TYPES,
 } from './constants.js';
 import type { SceneObject, GenerateOptions } from './types.js';
 
@@ -567,17 +568,46 @@ export function objectCode(
       );
       break;
     }
+    case 'surrounding_rect': {
+      const target = vn(o.targetId as string || '');
+      const annColor = hex(o.color) || fill;
+      const buffM = safeNum((o.buff as number ?? 10) / sw * FRAME_WIDTH, 0.1);
+      const crM = safeNum((o.cornerRadius as number ?? 0) / sw * FRAME_WIDTH, 0);
+      lines.push(
+        `${n} = SurroundingRectangle(${target}, color=${annColor}, stroke_width=${sw2}, buff=${buffM.toFixed(3)}, corner_radius=${crM.toFixed(3)})`
+      );
+      break;
+    }
+    case 'underline': {
+      const target = vn(o.targetId as string || '');
+      const annColor = hex(o.color) || fill;
+      const buffM = safeNum((o.buff as number ?? 6) / sw * FRAME_WIDTH, 0.05);
+      lines.push(
+        `${n} = Underline(${target}, color=${annColor}, stroke_width=${sw2}, buff=${buffM.toFixed(3)})`
+      );
+      break;
+    }
+    case 'cross': {
+      const target = vn(o.targetId as string || '');
+      const annColor = hex(o.color) || fill;
+      lines.push(
+        `${n} = Cross(${target}, stroke_color=${annColor}, stroke_width=${sw2})`
+      );
+      break;
+    }
     default:
       lines.push(`${n} = Circle(radius=0.5)  # ${o.type}`);
   }
-  const rc = roundCornersLine(n, o, sw);
-  if (rc) lines.push(rc);
-  const gl = gradientLine(n, o);
-  if (gl && GRADIENT_TYPES.has(o.type)) lines.push(gl);
-  for (const dl of dashedLines(n, o)) lines.push(dl);
-  for (const sl of shadowLines(n, o, sw, sh)) lines.push(sl);
-  lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
-  if (o.rotation) lines.push(`${n}.rotate(${((o.rotation * Math.PI) / 180).toFixed(4)})`);
+  if (!ANNOTATION_TYPES.has(o.type)) {
+    const rc = roundCornersLine(n, o, sw);
+    if (rc) lines.push(rc);
+    const gl = gradientLine(n, o);
+    if (gl && GRADIENT_TYPES.has(o.type)) lines.push(gl);
+    for (const dl of dashedLines(n, o)) lines.push(dl);
+    for (const sl of shadowLines(n, o, sw, sh)) lines.push(sl);
+    lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
+    if (o.rotation) lines.push(`${n}.rotate(${((o.rotation * Math.PI) / 180).toFixed(4)})`);
+  }
   return lines;
 }
 
