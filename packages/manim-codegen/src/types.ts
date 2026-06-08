@@ -76,10 +76,23 @@ export interface SceneObject {
   // transform / layout
   x?: number;
   y?: number;
+  width?: number;
+  height?: number;
   rotation?: number;
+  opacity?: number;
+  zOrder?: number;
+  name?: string;
   x3d?: number;
   y3d?: number;
   z3d?: number;
+
+  // common style
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  color?: string;
+  text?: string;
+  fontSize?: number;
 
   // style + effects
   fillOpacity?: number;
