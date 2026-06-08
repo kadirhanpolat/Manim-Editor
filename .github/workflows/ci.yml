@@ -18,16 +18,16 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm ci
+      - name: Lint (ESLint)
+        run: npm run lint
       - name: Prettier format check
         run: npm run format:check
-      - name: Typecheck (codegen + web engine)
+      - name: Typecheck (codegen + web + api)
         run: npm run typecheck
       - name: Web unit tests
         run: npm run test:unit --workspace services/web
       - name: Engine tests
         run: npm test --workspace services/web
-      # NOTE: `npm run lint` and full typecheck are added as gates in Phase 6,
-      # once the codebase is migrated and violations are resolved.
 
   python:
     runs-on: ubuntu-latest
