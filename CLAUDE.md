@@ -24,12 +24,15 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit   # 515 unit tests (store, components, export)
-cd services/web && npm test            # 114 engine tests (easing, geometry, transform, keyframe) — runs via tsx
-# Both must pass before any commit.
+cd services/web && npm run test:unit    # 555 unit tests (store, components, export)
+cd services/web && npm run test:coverage # same, with v8 coverage report
+cd services/web && npm test             # 114 engine tests (easing, geometry, transform, keyframe) — runs via tsx
+npm test --workspace services/api       # 43 api tests (compiler pipeline + path/scene-name safety)
+npm test --workspace packages/manim-codegen  # 6 codegen tests
+# All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
-cd e2e && npm test                     # 9 Playwright smoke tests (auto-boots dev server :5188)
+cd e2e && npm test                      # 9 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
 ```
 
 Tooling (run from repo root) — all are CI gates:
@@ -204,6 +207,7 @@ Optional fields; absent ⇒ byte-identical legacy output. Delete the field on nu
 
 - **Typewriter presets**: `enterAnim:'typewriter'` → `AddTextLetterByLetter`, `exitAnim:'typewriter_out'` → `RemoveTextLetterByLetter` (round-trip via enter/exit anim parsers).
 - Tex term-matching morph shows a generic crossfade in preview (Manim does real term alignment); typewriter timing is approximate in preview.
+- **Math → use the `latex` object, not `text`.** A `latex` object emits `MathTex(...)` (proper math typesetting: italic variables, real superscripts); a `text` object emits `Text(..., font=…)` (plain font). Authoring a math expression as a `text` object renders it in the wrong font (regression source — fixed in the `axes_intro` template).
 
 ## 3D Scene Support
 
@@ -245,6 +249,7 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 
 - **Path traversal:** every route param interpolated into a filesystem path (`id`/`projectId`/`filename`/`audioId`) is validated by `isSafeSegment` (`services/api/src/util/paths.ts`) via `router.param` guards on each router → a `..`/separator/NUL/over-long value gets a 400 before any fs access (param callbacks run before route middleware incl. multer). Unit-tested in `services/api/tests/paths.test.ts`.
 - **Input validation:** project payloads go through the zod schema (`compiler/validator.ts`, tested in `compiler.test.ts`); asset upload enforces a mime allowlist; TTS checks required fields. Error responses are `{ error: '<message>' }` (no stack traces).
+- **Argument injection:** `render-code` validates `sceneName` with `isSafeSceneName` (a Python class identifier) before it's forwarded to the `manim` CLI as an argv — list-form `subprocess.run` blocks shell injection, but an unvalidated value (e.g. `--config_file=…`) would be read as a manim flag.
 - **Intentionally NOT added (YAGNI for a local app):** endpoint auth, CSP, CORS origin restriction (`cors()` stays open), per-route limits beyond the existing render rate-limit. Code-mode runs the user's own Python via the renderer — expected for a single-user local tool, not a sandbox-escape vuln in this model.
 - Containers run non-root (web=nginx, api=node); Helmet headers + render rate-limit are applied in `services/api`.
 
@@ -252,4 +257,6 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 
 - **Vue 3 `<template v-for>` keys** must sit on the `<template>` tag, not child elements — a pure prod build (`npm run build`) errors otherwise. Watch in `MenuBar.vue` / `StageCanvas.vue`.
 - **Renderer `setuptools<81` pin**: `manimcommunity/manim:stable` ships setuptools 82 (no `pkg_resources`), but `manim-voiceover` imports it at load and crashes the `manim` CLI. Pinned in `services/renderer/Dockerfile`.
-- **`api_node_modules` named volume**: after adding an api dependency, `docker volume rm manim_motion_api_node_modules` before `docker compose up` — named volumes don't refresh on rebuild and shadow new packages (`ERR_MODULE_NOT_FOUND`).
+- **`root_node_modules` named volume**: the api mounts `root_node_modules:/app/node_modules`; it persists across rebuilds and shadows freshly-installed packages. After adding/removing a dep, rebuild with: `docker compose down` → `docker volume rm manim_motion_root_node_modules` → `docker compose up -d --build` (keeps the `*_data` + `redis_data` volumes). Otherwise `ERR_MODULE_NOT_FOUND`.
+- **Docker images must ship `tsconfig.base.json`**: `services/{web,api}/tsconfig.json` `extends ../../tsconfig.base.json`, and the toolchains resolve that `extends` at build/startup — `vite build` (web) and `tsc`/`tsx` (api) fail with "failed to resolve extends" if the root base config isn't in the image. Both Dockerfiles `COPY tsconfig.base.json ./` before install/build. (Surfaces only on a container rebuild, not locally.)
+- **redis is not published on the host**: the app reaches redis over the internal Docker network (`REDIS_URL=redis://redis:6379`); `docker-compose.yml` deliberately omits a `6379:6379` mapping to avoid host-port clashes with other local projects. Add a `ports` mapping back if you need redis-cli from the host.

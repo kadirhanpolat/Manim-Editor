@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.18.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.19.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -395,8 +395,9 @@ All Docker containers run with **least-privilege non-root users**:
 
 ```bash
 cd services/web
-npm test          # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit # 515 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, Phase 2.5 relational, Phase 2.6 effects, emphasis animations, text-math animations, Phase 4 data objects, object-library extensions (Surface, Prism, Integer counter, Ray, Coord Point, Vector Components, Bezier, Tangent), UI-tools audit (palette reachability, MotionPicker clips, interaction tools), codegen→valid-Python checks, + StageCanvas config-builder characterization snapshots)
+npm test           # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
+npm run test:unit  # 555 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, + characterization snapshots)
+npm run test:coverage  # same suite with a v8 coverage report
 ```
 
 Code quality gates (run from the repo root — all enforced in CI):
@@ -407,9 +408,10 @@ npm run typecheck     # build @manim/codegen + vue-tsc (web) + tsc (api), all st
 npm run format:check  # Prettier (.js/.ts/.vue/.json/.css)
 ```
 
-The shared codegen package has its own suite (run from the repo root):
+The backend services and shared package have their own suites (from the repo root):
 
 ```bash
+npm test --workspace services/api             # 43 api tests (compiler validate/normalize/codegen + path & scene-name safety)
 npm --workspace packages/manim-codegen test   # 6 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape)
 ```
 
@@ -426,7 +428,8 @@ npm test                         # 9 Chromium tests; auto-boots the web dev serv
 ```
 
 It clicks every palette/clip/tool surface (add objects, MotionPicker clips,
-keyboard tools, transform gating) against the running app.
+keyboard tools, transform gating) against the running app. CI runs this suite as
+a **non-blocking** job (a flaky browser run reports but doesn't gate every push).
 
 ---
 
@@ -459,7 +462,36 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.18.0 (current)
+### v3.19.0 (current)
+
+Post-migration hardening + deployment fixes — quality/robustness work on top of the
+TypeScript codebase, plus real fixes surfaced by deploying it. No user-facing behavior
+change except the explicit ones noted; generated Manim stays byte-identical.
+
+- **Type-debt cleanup**: removed 10 orphaned legacy components; unified the playback
+  engine on the `@manim/codegen` domain types (no more parallel `StageObject`); added
+  per-type object interfaces (45 → 0 inline field casts in the inspector).
+- **Performance**: trimmed `highlight.js` to core + Python only and split vendor chunks
+  → bundle 1.7 MB → ~800 KB (gzip ~240 KB), no more >500 KB warning.
+- **Testing**: new API test suite (compiler pipeline + path/scene-name safety, 43 tests);
+  coverage-driven engine tests (geometry 12% → 99.7%, transform 31% → 96.6%);
+  `ErrorBoundary` + toast tests. Totals: **555 web unit + 114 engine + 43 api + 6 codegen
+  + 9 e2e**. Playwright e2e now runs as a **non-blocking CI job**; added `test:coverage`.
+- **Accessibility**: 40 `aria-label`s on icon-only buttons, dialog/landmark roles.
+- **Security** (local single-user model): path-traversal guards on all id/filename route
+  params; `sceneName` validated before the `manim` CLI (argument-injection). Auth/CSP
+  intentionally skipped for a localhost-only app.
+- **Error resilience**: global Vue error handler + per-panel `<ErrorBoundary>` so one
+  panel crashing can't white-screen the editor; success/info toast channel for async ops
+  (save/load), plus loading states.
+- **Deployment fixes** (surfaced on a container rebuild): both Dockerfiles now ship the
+  root `tsconfig.base.json` (the per-service tsconfigs `extends` it; `vite build`/`tsc`/`tsx`
+  failed otherwise); redis is no longer published on the host port (internal network only,
+  avoids clashes with other local projects).
+- **Content fix**: the "Koordinat Sistemi" template's `f(x) = x²` label is now a LaTeX
+  (MathTex) object so it typesets in the proper math font instead of a plain Text font.
+
+### v3.18.0
 
 Strict TypeScript migration **complete** (phases 3–7) — the entire codebase is now
 TypeScript with lint + typecheck CI gates. **Zero user-facing behavior change**;
