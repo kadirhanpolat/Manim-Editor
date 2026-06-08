@@ -14,6 +14,7 @@ import { interpolateKeyframes, getKeyframeRange } from './keyframe.js';
 import type {
   Point,
   Point3D,
+  PathPoint,
   StageObject,
   Track,
   Clip,
@@ -26,10 +27,7 @@ import type {
 
 // path_move için yay-uzunluğuna göre interpolasyon. 3D nokta (x3d alanı) ya da
 // 2D nokta ({x,y}) kabul eder; aynı şekildeki noktayı döndürür.
-export function interpolatePath(
-  path: Array<Point | Point3D> | null | undefined,
-  t: number
-): Point | Point3D {
+export function interpolatePath(path: PathPoint[] | null | undefined, t: number): Point | Point3D {
   if (!path || path.length === 0) return { x: 0, y: 0 };
   const is3d = !!(path[0] && 'x3d' in path[0]);
   const clampedT = Math.max(0, Math.min(1, t));
@@ -441,22 +439,22 @@ export class PlaybackEngine {
             changed = true;
             break;
           case 'fly_in_left':
-            overrides.x = obj.x - (1 - eased) * 600;
+            overrides.x = (obj.x ?? 0) - (1 - eased) * 600;
             overrides.opacity = eased * (obj.opacity ?? 1);
             changed = true;
             break;
           case 'fly_in_right':
-            overrides.x = obj.x + (1 - eased) * 600;
+            overrides.x = (obj.x ?? 0) + (1 - eased) * 600;
             overrides.opacity = eased * (obj.opacity ?? 1);
             changed = true;
             break;
           case 'fly_in_top':
-            overrides.y = obj.y - (1 - eased) * 400;
+            overrides.y = (obj.y ?? 0) - (1 - eased) * 400;
             overrides.opacity = eased * (obj.opacity ?? 1);
             changed = true;
             break;
           case 'fly_in_bottom':
-            overrides.y = obj.y + (1 - eased) * 400;
+            overrides.y = (obj.y ?? 0) + (1 - eased) * 400;
             overrides.opacity = eased * (obj.opacity ?? 1);
             changed = true;
             break;
@@ -520,22 +518,22 @@ export class PlaybackEngine {
             changed = true;
             break;
           case 'fly_out_left':
-            overrides.x = (overrides.x ?? obj.x) - (1 - eased) * 600;
+            overrides.x = (overrides.x ?? obj.x ?? 0) - (1 - eased) * 600;
             overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
             changed = true;
             break;
           case 'fly_out_right':
-            overrides.x = (overrides.x ?? obj.x) + (1 - eased) * 600;
+            overrides.x = (overrides.x ?? obj.x ?? 0) + (1 - eased) * 600;
             overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
             changed = true;
             break;
           case 'fly_out_top':
-            overrides.y = (overrides.y ?? obj.y) - (1 - eased) * 400;
+            overrides.y = (overrides.y ?? obj.y ?? 0) - (1 - eased) * 400;
             overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
             changed = true;
             break;
           case 'fly_out_bottom':
-            overrides.y = (overrides.y ?? obj.y) + (1 - eased) * 400;
+            overrides.y = (overrides.y ?? obj.y ?? 0) + (1 - eased) * 400;
             overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
             changed = true;
             break;
@@ -614,13 +612,13 @@ export class PlaybackEngine {
       case 'move': {
         const params = clip.params || {};
         overrides.x = lerp(
-          sourceObj.x,
-          params.targetX !== undefined ? params.targetX : sourceObj.x,
+          sourceObj.x ?? 0,
+          params.targetX !== undefined ? params.targetX : (sourceObj.x ?? 0),
           easedT
         );
         overrides.y = lerp(
-          sourceObj.y,
-          params.targetY !== undefined ? params.targetY : sourceObj.y,
+          sourceObj.y ?? 0,
+          params.targetY !== undefined ? params.targetY : (sourceObj.y ?? 0),
           easedT
         );
         break;
@@ -783,7 +781,7 @@ export class PlaybackEngine {
 
     const QUALITY_COUNTS: Record<string, number> = { low: 32, medium: 64, high: 128 };
     const count = QUALITY_COUNTS[quality] || 64;
-    const raw = generateShapePoints(obj.type, obj.width, obj.height, quality);
+    const raw = generateShapePoints(obj.type, obj.width ?? 0, obj.height ?? 0, quality);
     const resampled = resamplePoints(raw, count);
     this._pointsCache.set(cacheKey, resampled);
     return resampled;

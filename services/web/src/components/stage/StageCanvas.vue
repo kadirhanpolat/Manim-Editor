@@ -785,7 +785,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import type { SceneObject } from '@manim/codegen';
-import type { StageObject, Overrides } from '../../engine/types.js';
+import type { Overrides } from '../../engine/types.js';
 import * as shapes2d from './configs/shapes2d.js';
 import * as text from './configs/text.js';
 import * as dataObjects from './configs/dataObjects.js';
@@ -960,7 +960,7 @@ onBeforeUnmount(() => {
 // ── Methods ──
 function eff(obj: SceneObject): SceneObject {
   const ov = frameState.value.objectOverrides[obj.id] as Overrides | undefined;
-  return ov ? (applyOverrides(obj as unknown as StageObject, ov) as unknown as SceneObject) : obj;
+  return ov ? applyOverrides(obj, ov) : obj;
 }
 
 // 3D nesnenin geçerli (override dahil) konumu — playback path_move/move override'larını yansıtır
@@ -1045,10 +1045,7 @@ const floorGridIso = computed(() => chrome.floorGridIso(ctx.value));
 // ── overlays.js delegating computeds ──
 const emphasisOverlays = computed(() => overlays.emphasisOverlays(objects.value, ctx.value));
 const path3dPolylines = computed(() =>
-  overlays.path3dPolylines(
-    (store.project.tracks as unknown as import('../../engine/types.js').Track[]) || [],
-    ctx.value
-  )
+  overlays.path3dPolylines(store.project.tracks || [], ctx.value)
 );
 const morphCfg = (m: import('../../engine/types.js').MorphState) => overlays.morphCfg(m, ctx.value);
 const rectCfg = (o: SceneObject) => shapes2d.rectCfg(o, ctx.value);

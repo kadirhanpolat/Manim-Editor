@@ -354,7 +354,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
   function onDrag3DEnd(objId: string, e: KonvaEvt): void {
     const node = e.target;
     const obj = store.project.objects.find((o) => o.id === objId);
-    const patch = unprojectView(node.x!(), node.y!(), obj as unknown as Record<string, unknown>);
+    const patch = unprojectView(node.x!(), node.y!(), obj);
     if (patch) store.updateObject(objId, patch);
     store.commitState();
     node.position?.({ x: 0, y: 0 });

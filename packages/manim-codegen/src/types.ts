@@ -148,11 +148,20 @@ export interface Clip {
     zoom?: number;
     phi?: number;
     theta?: number;
+    // emphasis (indicate/flash/wiggle/circumscribe/focus_on)
+    scale_factor?: number;
+    n_wiggles?: number;
+    rotation_angle?: number;
+    scale_value?: number;
+    shape?: string;
+    fade_out?: boolean;
+    color?: string;
     [k: string]: unknown;
   };
 
   // morph/overshoot
   overshoot?: number;
+  settle?: number;
   morphQuality?: string;
 
   // rotate (3D)

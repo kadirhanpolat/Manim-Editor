@@ -225,12 +225,7 @@ function seekToClientX(clientX: number): void {
   );
   const eng = getPlaybackEngine();
   eng.duration = totalDuration.value; // keep engine clamp in sync with project length
-  eng.seekTo(
-    t,
-    store.project.tracks as unknown as import('../../engine/types.js').Track[],
-    store.project.objects as unknown as import('../../engine/types.js').StageObject[],
-    store.project.cameraTrack || []
-  );
+  eng.seekTo(t, store.project.tracks, store.project.objects, store.project.cameraTrack || []);
 }
 function startSeek(e: MouseEvent): void {
   seekToClientX(e.clientX);

@@ -53,14 +53,14 @@ export function path3dPolylines(tracks: Track[], ctx: StageCtx): Record<string, 
   for (const track of tracks) {
     for (const clip of track.clips || []) {
       if (clip.type !== 'path_move' || !Array.isArray(clip.path)) continue;
-      const path = clip.path as unknown as Array<Record<string, unknown>>;
+      const path = clip.path;
       if (!(path[0] && 'x3d' in path[0])) continue;
       const pts: number[] = [];
       for (const pt of path) {
         const i = ctx.iso(
-          pt.x3d as number,
-          (pt.y3d as number | undefined) ?? 0,
-          pt.z3d as number,
+          pt.x3d ?? 0,
+          pt.y3d ?? 0,
+          pt.z3d ?? 0,
           ctx.projCx,
           ctx.projCy,
           ctx.proj3DScale

@@ -161,10 +161,10 @@ export function computeMorphState(
 
   return {
     points: morphedPoints,
-    x: lerp(sourceObj.x, targetObj.x, t),
-    y: lerp(sourceObj.y, targetObj.y, t),
-    width: lerp(sourceObj.width, targetObj.width, t),
-    height: lerp(sourceObj.height, targetObj.height, t),
+    x: lerp(sourceObj.x ?? 0, targetObj.x ?? 0, t),
+    y: lerp(sourceObj.y ?? 0, targetObj.y ?? 0, t),
+    width: lerp(sourceObj.width ?? 0, targetObj.width ?? 0, t),
+    height: lerp(sourceObj.height ?? 0, targetObj.height ?? 0, t),
     rotation: lerp(sourceObj.rotation || 0, targetObj.rotation || 0, t),
     fill: interpolateColor(sourceObj.fill, targetObj.fill, t),
     stroke: interpolateColor(sourceObj.stroke, targetObj.stroke, t),

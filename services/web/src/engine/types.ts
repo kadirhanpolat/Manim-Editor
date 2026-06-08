@@ -1,6 +1,32 @@
-// Shared structural types for the preview engine. These describe the runtime
-// "stage" shapes the playback engine reads (a loose superset of store objects).
-// Phase 3/4 may reconcile these with the @manim/codegen domain model.
+// Engine type model.
+//
+// The shared domain shapes (objects, clips, tracks, keyframes, paths) are
+// re-exported from @manim/codegen — the single source of truth — so the playback
+// engine and the canvas operate on the SAME types as the store and codegen (no
+// parallel definitions, no `as unknown as` bridges between "StageObject" and
+// "SceneObject"). Engine-only runtime shapes (frame state, overrides, morph state,
+// 3D projection) stay local below.
+
+export type {
+  SceneObject,
+  // The engine historically called the on-stage object `StageObject`; it is the
+  // same shape as the codegen `SceneObject`. Kept as an alias for readability.
+  SceneObject as StageObject,
+  Clip,
+  Track,
+  PathPoint,
+  Keyframe,
+  KeyframeMap,
+} from '@manim/codegen';
+
+import type { Clip } from '@manim/codegen';
+
+// Camera-move clips (carry phi/theta/zoom or targetX/targetY/zoom) live in
+// project.cameraTrack as ordinary Clips.
+export type CameraClip = Clip;
+
+// The animation parameter bag, derived from the codegen Clip so it stays in sync.
+export type ClipParams = NonNullable<Clip['params']>;
 
 export interface Point {
   x: number;
@@ -35,42 +61,16 @@ export interface EasingSpec {
   handles?: number[];
 }
 
-export interface Keyframe {
-  time: number;
-  value: number;
-  easing?: EasingSpec;
-}
-
 export interface KeyframeRange {
   start: number;
   end: number;
 }
 
-// Wide stage object (preview runtime shape). Mirrors store objects loosely.
-export interface StageObject {
-  id: string;
-  type: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation?: number;
-  opacity?: number;
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
-  x3d?: number;
-  y3d?: number;
-  z3d?: number;
-  enterTime?: number;
-  duration?: number;
-  enterAnim?: string;
-  exitAnim?: string;
-  enterAnimDur?: number;
-  exitAnimDur?: number;
-  keyframes?: Record<string, Keyframe[]>;
-  keyframeMode?: Record<string, string>;
-  [k: string]: unknown;
+// Minimal time-window shape the scheduling helpers (isClipActive/getClipProgress/
+// isClipCompleted) need. Both Clip and CameraClip satisfy it.
+export interface TimedClip {
+  startTime: number;
+  duration: number;
 }
 
 // Per-object animatable overrides produced each frame.
@@ -89,63 +89,6 @@ export interface Overrides {
   x3d?: number;
   y3d?: number;
   z3d?: number;
-  [k: string]: unknown;
-}
-
-// Known animation parameter bag. Typed fields keep playback arithmetic strict;
-// the index signature preserves the wide, open-ended shape.
-export interface ClipParams {
-  targetX?: number;
-  targetY?: number;
-  targetScaleX?: number;
-  targetScaleY?: number;
-  targetOpacity?: number;
-  targetRotation?: number;
-  scale_factor?: number;
-  color?: string;
-  n_wiggles?: number;
-  rotation_angle?: number;
-  scale_value?: number;
-  shape?: string;
-  fade_out?: boolean;
-  phi?: number;
-  theta?: number;
-  zoom?: number;
-  [k: string]: unknown;
-}
-
-// Minimal time-window shape shared by Clip and CameraClip. The scheduling
-// helpers (isClipActive/getClipProgress/isClipCompleted) only need these.
-export interface TimedClip {
-  startTime: number;
-  duration: number;
-}
-
-export interface Clip extends TimedClip {
-  id: string;
-  type: string;
-  easing?: string;
-  sourceId?: string;
-  targetId?: string;
-  objectId?: string;
-  params?: ClipParams;
-  path?: Array<Point | Point3D>;
-  from?: number;
-  to?: number;
-  overshoot?: number;
-  settle?: number;
-  morphQuality?: string;
-  [k: string]: unknown;
-}
-
-export interface Track {
-  clips?: Clip[];
-  [k: string]: unknown;
-}
-
-export interface CameraClip extends TimedClip {
-  easing?: string;
-  params?: ClipParams;
   [k: string]: unknown;
 }
 
