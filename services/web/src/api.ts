@@ -36,7 +36,7 @@ async function request(endpoint: string, options: RequestInit = {}): Promise<unk
 // Mirrors RenderOptionsSchema in services/api/src/compiler/validator.ts.
 
 export interface RenderOptions {
-  format: 'mp4' | 'gif' | 'webm';
+  format: 'mp4' | 'gif' | 'webm' | 'png' | 'webm_transparent';
   resolution: '854x480' | '1280x720' | '1920x1080' | '2560x1440' | '3840x2160';
   fps: 15 | 30 | 60;
 }
