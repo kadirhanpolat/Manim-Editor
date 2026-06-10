@@ -120,6 +120,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     if (store.activeTool !== 'select' || store.selectedObjectIds.length !== 1) return null;
     const obj = store.objectById(store.selectedObjectIds[0]);
     if (!obj) return null;
+    if (obj.locked) return null; // locked: no draggable vertex/relational handles
     const c = s2c(obj.x ?? 0, obj.y ?? 0);
     if ((obj.type === 'polygon_free' || obj.type === 'bezier') && Array.isArray(obj['vertices'])) {
       return {
@@ -311,6 +312,10 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
   }
 
   function onObjDown(id: string, e: KonvaEvt<MouseEvent>): void {
+    // Locked objects are click-through: no selection, no cancelBubble — the
+    // event falls through to handleStageMouseDown (deselect / marquee start).
+    const lockedObj = store.objectById(id);
+    if (lockedObj && lockedObj.locked) return;
     (e as unknown as { cancelBubble: boolean }).cancelBubble = true;
     const ev = e.evt;
     store.selectObject(id, ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
@@ -321,6 +326,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     const node = e.target;
     const obj = store.project.objects.find((o) => o.id === id);
     if (!obj) return;
+    if (obj.locked) return; // belt-and-braces: never commit a locked move
     let newX: number, newY: number;
     // Types that use top-left positioning (text now uses center with offsetX/offsetY)
     const tlTypes = ['square', 'rectangle', 'image', 'svg_asset'];
@@ -456,7 +462,7 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     // transformer — exclude it so its anchors don't overlap the vertex handles.
     const ids = store.selectedObjectIds.filter((id) => {
       const o = store.objectById(id);
-      return !o || o.type !== 'polygon_free';
+      return !o || (o.type !== 'polygon_free' && !o.locked);
     });
     const nodes = ids.map(findNode).filter((n): n is KonvaNodeLike => n !== null);
     t.nodes!(nodes);

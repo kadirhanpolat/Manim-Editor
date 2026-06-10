@@ -1038,11 +1038,15 @@ function live(obj: SceneObject) {
 }
 // morphCfg — delegated to overlays.js (declared after ctx).
 
+// Lock decoration for every wrapper whose builder emits a draggable /
+// hit-target config (locked ⇒ listening:false ⇒ click-through).
+const L = chrome.lockConfig;
+
 // ── 3D shape config wrappers (delegates to configs/objects3d.js) ──────────
-const sphere3dCfg = (o: SceneObject) => objects3d.sphere3dCfg(o, ctx.value);
+const sphere3dCfg = (o: SceneObject) => L(objects3d.sphere3dCfg(o, ctx.value), o);
 const cube3dFaces = (o: SceneObject) => objects3d.cube3dFaces(o, ctx.value);
 const prism3dFaces = (o: SceneObject) => objects3d.prism3dFaces(o, ctx.value);
-const obj3dCenter = (o: SceneObject) => objects3d.obj3dCenter(o, ctx.value);
+const obj3dCenter = (o: SceneObject) => L(objects3d.obj3dCenter(o, ctx.value), o);
 const round3dParts = (o: SceneObject) => objects3d.round3dParts(o, ctx.value);
 const surface3dMesh = (o: SceneObject) => objects3d.surface3dMesh(o, ctx.value);
 const torus3dTube = (o: SceneObject) => objects3d.torus3dTube(o, ctx.value);
@@ -1113,52 +1117,52 @@ const path3dPolylines = computed(() =>
   overlays.path3dPolylines(store.project.tracks || [], ctx.value)
 );
 const morphCfg = (m: import('../../engine/types.js').MorphState) => overlays.morphCfg(m, ctx.value);
-const rectCfg = (o: SceneObject) => shapes2d.rectCfg(o, ctx.value);
-const circleCfg = (o: SceneObject) => shapes2d.circleCfg(o, ctx.value);
-const ellipseCfg = (o: SceneObject) => shapes2d.ellipseCfg(o, ctx.value);
-const dotCfg = (o: SceneObject) => shapes2d.dotCfg(o, ctx.value);
-const heartCfg = (o: SceneObject) => shapes2d.heartCfg(o, ctx.value);
-const triangleCfg = (o: SceneObject) => shapes2d.triangleCfg(o, ctx.value);
-const polygonFreeCfg = (o: SceneObject) => shapes2d.polygonFreeCfg(o, ctx.value);
-const bezierCfg = (o: SceneObject) => shapes2d.bezierCfg(o, ctx.value);
-const parametricCfg = (o: SceneObject) => shapes2d.parametricCfg(o, ctx.value);
-const starCfg = (o: SceneObject) => shapes2d.starCfg(o, ctx.value);
-const polygonCfg = (o: SceneObject) => shapes2d.polygonCfg(o, ctx.value);
-const lineCfg = (o: SceneObject) => shapes2d.lineCfg(o, ctx.value);
-const arrowCfg = (o: SceneObject) => shapes2d.arrowCfg(o, ctx.value);
-const annulusCfg = (o: SceneObject) => shapes2d.annulusCfg(o, ctx.value);
-const sectorCfg = (o: SceneObject) => shapes2d.sectorCfg(o, ctx.value);
-const arcCfg = (o: SceneObject) => shapes2d.arcCfg(o, ctx.value);
-const doubleArrowCfg = (o: SceneObject) => shapes2d.doubleArrowCfg(o, ctx.value);
-const textCfg = (o: SceneObject) => text.textCfg(o, ctx.value);
-const counterCfg = (o: SceneObject) => text.counterCfg(o, ctx.value);
-const latexBgCfg = (o: SceneObject) => text.latexBgCfg(o, ctx.value);
+const rectCfg = (o: SceneObject) => L(shapes2d.rectCfg(o, ctx.value), o);
+const circleCfg = (o: SceneObject) => L(shapes2d.circleCfg(o, ctx.value), o);
+const ellipseCfg = (o: SceneObject) => L(shapes2d.ellipseCfg(o, ctx.value), o);
+const dotCfg = (o: SceneObject) => L(shapes2d.dotCfg(o, ctx.value), o);
+const heartCfg = (o: SceneObject) => L(shapes2d.heartCfg(o, ctx.value), o);
+const triangleCfg = (o: SceneObject) => L(shapes2d.triangleCfg(o, ctx.value), o);
+const polygonFreeCfg = (o: SceneObject) => L(shapes2d.polygonFreeCfg(o, ctx.value), o);
+const bezierCfg = (o: SceneObject) => L(shapes2d.bezierCfg(o, ctx.value), o);
+const parametricCfg = (o: SceneObject) => L(shapes2d.parametricCfg(o, ctx.value), o);
+const starCfg = (o: SceneObject) => L(shapes2d.starCfg(o, ctx.value), o);
+const polygonCfg = (o: SceneObject) => L(shapes2d.polygonCfg(o, ctx.value), o);
+const lineCfg = (o: SceneObject) => L(shapes2d.lineCfg(o, ctx.value), o);
+const arrowCfg = (o: SceneObject) => L(shapes2d.arrowCfg(o, ctx.value), o);
+const annulusCfg = (o: SceneObject) => L(shapes2d.annulusCfg(o, ctx.value), o);
+const sectorCfg = (o: SceneObject) => L(shapes2d.sectorCfg(o, ctx.value), o);
+const arcCfg = (o: SceneObject) => L(shapes2d.arcCfg(o, ctx.value), o);
+const doubleArrowCfg = (o: SceneObject) => L(shapes2d.doubleArrowCfg(o, ctx.value), o);
+const textCfg = (o: SceneObject) => L(text.textCfg(o, ctx.value), o);
+const counterCfg = (o: SceneObject) => L(text.counterCfg(o, ctx.value), o);
+const latexBgCfg = (o: SceneObject) => L(text.latexBgCfg(o, ctx.value), o);
 const latexTextCfg = (o: SceneObject) => text.latexTextCfg(o, ctx.value);
 const latexBadgeCfg = (o: SceneObject) => text.latexBadgeCfg(o, ctx.value);
-const groupCfg = (o: SceneObject) => dataObjects.groupCfg(o, ctx.value);
+const groupCfg = (o: SceneObject) => L(dataObjects.groupCfg(o, ctx.value), o);
 const dotGridDots = (o: SceneObject) => dataObjects.dotGridDots(o, ctx.value);
-const dotGridHitCfg = (o: SceneObject) => dataObjects.dotGridHitCfg(o, ctx.value);
-const imageCfg = (o: SceneObject) => dataObjects.imageCfg(o, ctx.value);
-const matrixHitCfg = (o: SceneObject) => dataObjects.matrixHitCfg(o, ctx.value);
+const dotGridHitCfg = (o: SceneObject) => L(dataObjects.dotGridHitCfg(o, ctx.value), o);
+const imageCfg = (o: SceneObject) => L(dataObjects.imageCfg(o, ctx.value), o);
+const matrixHitCfg = (o: SceneObject) => L(dataObjects.matrixHitCfg(o, ctx.value), o);
 const matrixCellConfigs = (o: SceneObject) => dataObjects.matrixCellConfigs(o, ctx.value);
 const matrixBracketConfigs = (o: SceneObject) => dataObjects.matrixBracketConfigs(o, ctx.value);
-const codeBgCfg = (o: SceneObject) => text.codeBgCfg(o, ctx.value);
+const codeBgCfg = (o: SceneObject) => L(text.codeBgCfg(o, ctx.value), o);
 const codeTextCfg = (o: SceneObject) => text.codeTextCfg(o, ctx.value);
-const barChartHitCfg = (o: SceneObject) => dataObjects.barChartHitCfg(o, ctx.value);
+const barChartHitCfg = (o: SceneObject) => L(dataObjects.barChartHitCfg(o, ctx.value), o);
 const barChartBarConfigs = (o: SceneObject) => dataObjects.barChartBarConfigs(o, ctx.value);
 const barChartBaselineCfg = (o: SceneObject) => dataObjects.barChartBaselineCfg(o, ctx.value);
-const tableHitCfg = (o: SceneObject) => dataObjects.tableHitCfg(o, ctx.value);
+const tableHitCfg = (o: SceneObject) => L(dataObjects.tableHitCfg(o, ctx.value), o);
 const tableCellConfigs = (o: SceneObject) => dataObjects.tableCellConfigs(o, ctx.value);
 const tableGridLines = (o: SceneObject) => dataObjects.tableGridLines(o, ctx.value);
 const polarCircleConfigs = (o: SceneObject) => dataObjects.polarCircleConfigs(o, ctx.value);
 const polarSpokeConfigs = (o: SceneObject) => dataObjects.polarSpokeConfigs(o, ctx.value);
-const graphHitCfg = (o: SceneObject) => dataObjects.graphHitCfg(o, ctx.value);
+const graphHitCfg = (o: SceneObject) => L(dataObjects.graphHitCfg(o, ctx.value), o);
 const graphEdgeConfigs = (o: SceneObject) => dataObjects.graphEdgeConfigs(o, ctx.value);
 const graphVertexConfigs = (o: SceneObject) => dataObjects.graphVertexConfigs(o, ctx.value);
 const graphLabelConfigs = (o: SceneObject) => dataObjects.graphLabelConfigs(o, ctx.value);
-const vectorFieldHitCfg = (o: SceneObject) => dataObjects.vectorFieldHitCfg(o, ctx.value);
+const vectorFieldHitCfg = (o: SceneObject) => L(dataObjects.vectorFieldHitCfg(o, ctx.value), o);
 const vectorFieldArrows = (o: SceneObject) => dataObjects.vectorFieldArrows(o, ctx.value);
-const relationalHitCfg = (o: SceneObject) => relational.relationalHitCfg(o, ctx.value);
+const relationalHitCfg = (o: SceneObject) => L(relational.relationalHitCfg(o, ctx.value), o);
 const relationalLabelCfg = (o: SceneObject, anchor: [number, number]) =>
   relational.relationalLabelCfg(o, anchor, ctx.value);
 const braceLineCfg = (o: SceneObject) => relational.braceLineCfg(o, ctx.value);
@@ -1170,10 +1174,10 @@ const angleRayCfgs = (o: SceneObject) => relational.angleRayCfgs(o, ctx.value);
 const angleArcCfg = (o: SceneObject) => relational.angleArcCfg(o, ctx.value);
 const angleSquareCfg = (o: SceneObject) => relational.angleSquareCfg(o, ctx.value);
 const angleLabelAnchor = (o: SceneObject) => relational.angleLabelAnchor(o, ctx.value);
-const surroundingRectCfg = (o: SceneObject) => relational.surroundingRectCfg(o, ctx.value);
-const underlineCfg = (o: SceneObject) => relational.underlineCfg(o, ctx.value);
+const surroundingRectCfg = (o: SceneObject) => L(relational.surroundingRectCfg(o, ctx.value), o);
+const underlineCfg = (o: SceneObject) => L(relational.underlineCfg(o, ctx.value), o);
 const crossCfg = (o: SceneObject) => relational.crossCfg(o, ctx.value);
-const axesBgCfg = (o: SceneObject) => axes.axesBgCfg(o, ctx.value);
+const axesBgCfg = (o: SceneObject) => L(axes.axesBgCfg(o, ctx.value), o);
 const axesXLineCfg = (o: SceneObject) => axes.axesXLineCfg(o, ctx.value);
 const axesYLineCfg = (o: SceneObject) => axes.axesYLineCfg(o, ctx.value);
 const axesXArrowCfg = (o: SceneObject) => axes.axesXArrowCfg(o, ctx.value);

@@ -250,3 +250,21 @@ export function floorGridIso(ctx: StageCtx): Record<string, unknown>[] {
   }
   return out;
 }
+
+// ── Lock decoration ────────────────────────────────────────────────────────
+/**
+ * Figma-style lock: a locked object is click-through on the canvas.
+ * `listening:false` removes the node from Konva hit detection entirely (no
+ * select, no drag — clicks fall through to the stage), `draggable:false` is
+ * belt-and-braces. Unlocked objects pass through untouched (legacy path).
+ */
+export function lockConfig<T extends Record<string, unknown>>(
+  cfg: T,
+  obj: { locked?: boolean }
+): T {
+  if (obj.locked) {
+    (cfg as Record<string, unknown>).draggable = false;
+    (cfg as Record<string, unknown>).listening = false;
+  }
+  return cfg;
+}
