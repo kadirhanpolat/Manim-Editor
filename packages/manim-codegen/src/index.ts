@@ -11,9 +11,33 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     sw = project.stage.width,
     sh = project.stage.height;
 
+  // ── Hidden filter (editor UX) ────────────────────────────────────────────
+  // Objects with hidden === true are skipped entirely. Cascade: an annotation
+  // (surrounding_rect / underline / cross) whose target is hidden would emit a
+  // reference to an undefined Python name — skip it too. Clips referencing a
+  // hidden object are dropped for the same reason. When no object carries the
+  // field, every derived collection equals its legacy counterpart and the
+  // output stays byte-identical.
+  const allObjects = project.objects || [];
+  const hiddenIds = new Set<string>(allObjects.filter((o) => o.hidden === true).map((o) => o.id));
+  for (const o of allObjects) {
+    if (
+      ANNOTATION_TYPES.has(o.type) &&
+      typeof o.targetId === 'string' &&
+      hiddenIds.has(o.targetId)
+    ) {
+      hiddenIds.add(o.id);
+    }
+  }
+  const visibleObjects = allObjects.filter((o) => !hiddenIds.has(o.id));
+  const clipRefsHidden = (c: Clip): boolean => {
+    const refs = [c.sourceId, c.targetId, (c as Clip & { objectId?: string }).objectId];
+    return refs.some((id) => typeof id === 'string' && hiddenIds.has(id));
+  };
+
   // Collect unique Google Fonts used by text objects
   const usedFonts = new Set<string>();
-  for (const obj of project.objects || []) {
+  for (const obj of visibleObjects) {
     if (obj.type === 'text' && obj.fontFamily) {
       const font = obj.fontFamily as string;
       if (font && !isSystemFont(font)) {
@@ -83,7 +107,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   L.push('');
 
   if (
-    project.objects.length === 0 &&
+    visibleObjects.length === 0 &&
     !(Array.isArray(project.cameraTrack) && project.cameraTrack.length > 0)
   ) {
     L.push('        self.wait(1)');
@@ -108,8 +132,8 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   const oMap: Record<string, SceneObject> = {};
   // Annotations must emit after their targets; sort non-annotations first
   const sortedObjects = [
-    ...(project.objects || []).filter((o) => !ANNOTATION_TYPES.has(o.type)),
-    ...(project.objects || []).filter((o) => ANNOTATION_TYPES.has(o.type)),
+    ...visibleObjects.filter((o) => !ANNOTATION_TYPES.has(o.type)),
+    ...visibleObjects.filter((o) => ANNOTATION_TYPES.has(o.type)),
   ];
   L.push(`${indent}# Objects`);
   for (const o of sortedObjects) {
@@ -128,7 +152,9 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     L.push(`${indent}# Groups`);
     for (const g of groups) {
       if (!g.childIds || g.childIds.length === 0) continue;
-      const childVars = g.childIds
+      const visibleChildIds = g.childIds.filter((id) => !hiddenIds.has(id));
+      if (visibleChildIds.length === 0) continue;
+      const childVars = visibleChildIds
         .map((id) => vn(id))
         .filter(Boolean)
         .join(', ');
@@ -140,7 +166,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
 
   // ── Collect clips ──
   const clips: Clip[] = [];
-  for (const t of project.tracks) for (const c of t.clips) clips.push(c);
+  for (const t of project.tracks) for (const c of t.clips) if (!clipRefsHidden(c)) clips.push(c);
   clips.sort((a, b) => a.startTime - b.startTime);
 
   // ── Determine transform relationships ──
@@ -157,7 +183,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   const steps: GeneratedStep[] = [];
 
   // Enter: skip objects that are transform targets
-  for (const o of project.objects) {
+  for (const o of visibleObjects) {
     if (transformTargets.has(o.id)) continue;
     const t = o.enterTime || 0;
     const n = vn(o.id);
@@ -429,7 +455,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   }
 
   // ── Keyframe steps ──
-  generateKeyframeSteps(project, steps, sw, sh);
+  generateKeyframeSteps({ ...project, objects: visibleObjects }, steps, sw, sh);
 
   // ── Camera clips ──
   if (Array.isArray(project.cameraTrack) && project.cameraTrack.length > 0) {
@@ -465,7 +491,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   }
 
   // Exit: skip objects that are transform sources
-  for (const o of project.objects) {
+  for (const o of visibleObjects) {
     if (transformSources.has(o.id)) continue;
     let exitTime = (o.enterTime || 0) + (o.duration || 3);
     for (const c of clips) {
