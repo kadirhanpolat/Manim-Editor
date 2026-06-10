@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import time
+import zipfile
 
 import redis
 
@@ -49,6 +50,27 @@ def find_output_video(media_dir: str, scene_name: str, ext: str = "mp4") -> str 
     return None
 
 
+def find_output_png_dir(media_dir: str, scene_name: str) -> str | None:
+    """Find the directory holding Manim's PNG frame output.
+
+    With --format png, manim CE writes frames as
+    <media_dir>/images/<module_name>/<SceneName><frame>.png — scene-prefixed
+    files inside the module's images dir; there is no per-scene directory.
+    """
+    patterns = [
+        f"{media_dir}/images/**/{scene_name}*.png",
+        f"{media_dir}/**/{scene_name}*.png",
+    ]
+
+    for pattern in patterns:
+        matches = glob.glob(pattern, recursive=True)
+        if matches:
+            newest = max(matches, key=os.path.getmtime)
+            return os.path.dirname(newest)
+
+    return None
+
+
 def render_job(payload: dict) -> dict:
     """Execute a render job and return the result."""
     project_id = payload["projectId"]
@@ -77,14 +99,16 @@ def render_job(payload: dict) -> dict:
         }
 
     # Clean up old renders to prevent stale output
-    # Delete videos directory to force fresh render
-    videos_dir = os.path.join(media_dir, "videos")
-    if os.path.exists(videos_dir):
-        try:
-            shutil.rmtree(videos_dir)
-            print(f"[render] Cleaned old renders from {videos_dir}")
-        except Exception as e:
-            print(f"[render] Warning: Could not clean old renders: {e}")
+    # Delete videos + images directories to force fresh render output
+    # (images would otherwise leak previous frames into the PNG ZIP)
+    for stale_sub in ("videos", "images"):
+        stale_dir = os.path.join(media_dir, stale_sub)
+        if os.path.exists(stale_dir):
+            try:
+                shutil.rmtree(stale_dir)
+                print(f"[render] Cleaned old renders from {stale_dir}")
+            except Exception as e:
+                print(f"[render] Warning: Could not clean old renders: {e}")
 
     # Ensure audio assets directory is accessible for manim-voiceover
     os.makedirs(os.path.join(DATA_DIR, "assets", "audio"), exist_ok=True)
@@ -112,12 +136,43 @@ def render_job(payload: dict) -> dict:
             cwd=os.path.dirname(scene_file),
         )
 
+        # PNG sequence: zip the frame directory and return early
+        if ext == "zip":
+            png_dir = find_output_png_dir(media_dir, scene_name)
+            if png_dir:
+                # Remove every latest.* variant so "latest" is unambiguous
+                for old_ext in set(FORMAT_EXT.values()):
+                    old_link = os.path.join(media_dir, f"latest.{old_ext}")
+                    if os.path.exists(old_link) or os.path.islink(old_link):
+                        os.remove(old_link)
+                with zipfile.ZipFile(latest_link, "w", zipfile.ZIP_DEFLATED) as zf:
+                    frame_glob = os.path.join(png_dir, f"{scene_name}*.png")
+                    for png in sorted(glob.glob(frame_glob)):
+                        zf.write(png, os.path.basename(png))
+                print(f"[render] PNG frames zipped to: {latest_link}")
+                return {
+                    "ok": result.returncode == 0,
+                    "stdout": result.stdout[-8000:] if result.stdout else "",
+                    "stderr": result.stderr[-8000:] if result.stderr else "",
+                    "outputPath": latest_link,
+                    "exitCode": result.returncode,
+                }
+            # No PNG dir found — fall through to error path
+            return {
+                "ok": False,
+                "error": f"PNG output directory not found in {media_dir}",
+                "stdout": result.stdout[-8000:] if result.stdout else "",
+                "stderr": result.stderr[-8000:] if result.stderr else "",
+                "exitCode": result.returncode,
+            }
+
         # Find the output video
         output_video = find_output_video(media_dir, scene_name, ext)
 
         if output_video and os.path.exists(output_video):
             # Remove every latest.* variant so "latest" is unambiguous
-            for old_ext in FORMAT_EXT:
+            # (iterate extensions, not format names — png maps to zip)
+            for old_ext in set(FORMAT_EXT.values()):
                 old_link = os.path.join(media_dir, f"latest.{old_ext}")
                 if os.path.exists(old_link) or os.path.islink(old_link):
                     os.remove(old_link)
