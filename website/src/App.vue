@@ -9,6 +9,7 @@
     <FeaturesGrid />
     <SplitSection />
     <WorkflowSection />
+    <GallerySection />
     <MarqueeSection />
     <CtaSection />
     <FooterSection />
@@ -25,6 +26,7 @@ import StatsBar from './components/StatsBar.vue'
 import FeaturesGrid from './components/FeaturesGrid.vue'
 import SplitSection from './components/SplitSection.vue'
 import WorkflowSection from './components/WorkflowSection.vue'
+import GallerySection from './components/GallerySection.vue'
 import MarqueeSection from './components/MarqueeSection.vue'
 import CtaSection from './components/CtaSection.vue'
 import FooterSection from './components/FooterSection.vue'
