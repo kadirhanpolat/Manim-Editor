@@ -772,6 +772,251 @@ export const TEMPLATES: Template[] = [
       };
     },
   },
+  {
+    id: 'normal_distribution',
+    label: 'Normal Dağılım',
+    description: 'Gauss çanı eğrisi ve ±1σ alanı',
+    icon: '⌒',
+    category: 'statistics',
+    project: () => {
+      const ax = uid('obj');
+      const g1 = uid('obj');
+      const lbl1 = uid('obj');
+      const lbl2 = uid('obj');
+      return {
+        name: 'Normal Dağılım',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 6,
+        objects: [
+          {
+            id: ax, type: 'axes', name: 'Eksenler',
+            x: 960, y: 600, width: 1200, height: 500,
+            rotation: 0, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2,
+            opacity: 1, zOrder: 0,
+            xRange: [-4, 4, 1], yRange: [0, 0.5, 0.1],
+            graphs: [
+              {
+                id: g1,
+                expression: '2.718**(-(x**2)/2)/2.507',
+                color: '#3b82f6',
+                xMin: -4,
+                xMax: 4,
+                strokeWidth: 3,
+                area: { enabled: true, xMin: -1, xMax: 1, color: '#3b82f6', opacity: 0.3 },
+              },
+            ],
+            enterTime: 0, duration: 5,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 2.0, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl1, type: 'latex', name: 'Formül',
+            x: 960, y: 140, width: 400, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 1,
+            latex: '\\mathcal{N}(0,1)',
+            enterTime: 2.2, duration: 3.8,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl2, type: 'latex', name: '68%',
+            x: 960, y: 220, width: 200, height: 60,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 2,
+            latex: '68\\%',
+            enterTime: 2.8, duration: 3.2,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.4, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'theorem_proof',
+    label: 'Teorem İspatı',
+    description: 'Teorem ifadesi, kanıt adımları ve sonuç',
+    icon: '∎',
+    category: 'general',
+    project: () => {
+      const thmTxt = uid('obj');
+      const proofHdr = uid('obj');
+      const proofBody = uid('obj');
+      const qed = uid('obj');
+      return {
+        name: 'Teorem İspatı',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 10,
+        objects: [
+          {
+            id: thmTxt, type: 'latex', name: 'Teorem',
+            x: 960, y: 260, width: 900, height: 120,
+            rotation: 0, fill: '#facc15', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 0,
+            latex: 'a^2 + b^2 = c^2',
+            enterTime: 0, duration: 9,
+            enterAnim: 'write', exitAnim: 'none',
+            enterAnimDur: 1.0, exitAnimDur: 0.5,
+          },
+          {
+            id: proofHdr, type: 'text', name: 'Kanıt başlığı',
+            x: 960, y: 440, width: 300, height: 60,
+            rotation: 0, fill: '#94a3b8', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 1,
+            text: 'Kanıt:',
+            fontSize: 32,
+            fontFamily: 'Arial',
+            enterTime: 1.5, duration: 7.5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.4, exitAnimDur: 0.5,
+          },
+          {
+            id: proofBody, type: 'text', name: 'Kanıt metni',
+            x: 960, y: 580, width: 1100, height: 160,
+            rotation: 0, fill: '#e2e8f0', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 2,
+            text: 'Dik üçgende hipotenüs karesi, diğer iki kenar karelerinin toplamına eşittir.',
+            fontSize: 28,
+            fontFamily: 'Arial',
+            enterTime: 2.5, duration: 7.5,
+            enterAnim: 'fly_in_bottom', exitAnim: 'none',
+            enterAnimDur: 0.6, exitAnimDur: 0.5,
+          },
+          {
+            id: qed, type: 'latex', name: 'Q.E.D.',
+            x: 960, y: 820, width: 120, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 3,
+            latex: '\\square',
+            enterTime: 7.5, duration: 2.5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'algo_steps',
+    label: 'Algoritma Adımları',
+    description: 'Üç adımlı akış şeması: Başlat → İşle → Bitir',
+    icon: '⚙',
+    category: 'programming',
+    project: () => {
+      const box1 = uid('obj');
+      const box2 = uid('obj');
+      const box3 = uid('obj');
+      const txt1 = uid('obj');
+      const txt2 = uid('obj');
+      const txt3 = uid('obj');
+      const arr1 = uid('obj');
+      const arr2 = uid('obj');
+      return {
+        name: 'Algoritma Adımları',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 8,
+        objects: [
+          {
+            id: box1, type: 'rectangle', name: 'Adım 1 kutusu',
+            x: 320, y: 540, width: 320, height: 120,
+            rotation: 0, fill: '#1e40af', stroke: '#3b82f6', strokeWidth: 2,
+            opacity: 1, zOrder: 0,
+            enterTime: 0, duration: 7,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+          {
+            id: txt1, type: 'text', name: 'Başlat',
+            x: 320, y: 540, width: 320, height: 120,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 1,
+            text: 'Başlat',
+            fontSize: 32,
+            fontFamily: 'Arial',
+            enterTime: 0.2, duration: 6.8,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.3, exitAnimDur: 0.5,
+          },
+          {
+            id: arr1, type: 'arrow', name: 'Ok 1',
+            x: 480, y: 540, width: 200, height: 0,
+            rotation: 0, fill: '#94a3b8', stroke: '#94a3b8', strokeWidth: 3,
+            opacity: 1, zOrder: 2,
+            enterTime: 1.0, duration: 6,
+            enterAnim: 'grow_arrow', exitAnim: 'none',
+            enterAnimDur: 0.4, exitAnimDur: 0.5,
+          },
+          {
+            id: box2, type: 'rectangle', name: 'Adım 2 kutusu',
+            x: 960, y: 540, width: 320, height: 120,
+            rotation: 0, fill: '#1e40af', stroke: '#3b82f6', strokeWidth: 2,
+            opacity: 1, zOrder: 3,
+            enterTime: 1.5, duration: 5.5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+          {
+            id: txt2, type: 'text', name: 'İşle',
+            x: 960, y: 540, width: 320, height: 120,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 4,
+            text: 'İşle',
+            fontSize: 32,
+            fontFamily: 'Arial',
+            enterTime: 1.7, duration: 5.3,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.3, exitAnimDur: 0.5,
+          },
+          {
+            id: arr2, type: 'arrow', name: 'Ok 2',
+            x: 1120, y: 540, width: 200, height: 0,
+            rotation: 0, fill: '#94a3b8', stroke: '#94a3b8', strokeWidth: 3,
+            opacity: 1, zOrder: 5,
+            enterTime: 2.5, duration: 5,
+            enterAnim: 'grow_arrow', exitAnim: 'none',
+            enterAnimDur: 0.4, exitAnimDur: 0.5,
+          },
+          {
+            id: box3, type: 'rectangle', name: 'Adım 3 kutusu',
+            x: 1600, y: 540, width: 320, height: 120,
+            rotation: 0, fill: '#166534', stroke: '#22c55e', strokeWidth: 2,
+            opacity: 1, zOrder: 6,
+            enterTime: 3.0, duration: 5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+          {
+            id: txt3, type: 'text', name: 'Bitir',
+            x: 1600, y: 540, width: 320, height: 120,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 7,
+            text: 'Bitir',
+            fontSize: 32,
+            fontFamily: 'Arial',
+            enterTime: 3.2, duration: 4.8,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.3, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
 ];
 
 export default TEMPLATES;
