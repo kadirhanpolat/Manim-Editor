@@ -181,6 +181,67 @@ export function matrixBracketConfigs(obj: SceneObject, ctx: StageCtx): Record<st
   ];
 }
 
+// ── BarChart preview (simple rect bars + baseline; render = real Manim BarChart
+//    with axes/ticks — bars-only preview is the documented divergence) ─────────
+export function barChartHitCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+  const w = ((obj.width as number | undefined) || 600) * ctx.vs;
+  const h = ((obj.height as number | undefined) || 400) * ctx.vs;
+  return {
+    x: -w / 2,
+    y: -h / 2,
+    width: w,
+    height: h,
+    fill: 'rgba(76,238,249,0.04)',
+    stroke: ctx.themeAccent,
+    strokeWidth: 1,
+    dash: [6, 4],
+    cornerRadius: 4,
+    listening: true,
+  };
+}
+
+export function barChartBarConfigs(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {
+  const w = ((obj.width as number | undefined) || 600) * ctx.vs;
+  const h = ((obj.height as number | undefined) || 400) * ctx.vs;
+  const rawValues = obj.values as number[] | undefined;
+  const values = Array.isArray(rawValues) && rawValues.length ? rawValues : [3, 5, 2, 6];
+  const colors = (obj.barColors as string[] | undefined) || [];
+  const rawYMax = obj.yMax as number | undefined;
+  const yMax = Number.isFinite(rawYMax) && (rawYMax as number) > 0 ? (rawYMax as number) : 8;
+  const padX = 0.08 * w,
+    padY = 0.08 * h;
+  const innerW = w - 2 * padX,
+    innerH = h - 2 * padY;
+  const slot = innerW / values.length;
+  const barW = slot * 0.6; // mirrors Manim's bar_width=0.6 default
+  return values.map((v, i) => {
+    const safe = Number.isFinite(v) ? Math.max(0, Math.min(v, yMax)) : 0; // preview clamps to [0, yMax]
+    const bh = (safe / yMax) * innerH;
+    return {
+      x: -w / 2 + padX + i * slot + (slot - barW) / 2,
+      y: h / 2 - padY - bh,
+      width: barW,
+      height: bh,
+      fill: colors[i] || '#58c4dd',
+      opacity: (obj.opacity as number | undefined) ?? 1,
+      listening: false,
+    };
+  });
+}
+
+export function barChartBaselineCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+  const w = ((obj.width as number | undefined) || 600) * ctx.vs;
+  const h = ((obj.height as number | undefined) || 400) * ctx.vs;
+  const padX = 0.08 * w,
+    padY = 0.08 * h;
+  return {
+    points: [-w / 2 + padX, h / 2 - padY, w / 2 - padX, h / 2 - padY],
+    stroke: '#ffffff',
+    strokeWidth: 2,
+    listening: false,
+  };
+}
+
 // ── Table config ──
 export function tableHitCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const w = ((obj.width as number | undefined) || 200) * ctx.vs;

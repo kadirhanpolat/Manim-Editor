@@ -452,6 +452,33 @@
               <v-text v-for="(tc, ti) in tableCellConfigs(obj)" :key="'tc' + ti" :config="tc" />
             </v-group>
 
+            <!-- Code block -->
+            <v-group
+              v-if="obj.type === 'code' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
+              <v-rect :config="codeBgCfg(obj)" />
+              <v-text :config="codeTextCfg(obj)" />
+            </v-group>
+
+            <!-- Bar chart -->
+            <v-group
+              v-if="obj.type === 'bar_chart' && isVis(obj.id)"
+              :config="groupCfg(obj)"
+              @mousedown="onObjDown(obj.id, $event)"
+              @dragend="onDragEnd(obj.id, $event)"
+              @transform="onTransform(obj.id, $event)"
+              @transformend="onTransformEnd(obj.id, $event)"
+            >
+              <v-rect :config="barChartHitCfg(obj)" />
+              <v-rect v-for="(b, bi) in barChartBarConfigs(obj)" :key="'bcb' + bi" :config="b" />
+              <v-line :config="barChartBaselineCfg(obj)" />
+            </v-group>
+
             <!-- Brace -->
             <v-group
               v-if="obj.type === 'brace' && isVis(obj.id)"
@@ -1111,6 +1138,11 @@ const imageCfg = (o: SceneObject) => dataObjects.imageCfg(o, ctx.value);
 const matrixHitCfg = (o: SceneObject) => dataObjects.matrixHitCfg(o, ctx.value);
 const matrixCellConfigs = (o: SceneObject) => dataObjects.matrixCellConfigs(o, ctx.value);
 const matrixBracketConfigs = (o: SceneObject) => dataObjects.matrixBracketConfigs(o, ctx.value);
+const codeBgCfg = (o: SceneObject) => text.codeBgCfg(o, ctx.value);
+const codeTextCfg = (o: SceneObject) => text.codeTextCfg(o, ctx.value);
+const barChartHitCfg = (o: SceneObject) => dataObjects.barChartHitCfg(o, ctx.value);
+const barChartBarConfigs = (o: SceneObject) => dataObjects.barChartBarConfigs(o, ctx.value);
+const barChartBaselineCfg = (o: SceneObject) => dataObjects.barChartBaselineCfg(o, ctx.value);
 const tableHitCfg = (o: SceneObject) => dataObjects.tableHitCfg(o, ctx.value);
 const tableCellConfigs = (o: SceneObject) => dataObjects.tableCellConfigs(o, ctx.value);
 const tableGridLines = (o: SceneObject) => dataObjects.tableGridLines(o, ctx.value);

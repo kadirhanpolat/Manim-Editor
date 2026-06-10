@@ -113,6 +113,45 @@ export function counterCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkn
   };
 }
 
+// ── code block (monospace preview; NO syntax highlighting — documented divergence:
+//    the render uses real Pygments highlighting + add_line_numbers=False) ──────
+export function codeBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+  const w = ((obj.width as number | undefined) || 480) * ctx.vs;
+  const h = ((obj.height as number | undefined) || 280) * ctx.vs;
+  // listening:true → this rect is the group's hit area (select/drag), like latexBgCfg
+  return {
+    x: -w / 2,
+    y: -h / 2,
+    width: w,
+    height: h,
+    fill: '#1e1e2e',
+    stroke: ctx.themeAccent,
+    strokeWidth: 1,
+    cornerRadius: 6,
+    opacity: (obj.opacity as number | undefined) ?? 1,
+    listening: true,
+  };
+}
+
+export function codeTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+  const w = ((obj.width as number | undefined) || 480) * ctx.vs;
+  const h = ((obj.height as number | undefined) || 280) * ctx.vs;
+  const fontSize = Math.max(8, ((obj.fontSize as number | undefined) || 18) * ctx.vs);
+  return {
+    x: -w / 2 + 12 * ctx.vs,
+    y: -h / 2 + 10 * ctx.vs,
+    width: w - 24 * ctx.vs,
+    text: (obj.codeText as string | undefined) || '',
+    fontSize,
+    fontFamily: 'monospace',
+    lineHeight: 1.4,
+    fill: '#e2e8f0',
+    opacity: (obj.opacity as number | undefined) ?? 1,
+    wrap: 'none',
+    listening: false,
+  };
+}
+
 // ── latexBgCfg ────────────────────────────────────────────────────────────────
 export function latexBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);

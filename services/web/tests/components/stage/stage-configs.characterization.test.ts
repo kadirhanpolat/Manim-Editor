@@ -230,3 +230,24 @@ describe('effects', () => {
     expect(cfg).toMatchSnapshot();
   });
 });
+
+describe('content objects (wave1 — code, bar_chart)', () => {
+  const ctx = makeCtx();
+  it('code bg cfg stable', () => {
+    expect(textCfgs.codeBgCfg(OBJECTS.code, ctx)).toMatchSnapshot();
+  });
+  it('code text cfg stable', () => {
+    expect(textCfgs.codeTextCfg(OBJECTS.code, ctx)).toMatchSnapshot();
+  });
+  it('bar_chart hit cfg stable', () => {
+    expect(dataObjects.barChartHitCfg(OBJECTS.bar_chart, ctx)).toMatchSnapshot();
+  });
+  it('bar_chart bars stable (4 bars, heights proportional to value/yMax)', () => {
+    const bars = dataObjects.barChartBarConfigs(OBJECTS.bar_chart, ctx);
+    expect(bars).toHaveLength(4);
+    expect(bars).toMatchSnapshot();
+  });
+  it('bar_chart baseline stable', () => {
+    expect(dataObjects.barChartBaselineCfg(OBJECTS.bar_chart, ctx)).toMatchSnapshot();
+  });
+});

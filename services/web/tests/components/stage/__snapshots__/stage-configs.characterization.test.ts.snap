@@ -1064,6 +1064,111 @@ exports[`chrome configs > ref axes (3D) stable 1`] = `
 ]
 `;
 
+exports[`content objects (wave1 — code, bar_chart) > bar_chart bars stable (4 bars, heights proportional to value/yMax) 1`] = `
+[
+  {
+    "fill": "#58c4dd",
+    "height": 50.400000000000006,
+    "listening": false,
+    "opacity": 1,
+    "width": 30.24,
+    "x": -90.72,
+    "y": 16.799999999999997,
+  },
+  {
+    "fill": "#83c167",
+    "height": 84,
+    "listening": false,
+    "opacity": 1,
+    "width": 30.24,
+    "x": -40.32,
+    "y": -16.799999999999997,
+  },
+  {
+    "fill": "#fc6255",
+    "height": 33.6,
+    "listening": false,
+    "opacity": 1,
+    "width": 30.24,
+    "x": 10.08,
+    "y": 33.6,
+  },
+  {
+    "fill": "#ffff00",
+    "height": 100.80000000000001,
+    "listening": false,
+    "opacity": 1,
+    "width": 30.24,
+    "x": 60.47999999999999,
+    "y": -33.60000000000001,
+  },
+]
+`;
+
+exports[`content objects (wave1 — code, bar_chart) > bar_chart baseline stable 1`] = `
+{
+  "listening": false,
+  "points": [
+    -100.8,
+    67.2,
+    100.8,
+    67.2,
+  ],
+  "stroke": "#ffffff",
+  "strokeWidth": 2,
+}
+`;
+
+exports[`content objects (wave1 — code, bar_chart) > bar_chart hit cfg stable 1`] = `
+{
+  "cornerRadius": 4,
+  "dash": [
+    6,
+    4,
+  ],
+  "fill": "rgba(76,238,249,0.04)",
+  "height": 160,
+  "listening": true,
+  "stroke": "#4CEEF9",
+  "strokeWidth": 1,
+  "width": 240,
+  "x": -120,
+  "y": -80,
+}
+`;
+
+exports[`content objects (wave1 — code, bar_chart) > code bg cfg stable 1`] = `
+{
+  "cornerRadius": 6,
+  "fill": "#1e1e2e",
+  "height": 112,
+  "listening": true,
+  "opacity": 1,
+  "stroke": "#4CEEF9",
+  "strokeWidth": 1,
+  "width": 192,
+  "x": -96,
+  "y": -56,
+}
+`;
+
+exports[`content objects (wave1 — code, bar_chart) > code text cfg stable 1`] = `
+{
+  "fill": "#e2e8f0",
+  "fontFamily": "monospace",
+  "fontSize": 8,
+  "lineHeight": 1.4,
+  "listening": false,
+  "opacity": 1,
+  "text": "def f():
+    return 1",
+  "width": 182.4,
+  "wrap": "none",
+  "x": -91.2,
+  "y": -52,
+}
+`;
+
 exports[`data-object configs > dot_grid dots stable 1`] = `
 [
   {
