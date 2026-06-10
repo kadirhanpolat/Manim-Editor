@@ -6,6 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseRenderOptions } from '../src/compiler/validator.js';
+import type { RenderJob } from '../src/queue.js';
 
 describe('parseRenderOptions', () => {
   it('defaults to mp4 / 1920x1080 / 60 when fields are absent', () => {
@@ -52,5 +53,26 @@ describe('parseRenderOptions', () => {
     const r = parseRenderOptions({ quality: 'high', codeSource: 'from manim import *' });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.options.format).toBe('mp4');
+  });
+});
+
+describe('RenderJob payload shape', () => {
+  it('carries validated options nested under "options" in the redis job JSON', () => {
+    const parsed = parseRenderOptions({ format: 'gif', resolution: '854x480', fps: 15 });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const job: RenderJob = {
+      jobId: 'job_test1234',
+      projectId: 'p1',
+      sceneFile: 'projects/p1/scene.py',
+      sceneName: 'MainScene',
+      quality: 'high',
+      options: parsed.options,
+    };
+    expect(JSON.parse(JSON.stringify(job)).options).toEqual({
+      format: 'gif',
+      resolution: '854x480',
+      fps: 15,
+    });
   });
 });

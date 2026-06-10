@@ -11,6 +11,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { compileProject } from '../compiler/index.js';
+import { parseRenderOptions } from '../compiler/validator.js';
 import { enqueueRenderJob } from '../queue.js';
 
 const router = Router();
@@ -223,9 +224,14 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
  */
 router.post('/:id/render', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = req.body as { quality?: string };
+    const body = (req.body ?? {}) as { quality?: string };
     const quality = body.quality ?? 'medium';
     const projectId = req.params['id'];
+
+    const parsedOptions = parseRenderOptions(req.body);
+    if (!parsedOptions.ok) {
+      return void res.status(400).json({ error: parsedOptions.error });
+    }
 
     // Load project
     const projectPath = path.join(getProjectDir(req.dataDir, projectId), 'project.json');
@@ -258,6 +264,7 @@ router.post('/:id/render', async (req: Request, res: Response, next: NextFunctio
       sceneFile: `projects/${projectId}/scene.py`,
       sceneName: 'MainScene',
       quality,
+      options: parsedOptions.options,
     });
 
     res.status(202).json({
@@ -298,6 +305,11 @@ router.post('/:id/render-code', async (req: Request, res: Response, next: NextFu
       });
     }
 
+    const parsedOptions = parseRenderOptions(req.body);
+    if (!parsedOptions.ok) {
+      return void res.status(400).json({ error: parsedOptions.error });
+    }
+
     const projectDir = getProjectDir(req.dataDir, projectId);
     await fs.mkdir(projectDir, { recursive: true, mode: 0o777 });
 
@@ -314,6 +326,7 @@ router.post('/:id/render-code', async (req: Request, res: Response, next: NextFu
       sceneFile: `projects/${projectId}/scene.py`,
       sceneName,
       quality,
+      options: parsedOptions.options,
     });
 
     res.status(202).json({

@@ -3,6 +3,7 @@
  */
 
 import { createClient } from 'redis';
+import type { RenderOptions } from './compiler/validator.js';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
@@ -28,6 +29,8 @@ export interface RenderJob {
   sceneFile: string;
   sceneName: string;
   quality?: string;
+  /** Validated export options (Wave 1 Track B). Absent on legacy payloads. */
+  options?: RenderOptions;
 }
 
 export interface AudioJob {
@@ -49,6 +52,9 @@ export async function enqueueRenderJob(job: RenderJob): Promise<string> {
     status: 'queued',
     projectId: job.projectId,
     quality: job.quality ?? 'medium',
+    format: job.options?.format ?? 'mp4',
+    resolution: job.options?.resolution ?? '1920x1080',
+    fps: String(job.options?.fps ?? 60),
     createdAt: new Date().toISOString(),
   });
 
