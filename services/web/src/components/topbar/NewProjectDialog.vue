@@ -59,9 +59,24 @@
         <!-- Template selector (only for visual mode) -->
         <template v-if="newProjectMode === 'visual'">
           <label class="np-label" style="margin-top: 12px">Şablon</label>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px">
+
+          <!-- Category chips -->
+          <div class="np-cat-chips">
             <button
-              v-for="tpl in templates"
+              v-for="cat in ALL_CATEGORIES"
+              :key="cat"
+              class="np-cat-chip"
+              :class="{ active: selectedCategory === cat }"
+              @click="selectedCategory = cat"
+            >
+              {{ CATEGORY_LABELS[cat] }}
+            </button>
+          </div>
+
+          <!-- Template grid (scrollable) -->
+          <div class="np-tpl-grid">
+            <button
+              v-for="tpl in filteredTemplates"
               :key="tpl.id"
               class="np-mode-btn"
               :class="{
@@ -91,16 +106,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, computed } from 'vue';
 import { useProjectStore } from '../../store/project.js';
-import TEMPLATES from '../../templates/index.js';
-import type { Template } from '../../templates/index.js';
+import TEMPLATES, { type Template, type TemplateCategory } from '../../templates/index.js';
 
 const props = defineProps({ show: { type: Boolean, default: false } });
 const emit = defineEmits(['close']);
 const store = useProjectStore();
 
 const templates = TEMPLATES;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  all: 'Tümü',
+  general: 'Genel',
+  calculus: 'Calculus',
+  linear_algebra: 'Lineer Cebir',
+  trigonometry: 'Trigonometri',
+  statistics: 'İstatistik',
+  programming: 'Programlama',
+};
+
+const ALL_CATEGORIES: Array<'all' | TemplateCategory> = [
+  'all', 'general', 'calculus', 'linear_algebra',
+  'trigonometry', 'statistics', 'programming',
+];
+
+const selectedCategory = ref<'all' | TemplateCategory>('all');
+
+const filteredTemplates = computed(() =>
+  selectedCategory.value === 'all'
+    ? templates
+    : templates.filter((t) => t.category === selectedCategory.value)
+);
+
 const newProjectName = ref('My Animation');
 const newProjectMode = ref('visual');
 const newProjectTemplate = ref<Template | null>(null);
@@ -113,6 +151,7 @@ watch(
       newProjectName.value = 'My Animation';
       newProjectMode.value = 'visual';
       newProjectTemplate.value = null;
+      selectedCategory.value = 'all';
       nextTick(() => {
         npNameInput.value?.focus();
       });
@@ -163,7 +202,7 @@ function cancelNewProject() {
   border: 1px solid var(--studio-border);
   border-radius: 14px;
   padding: 28px 32px;
-  width: 420px;
+  width: 520px;
   max-width: 95vw;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
@@ -265,6 +304,44 @@ function cancelNewProject() {
 }
 .np-btn-create:hover {
   filter: brightness(1.1);
+}
+
+/* ── Category chips ── */
+.np-cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+.np-cat-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--studio-border);
+  background: var(--studio-bg);
+  color: var(--studio-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.np-cat-chip:hover {
+  border-color: var(--studio-accent);
+  color: var(--studio-text);
+}
+.np-cat-chip.active {
+  border-color: var(--studio-accent);
+  background: var(--studio-accent-subtle);
+  color: var(--studio-accent);
+}
+
+/* ── Template grid (scrollable) ── */
+.np-tpl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 /* ── menu-pop transition ── */
