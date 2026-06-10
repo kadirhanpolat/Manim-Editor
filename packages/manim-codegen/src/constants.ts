@@ -73,3 +73,17 @@ export const SHADOW_TYPES: Set<string> = new Set([
   'latex',
 ]);
 export const ANNOTATION_TYPES: Set<string> = new Set(['surrounding_rect', 'underline', 'cross']);
+
+// Pygments language allowlist for the `code` object (inspector dropdown + codegen guard).
+// Invalid/missing language falls back to 'python' in objectCode.
+export const CODE_LANGUAGES: readonly string[] = [
+  'python',
+  'javascript',
+  'typescript',
+  'c',
+  'cpp',
+  'java',
+  'html',
+  'css',
+  'bash',
+];

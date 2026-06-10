@@ -92,6 +92,20 @@ export function matrixBrackets(b: string | undefined): string {
   return '';
 }
 
+/** Escape a multiline user string into the body of a single-line Python
+ *  double-quoted string literal: backslashes first, then quotes, then
+ *  CR/CRLF→\n normalization, then newlines and tabs. Used by the `code`
+ *  object's `code_string=` so the one-line regex parser can round-trip it.
+ *  Inverse: `unescapePyMultiline` in services/web/src/export/manim.ts. */
+export function pyMultiline(s: unknown): string {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
+}
+
 // ── Style effect helpers (KEEP BYTE-IDENTICAL with services/api/src/compiler/codegen.js) ──
 
 /** Fill opacity expression: byte-identical to bare master when fillOpacity is 1/absent. */

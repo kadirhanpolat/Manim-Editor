@@ -374,6 +374,24 @@ export interface TextObject extends SceneObject {
   // fontSize and fontFamily are already on SceneObject
 }
 
+// Wave 1 Track C content objects. NOTE: intentionally NOT added to the
+// barrel's `export type { … }` block in src/index.ts (Track D owns that file
+// this wave); import via SceneObject casts or deep path until the post-merge
+// cleanup adds them to the barrel.
+export interface CodeObject extends SceneObject {
+  type: 'code';
+  codeText?: string;
+  language?: string;
+}
+
+export interface BarChartObject extends SceneObject {
+  type: 'bar_chart';
+  values?: number[];
+  barNames?: string[];
+  yMax?: number;
+  barColors?: string[];
+}
+
 // ─── End per-type interfaces ────────────────────────────────────────────────
 
 /** A scheduled animation line produced internally by generateScene. */
