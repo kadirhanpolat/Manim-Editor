@@ -843,6 +843,7 @@ import * as overlays from './configs/overlays.js';
 import * as effects from './configs/effects.js';
 import { useProjectStore } from '../../store/project.js';
 import { applyOverrides } from '../../engine/blending.js';
+import { isPreviewHidden } from '../../engine/visibility.js';
 import { useStageViewport } from './composables/useStageViewport.js';
 import { useStagePathDraw } from './composables/useStagePathDraw.js';
 import { useStageInteractions } from './composables/useStageInteractions.js';
@@ -1023,6 +1024,9 @@ function eff3d(obj: SceneObject): { x3d: number; y3d: number; z3d: number } {
 // emphasisOverlays / path3dPolylines — delegated to overlays.js (declared after ctx).
 
 function isVis(id: string): boolean {
+  // Static hide (hidden flag + annotation-of-hidden-target cascade)
+  if (isPreviewHidden(store.objectById(id), (i) => store.objectById(i))) return false;
+  // Playback transform-clip hide
   const h = frameState.value.hiddenIds;
   if (h instanceof Set) return !h.has(id);
   return true;
