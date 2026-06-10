@@ -750,6 +750,7 @@ import hljs from 'highlight.js/lib/core';
 import python from 'highlight.js/lib/languages/python';
 hljs.registerLanguage('python', python);
 import * as api from './api.js';
+import { initAutosave, readAutosave, clearAutosave } from './autosave.js';
 import { useProjectStore } from './store/project.js';
 import { getPlaybackEngine } from './engine/playback.js';
 import { generateManimScript, downloadManimScript, parseManimScript } from './export/manim.js';
@@ -898,12 +899,30 @@ watch(
   { immediate: true }
 );
 
+let _disposeAutosave: (() => void) | null = null;
+
 // ── Lifecycle ──
 onMounted(() => {
   const engine = getPlaybackEngine();
   engine.onTimeUpdate((t) => store.setPlaybackTime(t));
   engine.onFrame((state) => store.setFrameState(state));
   window.addEventListener('keydown', handleKeydown);
+
+  // Autosave: offer to restore a previous session's unsaved work, THEN start
+  // the subscriber. The app always boots into a blank default project, so any
+  // existing autosave is newer than the loaded state. Restore runs before
+  // initAutosave so importJSON's clear-hook doesn't wipe the key mid-restore;
+  // the key survives until the next New/Open/Save (crash-safe).
+  const saved = readAutosave();
+  if (saved) {
+    const when = new Date(saved.savedAt).toLocaleString();
+    if (confirm(`Unsaved work from a previous session (${when}) was found. Restore it?`)) {
+      store.importJSON(JSON.stringify(saved.project));
+    } else {
+      clearAutosave();
+    }
+  }
+  _disposeAutosave = initAutosave(store);
 
   // Check API availability on startup
   store.checkApi();
@@ -913,6 +932,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown);
   getPlaybackEngine().destroy();
   store._stopPollRender();
+  _disposeAutosave?.();
 });
 
 // ── Methods ──
