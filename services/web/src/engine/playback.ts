@@ -497,6 +497,39 @@ export class PlaybackEngine {
             changed = true;
             break;
           }
+          case 'draw_border_fill':
+            // Approximate: opacity + slight scale (same as draw/write)
+            overrides.opacity = eased * (obj.opacity ?? 1);
+            overrides.scaleX = 0.8 + 0.2 * eased;
+            overrides.scaleY = 0.8 + 0.2 * eased;
+            changed = true;
+            break;
+          case 'grow_arrow':
+            // Same as grow_in
+            overrides.scaleX = eased;
+            overrides.scaleY = eased;
+            overrides.opacity = Math.min(1, eased * 2) * (obj.opacity ?? 1);
+            changed = true;
+            break;
+          case 'grow_from_edge': {
+            const dir = (obj.enterAnimDir ?? 'LEFT') as string;
+            if (dir === 'RIGHT') overrides.x = (obj.x ?? 0) + (1 - eased) * 600;
+            else if (dir === 'UP') overrides.y = (obj.y ?? 0) - (1 - eased) * 400;
+            else if (dir === 'DOWN') overrides.y = (obj.y ?? 0) + (1 - eased) * 400;
+            else overrides.x = (obj.x ?? 0) - (1 - eased) * 600; // LEFT (default)
+            overrides.opacity = eased * (obj.opacity ?? 1);
+            changed = true;
+            break;
+          }
+          case 'fade_in_large': {
+            const startScale = obj.enterAnimScale ?? 1.5;
+            const sc = startScale - (startScale - 1) * eased;
+            overrides.scaleX = sc;
+            overrides.scaleY = sc;
+            overrides.opacity = eased * (obj.opacity ?? 1);
+            changed = true;
+            break;
+          }
         }
       }
 
@@ -554,6 +587,20 @@ export class PlaybackEngine {
             overrides.scaleY = eased * (overrides.scaleY ?? 1);
             changed = true;
             break;
+          case 'unwrite':
+            // Approximate: same as fade_out
+            overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
+            changed = true;
+            break;
+          case 'fade_out_large': {
+            const endScale = obj.exitAnimScale ?? 1.5;
+            const sc = 1 + (endScale - 1) * (1 - eased);
+            overrides.scaleX = sc * (overrides.scaleX ?? 1);
+            overrides.scaleY = sc * (overrides.scaleY ?? 1);
+            overrides.opacity = eased * (overrides.opacity ?? obj.opacity ?? 1);
+            changed = true;
+            break;
+          }
         }
       }
 
