@@ -6,6 +6,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { isSafeSegment } from '../util/paths.js';
+import { RENDER_EXTS, isRenderExt, contentTypeFor, isRenderFilename } from '../util/renderFiles.js';
 import fs from 'fs/promises';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
@@ -33,12 +34,15 @@ const renderRateLimit = rateLimit({
 router.use(renderRateLimit);
 
 /**
- * Get the latest render for a project.
- * GET /api/renders/:projectId/latest.mp4
+ * Get the latest render for a project (extension follows the render format).
+ * GET /api/renders/:projectId/latest.:ext   (ext ∈ mp4|gif|webm)
  */
-router.get('/:projectId/latest.mp4', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:projectId/latest.:ext', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const renderPath = path.join(req.dataDir, 'renders', req.params['projectId'], 'latest.mp4');
+    const ext = req.params['ext'];
+    if (!isRenderExt(ext)) return void res.status(400).json({ error: 'Invalid render format' });
+
+    const renderPath = path.join(req.dataDir, 'renders', req.params['projectId'], `latest.${ext}`);
 
     // Check if file exists
     await fs.access(renderPath);
@@ -47,7 +51,7 @@ router.get('/:projectId/latest.mp4', async (req: Request, res: Response, next: N
     const stats = await fs.stat(renderPath);
 
     // Set headers
-    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Type', contentTypeFor(ext));
     res.setHeader('Content-Length', stats.size);
     res.setHeader('Accept-Ranges', 'bytes');
 
@@ -95,19 +99,21 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
       return void res.json({ renders: [], hasLatest: false, history: [] });
     }
 
-    const latestPath = path.join(rendersDir, 'latest.mp4');
-    let hasLatest = false;
+    let latestName: string | null = null;
     let latestStats: import('fs').Stats | null = null;
-    try {
-      latestStats = await fs.stat(latestPath);
-      hasLatest = true;
-    } catch {
-      // no latest render yet
+    for (const ext of RENDER_EXTS) {
+      const candidate = path.join(rendersDir, `latest.${ext}`);
+      const stat = await fs.stat(candidate).catch(() => null);
+      if (stat && (!latestStats || stat.mtimeMs > latestStats.mtimeMs)) {
+        latestStats = stat;
+        latestName = `latest.${ext}`;
+      }
     }
+    const hasLatest = latestName !== null;
 
     const entries = await fs.readdir(rendersDir);
     const historyFiles = entries
-      .filter((f) => f.startsWith('render_') && f.endsWith('.mp4'))
+      .filter((f) => f.startsWith('render_') && isRenderFilename(f))
       .sort()
       .reverse()
       .slice(0, 5);
@@ -129,13 +135,13 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
 
     res.json({
       renders:
-        hasLatest && latestStats
+        hasLatest && latestStats && latestName
           ? [
               {
-                name: 'latest.mp4',
+                name: latestName,
                 size: latestStats.size,
                 modifiedAt: latestStats.mtime,
-                url: `/api/renders/${req.params['projectId']}/latest.mp4`,
+                url: `/api/renders/${req.params['projectId']}/${latestName}`,
               },
             ]
           : [],
@@ -155,7 +161,7 @@ router.get('/:projectId/:filename', async (req: Request, res: Response, next: Ne
   try {
     const projectId = req.params['projectId'];
     const filename = req.params['filename'];
-    if (!/^[\w.-]+\.mp4$/.test(filename))
+    if (!isRenderFilename(filename))
       return void res.status(400).json({ error: 'Invalid filename' });
 
     const filePath = path.join(req.dataDir, 'renders', projectId, filename);
