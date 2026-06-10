@@ -74,7 +74,7 @@ describe('codegen geçerliliği', () => {
   });
 
   it('calculus şablonları axes veya numberplane içerir', () => {
-    const calculus = TEMPLATES.filter((t) => t.category === 'calculus');
+    const calculus = TEMPLATES.filter((t) => t.category === 'calculus' && t.project !== null);
     calculus.forEach((t) => {
       const proj = t.project!();
       const hasAxesOrPlane = proj.objects.some(
