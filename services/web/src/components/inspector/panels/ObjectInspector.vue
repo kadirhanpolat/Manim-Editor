@@ -197,6 +197,33 @@
         />
         <span class="text-[9px] text-studio-text-muted">s</span>
       </div>
+      <!-- grow_from_edge: direction picker -->
+      <div v-if="obj.enterAnim === 'grow_from_edge'" class="flex items-center gap-2">
+        <span class="text-[9px] text-studio-text-muted w-14">Direction</span>
+        <select
+          class="select text-xs"
+          :value="obj.enterAnimDir || 'LEFT'"
+          @change="store.setEnterAnimDir(obj.id, ($event.target as HTMLSelectElement).value as 'LEFT'|'RIGHT'|'UP'|'DOWN')"
+        >
+          <option value="LEFT">← Left</option>
+          <option value="RIGHT">→ Right</option>
+          <option value="UP">↑ Up</option>
+          <option value="DOWN">↓ Down</option>
+        </select>
+      </div>
+      <!-- fade_in_large: scale -->
+      <div v-if="obj.enterAnim === 'fade_in_large'" class="flex items-center gap-2">
+        <span class="text-[9px] text-studio-text-muted w-14">Scale</span>
+        <input
+          class="input input-sm w-16"
+          type="number"
+          min="1.1"
+          max="5.0"
+          step="0.1"
+          :value="obj.enterAnimScale ?? 1.5"
+          @change="store.setEnterAnimScale(obj.id, Number(($event.target as HTMLInputElement).value))"
+        />
+      </div>
       <p class="text-[8px] text-studio-text-muted/40 leading-snug">{{ enterAnimDesc }}</p>
     </div>
   </Section>
@@ -226,6 +253,19 @@
         />
         <span class="text-[9px] text-studio-text-muted">s</span>
       </div>
+      <!-- fade_out_large: scale -->
+      <div v-if="obj.exitAnim === 'fade_out_large'" class="flex items-center gap-2">
+        <span class="text-[9px] text-studio-text-muted w-14">Scale</span>
+        <input
+          class="input input-sm w-16"
+          type="number"
+          min="1.1"
+          max="5.0"
+          step="0.1"
+          :value="obj.exitAnimScale ?? 1.5"
+          @change="store.setExitAnimScale(obj.id, Number(($event.target as HTMLInputElement).value))"
+        />
+      </div>
       <p class="text-[8px] text-studio-text-muted/40 leading-snug">{{ exitAnimDesc }}</p>
     </div>
   </Section>
@@ -238,10 +278,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { settingsComponentFor } from '../object-settings/index.js';
 import { useProjectStore } from '../../../store/project.js';
-import { ENTER_ANIMS, EXIT_ANIMS } from '../../../store/project.js';
+import { ENTER_ANIMS, EXIT_ANIMS, availableEnterAnims, availableExitAnims } from '../../../store/project.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../../constants/anchors.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
@@ -255,10 +295,10 @@ import MotionPicker from '../object-settings/MotionPicker.vue';
 const store = useProjectStore();
 const anchorGrid = ANCHOR_GRID;
 const anchorLabels = ANCHOR_LABELS;
-const enterAnims = ENTER_ANIMS;
-const exitAnims = EXIT_ANIMS;
 
 const obj = computed(() => store.selectedObject!);
+const enterAnims = computed(() => availableEnterAnims(obj.value?.type ?? ''));
+const exitAnims  = computed(() => availableExitAnims(obj.value?.type ?? ''));
 const { u, uSize } = useObjectUpdate(() => obj.value);
 const settingsComp = computed(() => settingsComponentFor(obj.value?.type));
 
@@ -268,14 +308,29 @@ function onObj3DUpdate(payload: Record<string, unknown>) {
   if (obj.value) store.updateObject(obj.value.id, payload);
 }
 
+watch(
+  () => obj.value?.type,
+  () => {
+    if (!obj.value) return;
+    const validEnter = enterAnims.value.map((a) => a.value);
+    const validExit  = exitAnims.value.map((a) => a.value);
+    if (obj.value.enterAnim && !validEnter.includes(obj.value.enterAnim as string)) {
+      u('enterAnim', 'fade_in');
+    }
+    if (obj.value.exitAnim && !validExit.includes(obj.value.exitAnim as string)) {
+      u('exitAnim', 'none');
+    }
+  }
+);
+
 const enterAnimDesc = computed(() => {
   if (!obj.value) return '';
-  const a = ENTER_ANIMS.find((a) => a.value === (obj.value.enterAnim || 'fade_in'));
+  const a = ENTER_ANIMS.find((a) => a.value === (obj.value!.enterAnim || 'fade_in'));
   return a ? a.desc : '';
 });
 const exitAnimDesc = computed(() => {
   if (!obj.value) return '';
-  const a = EXIT_ANIMS.find((a) => a.value === (obj.value.exitAnim || 'fade_out'));
+  const a = EXIT_ANIMS.find((a) => a.value === (obj.value!.exitAnim || 'fade_out'));
   return a ? a.desc : '';
 });
 const objGroup = computed(() => (obj.value ? store.objectGroup(obj.value.id) : null));
