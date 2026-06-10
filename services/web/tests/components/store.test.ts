@@ -92,8 +92,8 @@ describe('groupObjects', () => {
 import TEMPLATES from '../../src/templates/index.js';
 
 describe('TEMPLATES', () => {
-  it('has 5 entries', () => {
-    expect(TEMPLATES).toHaveLength(5);
+  it('has 15 entries', () => {
+    expect(TEMPLATES).toHaveLength(15);
   });
 
   it('each non-blank template returns a valid project with required object fields', () => {

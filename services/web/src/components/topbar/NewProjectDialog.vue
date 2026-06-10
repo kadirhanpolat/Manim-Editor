@@ -127,8 +127,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const ALL_CATEGORIES: Array<'all' | TemplateCategory> = [
-  'all', 'general', 'calculus', 'linear_algebra',
-  'trigonometry', 'statistics', 'programming',
+  'all',
+  'general',
+  'calculus',
+  'linear_algebra',
+  'trigonometry',
+  'statistics',
+  'programming',
 ];
 
 const selectedCategory = ref<'all' | TemplateCategory>('all');
