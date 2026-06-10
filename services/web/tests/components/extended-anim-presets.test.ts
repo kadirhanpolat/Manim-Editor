@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import {
   useProjectStore,
-  ENTER_ANIMS,
-  EXIT_ANIMS,
   availableEnterAnims,
   availableExitAnims,
 } from '../../src/store/project.js';
@@ -164,22 +162,30 @@ describe('extended anim presets codegen', () => {
   });
 
   it('grow_from_edge LEFT emits GrowFromEdge(edge=LEFT)', () => {
-    const code = generateManimScript(makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'LEFT' }));
+    const code = generateManimScript(
+      makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'LEFT' })
+    );
     expect(code).toContain('self.play(GrowFromEdge(obj1, edge=LEFT), run_time=0.5)');
   });
 
   it('grow_from_edge RIGHT emits GrowFromEdge(edge=RIGHT)', () => {
-    const code = generateManimScript(makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'RIGHT' }));
+    const code = generateManimScript(
+      makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'RIGHT' })
+    );
     expect(code).toContain('self.play(GrowFromEdge(obj1, edge=RIGHT), run_time=0.5)');
   });
 
   it('grow_from_edge UP emits GrowFromEdge(edge=UP)', () => {
-    const code = generateManimScript(makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'UP' }));
+    const code = generateManimScript(
+      makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'UP' })
+    );
     expect(code).toContain('self.play(GrowFromEdge(obj1, edge=UP), run_time=0.5)');
   });
 
   it('grow_from_edge DOWN emits GrowFromEdge(edge=DOWN)', () => {
-    const code = generateManimScript(makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'DOWN' }));
+    const code = generateManimScript(
+      makeProject({ enterAnim: 'grow_from_edge', enterAnimDir: 'DOWN' })
+    );
     expect(code).toContain('self.play(GrowFromEdge(obj1, edge=DOWN), run_time=0.5)');
   });
 
@@ -189,12 +195,16 @@ describe('extended anim presets codegen', () => {
   });
 
   it('fade_in_large scale=1.5 emits FadeIn(scale=1.5)', () => {
-    const code = generateManimScript(makeProject({ enterAnim: 'fade_in_large', enterAnimScale: 1.5 }));
+    const code = generateManimScript(
+      makeProject({ enterAnim: 'fade_in_large', enterAnimScale: 1.5 })
+    );
     expect(code).toContain('self.play(FadeIn(obj1, scale=1.5), run_time=0.5)');
   });
 
   it('fade_in_large scale=2.0 emits FadeIn(scale=2.0)', () => {
-    const code = generateManimScript(makeProject({ enterAnim: 'fade_in_large', enterAnimScale: 2.0 }));
+    const code = generateManimScript(
+      makeProject({ enterAnim: 'fade_in_large', enterAnimScale: 2.0 })
+    );
     expect(code).toContain('self.play(FadeIn(obj1, scale=2.0), run_time=0.5)');
   });
 
@@ -210,7 +220,11 @@ describe('extended anim presets codegen', () => {
   });
 
   it('fade_out_large scale=1.5 emits FadeOut(scale=1.5)', () => {
-    const proj = makeProject({ enterAnim: 'fade_in', exitAnim: 'fade_out_large', exitAnimScale: 1.5 });
+    const proj = makeProject({
+      enterAnim: 'fade_in',
+      exitAnim: 'fade_out_large',
+      exitAnimScale: 1.5,
+    });
     const code = generateManimScript(proj);
     expect(code).toContain('self.play(FadeOut(obj1, scale=1.5), run_time=0.5)');
   });

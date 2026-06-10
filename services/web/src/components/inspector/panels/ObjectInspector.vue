@@ -203,7 +203,12 @@
         <select
           class="select text-xs"
           :value="obj.enterAnimDir || 'LEFT'"
-          @change="store.setEnterAnimDir(obj.id, ($event.target as HTMLSelectElement).value as 'LEFT'|'RIGHT'|'UP'|'DOWN')"
+          @change="
+            store.setEnterAnimDir(
+              obj.id,
+              ($event.target as HTMLSelectElement).value as 'LEFT' | 'RIGHT' | 'UP' | 'DOWN'
+            )
+          "
         >
           <option value="LEFT">← Left</option>
           <option value="RIGHT">→ Right</option>
@@ -221,7 +226,9 @@
           max="5.0"
           step="0.1"
           :value="obj.enterAnimScale ?? 1.5"
-          @change="store.setEnterAnimScale(obj.id, Number(($event.target as HTMLInputElement).value))"
+          @change="
+            store.setEnterAnimScale(obj.id, Number(($event.target as HTMLInputElement).value))
+          "
         />
       </div>
       <p class="text-[8px] text-studio-text-muted/40 leading-snug">{{ enterAnimDesc }}</p>
@@ -263,7 +270,9 @@
           max="5.0"
           step="0.1"
           :value="obj.exitAnimScale ?? 1.5"
-          @change="store.setExitAnimScale(obj.id, Number(($event.target as HTMLInputElement).value))"
+          @change="
+            store.setExitAnimScale(obj.id, Number(($event.target as HTMLInputElement).value))
+          "
         />
       </div>
       <p class="text-[8px] text-studio-text-muted/40 leading-snug">{{ exitAnimDesc }}</p>
@@ -281,7 +290,12 @@
 import { computed, watch } from 'vue';
 import { settingsComponentFor } from '../object-settings/index.js';
 import { useProjectStore } from '../../../store/project.js';
-import { ENTER_ANIMS, EXIT_ANIMS, availableEnterAnims, availableExitAnims } from '../../../store/project.js';
+import {
+  ENTER_ANIMS,
+  EXIT_ANIMS,
+  availableEnterAnims,
+  availableExitAnims,
+} from '../../../store/project.js';
 import { ANCHOR_GRID, ANCHOR_LABELS } from '../../../constants/anchors.js';
 import { useObjectUpdate } from '../useObjectUpdate.js';
 import Section from '../ui/Section.vue';
@@ -298,7 +312,7 @@ const anchorLabels = ANCHOR_LABELS;
 
 const obj = computed(() => store.selectedObject!);
 const enterAnims = computed(() => availableEnterAnims(obj.value?.type ?? ''));
-const exitAnims  = computed(() => availableExitAnims(obj.value?.type ?? ''));
+const exitAnims = computed(() => availableExitAnims(obj.value?.type ?? ''));
 const { u, uSize } = useObjectUpdate(() => obj.value);
 const settingsComp = computed(() => settingsComponentFor(obj.value?.type));
 
@@ -313,7 +327,7 @@ watch(
   () => {
     if (!obj.value) return;
     const validEnter = enterAnims.value.map((a) => a.value);
-    const validExit  = exitAnims.value.map((a) => a.value);
+    const validExit = exitAnims.value.map((a) => a.value);
     if (obj.value.enterAnim && !validEnter.includes(obj.value.enterAnim as string)) {
       u('enterAnim', 'fade_in');
     }

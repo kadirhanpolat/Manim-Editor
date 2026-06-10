@@ -241,10 +241,30 @@ export const ENTER_ANIMS = [
   { value: 'spin_in', label: 'Spin In', icon: '↻', desc: 'Rotate in while fading' },
   { value: 'bounce_in', label: 'Bounce In', icon: '⤴', desc: 'Bounce into place' },
   { value: 'typewriter', label: 'Typewriter', icon: '⌨', desc: 'Reveal char by char' },
-  { value: 'draw_border_fill', label: 'Draw Border Fill', icon: '⬜', desc: 'Trace border, then fill (shapes)' },
-  { value: 'grow_arrow',       label: 'Grow Arrow',       icon: '➤', desc: 'Grow from tail to tip (arrows only)' },
-  { value: 'grow_from_edge',   label: 'Grow From Edge',   icon: '▷', desc: 'Expand from one edge (set direction below)' },
-  { value: 'fade_in_large',    label: 'Fade In Large',    icon: '⤢', desc: 'Fade in while shrinking from large (scale > 1 = from bigger)' },
+  {
+    value: 'draw_border_fill',
+    label: 'Draw Border Fill',
+    icon: '⬜',
+    desc: 'Trace border, then fill (shapes)',
+  },
+  {
+    value: 'grow_arrow',
+    label: 'Grow Arrow',
+    icon: '➤',
+    desc: 'Grow from tail to tip (arrows only)',
+  },
+  {
+    value: 'grow_from_edge',
+    label: 'Grow From Edge',
+    icon: '▷',
+    desc: 'Expand from one edge (set direction below)',
+  },
+  {
+    value: 'fade_in_large',
+    label: 'Fade In Large',
+    icon: '⤢',
+    desc: 'Fade in while shrinking from large (scale > 1 = from bigger)',
+  },
 ];
 
 export const EXIT_ANIMS = [
@@ -258,20 +278,31 @@ export const EXIT_ANIMS = [
   { value: 'uncreate', label: 'Uncreate', icon: '✎', desc: 'Reverse draw' },
   { value: 'spin_out', label: 'Spin Out', icon: '↻', desc: 'Rotate out while fading' },
   { value: 'typewriter_out', label: 'Typewriter Out', icon: '⌨', desc: 'Hide char by char' },
-  { value: 'unwrite',        label: 'Unwrite',        icon: '✘', desc: 'Reverse Write effect' },
-  { value: 'fade_out_large', label: 'Fade Out Large', icon: '⤡', desc: 'Fade out while growing to large (scale > 1 = grow bigger)' },
+  { value: 'unwrite', label: 'Unwrite', icon: '✘', desc: 'Reverse Write effect' },
+  {
+    value: 'fade_out_large',
+    label: 'Fade Out Large',
+    icon: '⤡',
+    desc: 'Fade out while growing to large (scale > 1 = grow bigger)',
+  },
 ];
 
-const VMOBJECT_ONLY_ENTER = new Set(['write', 'draw', 'draw_border_fill', 'grow_arrow', 'grow_from_edge']);
-const ARROW_ONLY_ENTER    = new Set(['grow_arrow']);
-const TEXT_ONLY_ENTER     = new Set(['typewriter']);
-const TEXT_ONLY_EXIT      = new Set(['typewriter_out']);
-const VMOBJECT_ONLY_EXIT  = new Set(['unwrite', 'uncreate']);
+const VMOBJECT_ONLY_ENTER = new Set([
+  'write',
+  'draw',
+  'draw_border_fill',
+  'grow_arrow',
+  'grow_from_edge',
+]);
+const ARROW_ONLY_ENTER = new Set(['grow_arrow']);
+const TEXT_ONLY_ENTER = new Set(['typewriter']);
+const TEXT_ONLY_EXIT = new Set(['typewriter_out']);
+const VMOBJECT_ONLY_EXIT = new Set(['unwrite', 'uncreate']);
 
 export function availableEnterAnims(type: string): typeof ENTER_ANIMS {
   return ENTER_ANIMS.filter((a) => {
     if (ARROW_ONLY_ENTER.has(a.value) && type !== 'arrow' && type !== 'double_arrow') return false;
-    if (TEXT_ONLY_ENTER.has(a.value)  && type !== 'text') return false;
+    if (TEXT_ONLY_ENTER.has(a.value) && type !== 'text') return false;
     if (VMOBJECT_ONLY_ENTER.has(a.value) && type === 'image') return false;
     return true;
   });
@@ -279,7 +310,7 @@ export function availableEnterAnims(type: string): typeof ENTER_ANIMS {
 
 export function availableExitAnims(type: string): typeof EXIT_ANIMS {
   return EXIT_ANIMS.filter((a) => {
-    if (TEXT_ONLY_EXIT.has(a.value)     && type !== 'text') return false;
+    if (TEXT_ONLY_EXIT.has(a.value) && type !== 'text') return false;
     if (VMOBJECT_ONLY_EXIT.has(a.value) && type === 'image') return false;
     return true;
   });
