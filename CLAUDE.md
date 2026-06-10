@@ -57,7 +57,7 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `packages/manim-codegen/src/` | **Single source of truth for codegen** — `constants.ts`, `helpers.ts`, `objects.ts`, `objects3d.ts`, `clips.ts`, `keyframes.ts`, `index.ts` (`generateScene`), `types.ts` |
 | `services/api/src/compiler/codegen.ts` | Thin server wrapper over `@manim/codegen` (server asset paths via `resolveAsset`) |
 | `services/web/src/export/manim.ts` | Thin client generator wrapper + the web-only `.py` **parser** (`parseManimScript`) |
-| `services/web/src/components/stage/StageCanvas.vue` | Thin orchestrator (~544 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders |
+| `services/web/src/components/stage/StageCanvas.vue` | Orchestrator (~1230 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders (interactive configs lock-wrapped via `L()`) |
 | `services/web/src/components/stage/configs/*.ts` | **Pure** Konva config builders `fn(obj, ctx)` (unit-tested): `context.ts` (ctx contract), `shapes2d`, `text`, `dataObjects`, `relational`, `axes`, `objects3d`, `overlays`, `chrome`, `effects` |
 | `services/web/src/components/stage/composables/*.ts` | `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select), `useStagePathDraw`, `useStageAssets` |
 | `services/web/src/components/inspector/PropertiesPanel.vue` | Thin orchestrator (~40 lines) — `KeyframePanel` + 4-way switch over `panels/{Object,Clip,CameraClip,Canvas}Inspector.vue` |
@@ -69,6 +69,8 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `services/web/src/engine/keyframe.ts` | `interpolateKeyframes`, `getKeyframeRange`, Bezier solver |
 | `services/api/src/routes/audio.ts` + `services/api/src/ws.ts` | Audio upload/TTS/callback/delete endpoints; WebSocket push for render+audio events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
+| `services/web/src/components/RenderOptionsDialog.vue` + `services/renderer/render_args.py` | Render export options (format/resolution/fps) — zod allowlist in `compiler/validator.ts` (`parseRenderOptions`), fixed-dict argv mapping |
+| `services/web/src/components/stage/ContextMenu.vue` | Canvas right-click menu (object + empty-canvas variants), calls store actions |
 
 ## Codegen — single source of truth (`@manim/codegen`)
 

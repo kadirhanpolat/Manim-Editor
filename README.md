@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.21.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.22.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -64,7 +64,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
 - **Light & Dark themes** -- Toggle between warm light and sleek dark palettes via View > Theme; persists across sessions
 - **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
-- **35+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), **Counter** (animated `DecimalNumber`, with an Integer mode → `Integer` mobject), the Phase 4 set: **Table** (Table/MathTable with row/col labels), **Complex Plane**, **Polar Plane**, **Graph** (Graph/DiGraph with manual vertex layout), **Vector Field** (ArrowVectorField with sampled-arrow preview), and the object-library extensions: **Vector Components** (x/y projection arrows), **Ray** (source dot + direction arrow), **Coord Point** (live `(x, y)` label via `always_redraw`), and **Bezier** (smooth open curve through draggable anchors)
+- **40+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), **Counter** (animated `DecimalNumber`, with an Integer mode → `Integer` mobject), the Phase 4 set: **Table** (Table/MathTable with row/col labels), **Complex Plane**, **Polar Plane**, **Graph** (Graph/DiGraph with manual vertex layout), **Vector Field** (ArrowVectorField with sampled-arrow preview), and the object-library extensions: **Vector Components** (x/y projection arrows), **Ray** (source dot + direction arrow), **Coord Point** (live `(x, y)` label via `always_redraw`), **Bezier** (smooth open curve through draggable anchors), and the content objects: **Code Block** (`Code` mobject — real Pygments highlighting in render, 9-language allowlist) and **Bar Chart** (`BarChart` with editable values, names, and colors)
 - **8 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes, **Surface** (`z = f(x, y)` with wireframe preview), and **Prism** (box with per-axis dimensions) — available when scene is switched to 3D mode
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
 - **LaTeX math objects** -- Add `MathTex` expressions (e.g. `\int_a^b`, `E = mc^2`) that render natively in Manim; the canvas shows an approximate Unicode preview (`\int_a^b` → `∫ₐᵇ`) and the box is selectable/draggable
@@ -75,6 +75,9 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Math annotation objects** -- Three new bound-annotation types that target any scene object and derive their position from it automatically: **Surrounding Rectangle** (`SurroundingRectangle` — yellow box around a formula), **Underline** (`Underline` — line under a term), and **Cross** (`Cross` — red X through an expression). Each links to a target via a target picker in the Inspector; deleting the target auto-removes its annotations. All three round-trip through `.py` export/import
 - **2D object effects** -- An "Effects" panel adds gradient fill (multi-stop, angle), rounded corners (rectangle/square plus polygon/triangle/star via native `round_corners`), separate fill/stroke opacity, dashed stroke, and a configurable drop shadow (color/opacity/offset, with preview-only blur); controls appear only for shapes that support them; all render in Manim and round-trip through `.py` export/import
 - **Asset uploads** -- Import PNGs, JPEGs, and SVGs; drag onto the canvas from the sidebar
+- **Object lock & hide** -- Lock objects against canvas edits (still selectable from the timeline) or hide them entirely; hidden objects are skipped in both the preview and the generated Python (annotations bound to a hidden target are skipped too); eye/lock toggles on every timeline object bar
+- **Right-click context menu** -- Cut/copy/paste/duplicate/delete, bring-to-front/send-to-back, lock, and hide on any object; paste/select-all on empty canvas
+- **Marquee selection** -- Drag on empty canvas to box-select multiple objects (2D mode); the selection drags together as a group
 
 ### Animation & Timeline
 - **Multi-track timeline** -- Up to 5 tracks with draggable, resizable animation clips
@@ -107,8 +110,9 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 ### Workflow
 - **Undo / Redo** -- Full history stack (Ctrl+Z / Ctrl+Shift+Z) with 50-state memory
 - **Copy / Paste** -- Duplicate objects with offset (Ctrl+C / Ctrl+V)
+- **Autosave** -- Project JSON auto-saved to localStorage on a 2 s debounce; on startup the editor offers to restore unsaved work
 - **Generated Code view** -- Manim Python generated from your canvas; edit, copy, or download `.py`
-- **Server rendering** -- One-click HQ render via Docker (480p to 4K) with progress tracking
+- **Server rendering** -- One-click HQ render via Docker — **MP4 / GIF / WebM**, 480p to 4K, 15/30/60 fps — with progress tracking; the download link follows the chosen format
 - **Project management** -- Save/load locally (JSON) or sync to Docker server
 
 ---
@@ -389,14 +393,20 @@ All Docker containers run with **least-privilege non-root users**:
 
 **API hardening**: Helmet.js security headers, rate limiting on render endpoints (5 req/min/IP), input sanitization against injection.
 
-### Render Quality
+### Render Export Options
 
-| Quality | Flag | Resolution | FPS |
-|---------|------|------------|-----|
-| Low | `-ql` | 480p | 15 |
-| Medium | `-qm` | 720p | 30 |
-| High | `-qh` | 1080p | 60 |
-| 4K | `-qk` | 4K | 60 |
+The render dialog offers **format** (MP4 / GIF / WebM), **resolution**, and **frame rate** selectors. Defaults (MP4 · 1920×1080 · 60 fps) produce the exact legacy `-qh` render. Values are enum-allowlisted in the API and mapped to manim flags via a fixed lookup (`services/renderer/render_args.py`) — never interpolated into argv.
+
+| Resolution | FPS | Manim flags |
+|------------|-----|-------------|
+| 854×480 | 15 | `-ql` |
+| 1280×720 | 30 | `-qm` |
+| 1920×1080 | 60 | `-qh` |
+| 2560×1440 | 60 | `-qp` |
+| 3840×2160 | 60 | `-qk` |
+| any other combo | | `-qh -r W,H --fps N` |
+
+GIF/WebM append `--format gif|webm`; the output and download extension follow the format. Legacy `{quality}` payloads still work.
 
 ### Environment Variables
 
@@ -411,7 +421,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test           # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 618 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, + characterization snapshots)
+npm run test:unit  # 714 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -426,8 +436,8 @@ npm run format:check  # Prettier (.js/.ts/.vue/.json/.css)
 The backend services and shared package have their own suites (from the repo root):
 
 ```bash
-npm test --workspace services/api             # 43 api tests (compiler validate/normalize/codegen + path & scene-name safety)
-npm --workspace packages/manim-codegen test   # 6 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape)
+npm test --workspace services/api             # 53 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety)
+npm --workspace packages/manim-codegen test   # 12 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping)
 ```
 
 ### End-to-end (Playwright)
@@ -477,7 +487,17 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.21.0 (current)
+### v3.22.0 (current)
+
+Wave 1 — four parallel tracks (showcase, export formats, content objects, editor UX), built by 4 concurrent worktree agents and integrated sequentially with a full test gate per merge.
+
+- **Render export options**: render dialog gains format (**MP4/GIF/WebM**), resolution (**480p/720p/1080p/2K/4K**), and fps (**15/30/60**) selectors. Zod enum allowlist → Redis job → fixed-dict argv mapping in `services/renderer/render_args.py`; the default combo is byte-identical to the legacy `-qh` argv (regression-tested); the download link/extension follows the format (GIF previews via `<img>`). Smoke-tested end-to-end in Docker (valid `GIF89a`/WebM outputs served with correct Content-Types).
+- **Content objects**: **`code`** (Manim `Code` — 9-language Pygments allowlist, single-line `code_string` emission via the new `pyMultiline` escaping helper, full `.py` round-trip) and **`bar_chart`** (Manim `BarChart` — values/names/colors grid editor, `safeMatrixEntry`-sanitized names). Palette cards, inspector settings, canvas previews, snapshots, and python-validity coverage included.
+- **Editor UX pack**: right-click context menu (object + empty-canvas variants), marquee box-selection with group drag (2D mode), object **lock** (canvas click-through, timeline-selectable) and **hide** (skipped in preview **and** codegen, with an annotation-of-hidden-target cascade), aria-labelled eye/lock icons on timeline bars, and a 2 s-debounced **autosave** to localStorage with a startup restore prompt. New store actions: `toggleLocked`, `toggleHidden`, `bringToFront`, `sendToBack`, `duplicateSelection`, `cutSelection`, `selectAllObjects`, `translateObjects`.
+- **Showcase**: website gains a 5-video demo gallery and a quickstart terminal block; 9 GitHub links fixed to point at this repo; stale feature copy refreshed; `demo-videos/` committed; README showcase section added.
+- **Tests**: 618 → **714 web unit**, 43 → **53 api**, 6 → **12 codegen** (114 engine + 9 e2e unchanged). Docs: spec + 4 implementation plans under `docs/superpowers/`.
+
+### v3.21.0
 
 Template library expansion — 10 new math/programming templates and a category chip filter in the New Project dialog.
 
