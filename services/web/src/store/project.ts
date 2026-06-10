@@ -12,7 +12,8 @@
 
 import { createPinia, defineStore, setActivePinia } from 'pinia';
 import type { SceneObject, Clip, Track, Group, Camera3d, KeyframeDefaults } from '@manim/codegen';
-import api, { connectJobWebSocket } from '../api.js';
+import api, { connectJobWebSocket, DEFAULT_RENDER_OPTIONS } from '../api.js';
+import type { RenderOptions } from '../api.js';
 import { presetVertices } from '../engine/polygonVertices.js';
 
 // ─── Local store-only interfaces ─────────────────────────────────────────────
@@ -128,6 +129,7 @@ interface State {
   renderStatus: string | null;
   renderError: string | null;
   renderQuality: string;
+  renderFormat: string;
   renderVideoUrl: string | null;
   renderLog: string;
   showProjectBrowser: boolean;
@@ -488,6 +490,7 @@ const useProjectStore = defineStore('project', {
     renderStatus: null,
     renderError: null,
     renderQuality: 'high',
+    renderFormat: 'mp4',
     renderVideoUrl: null,
     renderLog: '',
     showProjectBrowser: false,
@@ -1889,13 +1892,15 @@ const useProjectStore = defineStore('project', {
      *  2. Trigger render
      *  3. Start polling for status
      */
-    async renderOnServer(quality = 'high') {
+    async renderOnServer(options?: RenderOptions) {
+      const opts: RenderOptions = { ...DEFAULT_RENDER_OPTIONS, ...(options ?? {}) };
       this.showRenderDialog = true;
       this.renderStatus = 'uploading';
       this.renderError = null;
       this.renderVideoUrl = null;
       this.renderLog = '';
-      this.renderQuality = quality;
+      this.renderQuality = 'high';
+      this.renderFormat = opts.format;
 
       try {
         // 1. Save to server
@@ -1907,12 +1912,13 @@ const useProjectStore = defineStore('project', {
         let result: { jobId: string };
         if (this.project.editorMode === 'code') {
           result = (await api.projects.renderCode(projectId, {
-            quality,
+            quality: 'high',
             codeSource: this.project.codeSource,
             sceneName: 'MainScene',
+            options: opts,
           })) as { jobId: string };
         } else {
-          result = (await api.projects.render(projectId, quality)) as { jobId: string };
+          result = (await api.projects.render(projectId, opts)) as { jobId: string };
         }
         this.renderJobId = result.jobId;
 
@@ -1934,7 +1940,7 @@ const useProjectStore = defineStore('project', {
           if (msg.stdout) this.renderLog = msg.stdout as string;
         } else if (msg.status === 'completed') {
           this.renderStatus = 'completed';
-          this.renderVideoUrl = api.renders.getLatestUrl(projectId);
+          this.renderVideoUrl = api.renders.getLatestUrl(projectId, this.renderFormat);
           this.renderLog = (msg.stdout as string) || '';
           this._stopPollRender();
         } else if (msg.status === 'failed') {

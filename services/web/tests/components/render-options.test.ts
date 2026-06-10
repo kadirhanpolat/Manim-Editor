@@ -24,3 +24,23 @@ describe('render export options — api client', () => {
     );
   });
 });
+
+describe('render export options — store', () => {
+  it('defaults renderFormat to mp4', () => {
+    expect(store.renderFormat).toBe('mp4');
+  });
+
+  it('renderOnServer records the chosen format before any network call', async () => {
+    // The fetch inside saveToServer fails in jsdom (no server) and is caught by
+    // renderOnServer's try/catch — renderFormat is set synchronously before it.
+    await store.renderOnServer({ format: 'webm', resolution: '1280x720', fps: 30 });
+    expect(store.renderFormat).toBe('webm');
+    expect(store.showRenderDialog).toBe(true);
+  });
+
+  it('renderOnServer without arguments keeps today’s defaults', async () => {
+    await store.renderOnServer();
+    expect(store.renderFormat).toBe('mp4');
+    expect(store.renderQuality).toBe('high');
+  });
+});
