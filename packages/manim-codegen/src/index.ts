@@ -635,4 +635,6 @@ export type {
   GraphObject,
   VectorComponentsObject,
   TextObject,
+  CodeObject,
+  BarChartObject,
 } from './types.js';
