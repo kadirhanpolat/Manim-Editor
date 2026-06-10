@@ -24,6 +24,8 @@ import CoordPointSettings from './CoordPointSettings.vue';
 import BezierSettings from './BezierSettings.vue';
 import NumberLineSettings from './NumberLineSettings.vue';
 import AnnotationSettings from './AnnotationSettings.vue';
+import CodeSettings from './CodeSettings.vue';
+import BarChartSettings from './BarChartSettings.vue';
 const REGISTRY: Record<string, Component> = {
   dot_grid: DotGridSettings,
   star: StarSettings,
@@ -53,6 +55,8 @@ const REGISTRY: Record<string, Component> = {
   surrounding_rect: AnnotationSettings,
   underline: AnnotationSettings,
   cross: AnnotationSettings,
+  code: CodeSettings,
+  bar_chart: BarChartSettings,
 };
 export function settingsComponentFor(type: string): Component | null {
   return REGISTRY[type] ?? null;
