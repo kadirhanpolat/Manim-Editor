@@ -541,6 +541,39 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       continue;
     }
 
+    // Arrow
+    m = line.match(
+      /^(\w+)\s*=\s*Arrow\(start=LEFT \* ([\d.]+), end=RIGHT \* ([\d.]+), color=["']([^"']+)["']/
+    );
+    if (m) {
+      const [, name, half, , color] = m;
+      const width = Math.round(((parseFloat(half) * 2) / FRAME_WIDTH) * sw);
+      const id = uid('obj');
+      const obj: SceneObject = {
+        id,
+        type: 'arrow',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height: 40,
+        fill: color,
+        stroke: '#ffffff',
+        strokeWidth: 2,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'fade_out',
+        zOrder: objects.length,
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
+      continue;
+    }
+
     // Ellipse
     m = line.match(/^(\w+)\s*=\s*Ellipse\(width=([\d.]+),\s*height=([\d.]+)\)/);
     if (m) {
@@ -2249,6 +2282,19 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       continue;
     }
 
+    // FadeIn with scale → fade_in_large
+    m = line.match(/^self\.play\(FadeIn\((\w+),\s*scale=([\d.]+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'fade_in_large';
+        objById[id].enterAnimScale = parseFloat(m[2]);
+      }
+      ct += parseFloat(m[3] || '0.5');
+      continue;
+    }
+    // Plain FadeIn → fade_in
     m = line.match(/^self\.play\(FadeIn\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];
@@ -2287,6 +2333,50 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       const id = varMap[m[1]];
       if (id && objById[id]) {
         objById[id].exitAnim = 'typewriter_out';
+      }
+      ct += parseFloat(m[2] || '0.5');
+      continue;
+    }
+
+    m = line.match(/^self\.play\(DrawBorderThenFill\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'draw_border_fill';
+      }
+      ct += parseFloat(m[2] || '0.5');
+      continue;
+    }
+
+    m = line.match(/^self\.play\(GrowArrow\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'grow_arrow';
+      }
+      ct += parseFloat(m[2] || '0.5');
+      continue;
+    }
+
+    m = line.match(/^self\.play\(GrowFromEdge\((\w+),\s*edge=(\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        objById[id].enterTime = ct;
+        objById[id].enterAnim = 'grow_from_edge';
+        objById[id].enterAnimDir = m[2] as 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
+      }
+      ct += parseFloat(m[3] || '0.5');
+      continue;
+    }
+
+    m = line.match(/^self\.play\(Unwrite\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        objById[id].exitAnim = 'unwrite';
       }
       ct += parseFloat(m[2] || '0.5');
       continue;
@@ -2457,6 +2547,17 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       continue;
     }
 
+    // FadeOut with scale → fade_out_large
+    m = line.match(/^self\.play\(FadeOut\((\w+),\s*scale=([\d.]+)\)(?:,\s*run_time=([\d.]+))?\)/);
+    if (m) {
+      const id = varMap[m[1]];
+      if (id && objById[id]) {
+        objById[id].exitAnim = 'fade_out_large';
+        objById[id].exitAnimScale = parseFloat(m[2]);
+      }
+      ct += parseFloat(m[3] || '0.5');
+      continue;
+    }
     m = line.match(/^self\.play\(FadeOut\((\w+)\)(?:,\s*run_time=([\d.]+))?\)/);
     if (m) {
       const id = varMap[m[1]];

@@ -7,7 +7,7 @@ import {
   availableEnterAnims,
   availableExitAnims,
 } from '../../src/store/project.js';
-import { generateManimScript } from '../../src/export/manim.js';
+import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
 
 describe('availableEnterAnims filter', () => {
   it('excludes grow_arrow for non-arrow types', () => {
@@ -219,5 +219,71 @@ describe('extended anim presets codegen', () => {
     const code = generateManimScript(makeProject({ enterAnim: 'fade_in' }));
     expect(code).toContain('self.play(FadeIn(obj1), run_time=0.5)');
     expect(code).not.toContain('scale=');
+  });
+});
+
+describe('extended anim presets round-trip', () => {
+  function roundTrip(enterAnim: string, extra?: Record<string, unknown>) {
+    const proj = makeProject({ enterAnim, ...extra });
+    const code = generateManimScript(proj);
+    const parsed = parseManimScript(code);
+    return parsed.objects[0];
+  }
+
+  function roundTripExit(exitAnim: string, extra?: Record<string, unknown>) {
+    const proj = makeProject({ enterAnim: 'fade_in', exitAnim, ...extra });
+    const code = generateManimScript(proj);
+    const parsed = parseManimScript(code);
+    return parsed.objects[0];
+  }
+
+  it('draw_border_fill round-trips', () => {
+    const obj = roundTrip('draw_border_fill');
+    expect(obj.enterAnim).toBe('draw_border_fill');
+  });
+
+  it('grow_arrow round-trips', () => {
+    const obj = roundTrip('grow_arrow', { type: 'arrow' });
+    expect(obj.enterAnim).toBe('grow_arrow');
+  });
+
+  it('grow_from_edge RIGHT round-trips', () => {
+    const obj = roundTrip('grow_from_edge', { enterAnimDir: 'RIGHT' });
+    expect(obj.enterAnim).toBe('grow_from_edge');
+    expect(obj.enterAnimDir).toBe('RIGHT');
+  });
+
+  it('grow_from_edge UP round-trips', () => {
+    const obj = roundTrip('grow_from_edge', { enterAnimDir: 'UP' });
+    expect(obj.enterAnim).toBe('grow_from_edge');
+    expect(obj.enterAnimDir).toBe('UP');
+  });
+
+  it('fade_in_large scale=1.5 round-trips', () => {
+    const obj = roundTrip('fade_in_large', { enterAnimScale: 1.5 });
+    expect(obj.enterAnim).toBe('fade_in_large');
+    expect(obj.enterAnimScale).toBeCloseTo(1.5);
+  });
+
+  it('fade_in_large scale=2.0 round-trips', () => {
+    const obj = roundTrip('fade_in_large', { enterAnimScale: 2.0 });
+    expect(obj.enterAnim).toBe('fade_in_large');
+    expect(obj.enterAnimScale).toBeCloseTo(2.0);
+  });
+
+  it('unwrite exit round-trips', () => {
+    const obj = roundTripExit('unwrite');
+    expect(obj.exitAnim).toBe('unwrite');
+  });
+
+  it('fade_out_large scale=1.5 exit round-trips', () => {
+    const obj = roundTripExit('fade_out_large', { exitAnimScale: 1.5 });
+    expect(obj.exitAnim).toBe('fade_out_large');
+    expect(obj.exitAnimScale).toBeCloseTo(1.5);
+  });
+
+  it('plain FadeIn still parses as fade_in (regression)', () => {
+    const obj = roundTrip('fade_in');
+    expect(obj.enterAnim).toBe('fade_in');
   });
 });
