@@ -837,3 +837,116 @@ describe('generator — vector_field', () => {
     );
   });
 });
+
+// ── Wave 1 Track C — content objects ─────────────────────────────────────────
+
+describe('generator — code (Code mobject, single-line)', () => {
+  it('emits Code(code_string=…, language=…, add_line_numbers=False).scale_to_fit_width(…) on one line', () => {
+    const project = makeProject(
+      [
+        makeObj('obj1', 'code', {
+          codeText: 'def hello():\n    print("Hello")',
+          language: 'python',
+          fontSize: 18,
+          width: 480,
+          height: 280,
+        }),
+      ],
+      []
+    );
+    const py = generateManimScript(project);
+    // 480/1920*14.2222 = 3.556 — width drives render size (LOCKED mechanism)
+    expect(py).toContain(
+      'obj1 = Code(code_string="def hello():\\n    print(\\"Hello\\")", language="python", add_line_numbers=False).scale_to_fit_width(3.556)'
+    );
+    // standard post-construction position line (object at stage center → manim origin)
+    expect(py).toContain('obj1.move_to([0.000, 0.000, 0])');
+    // fontSize is preview-only — never emitted
+    expect(py).not.toContain('font_size');
+    expect(py).not.toContain('paragraph_config');
+  });
+
+  it('falls back to language="python" for a non-allowlisted language', () => {
+    const project = makeProject(
+      [makeObj('obj1', 'code', { codeText: 'x', language: 'ruby', width: 480, height: 280 })],
+      []
+    );
+    const py = generateManimScript(project);
+    expect(py).toContain('language="python"');
+    expect(py).not.toContain('language="ruby"');
+  });
+
+  it('stays out of the effect emitters (no set_color/gradient/dash/shadow lines)', () => {
+    const project = makeProject(
+      [makeObj('obj1', 'code', { codeText: 'x = 1', language: 'python', width: 480, height: 280 })],
+      []
+    );
+    const py = generateManimScript(project);
+    expect(py).not.toContain('obj1.set_color(');
+    expect(py).not.toContain('set_color_by_gradient');
+    expect(py).not.toContain('DashedVMobject');
+    expect(py).not.toContain('_shadow_obj1');
+  });
+});
+
+describe('generator — bar_chart (BarChart, single-line)', () => {
+  it('emits BarChart(values, bar_names, y_range=[0, yMax, yMax/5], bar_colors, x_length, y_length)', () => {
+    const project = makeProject(
+      [
+        makeObj('obj1', 'bar_chart', {
+          values: [3, 5, 2, 6],
+          barNames: ['A', 'B', 'C', 'D'],
+          yMax: 8,
+          barColors: ['#58c4dd', '#83c167', '#fc6255', '#ffff00'],
+          width: 600,
+          height: 400,
+        }),
+      ],
+      []
+    );
+    const py = generateManimScript(project);
+    // x_length = 600/1920*14.2222 = 4.4 ; y_length = 400/1080*8 = 3.0 ; step = 8/5 = 1.6
+    expect(py).toContain(
+      'obj1 = BarChart(values=[3, 5, 2, 6], bar_names=["A", "B", "C", "D"], y_range=[0, 8, 1.6], bar_colors=["#58c4dd", "#83c167", "#fc6255", "#ffff00"], x_length=4.4, y_length=3.0)'
+    );
+    expect(py).toContain('obj1.move_to([0.000, 0.000, 0])');
+  });
+
+  it('sanitizes barNames via safeMatrixEntry (quotes/backslashes stripped — they become Tex)', () => {
+    const project = makeProject(
+      [
+        makeObj('obj1', 'bar_chart', {
+          values: [1, 2],
+          barNames: ['A"B', 'C\\D'],
+          yMax: 8,
+          barColors: ['#58c4dd', '#83c167'],
+          width: 600,
+          height: 400,
+        }),
+      ],
+      []
+    );
+    const py = generateManimScript(project);
+    expect(py).toContain('bar_names=["AB", "CD"]');
+  });
+
+  it('fills missing names with letters and invalid colors with the default blue', () => {
+    const project = makeProject(
+      [
+        makeObj('obj1', 'bar_chart', {
+          values: [1, 2, 3],
+          barNames: ['X'],
+          yMax: 5,
+          barColors: ['#ff0000', 'not-a-color'],
+          width: 600,
+          height: 400,
+        }),
+      ],
+      []
+    );
+    const py = generateManimScript(project);
+    expect(py).toContain('bar_names=["X", "B", "C"]');
+    expect(py).toContain('bar_colors=["#ff0000", "#58c4dd", "#58c4dd"]');
+    expect(py).toContain('y_range=[0, 5, 1]');
+  });
+});

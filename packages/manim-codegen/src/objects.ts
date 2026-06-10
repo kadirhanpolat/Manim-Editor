@@ -9,6 +9,7 @@ import {
   latexUnit,
   safeMatrixEntry,
   matrixBrackets,
+  pyMultiline,
   fillOpacityExpr,
   strokeOpacityArg,
   gradientLine,
@@ -24,6 +25,7 @@ import {
   FRAME_Y_RADIUS,
   GRADIENT_TYPES,
   ANNOTATION_TYPES,
+  CODE_LANGUAGES,
 } from './constants.js';
 import type { SceneObject, GenerateOptions } from './types.js';
 
@@ -417,6 +419,38 @@ export function objectCode(
         lines.push(`${n} = DecimalNumber(${val}, num_decimal_places=${dec}${unit})`);
       }
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
+      break;
+    }
+    case 'code': {
+      const lang = CODE_LANGUAGES.includes(o.language as string)
+        ? (o.language as string)
+        : 'python';
+      const src = pyMultiline((o.codeText as string | undefined) ?? 'print("Hello")');
+      const wM = (((o.width as number) || 480) / sw) * FRAME_WIDTH;
+      // Single line (regex-parser requirement). fontSize is preview-only; render
+      // size is width-driven via scale_to_fit_width (same mechanism as image/svg).
+      // add_line_numbers=False matches the preview (which has no line numbers).
+      lines.push(
+        `${n} = Code(code_string="${src}", language="${lang}", add_line_numbers=False).scale_to_fit_width(${wM.toFixed(3)})`
+      );
+      break;
+    }
+    case 'bar_chart': {
+      const rawValues = Array.isArray(o.values) ? (o.values as unknown[]) : [3, 5, 2, 6];
+      const values = rawValues.map((v) => (Number.isFinite(v as number) ? (v as number) : 0));
+      const rawNames = Array.isArray(o.barNames) ? (o.barNames as unknown[]) : [];
+      const names = values.map((_, i) =>
+        safeMatrixEntry(rawNames[i] ?? String.fromCharCode(65 + (i % 26)))
+      );
+      const rawColors = Array.isArray(o.barColors) ? (o.barColors as unknown[]) : [];
+      const colors = values.map((_, i) => hex(rawColors[i]) || '"#58c4dd"');
+      const yMax = safeNum(o.yMax, 8);
+      const yStep = +(yMax / 5).toFixed(3);
+      const xLen = (((o.width as number) || 600) / sw) * FRAME_WIDTH;
+      const yLen = (((o.height as number) || 400) / sh) * FRAME_HEIGHT;
+      lines.push(
+        `${n} = BarChart(values=[${values.join(', ')}], bar_names=[${names.map((s) => `"${s}"`).join(', ')}], y_range=[0, ${yMax}, ${yStep}], bar_colors=[${colors.join(', ')}], x_length=${xLen.toFixed(1)}, y_length=${yLen.toFixed(1)})`
+      );
       break;
     }
     case 'text': {
