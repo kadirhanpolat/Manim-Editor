@@ -110,6 +110,9 @@ export interface SceneObject {
   exitAnim?: string;
   enterAnimDur?: number;
   exitAnimDur?: number;
+  enterAnimDir?: 'LEFT' | 'RIGHT' | 'UP' | 'DOWN';
+  enterAnimScale?: number;
+  exitAnimScale?: number;
 
   // keyframes
   keyframes?: KeyframeMap;
