@@ -24,11 +24,11 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 618 unit tests (store, components, export)
+cd services/web && npm run test:unit    # 714 unit tests (store, components, export)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 114 engine tests (easing, geometry, transform, keyframe) — runs via tsx
-npm test --workspace services/api       # 43 api tests (compiler pipeline + path/scene-name safety)
-npm test --workspace packages/manim-codegen  # 6 codegen tests
+npm test --workspace services/api       # 53 api tests (compiler pipeline + path/scene-name/render-options safety)
+npm test --workspace packages/manim-codegen  # 12 codegen tests
 # All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
@@ -134,7 +134,7 @@ clip.audio = {
 
 > **Adding a new object type** touches: generator (`@manim/codegen` once + `manim.ts` parser), **canvas preview** (a `fn(obj, ctx)` builder in the matching `configs/*.ts` + a one-line `<template>` branch + compat wrapper in `StageCanvas.vue` + a snapshot in `tests/components/stage/`), **store** (`project.ts` defaults/actions), **inspector** (one `<Type>Settings.vue` in `object-settings/` + one `index.ts` registry line; cross-cutting controls in `EffectsSection.vue`/`TextSettings.vue`), **palette** (a card in `components/sidebar/AssetSidebar.vue`'s `shapes`/`shapesData`/`shapes3D` array — the **only** live add UI; `Toolbar.vue` was removed). `tests/components/ui-tools-audit.test.ts` fails if a registered type has no palette card.
 
-**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`, `surrounding_rect`, `underline`, `cross`
+**2D:** `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`, `surrounding_rect`, `underline`, `cross`, `code`, `bar_chart`
 
 **3D** (only when `sceneType === '3d'`): `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`, `prism`
 
@@ -162,7 +162,9 @@ clip.audio = {
 - **`underline`** (`Underline`): `targetId`, `color`, `strokeWidth`, `buff`. Codegen: `Underline(target, color=…, stroke_width=…, buff=…)`. No `move_to`.
 - **`cross`** (`Cross`): `targetId`, `color`, `strokeWidth`. Codegen: `Cross(target, stroke_color=…, stroke_width=…)`. No `move_to`.
 - **Annotation pattern**: All three are "bound annotations" — their canvas position is computed from `ctx.objectBounds(targetId)` (new `StageCtx` method). `generateScene` applies a topological sort so annotations always emit after their targets (prevents Python NameError). `ANNOTATION_TYPES` set in `@manim/codegen/constants.ts` gates the post-construction block (round_corners/gradient/dashed/shadow/move_to are all skipped). Store action: `setAnnotationTarget(objId, targetId)`. None are in `GRADIENT_TYPES`, `DASH_TYPES`, or `SHADOW_TYPES`.
-- `matrix`/`table`/`brace`/`angle`/`counter`/`graph`/`vector_field`/`vector_components`/`surrounding_rect`/`underline`/`cross` are in **neither** `GRADIENT_TYPES` nor `DASH_TYPES`.
+- **`code`** (Manim `Code`): `codeText` (multiline), `language` (Pygments allowlist: python/javascript/typescript/c/cpp/java/html/css/bash), `fontSize` (preview-only). Single-line `Code(code_string=…, language=…, add_line_numbers=False)` + `.scale_to_fit_width(…)`; `codeText` escaped via `pyMultiline` (`helpers.ts`), unescaped by the parser (`unescapePyMultiline`). Preview = flat monospace text on a bg rect (no highlighting; render has real Pygments). Height not persisted in Python → `.py` import defaults `height = width*0.6`.
+- **`bar_chart`** (Manim `BarChart`): `values[]`, `barNames[]` (sanitized via `safeMatrixEntry` — they become Tex), `yMax`, `barColors[]`. Single-line `BarChart(values=[…], bar_names=[…], y_range=[0, yMax, yMax/5], bar_colors=[…], x_length=…, y_length=…)`. Preview = simple rect bars + baseline (render has full axes). Values/names editor adapts the matrix grid pattern.
+- `matrix`/`table`/`brace`/`angle`/`counter`/`graph`/`vector_field`/`vector_components`/`surrounding_rect`/`underline`/`cross`/`code`/`bar_chart` are in **neither** `GRADIENT_TYPES` nor `DASH_TYPES`.
 
 ## Camera Animations
 
@@ -175,8 +177,21 @@ clip.audio = {
 - **Flow**: `AudioPanel` → `POST /api/audio/tts` → Redis `audio:queue:gtts` → `worker.py` → WAV to `/data/assets/audio/` → `POST /api/audio/:jobId/complete` → `broadcastAudioEvent` WS → `actions.setClipAudio`.
 - **File upload** skips the queue: `POST /api/audio/upload` (ffprobe duration) → `{ src, duration, status:'ready' }`.
 - **Codegen priority**: `MovingCameraScene` > `VoiceoverScene` > `Scene`. 3D: `is3D && hasReadyAudio → 'ThreeDScene, VoiceoverScene'` > `is3D → 'ThreeDScene'` > 2D chain.
-- **Render lock**: `store.hasPendingAudio` disables render in `App.vue`, `RenderPanel.vue`, `Topbar.vue`.
+- **Render lock**: `store.hasPendingAudio` disables render in `App.vue` (render dialog, which hosts `RenderOptionsDialog.vue`) and `Topbar.vue`. (There is no `RenderPanel.vue`.)
 - **Coqui** (optional): `docker compose --profile coqui up`; `audio-coqui` handles `audio:queue:coqui`.
+
+## Render Export Options
+
+- `RenderOptionsDialog.vue` (hosted in `App.vue`'s render dialog): format **MP4/GIF/WebM** × resolution **854x480/1280x720/1920x1080/2560x1440/3840x2160** × fps **15/30/60**. Defaults (mp4·1920x1080·60) produce **byte-identical argv** to the legacy `-qh` path (regression-tested in `render_args` checks + api tests).
+- Wire: flat `{format,resolution,fps}` in the POST body → zod **enum allowlist** (`parseRenderOptions`, `compiler/validator.ts`) → nested `options` in the Redis job → `services/renderer/render_args.py` fixed-dict argv mapping (preset-matching combos emit a single `-q*` flag; others `-qh -r W,H --fps N`; gif/webm append `--format <f>`). User values are never interpolated into argv.
+- Output extension follows the format end-to-end: worker writes `latest.<ext>`, `renders.ts` serves `latest.:ext` with the right Content-Type, web `getLatestUrl(projectId, ext)`; GIF displays via an `<img>` branch in the completed dialog. Legacy `{quality}` payloads (low→4k) still work unchanged.
+
+## Editor UX (lock/hide, context menu, marquee, autosave)
+
+- `obj.locked` / `obj.hidden` — optional booleans (absent = legacy behavior). **Locked** → not clickable/draggable on canvas (interactive configs wrapped by `L()` in StageCanvas), still selectable from the timeline. **Hidden** → not drawn in preview AND **skipped by codegen** (`generateScene` filters hidden objects; annotations whose target is hidden are skipped too — NameError guard; their clips cascade). **Known loss:** hidden objects don't survive a `.py` round-trip. Actions: `toggleLocked`, `toggleHidden`; timeline object bars carry aria-labelled eye/lock icons.
+- **Right-click context menu** (`stage/ContextMenu.vue`): object variant (cut/copy/paste/duplicate/delete, bring-to-front/send-to-back, lock, hide) + empty-canvas variant. Store actions added for it: `bringToFront`, `sendToBack`, `duplicateSelection`, `cutSelection`, `selectAllObjects`, `translateObjects`.
+- **Marquee selection** (2D mode only): drag on empty canvas → bbox-intersecting objects become the multi-selection; the selection group-drags together. Intersection logic is a pure exported helper (unit-tested without Konva).
+- **Autosave**: 2 s-debounced project JSON under localStorage key `manim-motion-autosave` (`{project, savedAt}`); restore prompt on startup; cleared on New/Open/save. (localStorage also holds `manim-motion-theme`.)
 
 ## Keyframe Animation System
 
