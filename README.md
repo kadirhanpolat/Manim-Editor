@@ -22,6 +22,20 @@
 
 ---
 
+## Showcase
+
+*Demo animations built entirely in the visual editor and rendered by the built-in Manim pipeline. Click a poster to watch the MP4 (each clip is under 30 KB).*
+
+| | |
+|---|---|
+| [![Formula Introduction](demo-videos/1-formul-tanitim.png)](demo-videos/1-formul-tanitim.mp4)<br>*Formula Introduction — LaTeX written on screen* | [![Shape Morphing](demo-videos/2-sekil-donusumu.png)](demo-videos/2-sekil-donusumu.mp4)<br>*Shape Morphing — eased transform between shapes* |
+| [![Title Slide](demo-videos/3-baslik-slaydi.png)](demo-videos/3-baslik-slaydi.mp4)<br>*Title Slide — staged text entrances* | [![Coordinate System](demo-videos/4-koordinat-sistemi.png)](demo-videos/4-koordinat-sistemi.mp4)<br>*Coordinate System — axes + plotted graph* |
+| [![Coordinates with LaTeX](demo-videos/4b-koordinat-latex.png)](demo-videos/4b-koordinat-latex.mp4)<br>*Coordinates + LaTeX — native MathTex labels* | |
+
+The same five clips are embedded as a video gallery on the **landing page** in [`website/`](website/) — run it locally with `cd website && npm install && npm run dev` (port 5174), or see the Netlify deploy notes in the Quick Start section below.
+
+---
+
 ## Screenshots
 
 *Current UI: desktop menubar, light/dark themes, and configurable canvas.*
