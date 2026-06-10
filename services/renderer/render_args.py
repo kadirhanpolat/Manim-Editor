@@ -50,12 +50,20 @@ FPS_FLAGS = {
 }
 
 FORMAT_FLAGS = {
-    "mp4": [],  # manim default container — no flag keeps legacy argv
-    "gif": ["--format", "gif"],
-    "webm": ["--format", "webm"],
+    "mp4":              [],                                          # manim default
+    "gif":              ["--format", "gif"],
+    "webm":             ["--format", "webm"],
+    "png":              ["--format", "png"],
+    "webm_transparent": ["--format", "webm", "--transparent"],
 }
 
-FORMAT_EXT = {"mp4": "mp4", "gif": "gif", "webm": "webm"}
+FORMAT_EXT = {
+    "mp4":              "mp4",
+    "gif":              "gif",
+    "webm":             "webm",
+    "png":              "zip",   # frame dizisi → zip
+    "webm_transparent": "webm",  # alfa kanallı webm
+}
 
 
 def output_ext(payload: dict) -> str:
