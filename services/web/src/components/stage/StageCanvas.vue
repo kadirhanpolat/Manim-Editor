@@ -19,6 +19,7 @@
         @mouseup="handleStageMouseUp"
         @dblclick="onStageDblClick"
         @wheel="handleWheel"
+        @contextmenu="onStageContextMenu"
       >
         <!-- Background layer -->
         <v-layer>
@@ -788,6 +789,15 @@
         </select>
       </div>
 
+      <!-- Right-click context menu -->
+      <ContextMenu
+        v-if="ctxMenu"
+        :x="ctxMenu.x"
+        :y="ctxMenu.y"
+        :items="ctxMenuItems"
+        @close="ctxMenu = null"
+      />
+
       <!-- Drop zone indicator -->
       <div
         v-if="isDraggingOver"
@@ -854,6 +864,8 @@ import { isPreviewHidden } from '../../engine/visibility.js';
 import { useStageViewport } from './composables/useStageViewport.js';
 import { useStagePathDraw } from './composables/useStagePathDraw.js';
 import { useStageInteractions } from './composables/useStageInteractions.js';
+import ContextMenu from './ContextMenu.vue';
+import type { ContextMenuItem } from './ContextMenu.vue';
 import { useStageAssets } from './composables/useStageAssets.js';
 
 const store = useProjectStore();
@@ -1222,6 +1234,86 @@ const axesAreaRiemann = (o: SceneObject) => axes.axesAreaRiemann(o, ctx.value);
 function onViewChange(e: Event) {
   store.setCamera3d({ view: (e.target as HTMLSelectElement).value });
 }
+
+// ── Right-click context menu ──
+const ctxMenu = ref<{ x: number; y: number; objId: string | null } | null>(null);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function onStageContextMenu(e: any) {
+  e.evt.preventDefault();
+  if (pathDrawing.value) return;
+  // Walk up from the Konva target to find a stage object (same parent-walk as
+  // handleStageMouseDown). Locked objects have listening:false, so a
+  // right-click over one lands on the stage → empty-canvas menu (unlock via
+  // the timeline lock icon).
+  let node = e.target;
+  let objId: string | null = null;
+  while (node) {
+    if (node.name?.() === 'stageObject' && node.id?.()) {
+      objId = node.id();
+      break;
+    }
+    node = node.getParent ? node.getParent() : null;
+  }
+  if (objId && !store.selectedObjectIds.includes(objId)) store.selectObject(objId);
+  ctxMenu.value = { x: e.evt.clientX, y: e.evt.clientY, objId };
+}
+
+const ctxMenuItems = computed<ContextMenuItem[]>(() => {
+  const m = ctxMenu.value;
+  if (!m) return [];
+  if (m.objId) {
+    const objId = m.objId;
+    const obj = store.objectById(objId);
+    // Cut/copy/paste/duplicate/delete act on the SELECTION (the right-clicked
+    // object was selected in onStageContextMenu); z-order and lock/hide act on
+    // the right-clicked object itself.
+    return [
+      { id: 'cut', label: 'Cut', action: () => store.cutSelection() },
+      { id: 'copy', label: 'Copy', action: () => store.copySelection() },
+      {
+        id: 'paste',
+        label: 'Paste',
+        disabled: store.clipboard.length === 0,
+        action: () => store.pasteSelection(),
+      },
+      { id: 'duplicate', label: 'Duplicate', action: () => store.duplicateSelection() },
+      {
+        id: 'delete',
+        label: 'Delete',
+        action: () => [...store.selectedObjectIds].forEach((id) => store.deleteObject(id)),
+      },
+      { id: 'sep1', separator: true },
+      { id: 'front', label: 'Bring to Front', action: () => store.bringToFront(objId) },
+      { id: 'back', label: 'Send to Back', action: () => store.sendToBack(objId) },
+      { id: 'sep2', separator: true },
+      {
+        id: 'lock',
+        label: obj?.locked ? 'Unlock' : 'Lock',
+        action: () => store.toggleLocked(objId),
+      },
+      {
+        id: 'hide',
+        label: obj?.hidden ? 'Show' : 'Hide',
+        action: () => store.toggleHidden(objId),
+      },
+    ];
+  }
+  return [
+    {
+      id: 'paste',
+      label: 'Paste',
+      disabled: store.clipboard.length === 0,
+      action: () => store.pasteSelection(),
+    },
+    {
+      id: 'selectall',
+      label: 'Select All',
+      disabled: store.project.objects.length === 0,
+      action: () => store.selectAllObjects(),
+    },
+  ];
+});
 
 // ── Expose for parent ref calls ──
 defineExpose({ startPathDraw });
