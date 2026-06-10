@@ -1,6 +1,7 @@
 import { ref, computed, nextTick } from 'vue';
 import type { Ref, ComputedRef } from 'vue';
 import { canvasToVertex } from '../../../engine/polygonVertices.js';
+import { normalizeRect, marqueeSelectIds } from '../../../engine/marquee.js';
 import type { PathPoint } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
 
@@ -96,6 +97,9 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     h: number;
     rotation: number;
   } | null>(null);
+
+  // Marquee selection (2D select tool only). Canvas-pixel coords.
+  const marquee = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
   // ── Computeds ──
   const trConfig = computed(() => {
@@ -306,9 +310,42 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
       node = node.getParent ? node.getParent() : null;
     }
     if (t === (s as KonvaNodeLike) || t.name?.() !== 'stageObject') {
-      if (store.activeTool === 'hand') startPan(e as unknown as { evt: MouseEvent });
-      else store.deselectAll();
+      if (store.activeTool === 'hand') {
+        startPan(e as unknown as { evt: MouseEvent });
+      } else {
+        store.deselectAll();
+        // Marquee selection: 2D select tool only (the 3D split viewport keeps
+        // its drag semantics; path-draw mode returns earlier in this handler).
+        if (!is3D.value && store.activeTool === 'select') {
+          const pos = s.getPointerPosition?.();
+          if (pos) marquee.value = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+        }
+      }
     }
+  }
+
+  function handleStageMouseMove(): void {
+    if (!marquee.value) return;
+    const s = konvaStage.value?.getNode() as KonvaStagelike | undefined;
+    const pos = s?.getPointerPosition?.();
+    if (!pos) return;
+    marquee.value = { ...marquee.value, x2: pos.x, y2: pos.y };
+  }
+
+  function handleStageMouseUp(): void {
+    const m = marquee.value;
+    if (!m) return;
+    marquee.value = null;
+    const r = normalizeRect(m.x1, m.y1, m.x2, m.y2);
+    if (r.width < 3 && r.height < 3) return; // plain click — deselect already ran
+    // Canvas rect → project-coordinate rect, then pure hit-test.
+    const p1 = c2s(r.x, r.y);
+    const p2 = c2s(r.x + r.width, r.y + r.height);
+    const stageRect = normalizeRect(p1.x, p1.y, p2.x, p2.y);
+    const ids = marqueeSelectIds(stageRect, store.project.objects);
+    store.selectedObjectIds = ids;
+    store.selectedClipId = null;
+    void nextTick(() => nextTick(() => updateTransformer()));
   }
 
   function onObjDown(id: string, e: KonvaEvt<MouseEvent>): void {
@@ -352,6 +389,17 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
         if (Math.abs(newX - cx) < 30) newX = cx;
         if (Math.abs(newY - cy) < 30) newY = cy;
       }
+    }
+    // Multi-selection group drag: fan the dragged delta out to the whole
+    // selection in one commit. Companions move on mouseup (not live during the
+    // drag) — accepted limitation; live ghosting would need per-node dragmove
+    // wiring on ~35 template branches.
+    const sel = store.selectedObjectIds;
+    if (sel.length > 1 && sel.includes(id)) {
+      const dx = Math.round(newX) - (obj.x ?? 0);
+      const dy = Math.round(newY) - (obj.y ?? 0);
+      store.translateObjects([...sel], dx, dy);
+      return;
     }
     store.updateObject(id, { x: Math.round(newX), y: Math.round(newY) });
   }
@@ -472,12 +520,15 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
   return {
     shiftKey,
     liveTransform,
+    marquee,
     polygonHandles,
     groupBounds,
     trConfig,
     onVertexDrag,
     onVertexDragEnd,
     handleStageMouseDown,
+    handleStageMouseMove,
+    handleStageMouseUp,
     onObjDown,
     onDragEnd,
     onDrag3DEnd,

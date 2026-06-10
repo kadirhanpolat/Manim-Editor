@@ -15,6 +15,8 @@
         ref="konvaStage"
         :config="stageConfig"
         @mousedown="handleStageMouseDown"
+        @mousemove="handleStageMouseMove"
+        @mouseup="handleStageMouseUp"
         @dblclick="onStageDblClick"
         @wheel="handleWheel"
       >
@@ -757,6 +759,11 @@
           <v-rect v-for="gb in groupBounds" :key="'gb-' + gb.id" :config="gb" />
         </v-layer>
 
+        <!-- Marquee selection overlay -->
+        <v-layer v-if="marqueeRect">
+          <v-rect :config="marqueeRect" />
+        </v-layer>
+
         <!-- Selection transformer -->
         <v-layer>
           <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
@@ -919,12 +926,15 @@ const {
 const {
   shiftKey,
   liveTransform,
+  marquee,
   polygonHandles,
   groupBounds,
   trConfig,
   onVertexDrag,
   onVertexDragEnd,
   handleStageMouseDown,
+  handleStageMouseMove,
+  handleStageMouseUp,
   onObjDown,
   onDragEnd,
   onDrag3DEnd,
@@ -1110,6 +1120,26 @@ const centerV = computed(() => chrome.centerV(ctx.value));
 const refAxesIso = computed(() => chrome.refAxesIso(ctx.value));
 const refLabelsIso = computed(() => chrome.refLabelsIso(ctx.value));
 const floorGridIso = computed(() => chrome.floorGridIso(ctx.value));
+
+// ── Marquee overlay ──
+const marqueeRect = computed(() => {
+  const m = marquee.value;
+  if (!m) return null;
+  const r = {
+    x: Math.min(m.x1, m.x2),
+    y: Math.min(m.y1, m.y2),
+    width: Math.abs(m.x2 - m.x1),
+    height: Math.abs(m.y2 - m.y1),
+  };
+  return {
+    ...r,
+    fill: themeAccent.value + '22',
+    stroke: themeAccent.value,
+    strokeWidth: 1,
+    dash: [4, 4],
+    listening: false,
+  };
+});
 
 // ── overlays.js delegating computeds ──
 const emphasisOverlays = computed(() => overlays.emphasisOverlays(objects.value, ctx.value));
