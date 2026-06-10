@@ -385,24 +385,9 @@
           </div>
 
           <div class="flex-1 overflow-y-auto p-5 space-y-4">
-            <!-- Quality selector (before render starts) -->
+            <!-- Render options (before render starts) -->
             <div v-if="!renderStatus">
-              <label
-                class="block text-xs font-medium text-studio-text-muted mb-1.5 uppercase tracking-wider"
-                >Quality</label
-              >
-              <div class="grid grid-cols-4 gap-2">
-                <button
-                  v-for="q in qualities"
-                  :key="q.value"
-                  class="quality-btn"
-                  :class="{ active: selectedQuality === q.value }"
-                  @click="selectedQuality = q.value"
-                >
-                  <span class="text-xs font-semibold">{{ q.label }}</span>
-                  <span class="text-[9px] text-studio-text-muted">{{ q.desc }}</span>
-                </button>
-              </div>
+              <RenderOptionsDialog v-model="renderOptions" />
               <!-- Text size disclaimer -->
               <div
                 v-if="hasTextElements"
@@ -508,8 +493,15 @@
                 </svg>
                 <span class="text-sm text-emerald-300 font-medium">Render complete!</span>
               </div>
+              <img
+                v-if="renderVideoUrl && renderFormat === 'gif'"
+                :key="renderVideoUrl"
+                :src="renderVideoUrl"
+                alt="Rendered GIF"
+                class="w-full rounded-lg bg-black"
+              />
               <video
-                v-if="renderVideoUrl"
+                v-else-if="renderVideoUrl"
                 :key="renderVideoUrl"
                 :src="renderVideoUrl"
                 controls
@@ -520,7 +512,7 @@
                 <a
                   v-if="renderVideoUrl"
                   :href="renderVideoUrl"
-                  download="render.mp4"
+                  :download="'render.' + renderFormat"
                   class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium transition-colors"
                 >
                   <svg
@@ -767,12 +759,15 @@ import StageCanvas from './components/stage/StageCanvas.vue';
 import PropertiesPanel from './components/inspector/PropertiesPanel.vue';
 import Timeline from './components/timeline/Timeline.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
+import RenderOptionsDialog from './components/RenderOptionsDialog.vue';
+import { DEFAULT_RENDER_OPTIONS } from './api.js';
+import type { RenderOptions } from './api.js';
 
 const store = useProjectStore();
 
 // ── Reactive state ──
 const copied = ref(false);
-const selectedQuality = ref('high');
+const renderOptions = ref<RenderOptions>({ ...DEFAULT_RENDER_OPTIONS });
 const renderHistory = ref<Array<{ name: string; url: string }>>([]);
 const stageViewMode = ref('canvas');
 const stageCode = ref('# Add objects to see generated Manim code');
@@ -780,15 +775,6 @@ const stageCopied = ref(false);
 const codeEdited = ref(false);
 const parseMessage = ref('');
 const parseMessageOk = ref(false);
-
-// Static data (never mutated, no reactivity needed)
-const qualities = [
-  { value: 'low', label: 'Low', desc: '480p 15fps (fastest)' },
-  { value: 'medium', label: 'Medium', desc: '720p 30fps' },
-  { value: 'high', label: 'High', desc: '1080p 60fps (recommended)' },
-  { value: 'production', label: 'Production', desc: '1440p 60fps (2K)' },
-  { value: '4k', label: '4K', desc: '2160p 60fps (slowest)' },
-];
 
 // Non-reactive timer IDs
 let _stageCodeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -818,6 +804,7 @@ const renderStatus = computed(() => store.renderStatus);
 const renderError = computed(() => store.renderError);
 const renderVideoUrl = computed(() => store.renderVideoUrl);
 const renderLog = computed(() => store.renderLog);
+const renderFormat = computed(() => store.renderFormat);
 interface ServerProject {
   id: string;
   name: string;
@@ -1054,7 +1041,7 @@ function closeRender() {
 
 function startRender() {
   if (store.hasPendingAudio) return;
-  store.renderOnServer(selectedQuality.value);
+  store.renderOnServer({ ...renderOptions.value });
 }
 
 function retryRender() {
