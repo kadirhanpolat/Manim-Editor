@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir "setuptools<81" redis==5.0.8 manim-fonts==0.5.0 "
 RUN mkdir -p $HOME/.cache/manim-fonts
 
 # Copy worker script
+COPY render_args.py /app/render_args.py
 COPY worker.py /app/worker.py
 
 CMD ["python", "/app/worker.py"]

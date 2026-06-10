@@ -13,6 +13,8 @@ import time
 
 import redis
 
+from render_args import FORMAT_EXT, build_render_args, output_ext
+
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 
@@ -28,22 +30,14 @@ os.umask(0o000)
 # Connect to Redis
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
-# Quality flag mapping
-QUALITY_FLAGS = {
-    "low": "-ql",  # 854x480 15fps
-    "medium": "-qm",  # 1280x720 30fps
-    "high": "-qh",  # 1920x1080 60fps
-    "production": "-qp",  # 2560x1440 60fps
-    "4k": "-qk",  # 3840x2160 60fps
-}
 
-
-def find_output_video(media_dir: str, scene_name: str) -> str | None:
-    """Find the rendered video file in Manim's output structure."""
-    # Manim outputs to: media_dir/videos/<scene_file>/<quality>/<SceneName>.mp4
+def find_output_video(media_dir: str, scene_name: str, ext: str = "mp4") -> str | None:
+    """Find the rendered output file in Manim's output structure."""
+    # Manim outputs to: media_dir/videos/<scene_file>/<quality>/<SceneName>.<ext>
     patterns = [
-        f"{media_dir}/videos/**/{scene_name}.mp4",
-        f"{media_dir}/**/{scene_name}.mp4",
+        f"{media_dir}/videos/**/{scene_name}.{ext}",
+        f"{media_dir}/videos/**/{scene_name}*.{ext}",
+        f"{media_dir}/**/{scene_name}*.{ext}",
     ]
 
     for pattern in patterns:
@@ -59,7 +53,7 @@ def render_job(payload: dict) -> dict:
     """Execute a render job and return the result."""
     project_id = payload["projectId"]
     scene_name = payload.get("sceneName", "MainScene")
-    quality = payload.get("quality", "medium")
+    ext = output_ext(payload)
 
     # Paths — honor explicit sceneFile from payload if provided
     relative_scene = payload.get("sceneFile")
@@ -68,7 +62,7 @@ def render_job(payload: dict) -> dict:
     else:
         scene_file = os.path.join(DATA_DIR, "projects", project_id, "scene.py")
     media_dir = os.path.join(DATA_DIR, "renders", project_id)
-    latest_link = os.path.join(media_dir, "latest.mp4")
+    latest_link = os.path.join(media_dir, f"latest.{ext}")
 
     # Ensure output directory exists
     os.makedirs(media_dir, exist_ok=True)
@@ -95,11 +89,10 @@ def render_job(payload: dict) -> dict:
     # Ensure audio assets directory is accessible for manim-voiceover
     os.makedirs(os.path.join(DATA_DIR, "assets", "audio"), exist_ok=True)
 
-    # Build manim command
-    quality_flag = QUALITY_FLAGS.get(quality, "-qm")
+    # Build manim command — flags come exclusively from fixed dict lookups
     cmd = [
         "manim",
-        quality_flag,
+        *build_render_args(payload),
         scene_file,
         scene_name,
         "--media_dir",
@@ -120,12 +113,14 @@ def render_job(payload: dict) -> dict:
         )
 
         # Find the output video
-        output_video = find_output_video(media_dir, scene_name)
+        output_video = find_output_video(media_dir, scene_name, ext)
 
         if output_video and os.path.exists(output_video):
-            # Create/update symlink to latest render
-            if os.path.exists(latest_link) or os.path.islink(latest_link):
-                os.remove(latest_link)
+            # Remove every latest.* variant so "latest" is unambiguous
+            for old_ext in FORMAT_EXT:
+                old_link = os.path.join(media_dir, f"latest.{old_ext}")
+                if os.path.exists(old_link) or os.path.islink(old_link):
+                    os.remove(old_link)
 
             # Copy instead of symlink for Docker compatibility
             shutil.copy2(output_video, latest_link)
@@ -135,7 +130,7 @@ def render_job(payload: dict) -> dict:
         # Save a timestamped copy for history (keep last 5)
         if output_video and os.path.exists(output_video):
             timestamp = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
-            history_path = os.path.join(media_dir, f"render_{timestamp}.mp4")
+            history_path = os.path.join(media_dir, f"render_{timestamp}.{ext}")
             shutil.copy2(output_video, history_path)
 
             # Prune: keep only the 5 most recent history files
@@ -143,7 +138,7 @@ def render_job(payload: dict) -> dict:
                 [
                     f
                     for f in os.listdir(media_dir)
-                    if f.startswith("render_") and f.endswith(".mp4")
+                    if f.startswith("render_") and f.endswith((".mp4", ".gif", ".webm"))
                 ],
                 reverse=True,
             )
