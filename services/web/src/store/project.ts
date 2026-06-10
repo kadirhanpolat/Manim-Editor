@@ -1982,7 +1982,10 @@ const useProjectStore = defineStore('project', {
       this.renderVideoUrl = null;
       this.renderLog = '';
       this.renderQuality = 'high';
-      this.renderFormat = opts.format;
+      // Map format names to actual output file extensions: png renders as a ZIP
+      // archive; webm_transparent renders as webm. getLatestUrl stays unchanged.
+      const FORMAT_TO_EXT: Record<string, string> = { png: 'zip', webm_transparent: 'webm' };
+      this.renderFormat = FORMAT_TO_EXT[opts.format] ?? opts.format;
 
       try {
         // 1. Save to server
