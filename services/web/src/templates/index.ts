@@ -649,6 +649,7 @@ export const TEMPLATES: Template[] = [
     project: () => {
       const np = uid('obj');
       const circ = uid('obj');
+      const ang = uid('obj');
       const pt = uid('obj');
       const lbl = uid('obj');
       return {
@@ -665,7 +666,7 @@ export const TEMPLATES: Template[] = [
             x: 960, y: 540, width: 700, height: 700,
             rotation: 0, fill: '#1e293b', stroke: '#334155', strokeWidth: 1,
             opacity: 1, zOrder: 0,
-            xRange: [-2, 2, 1], yRange: [-2, 2, 1],
+            xRange: [-1.5, 1.5, 0.5], yRange: [-1.5, 1.5, 0.5],
             enterTime: 0, duration: 6,
             enterAnim: 'draw', exitAnim: 'none',
             enterAnimDur: 1.0, exitAnimDur: 0.5,
@@ -680,10 +681,25 @@ export const TEMPLATES: Template[] = [
             enterAnimDur: 1.2, exitAnimDur: 0.5,
           },
           {
+            id: ang, type: 'angle', name: 'Açı θ',
+            x: 960, y: 540, width: 140, height: 140,
+            rotation: 0, fill: '#f97316', stroke: '#f97316', strokeWidth: 2,
+            opacity: 1, zOrder: 2,
+            vertex: [0, 0],
+            point1: [70, 0],
+            point2: [49, -49],
+            rightAngle: false,
+            radius: 40,
+            label: '\\theta',
+            enterTime: 2.2, duration: 4.8,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+          {
             id: pt, type: 'coord_point', name: 'P noktası',
             x: 1056, y: 445, width: 20, height: 20,
             rotation: 0, fill: '#ef4444', stroke: '#ef4444', strokeWidth: 0,
-            opacity: 1, zOrder: 2,
+            opacity: 1, zOrder: 3,
             decimals: 2,
             enterTime: 2.2, duration: 4.8,
             enterAnim: 'grow_in', exitAnim: 'none',
@@ -693,7 +709,7 @@ export const TEMPLATES: Template[] = [
             id: lbl, type: 'latex', name: 'sin/cos',
             x: 960, y: 160, width: 400, height: 80,
             rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
-            opacity: 1, zOrder: 3,
+            opacity: 1, zOrder: 4,
             latex: 'P = (\\cos\\theta,\\,\\sin\\theta)',
             enterTime: 2.5, duration: 4.5,
             enterAnim: 'fade_in', exitAnim: 'none',
@@ -741,7 +757,7 @@ export const TEMPLATES: Template[] = [
               {
                 id: g2,
                 expression: 'cos(x)',
-                color: '#f97316',
+                color: '#ef4444',
                 xMin: 0,
                 xMax: 6.28,
                 strokeWidth: 3,
