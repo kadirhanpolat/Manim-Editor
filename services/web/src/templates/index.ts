@@ -508,6 +508,254 @@ export const TEMPLATES: Template[] = [
       };
     },
   },
+  {
+    id: 'vector_addition',
+    label: 'Vektör Toplama',
+    description: 'İki vektörün bileşke toplamı gösterimi',
+    icon: '→',
+    category: 'linear_algebra',
+    project: () => {
+      const vc1 = uid('obj');
+      const vc2 = uid('obj');
+      const res = uid('obj');
+      const lbl = uid('obj');
+      return {
+        name: 'Vektör Toplama',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 7,
+        objects: [
+          {
+            id: vc1, type: 'vector_components', name: 'u vektörü',
+            x: 480, y: 750, width: 400, height: 300,
+            rotation: 0, fill: '#3b82f6', stroke: '#3b82f6', strokeWidth: 3,
+            opacity: 1, zOrder: 0,
+            vx: 400, vy: -300,
+            enterTime: 0, duration: 6,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.8, exitAnimDur: 0.5,
+          },
+          {
+            id: vc2, type: 'vector_components', name: 'v vektörü',
+            x: 880, y: 450, width: 300, height: 250,
+            rotation: 0, fill: '#22c55e', stroke: '#22c55e', strokeWidth: 3,
+            opacity: 1, zOrder: 1,
+            vx: 300, vy: -200,
+            enterTime: 1.0, duration: 5,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.8, exitAnimDur: 0.5,
+          },
+          {
+            id: res, type: 'arrow', name: 'Bileşke',
+            x: 480, y: 750, width: 700, height: 500,
+            rotation: 0, fill: '#f97316', stroke: '#f97316', strokeWidth: 4,
+            opacity: 1, zOrder: 2,
+            enterTime: 2.0, duration: 4,
+            enterAnim: 'grow_arrow', exitAnim: 'none',
+            enterAnimDur: 0.8, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl, type: 'latex', name: 'Formül',
+            x: 960, y: 160, width: 400, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 3,
+            latex: '\\vec{u} + \\vec{v} = \\vec{w}',
+            enterTime: 2.5, duration: 4.5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'matrix_product',
+    label: 'Matris Çarpımı',
+    description: 'İki 2×2 matrisin çarpımı',
+    icon: '⊗',
+    category: 'linear_algebra',
+    project: () => {
+      const mA = uid('obj');
+      const mB = uid('obj');
+      const mC = uid('obj');
+      const lbl = uid('obj');
+      return {
+        name: 'Matris Çarpımı',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 7,
+        objects: [
+          {
+            id: mA, type: 'matrix', name: 'A',
+            x: 480, y: 540, width: 200, height: 160,
+            rotation: 0, fill: '#3b82f6', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 0,
+            matrixData: [['1', '2'], ['3', '4']],
+            bracket: '[',
+            enterTime: 0, duration: 6,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.6, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl, type: 'latex', name: 'Çarpı',
+            x: 720, y: 540, width: 80, height: 60,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 1,
+            latex: '\\cdot',
+            enterTime: 0.7, duration: 5.3,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.3, exitAnimDur: 0.5,
+          },
+          {
+            id: mB, type: 'matrix', name: 'B',
+            x: 960, y: 540, width: 200, height: 160,
+            rotation: 0, fill: '#22c55e', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 2,
+            matrixData: [['5', '6'], ['7', '8']],
+            bracket: '[',
+            enterTime: 0.7, duration: 5.3,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.6, exitAnimDur: 0.5,
+          },
+          {
+            id: mC, type: 'matrix', name: 'Sonuç',
+            x: 1380, y: 540, width: 240, height: 160,
+            rotation: 0, fill: '#f97316', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 3,
+            matrixData: [['19', '22'], ['43', '50']],
+            bracket: '[',
+            enterTime: 2.0, duration: 4,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.6, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'unit_circle',
+    label: 'Birim Çember',
+    description: 'Trigonometrik birim çember ve sin/cos gösterimi',
+    icon: '○',
+    category: 'trigonometry',
+    project: () => {
+      const np = uid('obj');
+      const circ = uid('obj');
+      const pt = uid('obj');
+      const lbl = uid('obj');
+      return {
+        name: 'Birim Çember',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 7,
+        objects: [
+          {
+            id: np, type: 'numberplane', name: 'Düzlem',
+            x: 960, y: 540, width: 700, height: 700,
+            rotation: 0, fill: '#1e293b', stroke: '#334155', strokeWidth: 1,
+            opacity: 1, zOrder: 0,
+            xRange: [-2, 2, 1], yRange: [-2, 2, 1],
+            enterTime: 0, duration: 6,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 1.0, exitAnimDur: 0.5,
+          },
+          {
+            id: circ, type: 'circle', name: 'Birim Çember',
+            x: 960, y: 540, width: 270, height: 270,
+            rotation: 0, fill: 'transparent', stroke: '#ffffff', strokeWidth: 2,
+            opacity: 1, zOrder: 1,
+            enterTime: 1.0, duration: 5,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 1.2, exitAnimDur: 0.5,
+          },
+          {
+            id: pt, type: 'coord_point', name: 'P noktası',
+            x: 1056, y: 445, width: 20, height: 20,
+            rotation: 0, fill: '#ef4444', stroke: '#ef4444', strokeWidth: 0,
+            opacity: 1, zOrder: 2,
+            decimals: 2,
+            enterTime: 2.2, duration: 4.8,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.4, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl, type: 'latex', name: 'sin/cos',
+            x: 960, y: 160, width: 400, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 3,
+            latex: 'P = (\\cos\\theta,\\,\\sin\\theta)',
+            enterTime: 2.5, duration: 4.5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'sin_cos_wave',
+    label: 'Sin & Cos Grafiği',
+    description: 'Sinüs ve kosinüs dalgaları karşılaştırması',
+    icon: '∿',
+    category: 'trigonometry',
+    project: () => {
+      const ax = uid('obj');
+      const g1 = uid('obj');
+      const g2 = uid('obj');
+      return {
+        name: 'Sin & Cos Grafiği',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 7,
+        objects: [
+          {
+            id: ax, type: 'axes', name: 'Eksenler',
+            x: 960, y: 560, width: 1100, height: 500,
+            rotation: 0, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2,
+            opacity: 1, zOrder: 0,
+            xRange: [0, 6.28, 1.57], yRange: [-1.5, 1.5, 0.5],
+            graphs: [
+              {
+                id: g1,
+                expression: 'sin(x)',
+                color: '#3b82f6',
+                xMin: 0,
+                xMax: 6.28,
+                strokeWidth: 3,
+              },
+              {
+                id: g2,
+                expression: 'cos(x)',
+                color: '#f97316',
+                xMin: 0,
+                xMax: 6.28,
+                strokeWidth: 3,
+              },
+            ],
+            enterTime: 0, duration: 6,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 2.0, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
 ];
 
 export default TEMPLATES;
