@@ -1,6 +1,14 @@
 import { uid } from '../store/project.js';
 import type { SceneObject, Clip } from '@manim/codegen';
 
+export type TemplateCategory =
+  | 'general'
+  | 'calculus'
+  | 'linear_algebra'
+  | 'trigonometry'
+  | 'statistics'
+  | 'programming';
+
 /** A wider clip type that allows extra template-only fields (overshoot, morphQuality, …). */
 type TemplateClip = Clip & Record<string, unknown>;
 
@@ -23,6 +31,7 @@ export interface Template {
   label: string;
   description: string;
   icon: string;
+  category: TemplateCategory;
   project: (() => TemplateProject) | null;
 }
 
@@ -48,6 +57,7 @@ export const TEMPLATES: Template[] = [
     label: 'Boş Proje',
     description: 'Sıfırdan başla',
     icon: '□',
+    category: 'general',
     project: null,
   },
   {
@@ -55,6 +65,7 @@ export const TEMPLATES: Template[] = [
     label: 'Formül Tanıtım',
     description: 'LaTeX formülü yazma efektiyle ortaya çıkar',
     icon: '∑',
+    category: 'general',
     project: () => {
       const id1 = uid('obj');
       return {
@@ -98,6 +109,7 @@ export const TEMPLATES: Template[] = [
     label: 'Şekil Dönüşümü',
     description: 'Bir şekil diğerine morph olur',
     icon: '⇌',
+    category: 'general',
     project: () => {
       const src = uid('obj');
       const tgt = uid('obj');
@@ -184,6 +196,7 @@ export const TEMPLATES: Template[] = [
     label: 'Başlık Slaydı',
     description: 'Başlık ve alt başlık kademeli giriş',
     icon: 'T',
+    category: 'general',
     project: () => {
       const title = uid('obj');
       const sub = uid('obj');
@@ -260,6 +273,7 @@ export const TEMPLATES: Template[] = [
     label: 'Koordinat Sistemi',
     description: 'Eksenler sahneye çizilir',
     icon: '⊕',
+    category: 'general',
     project: () => {
       const ax = uid('obj');
       const lbl = uid('obj');
