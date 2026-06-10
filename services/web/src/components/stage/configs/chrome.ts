@@ -258,11 +258,18 @@ export function floorGridIso(ctx: StageCtx): Record<string, unknown>[] {
  * select, no drag — clicks fall through to the stage), `draggable:false` is
  * belt-and-braces. Unlocked objects pass through untouched (legacy path).
  */
+export function lockConfig<T extends Record<string, unknown>>(cfg: T, obj: { locked?: boolean }): T;
+// Null-passthrough overload: some builders (surroundingRectCfg/underlineCfg)
+// return null when their target object is missing.
 export function lockConfig<T extends Record<string, unknown>>(
-  cfg: T,
+  cfg: T | null,
   obj: { locked?: boolean }
-): T {
-  if (obj.locked) {
+): T | null;
+export function lockConfig<T extends Record<string, unknown>>(
+  cfg: T | null,
+  obj: { locked?: boolean }
+): T | null {
+  if (cfg && obj.locked) {
     (cfg as Record<string, unknown>).draggable = false;
     (cfg as Record<string, unknown>).listening = false;
   }

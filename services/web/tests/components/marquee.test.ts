@@ -165,7 +165,7 @@ describe('multi-selection group drag (onDragEnd delta fan-out)', () => {
 
   it('single selection keeps the existing behavior (only the dragged object moves)', () => {
     const a = store.addObject('circle', 400, 400);
-    const b = store.addObject('circle', 600, 500);
+    store.addObject('circle', 600, 500);
     store.selectObject(a.id);
     const deps = {
       konvaStage: ref(null),
