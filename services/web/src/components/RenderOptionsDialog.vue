@@ -67,6 +67,8 @@ const FORMATS = [
   { value: 'mp4', label: 'MP4', desc: 'H.264 video' },
   { value: 'gif', label: 'GIF', desc: 'Animated image' },
   { value: 'webm', label: 'WebM', desc: 'VP9 video' },
+  { value: 'png', label: 'PNG Frames', desc: 'ZIP of frames' },
+  { value: 'webm_transparent', label: 'WebM α', desc: 'Transparent WebM' },
 ] as const;
 
 const RESOLUTIONS = [
@@ -100,7 +102,7 @@ function set(patch: Partial<RenderOptions>) {
 }
 .ro-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   gap: 8px;
 }
 .ro-btn {
