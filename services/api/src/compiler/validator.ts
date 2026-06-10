@@ -173,7 +173,7 @@ export { ProjectSchema };
 // isSafeSceneName closes for sceneName.
 
 export const RenderOptionsSchema = z.object({
-  format: z.enum(['mp4', 'gif', 'webm']).default('mp4'),
+  format: z.enum(['mp4', 'gif', 'webm', 'png', 'webm_transparent']).default('mp4'),
   resolution: z
     .enum(['854x480', '1280x720', '1920x1080', '2560x1440', '3840x2160'])
     .default('1920x1080'),

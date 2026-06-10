@@ -15,8 +15,8 @@ describe('parseRenderOptions', () => {
     if (r.ok) expect(r.options).toEqual({ format: 'mp4', resolution: '1920x1080', fps: 60 });
   });
 
-  it('accepts every allowlisted combination (3 formats x 5 resolutions x 3 fps)', () => {
-    for (const format of ['mp4', 'gif', 'webm'] as const) {
+  it('accepts every allowlisted combination (5 formats x 5 resolutions x 3 fps)', () => {
+    for (const format of ['mp4', 'gif', 'webm', 'png', 'webm_transparent'] as const) {
       for (const resolution of [
         '854x480',
         '1280x720',
@@ -31,6 +31,18 @@ describe('parseRenderOptions', () => {
         }
       }
     }
+  });
+
+  it('accepts png format', () => {
+    const r = parseRenderOptions({ format: 'png', resolution: '1920x1080', fps: 60 });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.options.format).toBe('png');
+  });
+
+  it('accepts webm_transparent format', () => {
+    const r = parseRenderOptions({ format: 'webm_transparent', resolution: '1920x1080', fps: 60 });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.options.format).toBe('webm_transparent');
   });
 
   it('rejects an unknown format with a message naming the field', () => {
