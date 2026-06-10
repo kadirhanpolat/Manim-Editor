@@ -88,6 +88,8 @@ const TYPES_2D = [
   'ray',
   'coord_point',
   'bezier',
+  'code',
+  'bar_chart',
 ];
 const TYPES_3D = ['sphere', 'cube', 'cone', 'cylinder', 'torus', 'axes3d', 'surface', 'prism'];
 

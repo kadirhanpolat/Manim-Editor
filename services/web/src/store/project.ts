@@ -368,6 +368,8 @@ export const SHAPE_DEFAULTS = {
   brace: { width: 160, height: 60, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2 },
   angle: { width: 140, height: 140, fill: '#fbbf24', stroke: '#fbbf24', strokeWidth: 2 },
   counter: { width: 120, height: 60, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
+  code: { width: 480, height: 280, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
+  bar_chart: { width: 600, height: 400, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0 },
   graph: { width: 200, height: 200, fill: '#22c55e', stroke: '#ffffff', strokeWidth: 2 },
   vector_field: { width: 600, height: 400, fill: '#38bdf8', stroke: '#38bdf8', strokeWidth: 2 },
   vector_components: {
@@ -620,6 +622,8 @@ const useProjectStore = defineStore('project', {
         surrounding_rect: 'Çerçeve',
         underline: 'Altı Çizgi',
         cross: 'Üstü Çizili',
+        code: 'Code',
+        bar_chart: 'Bar Chart',
       };
       const displayName =
         (nameMap as Record<string, string>)[type] || type.charAt(0).toUpperCase() + type.slice(1);
@@ -698,6 +702,17 @@ const useProjectStore = defineStore('project', {
               mathMode: false,
               rowLabels: [],
               colLabels: [],
+            }
+          : {}),
+        ...(type === 'code'
+          ? { codeText: 'def hello():\n    print("Hello")', language: 'python', fontSize: 18 }
+          : {}),
+        ...(type === 'bar_chart'
+          ? {
+              values: [3, 5, 2, 6],
+              barNames: ['A', 'B', 'C', 'D'],
+              yMax: 8,
+              barColors: ['#58c4dd', '#83c167', '#fc6255', '#ffff00'],
             }
           : {}),
         ...(type === 'brace' ? { p1: [-80, 0], p2: [80, 0], label: '' } : {}),
