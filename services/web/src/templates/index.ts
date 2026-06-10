@@ -338,6 +338,176 @@ export const TEMPLATES: Template[] = [
       };
     },
   },
+  {
+    id: 'limit_approach',
+    label: 'Limit Yaklaşımı',
+    description: 'x → c yaklaşımı ile limit kavramı',
+    icon: 'lim',
+    category: 'calculus',
+    project: () => {
+      const np = uid('obj');
+      const d1 = uid('obj');
+      const d2 = uid('obj');
+      const lbl = uid('obj');
+      return {
+        name: 'Limit Yaklaşımı',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 6,
+        objects: [
+          {
+            id: np, type: 'numberplane', name: 'Düzlem',
+            x: 960, y: 540, width: 1000, height: 620,
+            rotation: 0, fill: '#1e293b', stroke: '#334155', strokeWidth: 1,
+            opacity: 1, zOrder: 0,
+            xRange: [-5, 5, 1], yRange: [-3, 3, 1],
+            enterTime: 0, duration: 5,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 1.0, exitAnimDur: 0.5,
+          },
+          {
+            id: d1, type: 'dot', name: 'x yaklaşan nokta',
+            x: 800, y: 540, width: 20, height: 20,
+            rotation: 0, fill: '#ef4444', stroke: '#ef4444', strokeWidth: 0,
+            opacity: 1, zOrder: 2,
+            enterTime: 1.2, duration: 4.8,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.3, exitAnimDur: 0.5,
+          },
+          {
+            id: d2, type: 'dot', name: 'Limit noktası',
+            x: 960, y: 540, width: 24, height: 24,
+            rotation: 0, fill: '#f97316', stroke: '#f97316', strokeWidth: 0,
+            opacity: 1, zOrder: 3,
+            enterTime: 2.0, duration: 4,
+            enterAnim: 'grow_in', exitAnim: 'none',
+            enterAnimDur: 0.4, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl, type: 'latex', name: 'Limit',
+            x: 960, y: 160, width: 480, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 4,
+            latex: '\\lim_{x \\to 0} f(x) = L',
+            enterTime: 1.5, duration: 4.5,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'derivative_tangent',
+    label: 'Türev Teğet',
+    description: 'Bir noktada türev ve teğet çizgisi gösterimi',
+    icon: '∂',
+    category: 'calculus',
+    project: () => {
+      const ax = uid('obj');
+      const lbl = uid('obj');
+      const gid = uid('obj');
+      return {
+        name: 'Türev Teğet',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 8,
+        objects: [
+          {
+            id: ax, type: 'axes', name: 'Eksenler',
+            x: 960, y: 560, width: 900, height: 560,
+            rotation: 0, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2,
+            opacity: 1, zOrder: 0,
+            xRange: [-3, 3, 1], yRange: [-1, 5, 1],
+            graphs: [{
+              id: gid,
+              expression: 'x**2',
+              color: '#3b82f6',
+              xMin: -2.5,
+              xMax: 2.5,
+              strokeWidth: 3,
+              tangent: { enabled: true, x: 1 },
+            }],
+            enterTime: 0, duration: 7,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 1.5, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl, type: 'latex', name: 'Türev',
+            x: 960, y: 160, width: 500, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 1,
+            latex: "f'(x) = 2x,\\quad f'(1) = 2",
+            enterTime: 2.0, duration: 6.0,
+            enterAnim: 'fade_in', exitAnim: 'none',
+            enterAnimDur: 0.5, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
+  {
+    id: 'integral_area',
+    label: 'İntegral Alan',
+    description: 'Belirli integral ve Riemann alanı gösterimi',
+    icon: '∫',
+    category: 'calculus',
+    project: () => {
+      const ax = uid('obj');
+      const lbl = uid('obj');
+      const gid = uid('obj');
+      return {
+        name: 'İntegral Alan',
+        editorMode: 'visual',
+        codeSource: '',
+        stage: { ...STAGE },
+        assets: [],
+        groups: [],
+        sceneDuration: 7,
+        objects: [
+          {
+            id: ax, type: 'axes', name: 'Eksenler',
+            x: 960, y: 570, width: 900, height: 560,
+            rotation: 0, fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2,
+            opacity: 1, zOrder: 0,
+            xRange: [0, 4, 1], yRange: [0, 5, 1],
+            graphs: [{
+              id: gid,
+              expression: 'x**2',
+              color: '#3b82f6',
+              xMin: 0,
+              xMax: 3,
+              strokeWidth: 3,
+              area: { enabled: true, xMin: 0, xMax: 3, color: '#3b82f6', opacity: 0.3 },
+              riemann: { enabled: true, xMin: 0, xMax: 3, dx: 0.5, type: 'right', color: '#22c55e' },
+            }],
+            enterTime: 0, duration: 6,
+            enterAnim: 'draw', exitAnim: 'none',
+            enterAnimDur: 1.5, exitAnimDur: 0.5,
+          },
+          {
+            id: lbl, type: 'latex', name: 'İntegral',
+            x: 960, y: 160, width: 440, height: 80,
+            rotation: 0, fill: '#ffffff', stroke: 'transparent', strokeWidth: 0,
+            opacity: 1, zOrder: 1,
+            latex: '\\int_0^3 x^2\\,dx = 9',
+            enterTime: 2.0, duration: 5.0,
+            enterAnim: 'write', exitAnim: 'none',
+            enterAnimDur: 1.0, exitAnimDur: 0.5,
+          },
+        ],
+        tracks: [{ id: 'track_1', name: 'Track 1', clips: [] }],
+      };
+    },
+  },
 ];
 
 export default TEMPLATES;
