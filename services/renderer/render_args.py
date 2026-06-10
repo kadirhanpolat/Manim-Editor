@@ -50,7 +50,7 @@ FPS_FLAGS = {
 }
 
 FORMAT_FLAGS = {
-    "mp4":              [],                                          # manim default
+    "mp4":              [],  # manim default container — no flag keeps legacy argv
     "gif":              ["--format", "gif"],
     "webm":             ["--format", "webm"],
     "png":              ["--format", "png"],
