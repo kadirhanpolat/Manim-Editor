@@ -15,7 +15,7 @@ The Feb 2026 audit listed major gaps; most have since shipped (LaTeX, undo/redo,
 - No right-click context menu (only the keyframe lane has one), no marquee selection, no object lock/hide, no autosave (`localStorage` is theme-only).
 - No GIF/WebM export, no resolution/fps choice.
 - No `Code` or `BarChart` object types.
-- `website/` is an unfinished Vite+Tailwind skeleton; 5 demo videos sit uncommitted in `demo-videos/` (10–30 KB each).
+- `website/` already ships a polished, committed Vue 3 + Vite + Tailwind landing page (Netlify-deployed via root `netlify.toml`) — but it lacks a demo gallery/quickstart, its GitHub links point at the wrong repo, and some copy is stale; 5 demo videos sit uncommitted in `demo-videos/` (10–30 KB each).
 
 ## Scope
 
@@ -27,8 +27,11 @@ Four tracks, **core-first-wave** scope. Everything else goes to the Wave 2 backl
 
 Smallest track; zero code overlap with the others.
 
-- Finish `website/` as an English landing page on the existing Vite+Tailwind skeleton: hero, feature sections, quickstart, and a gallery embedding the 5 demo videos.
-- Copy videos+posters into `website/public/`; commit `demo-videos/` to the repo (total < 200 KB, no LFS needed).
+**Reality check (2026-06-10 planning):** `website/` is NOT a skeleton — it is a polished, committed Vue 3 + Vite 5 + Tailwind 3.4 landing page (Netlify-deployed), already in English. Scope adjusted: keep the existing design, add only what's missing.
+
+- Add a demo **gallery section** embedding the 5 demo videos (PNG posters + `<video controls>`, English captions) and a **quickstart** terminal block (`git clone … && docker compose up --build` → localhost:8080).
+- Fix the 9 GitHub links pointing at the wrong repo (`BlommeJan/Manim-Motion` → the fork's own `kadirhanpolat/Manim-Editor`) and refresh stale copy ("16+ shapes" → 40+ object types, keyframes/3D/TTS).
+- Copy videos+posters into `website/public/demo/`; commit `demo-videos/` to the repo (total ~172 KB, no LFS needed).
 - Add a showcase section to `README.md` (posters + link to the website).
 - Verify `npm run build` succeeds inside `website/`. No new CI job (YAGNI).
 
