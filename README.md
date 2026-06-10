@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.20.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.21.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -44,7 +44,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 ### Dual Editor Modes
 - **Visual (UI) mode** -- Figma-style drag-and-drop canvas with shapes, timeline, and animations
 - **Code-Only mode** -- Write raw Manim Python directly; full library access, no visual limitations; errors streamed back from the renderer
-- **New Project wizard** -- Choose name and mode (Visual / Code) when creating a project; mode is saved with the project
+- **New Project wizard** -- Choose name, mode (Visual / Code), and starting template when creating a project; mode is saved with the project; category chip filter (Tümü / Genel / Calculus / Lineer Cebir / Trigonometri / İstatistik / Programlama) narrows the scrollable template grid
 
 ### Visual Editor
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
@@ -397,7 +397,7 @@ All Docker containers run with **least-privilege non-root users**:
 ```bash
 cd services/web
 npm test           # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 570 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, + characterization snapshots)
+npm run test:unit  # 618 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -463,7 +463,16 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.20.0 (current)
+### v3.21.0 (current)
+
+Template library expansion — 10 new math/programming templates and a category chip filter in the New Project dialog.
+
+- **15 templates total** (up from 5): added 3 calculus (`limit_approach`, `derivative_tangent`, `integral_area`), 2 linear algebra (`vector_addition`, `matrix_product`), 2 trigonometry (`unit_circle`, `sin_cos_wave`), 1 statistics (`normal_distribution`), 1 general (`theorem_proof`), 1 programming (`algo_steps`). All use existing object types; no new types added.
+- **`TemplateCategory` type**: each template now carries a `category: TemplateCategory` field (`'general'|'calculus'|'linear_algebra'|'trigonometry'|'statistics'|'programming'`). Existing 5 templates get `'general'`.
+- **Category chip filter** in New Project dialog: 7 chips (Tümü / Genel / Calculus / Lineer Cebir / Trigonometri / İstatistik / Programlama) filter the scrollable template grid (`max-height: 320px`); selection resets to "Tümü" on each dialog open.
+- **Tests**: +11 unit tests (`template-library.test.ts` — data integrity, category counts, codegen validity); snapshot + store count updated. Totals now **618 web unit + 114 engine + 43 api + 6 codegen + 9 e2e**.
+
+### v3.20.0
 
 Math annotation tools — three new "bound annotation" object types that reference a target scene object and derive their position from it, designed for marking up formulas and expressions in math education videos.
 

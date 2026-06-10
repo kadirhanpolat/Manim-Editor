@@ -24,7 +24,7 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 555 unit tests (store, components, export)
+cd services/web && npm run test:unit    # 618 unit tests (store, components, export)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 114 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 43 api tests (compiler pipeline + path/scene-name safety)
