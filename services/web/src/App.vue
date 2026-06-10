@@ -500,6 +500,33 @@
                 alt="Rendered GIF"
                 class="w-full rounded-lg bg-black"
               />
+              <div
+                v-else-if="renderVideoUrl && renderFormat === 'zip'"
+                class="flex flex-col items-center justify-center gap-3 py-8 rounded-lg bg-studio-surface border border-studio-border"
+              >
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  class="text-studio-accent"
+                >
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="12" x2="12" y2="18" />
+                  <polyline points="9 15 12 18 15 15" />
+                </svg>
+                <span class="text-sm text-studio-text-muted">PNG frame dizisi hazır</span>
+                <a
+                  :href="renderVideoUrl"
+                  download="frames.zip"
+                  class="px-4 py-2 rounded-lg bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium transition-colors"
+                >
+                  ZIP İndir
+                </a>
+              </div>
               <video
                 v-else-if="renderVideoUrl"
                 :key="renderVideoUrl"
