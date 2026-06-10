@@ -32,7 +32,7 @@
 **Files:**
 - Modify: `services/renderer/render_args.py`
 
-- [ ] **Step 1: `FORMAT_FLAGS`'a 2 yeni giriş ekle**
+- [x] **Step 1: `FORMAT_FLAGS`'a 2 yeni giriş ekle**
 
 `services/renderer/render_args.py` dosyasını aç. Şu bloğu bul:
 
@@ -56,7 +56,7 @@ FORMAT_FLAGS = {
 }
 ```
 
-- [ ] **Step 2: `FORMAT_EXT`'e 2 yeni giriş ekle**
+- [x] **Step 2: `FORMAT_EXT`'e 2 yeni giriş ekle**
 
 Şu bloğu bul:
 
@@ -76,7 +76,7 @@ FORMAT_EXT = {
 }
 ```
 
-- [ ] **Step 3: Smoke doğrulama**
+- [x] **Step 3: Smoke doğrulama**
 
 ```bash
 python -c "
@@ -97,7 +97,7 @@ zip
 webm
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/renderer/render_args.py
@@ -112,7 +112,7 @@ git commit -m "feat(renderer): add png and webm_transparent to FORMAT_FLAGS/FORM
 - Modify: `services/api/src/compiler/validator.ts`
 - Modify: `services/api/tests/render-options.test.ts`
 
-- [ ] **Step 1: Önce başarısız testleri yaz**
+- [x] **Step 1: Önce başarısız testleri yaz**
 
 `services/api/tests/render-options.test.ts` dosyasını aç. `'accepts every allowlisted combination'` testini bul. Format listesini genişlet:
 
@@ -137,7 +137,7 @@ Ayrıca ilk `describe` bloğunun sonuna şu iki testi ekle:
   });
 ```
 
-- [ ] **Step 2: Testlerin başarısız olduğunu doğrula**
+- [x] **Step 2: Testlerin başarısız olduğunu doğrula**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=verbose 2>&1 | grep -E "PASS|FAIL|png|webm_transparent"
@@ -145,7 +145,7 @@ cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=ver
 
 Beklenen: `png` ve `webm_transparent` testleri FAIL (zod henüz kabul etmiyor).
 
-- [ ] **Step 3: validator.ts'deki format enum'u genişlet**
+- [x] **Step 3: validator.ts'deki format enum'u genişlet**
 
 `services/api/src/compiler/validator.ts` dosyasını aç. Şu satırı bul:
 
@@ -159,7 +159,7 @@ Beklenen: `png` ve `webm_transparent` testleri FAIL (zod henüz kabul etmiyor).
   format: z.enum(['mp4', 'gif', 'webm', 'png', 'webm_transparent']).default('mp4'),
 ```
 
-- [ ] **Step 4: Testlerin geçtiğini doğrula**
+- [x] **Step 4: Testlerin geçtiğini doğrula**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=verbose 2>&1 | tail -10
@@ -167,7 +167,7 @@ cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=ver
 
 Beklenen: tüm testler PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/api/src/compiler/validator.ts services/api/tests/render-options.test.ts
@@ -182,7 +182,7 @@ git commit -m "feat(api): add png and webm_transparent to render format enum all
 - Modify: `services/api/src/util/renderFiles.ts`
 - Modify: `services/api/tests/render-files.test.ts`
 
-- [ ] **Step 1: Önce başarısız testleri yaz**
+- [x] **Step 1: Önce başarısız testleri yaz**
 
 `services/api/tests/render-files.test.ts` dosyasını aç. `'allowlists exactly mp4, gif, webm'` testini bul:
 
@@ -218,7 +218,7 @@ Testi daha doğru hale getir:
     expect(isRenderFilename('latest.zip')).toBe(true);
 ```
 
-- [ ] **Step 2: Testlerin başarısız olduğunu doğrula**
+- [x] **Step 2: Testlerin başarısız olduğunu doğrula**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=verbose 2>&1 | grep -E "render-files|FAIL|PASS"
@@ -226,7 +226,7 @@ cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=ver
 
 Beklenen: `render-files` testleri FAIL.
 
-- [ ] **Step 3: renderFiles.ts'i güncelle**
+- [x] **Step 3: renderFiles.ts'i güncelle**
 
 `services/api/src/util/renderFiles.ts` dosyasını aç. Tüm içeriğini şu hale getir:
 
@@ -264,7 +264,7 @@ export function isRenderFilename(name: string): boolean {
 }
 ```
 
-- [ ] **Step 4: Testlerin geçtiğini doğrula**
+- [x] **Step 4: Testlerin geçtiğini doğrula**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=verbose 2>&1 | tail -10
@@ -272,7 +272,7 @@ cd D:/PYTHON/Manim-Editor && npm test --workspace services/api -- --reporter=ver
 
 Beklenen: tüm API testleri PASS.
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
@@ -280,7 +280,7 @@ cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
 
 Beklenen: hata yok.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/api/src/util/renderFiles.ts services/api/tests/render-files.test.ts
@@ -294,7 +294,7 @@ git commit -m "feat(api): add zip to RENDER_EXTS/CONTENT_TYPES/RENDER_FILE_RE fo
 **Files:**
 - Modify: `services/web/src/api.ts`
 
-- [ ] **Step 1: RenderOptions.format tipini genişlet**
+- [x] **Step 1: RenderOptions.format tipini genişlet**
 
 `services/web/src/api.ts` dosyasını aç. Şu satırı bul:
 
@@ -308,7 +308,7 @@ git commit -m "feat(api): add zip to RENDER_EXTS/CONTENT_TYPES/RENDER_FILE_RE fo
   format: 'mp4' | 'gif' | 'webm' | 'png' | 'webm_transparent';
 ```
 
-- [ ] **Step 2: Typecheck**
+- [x] **Step 2: Typecheck**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
@@ -316,7 +316,7 @@ cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
 
 Beklenen: hata yok.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add services/web/src/api.ts
@@ -330,7 +330,7 @@ git commit -m "feat(api-client): add png and webm_transparent to RenderOptions f
 **Files:**
 - Modify: `services/web/src/components/RenderOptionsDialog.vue`
 
-- [ ] **Step 1: FORMATS array'ini genişlet**
+- [x] **Step 1: FORMATS array'ini genişlet**
 
 `services/web/src/components/RenderOptionsDialog.vue` dosyasını aç. Şu bloğu bul:
 
@@ -354,7 +354,7 @@ const FORMATS = [
 ] as const;
 ```
 
-- [ ] **Step 2: `.ro-row` grid sütun sayısını güncelle**
+- [x] **Step 2: `.ro-row` grid sütun sayısını güncelle**
 
 `<style scoped>` içindeki `.ro-row` kuralını bul:
 
@@ -376,7 +376,7 @@ Format satırı artık 5 buton içeriyor; diğer satırlar (resolution, fps) 5 v
 }
 ```
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
@@ -384,7 +384,7 @@ cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
 
 Beklenen: hata yok.
 
-- [ ] **Step 4: Unit testleri çalıştır**
+- [x] **Step 4: Unit testleri çalıştır**
 
 ```bash
 cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
@@ -392,7 +392,7 @@ cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
 
 Beklenen: tüm testler PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/web/src/components/RenderOptionsDialog.vue
@@ -408,7 +408,7 @@ git commit -m "feat(ui): add PNG Frames and WebM transparent options to RenderOp
 
 Amaç: `renderFormat` store alanı her zaman gerçek dosya uzantısını tutmalı (`png → zip`, `webm_transparent → webm`). Bu sayede `getLatestUrl(projectId, renderFormat)` değişiklik gerektirmez.
 
-- [ ] **Step 1: FORMAT_TO_EXT eşlemesini ekle**
+- [x] **Step 1: FORMAT_TO_EXT eşlemesini ekle**
 
 `services/web/src/store/project.ts` dosyasını aç. `this.renderFormat = opts.format;` satırını bul (yaklaşık satır 1985). Bu satırın üstüne şu bloğu ekle ve satırı değiştir:
 
@@ -432,7 +432,7 @@ Yani değiştirilen satır:
         this.renderFormat = FORMAT_TO_EXT[opts.format] ?? opts.format;
 ```
 
-- [ ] **Step 2: Typecheck**
+- [x] **Step 2: Typecheck**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
@@ -440,7 +440,7 @@ cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
 
 Beklenen: hata yok.
 
-- [ ] **Step 3: Unit testleri çalıştır**
+- [x] **Step 3: Unit testleri çalıştır**
 
 ```bash
 cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
@@ -448,7 +448,7 @@ cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
 
 Beklenen: tüm testler PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/web/src/store/project.ts
@@ -464,7 +464,7 @@ git commit -m "feat(store): map png→zip and webm_transparent→webm in renderF
 
 Tamamlandı diyaloğuna üçüncü format kolu ekle: `renderFormat === 'zip'` → `<a download>` butonu.
 
-- [ ] **Step 1: `<img>` ve `<video>` bloklarının yerini bul**
+- [x] **Step 1: `<img>` ve `<video>` bloklarının yerini bul**
 
 `services/web/src/App.vue` içinde şu bloğu bul (yaklaşık satır 496–510):
 
@@ -525,7 +525,7 @@ Tamamlandı diyaloğuna üçüncü format kolu ekle: `renderFormat === 'zip'` �
               ></video>
 ```
 
-- [ ] **Step 2: Mevcut `<a>` download butonundaki dosya adını düzelt**
+- [x] **Step 2: Mevcut `<a>` download butonundaki dosya adını düzelt**
 
 Yaklaşık satır 515'te şu satırı bul:
 
@@ -535,7 +535,7 @@ Yaklaşık satır 515'te şu satırı bul:
 
 Bu satır zaten doğru çalışır (`renderFormat = 'zip'` için `render.zip`, `'webm'` için `render.webm`). Değiştirme gerekmez — sadece doğruladığını not et.
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
@@ -543,7 +543,7 @@ cd D:/PYTHON/Manim-Editor && npm run typecheck 2>&1 | tail -5
 
 Beklenen: hata yok.
 
-- [ ] **Step 4: Lint**
+- [x] **Step 4: Lint**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run lint 2>&1 | tail -5
@@ -551,7 +551,7 @@ cd D:/PYTHON/Manim-Editor && npm run lint 2>&1 | tail -5
 
 Beklenen: hata yok.
 
-- [ ] **Step 5: Unit testleri çalıştır**
+- [x] **Step 5: Unit testleri çalıştır**
 
 ```bash
 cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
@@ -559,7 +559,7 @@ cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
 
 Beklenen: 714+ test PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/web/src/App.vue
@@ -575,7 +575,7 @@ git commit -m "feat(ui): add ZIP download branch for PNG frames in render comple
 
 Bu task Docker gerektirdiği için manuel smoke-test ile doğrulanır.
 
-- [ ] **Step 1: `find_output_png_dir` yardımcısını ekle**
+- [x] **Step 1: `find_output_png_dir` yardımcısını ekle**
 
 `services/renderer/worker.py` dosyasını aç. `find_output_video` fonksiyonunun hemen **altına** şu fonksiyonu ekle:
 
@@ -595,7 +595,7 @@ def find_output_png_dir(media_dir: str, scene_name: str) -> str | None:
     return None
 ```
 
-- [ ] **Step 2: `render_job` içine PNG ZIP kolunu ekle**
+- [x] **Step 2: `render_job` içine PNG ZIP kolunu ekle**
 
 `render_job` fonksiyonunda şu satırı bul:
 
@@ -662,7 +662,7 @@ Bu blok `subprocess.run` çağrısından sonra, `find_output_video` satırından
         output_video = find_output_video(media_dir, scene_name, ext)
 ```
 
-- [ ] **Step 3: Python sözdizimi doğrula**
+- [x] **Step 3: Python sözdizimi doğrula**
 
 ```bash
 python -m py_compile services/renderer/worker.py && echo "OK"
@@ -670,7 +670,7 @@ python -m py_compile services/renderer/worker.py && echo "OK"
 
 Beklenen: `OK` (sözdizim hatası yok).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/renderer/worker.py
@@ -683,7 +683,7 @@ git commit -m "feat(renderer): add find_output_png_dir + PNG frame ZIP logic"
 
 **Files:** Değişiklik yok — sadece doğrulama.
 
-- [ ] **Step 1: Tam unit test suite**
+- [x] **Step 1: Tam unit test suite**
 
 ```bash
 cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
@@ -691,7 +691,7 @@ cd D:/PYTHON/Manim-Editor/services/web && npm run test:unit 2>&1 | tail -5
 
 Beklenen: 714+ test PASS.
 
-- [ ] **Step 2: Engine testleri**
+- [x] **Step 2: Engine testleri**
 
 ```bash
 cd D:/PYTHON/Manim-Editor/services/web && npm test 2>&1 | tail -5
@@ -699,7 +699,7 @@ cd D:/PYTHON/Manim-Editor/services/web && npm test 2>&1 | tail -5
 
 Beklenen: 114 test PASS.
 
-- [ ] **Step 3: API testleri**
+- [x] **Step 3: API testleri**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm test --workspace services/api 2>&1 | tail -5
@@ -707,7 +707,7 @@ cd D:/PYTHON/Manim-Editor && npm test --workspace services/api 2>&1 | tail -5
 
 Beklenen: 53+ test PASS (render-options + render-files güncellemeleri dahil).
 
-- [ ] **Step 4: Codegen testleri**
+- [x] **Step 4: Codegen testleri**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm test --workspace packages/manim-codegen 2>&1 | tail -5
@@ -715,7 +715,7 @@ cd D:/PYTHON/Manim-Editor && npm test --workspace packages/manim-codegen 2>&1 | 
 
 Beklenen: 12 test PASS.
 
-- [ ] **Step 5: Lint + format + typecheck**
+- [x] **Step 5: Lint + format + typecheck**
 
 ```bash
 cd D:/PYTHON/Manim-Editor && npm run lint 2>&1 | tail -5 && npm run format:check 2>&1 | tail -3 && npm run typecheck 2>&1 | tail -5
@@ -723,7 +723,7 @@ cd D:/PYTHON/Manim-Editor && npm run lint 2>&1 | tail -5 && npm run format:check
 
 Beklenen: lint → 0 hata; format → `All matched files use Prettier code style!`; typecheck → hata yok.
 
-- [ ] **Step 6: Prettier uygula (gerekirse)**
+- [x] **Step 6: Prettier uygula (gerekirse)**
 
 Eğer `format:check` hata verdiyse:
 
@@ -731,7 +731,7 @@ Eğer `format:check` hata verdiyse:
 cd D:/PYTHON/Manim-Editor && npm run format && git add services/web/src/components/RenderOptionsDialog.vue services/web/src/App.vue services/web/src/store/project.ts services/web/src/api.ts services/api/src/compiler/validator.ts services/api/src/util/renderFiles.ts && git commit -m "style: prettier format PNG/transparent-webm export"
 ```
 
-- [ ] **Step 7: Docker smoke test (isteğe bağlı, Docker mevcut ise)**
+- [x] **Step 7: Docker smoke test (isteğe bağlı, Docker mevcut ise)**
 
 ```bash
 docker compose up --build -d
