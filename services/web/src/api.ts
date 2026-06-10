@@ -32,6 +32,22 @@ async function request(endpoint: string, options: RequestInit = {}): Promise<unk
   return response.json();
 }
 
+// ─── Render export options (Wave 1 Track B) ──────────────────────────────────
+// Mirrors RenderOptionsSchema in services/api/src/compiler/validator.ts.
+
+export interface RenderOptions {
+  format: 'mp4' | 'gif' | 'webm';
+  resolution: '854x480' | '1280x720' | '1920x1080' | '2560x1440' | '3840x2160';
+  fps: 15 | 30 | 60;
+}
+
+/** Today's behavior: what `manim -qh` produces. */
+export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
+  format: 'mp4',
+  resolution: '1920x1080',
+  fps: 60,
+};
+
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
 export const projects = {
@@ -53,10 +69,10 @@ export const projects = {
 
   delete: (id: string) => request(`/projects/${id}`, { method: 'DELETE' }),
 
-  render: (id: string, quality = 'high') =>
+  render: (id: string, options?: RenderOptions) =>
     request(`/projects/${id}/render`, {
       method: 'POST',
-      body: JSON.stringify({ quality }),
+      body: JSON.stringify({ quality: 'high', ...(options ?? DEFAULT_RENDER_OPTIONS) }),
     }),
 
   renderCode: (
@@ -65,11 +81,17 @@ export const projects = {
       quality = 'high',
       codeSource,
       sceneName = 'MainScene',
-    }: { quality?: string; codeSource?: string; sceneName?: string }
+      options,
+    }: { quality?: string; codeSource?: string; sceneName?: string; options?: RenderOptions }
   ) =>
     request(`/projects/${id}/render-code`, {
       method: 'POST',
-      body: JSON.stringify({ quality, codeSource, sceneName }),
+      body: JSON.stringify({
+        quality,
+        codeSource,
+        sceneName,
+        ...(options ?? DEFAULT_RENDER_OPTIONS),
+      }),
     }),
 };
 
@@ -123,8 +145,8 @@ export const jobs = {
 // ─── Renders ──────────────────────────────────────────────────────────────────
 
 export const renders = {
-  getLatestUrl: (projectId: string) =>
-    `${API_BASE}/renders/${projectId}/latest.mp4?t=${Date.now()}`,
+  getLatestUrl: (projectId: string, ext: string = 'mp4') =>
+    `${API_BASE}/renders/${projectId}/latest.${ext}?t=${Date.now()}`,
   getInfo: (projectId: string) => request(`/renders/${projectId}`),
 };
 
