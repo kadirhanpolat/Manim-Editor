@@ -107,7 +107,49 @@
             @click.stop="selectObj(obj.id, $event)"
           >
             <span class="obj-bar-dot" :style="{ background: objColor(obj) }"></span>
-            <span class="truncate">{{ obj.name }}</span>
+            <span class="truncate flex-1" :class="{ 'opacity-40': obj.hidden }">{{
+              obj.name
+            }}</span>
+            <button
+              class="obj-bar-icon"
+              :class="{ on: obj.hidden }"
+              :aria-label="(obj.hidden ? 'Show ' : 'Hide ') + obj.name"
+              :title="obj.hidden ? 'Show' : 'Hide'"
+              @click.stop="store.toggleHidden(obj.id)"
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                <circle cx="12" cy="12" r="3" />
+                <line v-if="obj.hidden" x1="3" y1="3" x2="21" y2="21" />
+              </svg>
+            </button>
+            <button
+              class="obj-bar-icon"
+              :class="{ on: obj.locked }"
+              :aria-label="(obj.locked ? 'Unlock ' : 'Lock ') + obj.name"
+              :title="obj.locked ? 'Unlock' : 'Lock'"
+              @click.stop="store.toggleLocked(obj.id)"
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path v-if="obj.locked" d="M8 11V7a4 4 0 0 1 8 0v4" />
+                <path v-else d="M8 11V7a4 4 0 0 1 7.9-.8" />
+              </svg>
+            </button>
           </div>
           <div class="flex-1 relative overflow-hidden">
             <div :style="{ width: totalW + 'px' }" class="h-full relative">
@@ -423,6 +465,23 @@ function selectCameraClip(clipId: string | null | undefined): void {
 }
 .obj-bar-dot {
   @apply w-1.5 h-1.5 rounded-full flex-shrink-0;
+}
+.obj-bar-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px;
+  border-radius: 3px;
+  color: var(--studio-text-muted);
+  opacity: 0.55;
+  transition: opacity 0.1s;
+}
+.obj-bar-icon:hover {
+  opacity: 1;
+}
+.obj-bar-icon.on {
+  opacity: 1;
+  color: var(--studio-accent);
 }
 
 .obj-bar .resize-handle {
