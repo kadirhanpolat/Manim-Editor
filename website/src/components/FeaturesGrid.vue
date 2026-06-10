@@ -14,13 +14,15 @@
         <div class="card-icon">⬡</div>
         <div class="card-title">Visual Geometry Engine</div>
         <p class="card-desc">
-          A Konva.js-powered infinite canvas with 16+ primitive types —
-          rectangles, circles, stars, polygons, hearts, arrows, grids —
-          all with resize handles, rotation, multi-select, grid snapping,
-          and precise z-ordering.
+          A Konva.js-powered infinite canvas with 40+ object types —
+          rectangles, stars, hearts, LaTeX, axes, matrices, graphs,
+          vector fields — plus a full 3D mode with spheres, surfaces,
+          and a split-viewport editor. Resize handles, rotation,
+          multi-select, grid snapping, precise z-ordering.
         </p>
         <span class="card-tag">Drag &amp; Drop</span>
-        <span class="card-tag card-tag-blue">16+ Shapes</span>
+        <span class="card-tag card-tag-blue">40+ Objects</span>
+        <span class="card-tag card-tag-blue">3D Scenes</span>
       </div>
 
       <!-- Card 2: Cinematic Morphing -->
@@ -31,9 +33,9 @@
         <div class="card-title">Cinematic Morphing</div>
         <p class="card-desc">
           Select any two shapes and morph between them with sub-frame
-          interpolation. 17 easing functions including elastic,
-          bounce, spring, and cubic variants give you total control
-          over every transformation in your scene.
+          interpolation, previewed live at 60 fps on the canvas.
+          17 easing functions including elastic, bounce, spring, and
+          cubic variants give you total control over every transformation.
         </p>
         <div class="mini-canvas-wrap">
           <div class="mini-canvas-dots">
@@ -50,8 +52,9 @@
         <div class="card-icon">⏱</div>
         <div class="card-title">Multi-track Timeline</div>
         <p class="card-desc">
-          Up to 5 independent tracks with draggable, resizable clips.
-          Set timing, easing, and duration — then render to video via Docker.
+          Up to 5 independent tracks with draggable, resizable clips —
+          plus per-property keyframe lanes with a draggable Bezier
+          easing editor. Set timing, then render to video via Docker.
         </p>
         <div class="mini-timeline">
           <div class="tl-track"><div class="tl-clip tl-clip-1"></div></div>
@@ -59,6 +62,7 @@
           <div class="tl-track"><div class="tl-clip tl-clip-3"></div></div>
         </div>
         <span class="card-tag">5 Tracks</span>
+        <span class="card-tag card-tag-blue">Keyframes</span>
       </div>
 
       <!-- Card 4: LaTeX Integration -->
@@ -83,12 +87,14 @@
         <p class="card-desc">
           Your composition is generated as Manim Python — syntax-highlighted
           code you can edit, copy, or export as a standalone
-          <span class="text-accent">scene.py</span>.
-          Build visually, then render to cinema-quality video with one click.
+          <span class="text-accent">scene.py</span> — and importing a
+          <span class="text-accent">.py</span> brings it back onto the canvas.
+          Attach gTTS or Coqui voiceovers to any clip, then render
+          cinema-quality video with one click.
         </p>
         <div class="flex-center-wrap flex-center-wrap--sm">
-          <span class="card-tag">Generated Code</span>
-          <span class="card-tag card-tag-blue">Export .py</span>
+          <span class="card-tag">Code Round-Trip</span>
+          <span class="card-tag card-tag-blue">TTS Voiceover</span>
           <span class="card-tag card-tag-muted">Docker Render</span>
         </div>
       </div>

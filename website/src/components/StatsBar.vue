@@ -2,8 +2,8 @@
   <div class="stats-strip">
     <div class="stats-inner">
       <div class="stat-item reveal">
-        <div class="stat-num">16+</div>
-        <div class="stat-label">Shape Primitives</div>
+        <div class="stat-num">40+</div>
+        <div class="stat-label">Object Types</div>
       </div>
       <div class="stat-item reveal reveal-delay-1">
         <div class="stat-num">5</div>
