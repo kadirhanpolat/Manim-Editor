@@ -950,3 +950,61 @@ describe('generator — bar_chart (BarChart, single-line)', () => {
     expect(py).toContain('y_range=[0, 5, 1]');
   });
 });
+
+describe('parser round-trip — code', () => {
+  it('round-trips multiline code with quotes, tabs and literal backslashes', () => {
+    const src = 'def f(path):\n\treturn "C:\\\\tmp" + path';
+    const project = makeProject(
+      [makeObj('obj1', 'code', { codeText: src, language: 'cpp', width: 480, height: 280 })],
+      []
+    );
+    const py = generateManimScript(project);
+    const back = parseManimScript(py, SW, SH);
+    const o = back.objects.find((x) => x.type === 'code');
+    expect(o).toBeTruthy();
+    expect(o.codeText).toBe(src);
+    expect(o.language).toBe('cpp');
+    // width round-trips through scale_to_fit_width (3-decimal precision)
+    expect(Math.abs(o.width - 480)).toBeLessThanOrEqual(1);
+  });
+
+  it('a literal backslash-n in the source does NOT come back as a newline', () => {
+    const src = 'print("a\\\\nb")'; // python source containing the 4 chars  \ \ n b → JS string 'print("a\\nb")'
+    const project = makeProject(
+      [makeObj('obj1', 'code', { codeText: src, language: 'python', width: 480, height: 280 })],
+      []
+    );
+    const back = parseManimScript(generateManimScript(project), SW, SH);
+    const o = back.objects.find((x) => x.type === 'code');
+    expect(o.codeText).toBe(src);
+  });
+});
+
+describe('parser round-trip — bar_chart', () => {
+  it('round-trips values, barNames, yMax, barColors and approximate size', () => {
+    const project = makeProject(
+      [
+        makeObj('obj1', 'bar_chart', {
+          values: [3, 5.5, 2, 6],
+          barNames: ['Q1', 'Q2', 'Q3', 'Q4'],
+          yMax: 10,
+          barColors: ['#58c4dd', '#83c167', '#fc6255', '#ffff00'],
+          width: 600,
+          height: 400,
+        }),
+      ],
+      []
+    );
+    const py = generateManimScript(project);
+    const back = parseManimScript(py, SW, SH);
+    const o = back.objects.find((x) => x.type === 'bar_chart');
+    expect(o).toBeTruthy();
+    expect(o.values).toEqual([3, 5.5, 2, 6]);
+    expect(o.barNames).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
+    expect(o.yMax).toBe(10);
+    expect(o.barColors).toEqual(['#58c4dd', '#83c167', '#fc6255', '#ffff00']);
+    // x_length/y_length are emitted with 1 decimal → ~2% size tolerance
+    expect(Math.abs(o.width - 600)).toBeLessThan(15);
+    expect(Math.abs(o.height - 400)).toBeLessThan(15);
+  });
+});

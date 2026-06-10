@@ -36,6 +36,15 @@ export function unescapeUnit(s: unknown): string {
     .replace(/\\([%&#_${}])/g, '$1');
 }
 
+/** Inverse of @manim/codegen `pyMultiline`. Single regex pass so an escaped
+ *  backslash followed by `n` (`\\n` in the .py source) restores to
+ *  backslash+n, NOT to a newline. */
+export function unescapePyMultiline(s: unknown): string {
+  return String(s == null ? '' : s).replace(/\\(\\|n|t|")/g, (_, c: string) =>
+    c === 'n' ? '\n' : c === 't' ? '\t' : c
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // CODEGEN: project → Manim Python (thin wrapper — logic lives in @manim/codegen)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1364,6 +1373,84 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
         suffix: unescapeUnit(m[4]),
       };
       varMap[m[1]] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
+      continue;
+    }
+
+    // Code block (single-line, pyMultiline-escaped code_string)
+    m = line.match(
+      /^(\w+) = Code\(code_string="((?:[^"\\]|\\.)*)", language="(\w+)", add_line_numbers=False\)\.scale_to_fit_width\(([\d.]+)\)/
+    );
+    if (m) {
+      const [, name, src, language, wStr] = m;
+      const width = Math.round((parseFloat(wStr) / FRAME_WIDTH) * sw);
+      const id = uid('obj');
+      const obj: SceneObject = {
+        id,
+        type: 'code',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width,
+        height: Math.round(width * 0.6), // height is not persisted (Code height follows content) — documented lossy default
+        codeText: unescapePyMultiline(src),
+        language,
+        fontSize: 18,
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 5,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+      };
+      varMap[name] = obj.id;
+      objById[obj.id] = obj;
+      objects.push(obj);
+      continue;
+    }
+
+    // BarChart (single-line)
+    m = line.match(
+      /^(\w+) = BarChart\(values=\[([^\]]*)\], bar_names=\[([^\]]*)\], y_range=\[0, ([\d.]+), [\d.]+\], bar_colors=\[([^\]]*)\], x_length=([\d.]+), y_length=([\d.]+)\)/
+    );
+    if (m) {
+      const [, name, valuesStr, namesStr, yMaxStr, colorsStr, xLenStr, yLenStr] = m;
+      const values = valuesStr
+        .split(',')
+        .map((s) => parseFloat(s))
+        .filter((v) => Number.isFinite(v));
+      const barNames = (namesStr.match(/"([^"]*)"/g) || []).map((s) => s.slice(1, -1));
+      const barColors = (colorsStr.match(/"([^"]*)"/g) || []).map((s) => s.slice(1, -1));
+      const id = uid('obj');
+      const obj: SceneObject = {
+        id,
+        type: 'bar_chart',
+        name,
+        x: sw / 2,
+        y: sh / 2,
+        width: Math.round((parseFloat(xLenStr) / FRAME_WIDTH) * sw),
+        height: Math.round((parseFloat(yLenStr) / FRAME_HEIGHT) * sh),
+        values: values.length ? values : [3, 5, 2, 6],
+        barNames,
+        yMax: parseFloat(yMaxStr),
+        barColors,
+        fill: '#ffffff',
+        stroke: 'transparent',
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        enterTime: 0,
+        duration: 5,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+        zOrder: objects.length,
+      };
+      varMap[name] = obj.id;
       objById[obj.id] = obj;
       objects.push(obj);
       continue;
