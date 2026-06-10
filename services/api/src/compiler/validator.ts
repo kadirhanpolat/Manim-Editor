@@ -165,3 +165,46 @@ export function validateProject(project: unknown): ValidateResult {
 }
 
 export { ProjectSchema };
+
+// ─── Render export options (Wave 1 Track B) ──────────────────────────────────
+// Strict enum allowlist: these values are forwarded (via a fixed lookup table
+// in services/renderer/render_args.py) to the manim CLI. NEVER widen these to
+// free-form strings — that would reopen the argument-injection surface that
+// isSafeSceneName closes for sceneName.
+
+export const RenderOptionsSchema = z.object({
+  format: z.enum(['mp4', 'gif', 'webm']).default('mp4'),
+  resolution: z
+    .enum(['854x480', '1280x720', '1920x1080', '2560x1440', '3840x2160'])
+    .default('1920x1080'),
+  fps: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(60),
+});
+
+export type RenderOptions = z.infer<typeof RenderOptionsSchema>;
+
+export type ParseRenderOptionsResult =
+  | { ok: true; options: RenderOptions }
+  | { ok: false; error: string };
+
+/**
+ * Pick + validate { format, resolution, fps } from a request body.
+ * Absent fields fall back to today's behavior (mp4 / 1920x1080 / 60 = -qh).
+ * Unrelated body fields (quality, codeSource, sceneName) are ignored.
+ */
+export function parseRenderOptions(body: unknown): ParseRenderOptionsResult {
+  const src = (body ?? {}) as Record<string, unknown>;
+  const result = RenderOptionsSchema.safeParse({
+    format: src['format'],
+    resolution: src['resolution'],
+    fps: src['fps'],
+  });
+  if (!result.success) {
+    const msg = result.error.errors
+      .map(
+        (e: { path: (string | number)[]; message: string }) => `${e.path.join('.')}: ${e.message}`
+      )
+      .join('; ');
+    return { ok: false, error: `Invalid render options — ${msg}` };
+  }
+  return { ok: true, options: result.data };
+}
