@@ -50,6 +50,8 @@ const REGISTERED_TYPES = [
   'surrounding_rect',
   'underline',
   'cross',
+  'code',
+  'bar_chart',
 ];
 
 // Asset-only types — intentionally NOT a shape button (added via asset upload).
@@ -94,6 +96,8 @@ describe('palette reachability', () => {
       'surface',
       'prism',
       'text',
+      'code',
+      'bar_chart',
     ]) {
       expect(types, `palette should offer ${t}`).toContain(t);
     }

@@ -556,6 +556,18 @@ const shapesData = [
     color: '#38bdf8',
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><text x="6" y="16" font-size="9" font-family="monospace" fill="currentColor" stroke="none">42</text></svg>',
   },
+  {
+    type: 'code',
+    label: 'Code',
+    color: '#a78bfa',
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 6 3 12 8 18"/><polyline points="16 6 21 12 16 18"/></svg>',
+  },
+  {
+    type: 'bar_chart',
+    label: 'Bar Chart',
+    color: '#f472b6',
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="21" x2="21" y2="21"/><rect x="5" y="12" width="3" height="9"/><rect x="11" y="7" width="3" height="14"/><rect x="17" y="3" width="3" height="18"/></svg>',
+  },
 ];
 
 // 3D shapes — shown only when sceneType === '3d' (store.addObject sets x3d/y3d/z3d + 3D defaults)
