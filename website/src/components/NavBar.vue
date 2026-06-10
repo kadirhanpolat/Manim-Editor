@@ -10,10 +10,11 @@
       <li><a href="#features">Features</a></li>
       <li><a href="#workflow">Workflow</a></li>
       <li><a href="#interface">Interface</a></li>
+      <li><a href="#gallery">Gallery</a></li>
     </ul>
 
     <div class="nav-right">
-      <a href="https://github.com/BlommeJan/Manim-Motion" target="_blank" rel="noopener noreferrer" class="nav-cta magnet"><span>Get it on GitHub</span></a>
+      <a href="https://github.com/kadirhanpolat/Manim-Editor" target="_blank" rel="noopener noreferrer" class="nav-cta magnet"><span>Get it on GitHub</span></a>
 
       <!-- Mobile hamburger -->
       <button
@@ -49,8 +50,9 @@
         <li><a href="#features" @click="closeMenu">Features</a></li>
         <li><a href="#workflow" @click="closeMenu">Workflow</a></li>
         <li><a href="#interface" @click="closeMenu">Interface</a></li>
+        <li><a href="#gallery" @click="closeMenu">Gallery</a></li>
       </ul>
-      <a href="https://github.com/BlommeJan/Manim-Motion" target="_blank" rel="noopener noreferrer" class="nav-drawer-cta" @click="closeMenu">
+      <a href="https://github.com/kadirhanpolat/Manim-Editor" target="_blank" rel="noopener noreferrer" class="nav-drawer-cta" @click="closeMenu">
         Get it on GitHub
       </a>
     </aside>

@@ -15,10 +15,10 @@
       <p>Built with Vue · Konva · Manim · Docker</p>
     </div>
     <ul class="footer-links">
-      <li><a href="https://github.com/BlommeJan/Manim-Motion#readme" target="_blank" rel="noopener noreferrer">Docs</a></li>
-      <li><a href="https://github.com/BlommeJan/Manim-Motion" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-      <li><a href="https://github.com/BlommeJan/Manim-Motion/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
-      <li><a href="https://github.com/BlommeJan/Manim-Motion/releases" target="_blank" rel="noopener noreferrer">Releases</a></li>
+      <li><a href="https://github.com/kadirhanpolat/Manim-Editor#readme" target="_blank" rel="noopener noreferrer">Docs</a></li>
+      <li><a href="https://github.com/kadirhanpolat/Manim-Editor" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+      <li><a href="https://github.com/kadirhanpolat/Manim-Editor/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+      <li><a href="https://github.com/kadirhanpolat/Manim-Editor/releases" target="_blank" rel="noopener noreferrer">Releases</a></li>
     </ul>
   </footer>
 </template>

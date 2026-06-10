@@ -20,7 +20,7 @@
     </p>
 
     <div class="hero-actions">
-      <a href="https://github.com/BlommeJan/Manim-Motion" target="_blank" rel="noopener noreferrer" class="btn-primary magnet">
+      <a href="https://github.com/kadirhanpolat/Manim-Editor" target="_blank" rel="noopener noreferrer" class="btn-primary magnet">
         ⟶ &nbsp;Get it on GitHub
       </a>
       <a href="#features" class="btn-ghost magnet">
