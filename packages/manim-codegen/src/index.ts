@@ -203,6 +203,22 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       case 'typewriter':
         enterCode = `self.play(AddTextLetterByLetter(${n})${rt})`;
         break;
+      case 'draw_border_fill':
+        enterCode = `self.play(DrawBorderThenFill(${n})${rt})`;
+        break;
+      case 'grow_arrow':
+        enterCode = `self.play(GrowArrow(${n})${rt})`;
+        break;
+      case 'grow_from_edge': {
+        const dir = (o.enterAnimDir ?? 'LEFT') as string;
+        enterCode = `self.play(GrowFromEdge(${n}, edge=${dir})${rt})`;
+        break;
+      }
+      case 'fade_in_large': {
+        const sc = (o.enterAnimScale ?? 1.5).toFixed(1);
+        enterCode = `self.play(FadeIn(${n}, scale=${sc})${rt})`;
+        break;
+      }
       default:
         enterCode = `self.play(FadeIn(${n})${rt})`;
     }
@@ -492,6 +508,14 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       case 'typewriter_out':
         exitCode = `self.play(RemoveTextLetterByLetter(${n})${rt})`;
         break;
+      case 'unwrite':
+        exitCode = `self.play(Unwrite(${n})${rt})`;
+        break;
+      case 'fade_out_large': {
+        const sc = (o.exitAnimScale ?? 1.5).toFixed(1);
+        exitCode = `self.play(FadeOut(${n}, scale=${sc})${rt})`;
+        break;
+      }
       default:
         exitCode = `self.play(FadeOut(${n})${rt})`;
     }
