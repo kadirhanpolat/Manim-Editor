@@ -1261,6 +1261,68 @@ const useProjectStore = defineStore('project', {
       this.commitState();
     },
 
+    toggleLocked(id: string) {
+      const obj = this.project.objects.find((o) => o.id === id);
+      if (!obj) return;
+      if (obj.locked) delete obj.locked;
+      else obj.locked = true;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    toggleHidden(id: string) {
+      const obj = this.project.objects.find((o) => o.id === id);
+      if (!obj) return;
+      if (obj.hidden) delete obj.hidden;
+      else obj.hidden = true;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    /** Move the object to the end of objects[] (top of the draw order) and
+     *  renumber every zOrder to its array index — keeps the canvas sort
+     *  (zOrder) and the codegen/Manim add-order (array order) consistent. */
+    bringToFront(id: string) {
+      const idx = this.project.objects.findIndex((o) => o.id === id);
+      if (idx === -1) return;
+      const [obj] = this.project.objects.splice(idx, 1);
+      this.project.objects.push(obj);
+      this.project.objects.forEach((o, i) => {
+        o.zOrder = i;
+      });
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    sendToBack(id: string) {
+      const idx = this.project.objects.findIndex((o) => o.id === id);
+      if (idx === -1) return;
+      const [obj] = this.project.objects.splice(idx, 1);
+      this.project.objects.unshift(obj);
+      this.project.objects.forEach((o, i) => {
+        o.zOrder = i;
+      });
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    /** Shift several objects by the same project-coordinate delta (multi-selection
+     *  group drag). Locked objects are skipped. One commit for the whole move. */
+    translateObjects(ids: string[], dx: number, dy: number) {
+      if (!dx && !dy) return;
+      let moved = false;
+      for (const id of ids) {
+        const obj = this.project.objects.find((o) => o.id === id);
+        if (!obj || obj.locked) continue;
+        obj.x = Math.round((obj.x ?? 0) + dx);
+        obj.y = Math.round((obj.y ?? 0) + dy);
+        moved = true;
+      }
+      if (!moved) return;
+      this.isDirty = true;
+      this.commitState();
+    },
+
     // ══════════════════════════════════════════════════════════════════════════
     // Groups
     // ══════════════════════════════════════════════════════════════════════════
@@ -1378,6 +1440,11 @@ const useProjectStore = defineStore('project', {
 
     deselectAll() {
       this.selectedObjectIds = [];
+      this.selectedClipId = null;
+    },
+
+    selectAllObjects() {
+      this.selectedObjectIds = this.project.objects.map((o) => o.id);
       this.selectedClipId = null;
     },
 
@@ -2070,6 +2137,38 @@ const useProjectStore = defineStore('project', {
       this.selectedClipId = null;
       this.isDirty = true;
       this.commitState();
+    },
+
+    /** Clone the current selection in place (paste semantics without touching
+     *  the clipboard) and select the clones. */
+    duplicateSelection() {
+      const selected = this.selectedObjectIds
+        .map((id) => this.project.objects.find((o) => o.id === id))
+        .filter(Boolean) as SceneObject[];
+      if (selected.length === 0) return;
+      const newIds: string[] = [];
+      for (const original of selected) {
+        const clone = JSON.parse(JSON.stringify(original)) as SceneObject;
+        clone.id = uid('obj');
+        clone.x = (clone.x || 0) + 20;
+        clone.y = (clone.y || 0) + 20;
+        clone.name = clone.name + ' copy';
+        clone.zOrder = this.project.objects.length;
+        this.project.objects.push(clone);
+        newIds.push(clone.id);
+      }
+      this.selectedObjectIds = newIds;
+      this.selectedClipId = null;
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    /** Copy the selection to the clipboard, then delete it. */
+    cutSelection() {
+      if (this.selectedObjectIds.length === 0) return;
+      this.copySelection();
+      const ids = [...this.selectedObjectIds];
+      for (const id of ids) this.deleteObject(id);
     },
 
     // ══════════════════════════════════════════════════════════════════════════

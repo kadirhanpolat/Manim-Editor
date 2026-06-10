@@ -81,6 +81,9 @@ export interface SceneObject {
   rotation?: number;
   opacity?: number;
   zOrder?: number;
+  // editor UX (Wave 1 Track D) — both optional; absent = legacy behavior
+  locked?: boolean; // canvas: not clickable/draggable; timeline still selects. No codegen effect.
+  hidden?: boolean; // not drawn in preview AND skipped by generateScene.
   name?: string;
   x3d?: number;
   y3d?: number;
