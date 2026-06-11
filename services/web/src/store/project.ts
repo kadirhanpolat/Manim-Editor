@@ -1572,6 +1572,27 @@ const useProjectStore = defineStore('project', {
       }
     },
 
+    splitClip(clipId: string) {
+      const splitTime = this.playbackTime;
+      for (const track of this.project.tracks) {
+        const idx = track.clips.findIndex((c) => c.id === clipId);
+        if (idx === -1) continue;
+        const clip = track.clips[idx]!;
+        if (splitTime <= clip.startTime || splitTime >= clip.startTime + clip.duration) return;
+
+        const firstDuration = splitTime - clip.startTime;
+        const secondDuration = clip.duration - firstDuration;
+
+        const first = { ...clip, duration: firstDuration };
+        const second = { ...clip, id: uid('clip'), startTime: splitTime, duration: secondDuration };
+
+        track.clips.splice(idx, 1, first, second);
+        this.isDirty = true;
+        this.commitState();
+        return;
+      }
+    },
+
     setClipAudio(clipId: string, audioData: import('@manim/codegen').AudioConfig) {
       for (const track of this.project.tracks) {
         const clip = track.clips.find((c) => c.id === clipId);
