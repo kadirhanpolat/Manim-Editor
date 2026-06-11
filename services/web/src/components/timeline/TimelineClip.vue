@@ -5,6 +5,7 @@
     :style="clipStyle"
     @mousedown.stop="onDown"
     @click.stop="select"
+    @contextmenu.prevent="onContextMenu"
   >
     <div class="clip-inner">
       <span class="clip-icon" v-html="typeIcon"></span>
@@ -18,13 +19,22 @@
     </div>
     <div class="resize-handle left" @mousedown.stop="resize('left', $event)"></div>
     <div class="resize-handle right" @mousedown.stop="resize('right', $event)"></div>
+    <ContextMenu
+      v-if="ctxMenu"
+      :x="ctxMenu.x"
+      :y="ctxMenu.y"
+      :items="ctxItems"
+      @close="ctxMenu = null"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import type { Clip } from '@manim/codegen';
 import { useProjectStore } from '../../store/project.js';
+import ContextMenu from '../stage/ContextMenu.vue';
+import type { ContextMenuItem } from '../stage/ContextMenu.vue';
 
 const props = defineProps({
   clip: { type: Object as () => Clip, required: true },
@@ -77,6 +87,25 @@ const clipStyle = computed(() => ({
   left: `${props.clip.startTime * props.pps}px`,
   width: `${Math.max(28, props.clip.duration * props.pps)}px`,
 }));
+
+const ctxMenu = ref<{ x: number; y: number } | null>(null);
+
+const ctxItems = computed<ContextMenuItem[]>(() => [
+  { id: 'copy',   label: 'Kopyala',  action: () => store.copySelection() },
+  { id: 'cut',    label: 'Kes',      action: () => store.cutSelection() },
+  { id: 'paste',  label: 'Yapıştır', action: () => store.pasteSelection(), disabled: store.clipboard.length === 0 },
+  { id: 'dup',    label: 'Çoğalt',   action: () => store.duplicateSelection() },
+  { id: 'sep1',   separator: true },
+  { id: 'split',  label: 'Böl',      action: () => store.splitClip(props.clip.id as string) },
+  { id: 'sep2',   separator: true },
+  { id: 'delete', label: 'Sil',      action: () => store.deleteClip(props.clip.id as string) },
+]);
+
+function onContextMenu(e: MouseEvent) {
+  e.preventDefault();
+  store.selectClip(props.clip.id ?? null);
+  ctxMenu.value = { x: e.clientX, y: e.clientY };
+}
 
 function select() {
   store.selectClip(props.clip.id ?? null);
