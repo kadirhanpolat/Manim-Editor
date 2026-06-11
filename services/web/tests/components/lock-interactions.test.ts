@@ -32,6 +32,8 @@ function makeDeps(extra = {}) {
     pathDrawing: ref(false),
     pathPoints: ref([]),
     pathSourceId: ref(null),
+    guides: computed(() => []),
+    stageObjects: computed(() => []),
     ...extra,
   };
 }

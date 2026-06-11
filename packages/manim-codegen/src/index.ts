@@ -553,8 +553,23 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
 
   // ── Emit animation code ──
   L.push(`${indent}# Animation`);
+
+  // Build sorted section queue filtered to scene duration
+  const sectionQueue = [...(project.sections ?? [])]
+    .filter((s) => s.time <= (project.sceneDuration ?? 99))
+    .sort((a, b) => a.time - b.time);
+  let nextSectionIdx = 0;
+
   let t = 0;
   for (const step of steps) {
+    // Emit any pending sections whose time <= this step's start time
+    while (
+      nextSectionIdx < sectionQueue.length &&
+      sectionQueue[nextSectionIdx]!.time <= step.time
+    ) {
+      L.push(`${indent}self.next_section("${sectionQueue[nextSectionIdx]!.title}")`);
+      nextSectionIdx++;
+    }
     const wait = step.time - t;
     if (wait > 0.05) L.push(`${indent}self.wait(${wait.toFixed(1)})`);
     const a = step.audio;
@@ -583,6 +598,12 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       }
     }
     t = step.time + (step.dur || 0.5);
+  }
+
+  // Emit any sections that come after all animation steps
+  while (nextSectionIdx < sectionQueue.length) {
+    L.push(`${indent}self.next_section("${sectionQueue[nextSectionIdx]!.title}")`);
+    nextSectionIdx++;
   }
 
   L.push('');

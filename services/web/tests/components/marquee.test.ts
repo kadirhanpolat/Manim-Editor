@@ -74,6 +74,8 @@ describe('marquee interaction flow (composable with fake stage)', () => {
       pathDrawing: ref(false),
       pathPoints: ref([]),
       pathSourceId: ref(null),
+      guides: computed(() => []),
+      stageObjects: computed(() => []),
     };
   }
 
@@ -155,6 +157,8 @@ describe('multi-selection group drag (onDragEnd delta fan-out)', () => {
       pathDrawing: ref(false),
       pathPoints: ref([]),
       pathSourceId: ref(null),
+      guides: computed(() => []),
+      stageObjects: computed(() => []),
     };
     const { onDragEnd } = useStageInteractions(store, deps);
     // circle uses center positioning: node x/y == new project x/y (identity c2s)
@@ -183,6 +187,8 @@ describe('multi-selection group drag (onDragEnd delta fan-out)', () => {
       pathDrawing: ref(false),
       pathPoints: ref([]),
       pathSourceId: ref(null),
+      guides: computed(() => []),
+      stageObjects: computed(() => []),
     };
     const { onDragEnd } = useStageInteractions(store, deps);
     onDragEnd(a.id, { target: { x: () => 500, y: () => 450 } });

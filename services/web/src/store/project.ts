@@ -77,6 +77,8 @@ export interface StoreProject {
   keyframeDefaults: KeyframeDefaults;
   sceneType: '2d' | '3d';
   camera3d: StoreCamera3d;
+  sections: Array<{ id: string; time: number; title: string }>;
+  guides: Array<{ id: string; axis: 'h' | 'v'; pos: number }>;
 }
 
 interface FrameState {
@@ -118,6 +120,7 @@ interface State {
   selectedClipId: string | null;
   selectedKeyframeId: SelectedKeyframeId | null;
   activeTool: string;
+  recentColors: string[];
   playbackTime: number;
   playbackPlaying: boolean;
   playbackLoop: boolean;
@@ -194,6 +197,8 @@ function createDefaultProject(editorMode = 'visual'): StoreProject {
       codegenMode: 'UpdateFromAlphaFunc',
     },
     sceneType: '2d', // '2d' | '3d'
+    sections: [],
+    guides: [],
     camera3d: {
       phi: 75,
       theta: -45,
@@ -465,6 +470,15 @@ export const SHAPE_COLORS = {
   cross: '#ef4444',
 };
 
+function loadRecentColors(): string[] {
+  try {
+    const raw = localStorage.getItem('manim-motion-recent-colors');
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
 
 export const pinia = createPinia();
@@ -477,6 +491,7 @@ const useProjectStore = defineStore('project', {
     selectedClipId: null,
     selectedKeyframeId: null,
     activeTool: 'select',
+    recentColors: loadRecentColors(),
     playbackTime: 0,
     playbackPlaying: false,
     playbackLoop: true,
@@ -1561,6 +1576,27 @@ const useProjectStore = defineStore('project', {
       }
     },
 
+    splitClip(clipId: string) {
+      const splitTime = this.playbackTime;
+      for (const track of this.project.tracks) {
+        const idx = track.clips.findIndex((c) => c.id === clipId);
+        if (idx === -1) continue;
+        const clip = track.clips[idx]!;
+        if (splitTime <= clip.startTime || splitTime >= clip.startTime + clip.duration) return;
+
+        const firstDuration = splitTime - clip.startTime;
+        const secondDuration = clip.duration - firstDuration;
+
+        const first = { ...clip, duration: firstDuration };
+        const second = { ...clip, id: uid('clip'), startTime: splitTime, duration: secondDuration };
+
+        track.clips.splice(idx, 1, first, second);
+        this.isDirty = true;
+        this.commitState();
+        return;
+      }
+    },
+
     setClipAudio(clipId: string, audioData: import('@manim/codegen').AudioConfig) {
       for (const track of this.project.tracks) {
         const clip = track.clips.find((c) => c.id === clipId);
@@ -1706,6 +1742,15 @@ const useProjectStore = defineStore('project', {
 
     setPlaybackTime(t: number) {
       this.playbackTime = t;
+    },
+    addRecentColor(hex: string) {
+      const filtered = this.recentColors.filter((c) => c !== hex);
+      this.recentColors = [hex, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('manim-motion-recent-colors', JSON.stringify(this.recentColors));
+      } catch {
+        // localStorage may be unavailable in test env
+      }
     },
     setPlaybackPlaying(p: boolean) {
       this.playbackPlaying = p;
@@ -2281,6 +2326,48 @@ const useProjectStore = defineStore('project', {
 
     setCamera3d(params: Partial<StoreCamera3d>) {
       Object.assign(this.project.camera3d, params);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addSection(time: number, title: string) {
+      const section = { id: uid(), time, title };
+      this.project.sections = [...this.project.sections, section].sort((a, b) => a.time - b.time);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeSection(sectionId: string) {
+      this.project.sections = this.project.sections.filter((s) => s.id !== sectionId);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    updateSection(sectionId: string, patch: Partial<{ time: number; title: string }>) {
+      const s = this.project.sections.find((sec) => sec.id === sectionId);
+      if (!s) return;
+      Object.assign(s, patch);
+      this.project.sections = [...this.project.sections].sort((a, b) => a.time - b.time);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addGuide(axis: 'h' | 'v', pos: number) {
+      this.project.guides = [...this.project.guides, { id: uid(), axis, pos }];
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeGuide(guideId: string) {
+      this.project.guides = this.project.guides.filter((g) => g.id !== guideId);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    moveGuide(guideId: string, pos: number) {
+      const g = this.project.guides.find((g) => g.id === guideId);
+      if (!g) return;
+      g.pos = pos;
       this.isDirty = true;
       this.commitState();
     },

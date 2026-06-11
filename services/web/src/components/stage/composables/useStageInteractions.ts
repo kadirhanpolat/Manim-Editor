@@ -4,6 +4,8 @@ import { canvasToVertex } from '../../../engine/polygonVertices.js';
 import { normalizeRect, marqueeSelectIds } from '../../../engine/marquee.js';
 import type { PathPoint } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
+import { snapPoint } from '../../../engine/snap.js';
+import type { SnapCandidate } from '../../../engine/snap.js';
 
 type ProjectStore = ReturnType<typeof useProjectStore>;
 
@@ -64,6 +66,10 @@ interface Deps {
   pathDrawing: Ref<boolean>;
   pathPoints: Ref<PathPoint[]>;
   pathSourceId: Ref<string | null>;
+  guides: ComputedRef<Array<{ id: string; axis: 'h' | 'v'; pos: number }>>;
+  stageObjects: ComputedRef<
+    Array<{ id: string; x?: number; y?: number; width?: number; height?: number; hidden?: boolean }>
+  >;
 }
 
 export function useStageInteractions(store: ProjectStore, deps: Deps) {
@@ -72,6 +78,8 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     objectsLayer,
     transformer,
     vs,
+    ox,
+    oy,
     s2c,
     c2s,
     unprojectView,
@@ -81,6 +89,8 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     pathDrawing,
     pathPoints,
     pathSourceId,
+    guides,
+    stageObjects,
   } = deps;
 
   // ── non-reactive instance var for dblclick guard (path draw) ──
@@ -88,6 +98,29 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
 
   // ── State ──
   const shiftKey = ref(false);
+
+  function buildSnapCandidates(excludeIds: string[]): SnapCandidate[] {
+    const candidates: SnapCandidate[] = [];
+    for (const g of guides.value) {
+      if (g.axis === 'h') candidates.push({ y: g.pos * vs.value + oy.value });
+      else candidates.push({ x: g.pos * vs.value + ox.value });
+    }
+    for (const obj of stageObjects.value) {
+      if (excludeIds.includes(obj.id) || obj.hidden) continue;
+      const c = s2c(obj.x ?? 0, obj.y ?? 0);
+      const hw = ((obj.width ?? 0) / 2) * vs.value;
+      const hh = ((obj.height ?? 0) / 2) * vs.value;
+      candidates.push(
+        { x: c.x - hw },
+        { x: c.x },
+        { x: c.x + hw },
+        { y: c.y - hh },
+        { y: c.y },
+        { y: c.y + hh }
+      );
+    }
+    return candidates;
+  }
   const liveTransform = ref<{
     id: string;
     type: string;
@@ -97,6 +130,29 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     h: number;
     rotation: number;
   } | null>(null);
+
+  const editingTextId = ref<string | null>(null);
+  const TEXT_EDITABLE_TYPES = ['text', 'latex', 'code'] as const;
+
+  function startTextEdit(objId: string) {
+    if (is3D.value) return;
+    const obj = store.objectById(objId);
+    if (!obj || obj.locked) return;
+    if (!TEXT_EDITABLE_TYPES.includes(obj.type as (typeof TEXT_EDITABLE_TYPES)[number])) return;
+    editingTextId.value = objId;
+  }
+
+  function commitTextEdit(newText: string) {
+    if (!editingTextId.value) return;
+    const obj = store.objectById(editingTextId.value);
+    const field = obj?.type === 'code' ? 'codeText' : 'text';
+    store.updateObject(editingTextId.value, { [field]: newText });
+    editingTextId.value = null;
+  }
+
+  function cancelTextEdit() {
+    editingTextId.value = null;
+  }
 
   // Marquee selection (2D select tool only). Canvas-pixel coords.
   const marquee = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
@@ -376,6 +432,16 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
       newX = sp.x;
       newY = sp.y;
     }
+    // Guide + object edge snapping (2D only)
+    if (!is3D.value) {
+      const canvasPos = s2c(newX, newY);
+      const snapped = snapPoint(canvasPos.x, canvasPos.y, buildSnapCandidates([id]));
+      if (snapped.snappedX || snapped.snappedY) {
+        const sp2 = c2s(snapped.x, snapped.y);
+        newX = sp2.x;
+        newY = sp2.y;
+      }
+    }
     if (store.project.stage.snapEnabled) {
       const gs = store.project.stage.width / (store.project.stage.gridSize ?? 1);
       const gs2 = store.project.stage.height / (store.project.stage.gridSize ?? 1);
@@ -536,5 +602,9 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     onTransformEnd,
     onTextDblClick,
     updateTransformer,
+    editingTextId,
+    startTextEdit,
+    commitTextEdit,
+    cancelTextEdit,
   };
 }

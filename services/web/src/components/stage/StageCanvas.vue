@@ -765,11 +765,52 @@
           <v-rect :config="marqueeRect" />
         </v-layer>
 
+        <!-- Guide lines — not exported to render -->
+        <v-layer v-if="!is3D" :config="{ listening: true }">
+          <v-line
+            v-for="g in store.project.guides"
+            :key="g.id"
+            :config="guideLineConfig(g)"
+            @mousedown="onGuideMousedown(g.id, $event)"
+          />
+        </v-layer>
+
         <!-- Selection transformer -->
         <v-layer>
           <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
         </v-layer>
       </v-stage>
+
+      <!-- Inline text editing overlay -->
+      <textarea
+        v-if="editingTextId"
+        :style="textEditStyle"
+        :value="editingText"
+        @blur="onTextEditBlur"
+        @keydown.escape.prevent="cancelTextEdit"
+        @keydown.ctrl.enter.prevent="(e) => commitTextEdit((e.target as HTMLTextAreaElement).value)"
+      />
+
+      <!-- Horizontal ruler (2D only) -->
+      <canvas
+        v-if="!is3D"
+        ref="hRulerRef"
+        class="ruler ruler-h"
+        :width="containerWidth"
+        :height="RULER_SIZE"
+        @mousedown="onHRulerMousedown"
+      />
+      <!-- Vertical ruler (2D only) -->
+      <canvas
+        v-if="!is3D"
+        ref="vRulerRef"
+        class="ruler ruler-v"
+        :width="RULER_SIZE"
+        :height="containerHeight"
+        @mousedown="onVRulerMousedown"
+      />
+      <!-- Corner block -->
+      <div v-if="!is3D" class="ruler-corner" />
 
       <!-- 3D view selector (overlay, top-left) -->
       <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay)">
@@ -867,6 +908,7 @@ import { useStageInteractions } from './composables/useStageInteractions.js';
 import ContextMenu from './ContextMenu.vue';
 import type { ContextMenuItem } from './ContextMenu.vue';
 import { useStageAssets } from './composables/useStageAssets.js';
+import { useStageRulers, RULER_SIZE } from './composables/useStageRulers.js';
 
 const store = useProjectStore();
 
@@ -886,7 +928,8 @@ const transformer = ref<any>(null);
 
 // ── Viewport composable ──
 const {
-  // containerWidth, containerHeight, panOffset unused directly (accessed via stageConfig/stg)
+  containerWidth,
+  containerHeight,
   zoomLevel,
   stg,
   vs,
@@ -931,7 +974,7 @@ const {
   pathCanvasPoints,
   pathPreviewLineCfg,
   startPathDraw,
-  onStageDblClick,
+  onStageDblClick: onPathStageDblClick,
 } = useStagePathDraw(store, { s2c, iso, projCx, projCy, proj3DScale });
 
 // ── Interactions composable ──
@@ -954,6 +997,10 @@ const {
   onTransformEnd,
   onTextDblClick,
   updateTransformer,
+  editingTextId,
+  startTextEdit,
+  commitTextEdit,
+  cancelTextEdit,
 } = useStageInteractions(store, {
   konvaStage,
   objectsLayer,
@@ -970,6 +1017,20 @@ const {
   pathDrawing,
   pathPoints,
   pathSourceId,
+  guides: computed(
+    () => store.project.guides as Array<{ id: string; axis: 'h' | 'v'; pos: number }>
+  ),
+  stageObjects: computed(
+    () =>
+      store.project.objects as Array<{
+        id: string;
+        x?: number;
+        y?: number;
+        width?: number;
+        height?: number;
+        hidden?: boolean;
+      }>
+  ),
 });
 
 // ── Assets composable ──
@@ -983,6 +1044,107 @@ const {
   onDragLeave,
   onDrop,
 } = useStageAssets(store, { objects, c2s, container, objectsLayer });
+
+// ── Rulers composable ──
+const {
+  hRulerRef,
+  vRulerRef,
+  redraw: redrawRulers,
+} = useStageRulers({
+  vs,
+  ox,
+  oy,
+  stageW: computed(() => store.project.stage.width),
+  stageH: computed(() => store.project.stage.height),
+});
+
+// ── Guide creation from ruler drag ──
+const _pendingGuidePos = ref<{ axis: 'h' | 'v'; pos: number } | null>(null);
+
+function onHRulerMousedown(_e: MouseEvent) {
+  const onMove = (me: MouseEvent) => {
+    const rect = container.value?.getBoundingClientRect();
+    if (!rect) return;
+    const cy = me.clientY - rect.top;
+    _pendingGuidePos.value = { axis: 'h', pos: Math.round((cy - oy.value) / vs.value) };
+  };
+  const onUp = () => {
+    if (_pendingGuidePos.value) {
+      store.addGuide(_pendingGuidePos.value.axis, _pendingGuidePos.value.pos);
+      _pendingGuidePos.value = null;
+    }
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function onVRulerMousedown(_e: MouseEvent) {
+  const onMove = (me: MouseEvent) => {
+    const rect = container.value?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = me.clientX - rect.left;
+    _pendingGuidePos.value = { axis: 'v', pos: Math.round((cx - ox.value) / vs.value) };
+  };
+  const onUp = () => {
+    if (_pendingGuidePos.value) {
+      store.addGuide(_pendingGuidePos.value.axis, _pendingGuidePos.value.pos);
+      _pendingGuidePos.value = null;
+    }
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// ── Guide line config (Konva) ──
+function guideLineConfig(g: { axis: 'h' | 'v'; pos: number; id: string }) {
+  const stageW = store.project.stage.width;
+  const stageH = store.project.stage.height;
+  const p =
+    g.axis === 'h'
+      ? [0, g.pos * vs.value + oy.value, stageW * vs.value, g.pos * vs.value + oy.value]
+      : [g.pos * vs.value + ox.value, 0, g.pos * vs.value + ox.value, stageH * vs.value];
+  return {
+    points: p,
+    stroke: '#4f8ef7',
+    strokeWidth: 1,
+    dash: [4, 4],
+    opacity: 0.7,
+    hitStrokeWidth: 8,
+  };
+}
+
+function onGuideMousedown(guideId: string, e: { evt: MouseEvent }) {
+  const g = store.project.guides.find((g) => g.id === guideId);
+  if (!g) return;
+  const onMove = (me: MouseEvent) => {
+    const rect = container.value?.getBoundingClientRect();
+    if (!rect) return;
+    const newPos =
+      g.axis === 'h'
+        ? Math.round((me.clientY - rect.top - oy.value) / vs.value)
+        : Math.round((me.clientX - rect.left - ox.value) / vs.value);
+    store.moveGuide(guideId, newPos);
+  };
+  const onUp = (me: MouseEvent) => {
+    const rect = container.value?.getBoundingClientRect();
+    if (rect) {
+      const outside =
+        g.axis === 'h'
+          ? me.clientY < rect.top || me.clientY > rect.bottom
+          : me.clientX < rect.left || me.clientX > rect.right;
+      if (outside) store.removeGuide(guideId);
+    }
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  void e;
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
 
 // ── Watch ──
 watch(
@@ -1010,6 +1172,7 @@ onMounted(() => {
   if (container.value) _ro.observe(container.value);
   loadNewImages();
   loadNewFonts();
+  redrawRulers();
   _onKeyDown = (e) => {
     if (e.key === 'Shift') shiftKey.value = true;
   };
@@ -1235,6 +1398,57 @@ function onViewChange(e: Event) {
   store.setCamera3d({ view: (e.target as HTMLSelectElement).value });
 }
 
+// ── Stage double-click: path draw finish + inline text edit ──
+function onStageDblClick(e: Record<string, unknown>) {
+  onPathStageDblClick(e);
+  const target = e['target'] as Record<string, unknown> | undefined;
+  const idFn = target?.['id'];
+  const nodeId = typeof idFn === 'function' ? (idFn as () => string)() : undefined;
+  if (!nodeId) return;
+  const obj = store.objectById(nodeId);
+  if (obj && (obj.type === 'text' || obj.type === 'latex' || obj.type === 'code')) {
+    startTextEdit(nodeId);
+  }
+}
+
+// ── Inline text editing overlay ──
+const textEditStyle = computed(() => {
+  if (!editingTextId.value) return {};
+  const obj = store.objectById(editingTextId.value);
+  if (!obj) return {};
+  const pos = s2c(obj.x ?? 0, obj.y ?? 0);
+  const w = Math.max(80, (obj.width ?? 200) * vs.value);
+  const h = Math.max(40, (obj.height ?? 60) * vs.value);
+  return {
+    position: 'absolute' as const,
+    left: pos.x - w / 2 + 'px',
+    top: pos.y - h / 2 + 'px',
+    width: w + 'px',
+    minHeight: h + 'px',
+    zIndex: 500,
+    fontSize: Math.max(11, 14 * vs.value) + 'px',
+    padding: '4px 6px',
+    background: 'var(--studio-surface3)',
+    border: '2px solid var(--studio-accent)',
+    borderRadius: '4px',
+    color: 'var(--studio-text)',
+    resize: 'none' as const,
+    outline: 'none',
+    fontFamily: 'monospace',
+    lineHeight: '1.4',
+  };
+});
+
+const editingText = computed(() => {
+  if (!editingTextId.value) return '';
+  const obj = store.objectById(editingTextId.value);
+  return (obj?.['text'] as string) ?? '';
+});
+
+function onTextEditBlur(e: FocusEvent) {
+  commitTextEdit((e.target as HTMLTextAreaElement).value);
+}
+
 // ── Right-click context menu ──
 const ctxMenu = ref<{ x: number; y: number; objId: string | null } | null>(null);
 
@@ -1318,3 +1532,30 @@ const ctxMenuItems = computed<ContextMenuItem[]>(() => {
 // ── Expose for parent ref calls ──
 defineExpose({ startPathDraw });
 </script>
+
+<style scoped>
+.ruler {
+  position: absolute;
+  pointer-events: auto;
+  z-index: 10;
+}
+.ruler-h {
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+}
+.ruler-v {
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+}
+.ruler-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  background: var(--studio-surface2, #1a1a1a);
+  z-index: 11;
+}
+</style>
