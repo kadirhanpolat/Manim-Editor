@@ -77,6 +77,7 @@ export interface StoreProject {
   keyframeDefaults: KeyframeDefaults;
   sceneType: '2d' | '3d';
   camera3d: StoreCamera3d;
+  sections: Array<{ id: string; time: number; title: string }>;
 }
 
 interface FrameState {
@@ -195,6 +196,7 @@ function createDefaultProject(editorMode = 'visual'): StoreProject {
       codegenMode: 'UpdateFromAlphaFunc',
     },
     sceneType: '2d', // '2d' | '3d'
+    sections: [],
     camera3d: {
       phi: 75,
       theta: -45,
@@ -2322,6 +2324,28 @@ const useProjectStore = defineStore('project', {
 
     setCamera3d(params: Partial<StoreCamera3d>) {
       Object.assign(this.project.camera3d, params);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addSection(time: number, title: string) {
+      const section = { id: uid(), time, title };
+      this.project.sections = [...this.project.sections, section].sort((a, b) => a.time - b.time);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeSection(sectionId: string) {
+      this.project.sections = this.project.sections.filter((s) => s.id !== sectionId);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    updateSection(sectionId: string, patch: Partial<{ time: number; title: string }>) {
+      const s = this.project.sections.find((sec) => sec.id === sectionId);
+      if (!s) return;
+      Object.assign(s, patch);
+      this.project.sections = [...this.project.sections].sort((a, b) => a.time - b.time);
       this.isDirty = true;
       this.commitState();
     },

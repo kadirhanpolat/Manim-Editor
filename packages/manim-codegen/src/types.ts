@@ -215,6 +215,7 @@ export interface Project {
   cameraType?: 'static' | 'moving';
   camera3d?: Camera3d;
   keyframeDefaults?: KeyframeDefaults;
+  sections?: Array<{ id: string; time: number; title: string }>;
 }
 
 // ─── Per-type narrow interfaces ────────────────────────────────────────────
