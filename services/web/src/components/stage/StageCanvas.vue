@@ -1017,6 +1017,20 @@ const {
   pathDrawing,
   pathPoints,
   pathSourceId,
+  guides: computed(
+    () => store.project.guides as Array<{ id: string; axis: 'h' | 'v'; pos: number }>
+  ),
+  stageObjects: computed(
+    () =>
+      store.project.objects as Array<{
+        id: string;
+        x?: number;
+        y?: number;
+        width?: number;
+        height?: number;
+        hidden?: boolean;
+      }>
+  ),
 });
 
 // ── Assets composable ──
