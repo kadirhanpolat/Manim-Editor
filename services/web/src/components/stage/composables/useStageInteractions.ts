@@ -98,6 +98,27 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     rotation: number;
   } | null>(null);
 
+  const editingTextId = ref<string | null>(null);
+  const TEXT_EDITABLE_TYPES = ['text', 'latex', 'code'] as const;
+
+  function startTextEdit(objId: string) {
+    if (is3D.value) return;
+    const obj = store.objectById(objId);
+    if (!obj || obj.locked) return;
+    if (!TEXT_EDITABLE_TYPES.includes(obj.type as (typeof TEXT_EDITABLE_TYPES)[number])) return;
+    editingTextId.value = objId;
+  }
+
+  function commitTextEdit(newText: string) {
+    if (!editingTextId.value) return;
+    store.updateObject(editingTextId.value, { text: newText });
+    editingTextId.value = null;
+  }
+
+  function cancelTextEdit() {
+    editingTextId.value = null;
+  }
+
   // Marquee selection (2D select tool only). Canvas-pixel coords.
   const marquee = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
@@ -536,5 +557,9 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
     onTransformEnd,
     onTextDblClick,
     updateTransformer,
+    editingTextId,
+    startTextEdit,
+    commitTextEdit,
+    cancelTextEdit,
   };
 }
