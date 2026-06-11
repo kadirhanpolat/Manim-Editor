@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.24.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.25.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -82,7 +82,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 ### Animation & Timeline
 - **Multi-track timeline** -- Up to 5 tracks with draggable, resizable animation clips
 - **Transform morphing** -- Select two shapes and morph between them with customizable easing
-- **Animation types** -- Transform, Move, Scale, Fade, Rotate with 17 easing functions
+- **Animation types** -- Transform, Move, Scale, Fade, Rotate with 20 easing functions
 - **Emphasis animations** -- Five transient (there-and-back) Manim emphasis clips: Indicate, Flash, Wiggle, Circumscribe, FocusOn; full parameter set per type, render-exact output, mixed-fidelity canvas preview, and `.py` round-trip
 - **Tex-matching morph** -- A "Match terms" toggle on any transform clip upgrades the emitted animation: two `MathTex` objects morph via `TransformMatchingTex` (Manim aligns matching sub-expressions); other VMobjects use `TransformMatchingShapes`; raster objects fall back to `FadeTransform`; absent toggle = legacy `ReplacementTransform`. Round-trips through `.py` export/import
 - **Animated counter** -- A `Counter` object (`DecimalNumber`) with configurable decimal places and optional suffix string; add a `count` clip to animate the value from/to in Python using a `ValueTracker` block; the counter's `value` property is also keyframable (all three codegen modes). Render-accurate; canvas preview shows the formatted number
@@ -279,7 +279,7 @@ Project
 
 **Parallel clips**: Any clip can be marked `parallel: true` with a `lag_ratio` to group with adjacent clips into `AnimationGroup` / `LaggedStart`.
 
-**Easing functions** (17): linear, ease_in, ease_out, ease_in_out, cubic/quart variants, back variants, elastic in/out, bounce, spring
+**Easing functions** (20): linear, ease_in, ease_out, ease_in_out, cubic/quart variants, back variants, elastic in/out/in_out, bounce in/in_out, spring
 
 ---
 
@@ -420,8 +420,8 @@ GIF/WebM append `--format gif|webm`; PNG Frames uses `--format png` and the rend
 
 ```bash
 cd services/web
-npm test           # 114 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 714 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, + characterization snapshots)
+npm test           # 122 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
+npm run test:unit  # 744 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, Wave 2: splitClip/sections/guides/snap/timeline-ctx, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -437,7 +437,7 @@ The backend services and shared package have their own suites (from the repo roo
 
 ```bash
 npm test --workspace services/api             # 55 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety)
-npm --workspace packages/manim-codegen test   # 12 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping)
+npm --workspace packages/manim-codegen test   # 15 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
 ```
 
 ### End-to-end (Playwright)
@@ -449,11 +449,11 @@ drives the real app in a browser:
 cd e2e
 npm install                      # first time only
 npx playwright install chromium  # first time only
-npm test                         # 9 Chromium tests; auto-boots the web dev server on :5188
+npm test                         # 17 Chromium tests; auto-boots the web dev server on :5188
 ```
 
 It clicks every palette/clip/tool surface (add objects, MotionPicker clips,
-keyboard tools, transform gating) against the running app. CI runs this suite as
+keyboard tools, transform gating, Wave 2: sections/guides/splitClip/recentColors) against the running app. CI runs this suite as
 a **non-blocking** job (a flaky browser run reports but doesn't gate every push).
 
 ---
@@ -487,7 +487,24 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.24.0 (current)
+### v3.25.0 (current)
+
+Wave 2 — four parallel tracks (editor polish, timeline structure, precision layout, quality), built sequentially and integrated with a full test gate per merge.
+
+- **Inline text editing**: double-click on a `text`, `latex`, or `code` object opens a textarea overlay directly on the canvas; the `editingTextId` state is managed by `useStageInteractions`. The `code` objects expose a `codeText` field for the overlay.
+- **Numeric scrubbing**: drag the label in any `Num.vue` inspector field to scrub its value (100 px = 1 unit, Shift ×10); replaces tedious click-select-type for small adjustments.
+- **Recent colors**: `store.recentColors` (persistent via `localStorage`), populated automatically on every color change; `ColorRow` swatches offer one-click reuse.
+- **Split clip**: `store.splitClip(clipId)` splits the clip at `store.playbackTime`; both halves inherit the original type/objectId. Available from the new timeline clip context menu ("Böl").
+- **Timeline clip context menu**: right-click any clip for Kopyala / Kes / Yapıştır / Çoğalt / Böl / Sil; reuses the same `ContextMenu.vue` component from the canvas.
+- **Scene sections**: `store.project.sections[]` sorted array of `{ id, time, title }` markers; `addSection/removeSection/updateSection` actions. Codegen emits `self.next_section("Title")` before the first animation at or after each section's time. Timeline ruler shows vertical markers with inline-editable titles; "+ Bölüm" button inserts at playhead.
+- **Canvas rulers**: `useStageRulers` composable draws adaptive H + V rulers (18 px, tick intervals auto-scaled to zoom) on `<canvas>` overlays; visible in 2D mode.
+- **Guides**: `store.project.guides[]` array of `{ id, axis:'h'|'v', pos }` lines; `addGuide/removeGuide/moveGuide` actions. Drag from a ruler to create; drag on the guide to move; drag out of stage to delete. Rendered as a blue dashed Konva layer.
+- **Smart snapping**: `engine/snap.ts` exports a pure `snapPoint(x, y, candidates, threshold)` helper; `onDragEnd` in `useStageInteractions` converts the drop position to canvas coords, snaps against guide lines + other objects' bounding-box edges (2D mode only), then converts back.
+- **Easing additions**: `ease_in_out_elastic`, `ease_in_bounce`, `ease_in_out_bounce` added to `easing.ts`, `EASING_MAP` (codegen), and `EASING_LIST`; engine parity assertions updated.
+- **E2E expansion**: 8 new Playwright scenarios in `e2e/tests/wave2-coverage.spec.ts` (addSection, addGuide, splitClip, recentColor, undo, lock, basic object CRUD).
+- **Tests**: 714 → **744 web unit**, 114 → **122 engine**, 12 → **15 codegen** (55 api + 17 e2e unchanged).
+
+### v3.24.0
 
 Download button label fix — render completed dialog now shows the correct format name ("MP4 İndir" / "GIF İndir" / "WebM İndir") instead of a hardcoded "Download MP4" for all formats.
 

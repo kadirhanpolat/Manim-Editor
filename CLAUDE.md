@@ -24,15 +24,15 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 714 unit tests (store, components, export)
+cd services/web && npm run test:unit    # 744 unit tests (store, components, export)
 cd services/web && npm run test:coverage # same, with v8 coverage report
-cd services/web && npm test             # 114 engine tests (easing, geometry, transform, keyframe) — runs via tsx
+cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 55 api tests (compiler pipeline + path/scene-name/render-options safety)
-npm test --workspace packages/manim-codegen  # 12 codegen tests
+npm test --workspace packages/manim-codegen  # 15 codegen tests
 # All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
-cd e2e && npm test                      # 9 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
+cd e2e && npm test                      # 17 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
 ```
 
 Tooling (run from repo root) — all are CI gates:
@@ -59,7 +59,8 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `services/web/src/export/manim.ts` | Thin client generator wrapper + the web-only `.py` **parser** (`parseManimScript`) |
 | `services/web/src/components/stage/StageCanvas.vue` | Orchestrator (~1230 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders (interactive configs lock-wrapped via `L()`) |
 | `services/web/src/components/stage/configs/*.ts` | **Pure** Konva config builders `fn(obj, ctx)` (unit-tested): `context.ts` (ctx contract), `shapes2d`, `text`, `dataObjects`, `relational`, `axes`, `objects3d`, `overlays`, `chrome`, `effects` |
-| `services/web/src/components/stage/composables/*.ts` | `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select), `useStagePathDraw`, `useStageAssets` |
+| `services/web/src/components/stage/composables/*.ts` | `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select; `editingTextId` for inline text edit; smart snap in `onDragEnd`), `useStagePathDraw`, `useStageAssets`, `useStageRulers` (H+V ruler canvases, adaptive ticks) |
+| `services/web/src/engine/snap.ts` | Pure `snapPoint(x, y, candidates, threshold)` helper — snaps to guide lines + object bounding-box edges; unit-tested without Konva |
 | `services/web/src/components/inspector/PropertiesPanel.vue` | Thin orchestrator (~40 lines) — `KeyframePanel` + 4-way switch over `panels/{Object,Clip,CameraClip,Canvas}Inspector.vue` |
 | `services/web/src/components/inspector/object-settings/*.vue` + `index.js` | Per-object-type settings + `settingsComponentFor(type)` registry. Cross-cutting: `EffectsSection`, `TextSettings`, `MotionPicker` |
 | `services/web/src/components/inspector/ui/*.vue` + `useObjectUpdate.js` | Shared atoms (`Section`, `Num`, `ColorRow`) + `u`/`uSize`/`uRange` field-update composable |
@@ -79,6 +80,8 @@ All Manim Python generation lives in the **`@manim/codegen`** npm-workspace pack
 Both services are **thin wrappers** calling `generateScene(project, { resolveAsset })` — the only intentional divergence is `resolveAsset` (server file path vs client placeholder). The **`.py` parser** (`parseManimScript`) is web-only, in `manim.ts`.
 
 **Adding a new object/clip type → edit the package once + the `manim.ts` parser for round-trip.** Emit constructors on **one line** so the regex parser can read them back.
+
+`Project` type carries `sections?: Array<{ id: string; time: number; title: string }>` and `sceneDuration?: number` — used by `generateScene` to emit `self.next_section(…)` calls interleaved with animation steps.
 
 ### Parity invariants (regression-guarded)
 
@@ -111,6 +114,17 @@ store.isDirty = true;    // mark unsaved changes
 store.computedDuration   // getter = property (no parens)
 store.hasPendingAudio    // getter = property
 store.objectById(id)     // factory getter = called as function
+
+// Wave 2 actions
+store.splitClip(clipId)                       // split at store.playbackTime; both halves inherit type/objectId
+store.addSection(time, title)                 // insert sorted section marker
+store.removeSection(id)
+store.updateSection(id, { title?, time? })
+store.addGuide(axis, pos)                     // axis: 'h'|'v', pos in project px
+store.removeGuide(id)
+store.moveGuide(id, pos)
+store.recentColors                            // string[] (top-level store state, not project)
+store.addRecentColor(hex)                     // prepends + dedupes; persisted to localStorage
 ```
 
 ## Clip Types
@@ -189,12 +203,21 @@ clip.audio = {
 - Output extension follows the format end-to-end: worker writes `latest.<ext>`, `renders.ts` serves `latest.:ext` with the right Content-Type, web `getLatestUrl(projectId, ext)`; GIF displays via an `<img>` branch in the completed dialog. The download button label is driven by a `downloadLabel` computed in `App.vue` (`{ mp4→"MP4 İndir", gif→"GIF İndir", webm→"WebM İndir", zip→"ZIP İndir" }`). Legacy `{quality}` payloads (low→4k) still work unchanged.
 - **PNG frames → ZIP**: `FORMAT_EXT` maps `png → zip`, `webm_transparent → webm` (format names ≠ extensions — iterate `FORMAT_EXT.values()` when touching `latest.*`). The store mirrors this (`FORMAT_TO_EXT` in `renderOnServer`) so `renderFormat` always holds the real extension. Worker: manim writes frames as `<media_dir>/images/<module>/<SceneName><frame>.png` (no per-scene dir); `find_output_png_dir` locates them by scene-prefixed file glob, zips them into `latest.zip`, and job-start cleanup removes `images/` alongside `videos/` so stale frames never leak into the ZIP. Completed dialog shows a "ZIP İndir" branch when `renderFormat === 'zip'`. ZIP has no history copies (`render_*.zip` is not written).
 
-## Editor UX (lock/hide, context menu, marquee, autosave)
+## Editor UX (lock/hide, context menu, marquee, autosave, Wave 2)
 
 - `obj.locked` / `obj.hidden` — optional booleans (absent = legacy behavior). **Locked** → not clickable/draggable on canvas (interactive configs wrapped by `L()` in StageCanvas), still selectable from the timeline. **Hidden** → not drawn in preview AND **skipped by codegen** (`generateScene` filters hidden objects; annotations whose target is hidden are skipped too — NameError guard; their clips cascade). **Known loss:** hidden objects don't survive a `.py` round-trip. Actions: `toggleLocked`, `toggleHidden`; timeline object bars carry aria-labelled eye/lock icons.
 - **Right-click context menu** (`stage/ContextMenu.vue`): object variant (cut/copy/paste/duplicate/delete, bring-to-front/send-to-back, lock, hide) + empty-canvas variant. Store actions added for it: `bringToFront`, `sendToBack`, `duplicateSelection`, `cutSelection`, `selectAllObjects`, `translateObjects`.
+- **Timeline clip context menu** (`TimelineClip.vue`): right-click a clip → Kopyala/Kes/Yapıştır/Çoğalt/Böl/Sil. Reuses `ContextMenu.vue`. Paste uses `store.pasteSelection()` (NOT `pasteClipboard`).
+- **Split clip**: `store.splitClip(clipId)` splits at `store.playbackTime`; guard: split point must be strictly inside the clip. Both halves keep the original `type`/`objectId`.
+- **Scene sections**: `store.project.sections[]` sorted `{ id, time, title }` array; `addSection/removeSection/updateSection` actions (all `commitState()`). Codegen (`@manim/codegen/index.ts`) emits `self.next_section("Title")` before the first animation step at or after each `section.time`. Timeline ruler shows vertical markers + inline-editable titles (double-click); "+ Bölüm" button adds at playhead.
+- **Canvas rulers** (`useStageRulers.ts`): H + V ruler `<canvas>` overlays (18 px, `RULER_SIZE`), tick interval auto-scaled to zoom, visible in 2D mode only. Drag from a ruler onto the canvas to create a guide.
+- **Guides**: `store.project.guides[]` array of `{ id, axis:'h'|'v', pos }` (project px). `addGuide/removeGuide/moveGuide` actions. Rendered as a blue dashed Konva layer on `StageCanvas`; drag on guide to reposition, drag out of stage to delete.
+- **Smart snapping**: on drag-end, `useStageInteractions.onDragEnd` calls `snapPoint` (from `engine/snap.ts`) with guide positions + other objects' bounding-box edges as candidates (threshold 8 canvas px, 2D only). Coordinates round-trip through `s2c`/`c2s` for canvas space.
+- **Inline text edit**: double-click a `text`, `latex`, or `code` object → `editingTextId` in `useStageInteractions` → textarea overlay appears directly on the canvas in `StageCanvas.vue`. `code` objects use `codeText` field.
+- **Numeric scrubbing**: `Num.vue` label is draggable (100 px = 1 unit, Shift ×10) for fast inspector value changes.
+- **Recent colors**: `store.recentColors: string[]` (top-level state, not part of project); persisted to `localStorage` key `manim-motion-recent-colors`. `ColorRow` shows up to 10 swatches; `addRecentColor(hex)` prepends + dedupes.
 - **Marquee selection** (2D mode only): drag on empty canvas → bbox-intersecting objects become the multi-selection; the selection group-drags together. Intersection logic is a pure exported helper (unit-tested without Konva).
-- **Autosave**: 2 s-debounced project JSON under localStorage key `manim-motion-autosave` (`{project, savedAt}`); restore prompt on startup; cleared on New/Open/save. (localStorage also holds `manim-motion-theme`.)
+- **Autosave**: 2 s-debounced project JSON under localStorage key `manim-motion-autosave` (`{project, savedAt}`); restore prompt on startup; cleared on New/Open/save. (localStorage also holds `manim-motion-theme` and `manim-motion-recent-colors`.)
 
 ## Keyframe Animation System
 
