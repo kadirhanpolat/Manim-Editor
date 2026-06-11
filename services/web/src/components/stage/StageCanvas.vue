@@ -771,6 +771,16 @@
         </v-layer>
       </v-stage>
 
+      <!-- Inline text editing overlay -->
+      <textarea
+        v-if="editingTextId"
+        :style="textEditStyle"
+        :value="editingText"
+        @blur="onTextEditBlur"
+        @keydown.escape.prevent="cancelTextEdit"
+        @keydown.ctrl.enter.prevent="(e) => commitTextEdit((e.target as HTMLTextAreaElement).value)"
+      />
+
       <!-- 3D view selector (overlay, top-left) -->
       <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay)">
         <select
@@ -931,7 +941,7 @@ const {
   pathCanvasPoints,
   pathPreviewLineCfg,
   startPathDraw,
-  onStageDblClick,
+  onStageDblClick: onPathStageDblClick,
 } = useStagePathDraw(store, { s2c, iso, projCx, projCy, proj3DScale });
 
 // ── Interactions composable ──
@@ -954,6 +964,10 @@ const {
   onTransformEnd,
   onTextDblClick,
   updateTransformer,
+  editingTextId,
+  startTextEdit,
+  commitTextEdit,
+  cancelTextEdit,
 } = useStageInteractions(store, {
   konvaStage,
   objectsLayer,
@@ -1233,6 +1247,57 @@ const axesAreaRiemann = (o: SceneObject) => axes.axesAreaRiemann(o, ctx.value);
 // ── 3D view selector handler ──
 function onViewChange(e: Event) {
   store.setCamera3d({ view: (e.target as HTMLSelectElement).value });
+}
+
+// ── Stage double-click: path draw finish + inline text edit ──
+function onStageDblClick(e: Record<string, unknown>) {
+  onPathStageDblClick(e);
+  const target = e['target'] as Record<string, unknown> | undefined;
+  const idFn = target?.['id'];
+  const nodeId = typeof idFn === 'function' ? (idFn as () => string)() : undefined;
+  if (!nodeId) return;
+  const obj = store.objectById(nodeId);
+  if (obj && (obj.type === 'text' || obj.type === 'latex')) {
+    startTextEdit(nodeId);
+  }
+}
+
+// ── Inline text editing overlay ──
+const textEditStyle = computed(() => {
+  if (!editingTextId.value) return {};
+  const obj = store.objectById(editingTextId.value);
+  if (!obj) return {};
+  const pos = s2c(obj.x ?? 0, obj.y ?? 0);
+  const w = Math.max(80, (obj.width ?? 200) * vs.value);
+  const h = Math.max(40, (obj.height ?? 60) * vs.value);
+  return {
+    position: 'absolute' as const,
+    left: pos.x - w / 2 + 'px',
+    top: pos.y - h / 2 + 'px',
+    width: w + 'px',
+    minHeight: h + 'px',
+    zIndex: 500,
+    fontSize: Math.max(11, 14 * vs.value) + 'px',
+    padding: '4px 6px',
+    background: 'var(--studio-surface3)',
+    border: '2px solid var(--studio-accent)',
+    borderRadius: '4px',
+    color: 'var(--studio-text)',
+    resize: 'none' as const,
+    outline: 'none',
+    fontFamily: 'monospace',
+    lineHeight: '1.4',
+  };
+});
+
+const editingText = computed(() => {
+  if (!editingTextId.value) return '';
+  const obj = store.objectById(editingTextId.value);
+  return (obj?.['text'] as string) ?? '';
+});
+
+function onTextEditBlur(e: FocusEvent) {
+  commitTextEdit((e.target as HTMLTextAreaElement).value);
 }
 
 // ── Right-click context menu ──
