@@ -5,6 +5,11 @@ import { useProjectStore } from '../../src/store/project.js';
 import TimelineClip from '../../src/components/timeline/TimelineClip.vue';
 
 describe('TimelineClip context menu', () => {
+  const clip = {
+    id: 'c1', type: 'fade', objectId: 'o1',
+    startTime: 0, duration: 2, easing: 'ease_in_out', parallel: false,
+  };
+
   beforeEach(() => {
     setActivePinia(createPinia());
     const store = useProjectStore();
@@ -13,10 +18,6 @@ describe('TimelineClip context menu', () => {
   });
 
   it('renders context menu on right-click', async () => {
-    const clip = {
-      id: 'c1', type: 'fade', objectId: 'o1',
-      startTime: 0, duration: 2, easing: 'ease_in_out', parallel: false,
-    };
     const wrapper = mount(TimelineClip, {
       props: { clip, pps: 100 },
       attachTo: document.body,
@@ -27,10 +28,6 @@ describe('TimelineClip context menu', () => {
   });
 
   it('hides context menu when @close is emitted', async () => {
-    const clip = {
-      id: 'c1', type: 'fade', objectId: 'o1',
-      startTime: 0, duration: 2, easing: 'ease_in_out', parallel: false,
-    };
     const wrapper = mount(TimelineClip, {
       props: { clip, pps: 100 },
       attachTo: document.body,

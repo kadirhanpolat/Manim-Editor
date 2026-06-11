@@ -102,7 +102,6 @@ const ctxItems = computed<ContextMenuItem[]>(() => [
 ]);
 
 function onContextMenu(e: MouseEvent) {
-  e.preventDefault();
   store.selectClip(props.clip.id ?? null);
   ctxMenu.value = { x: e.clientX, y: e.clientY };
 }
