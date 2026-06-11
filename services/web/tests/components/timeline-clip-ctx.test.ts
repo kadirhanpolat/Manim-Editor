@@ -6,8 +6,13 @@ import TimelineClip from '../../src/components/timeline/TimelineClip.vue';
 
 describe('TimelineClip context menu', () => {
   const clip = {
-    id: 'c1', type: 'fade', objectId: 'o1',
-    startTime: 0, duration: 2, easing: 'ease_in_out', parallel: false,
+    id: 'c1',
+    type: 'fade',
+    objectId: 'o1',
+    startTime: 0,
+    duration: 2,
+    easing: 'ease_in_out',
+    parallel: false,
   };
 
   beforeEach(() => {

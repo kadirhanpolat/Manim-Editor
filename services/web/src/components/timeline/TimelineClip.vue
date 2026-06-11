@@ -91,14 +91,19 @@ const clipStyle = computed(() => ({
 const ctxMenu = ref<{ x: number; y: number } | null>(null);
 
 const ctxItems = computed<ContextMenuItem[]>(() => [
-  { id: 'copy',   label: 'Kopyala',  action: () => store.copySelection() },
-  { id: 'cut',    label: 'Kes',      action: () => store.cutSelection() },
-  { id: 'paste',  label: 'Yapıştır', action: () => store.pasteSelection(), disabled: store.clipboard.length === 0 },
-  { id: 'dup',    label: 'Çoğalt',   action: () => store.duplicateSelection() },
-  { id: 'sep1',   separator: true },
-  { id: 'split',  label: 'Böl',      action: () => store.splitClip(props.clip.id as string) },
-  { id: 'sep2',   separator: true },
-  { id: 'delete', label: 'Sil',      action: () => store.deleteClip(props.clip.id as string) },
+  { id: 'copy', label: 'Kopyala', action: () => store.copySelection() },
+  { id: 'cut', label: 'Kes', action: () => store.cutSelection() },
+  {
+    id: 'paste',
+    label: 'Yapıştır',
+    action: () => store.pasteSelection(),
+    disabled: store.clipboard.length === 0,
+  },
+  { id: 'dup', label: 'Çoğalt', action: () => store.duplicateSelection() },
+  { id: 'sep1', separator: true },
+  { id: 'split', label: 'Böl', action: () => store.splitClip(props.clip.id as string) },
+  { id: 'sep2', separator: true },
+  { id: 'delete', label: 'Sil', action: () => store.deleteClip(props.clip.id as string) },
 ]);
 
 function onContextMenu(e: MouseEvent) {
