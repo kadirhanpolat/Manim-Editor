@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.22.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.23.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -112,7 +112,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 - **Copy / Paste** -- Duplicate objects with offset (Ctrl+C / Ctrl+V)
 - **Autosave** -- Project JSON auto-saved to localStorage on a 2 s debounce; on startup the editor offers to restore unsaved work
 - **Generated Code view** -- Manim Python generated from your canvas; edit, copy, or download `.py`
-- **Server rendering** -- One-click HQ render via Docker — **MP4 / GIF / WebM**, 480p to 4K, 15/30/60 fps — with progress tracking; the download link follows the chosen format
+- **Server rendering** -- One-click HQ render via Docker — **MP4 / GIF / WebM / PNG Frames (ZIP) / WebM α (transparent)**, 480p to 4K, 15/30/60 fps — with progress tracking; the download link follows the chosen format (PNG renders download as a ZIP archive of frames)
 - **Project management** -- Save/load locally (JSON) or sync to Docker server
 
 ---
@@ -271,7 +271,7 @@ Project
  +-- assets[]: { id, name, type, filename, dataUrl?, width, height }
 ```
 
-**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`, `surrounding_rect`, `underline`, `cross`
+**Object types (2D)**: `rectangle`, `square`, `circle`, `ellipse`, `triangle`, `star`, `polygon`, `line`, `arrow`, `heart`, `dot`, `dot_grid`, `text`, `image`, `svg_asset`, `latex`, `axes`, `numberplane`, `numberline`, `annulus`, `arc`, `sector`, `double_arrow`, `polygon_free`, `parametric`, `matrix`, `brace`, `angle`, `counter`, `table`, `complex_plane`, `polar_plane`, `graph`, `vector_field`, `vector_components`, `ray`, `coord_point`, `bezier`, `surrounding_rect`, `underline`, `cross`, `code`, `bar_chart`
 
 **Object types (3D)**: `sphere`, `cube`, `cone`, `cylinder`, `torus`, `axes3d`, `surface`, `prism` — only when `sceneType: '3d'`
 
@@ -395,7 +395,7 @@ All Docker containers run with **least-privilege non-root users**:
 
 ### Render Export Options
 
-The render dialog offers **format** (MP4 / GIF / WebM), **resolution**, and **frame rate** selectors. Defaults (MP4 · 1920×1080 · 60 fps) produce the exact legacy `-qh` render. Values are enum-allowlisted in the API and mapped to manim flags via a fixed lookup (`services/renderer/render_args.py`) — never interpolated into argv.
+The render dialog offers **format** (MP4 / GIF / WebM / PNG Frames / WebM α), **resolution**, and **frame rate** selectors. Defaults (MP4 · 1920×1080 · 60 fps) produce the exact legacy `-qh` render. Values are enum-allowlisted in the API and mapped to manim flags via a fixed lookup (`services/renderer/render_args.py`) — never interpolated into argv.
 
 | Resolution | FPS | Manim flags |
 |------------|-----|-------------|
@@ -406,7 +406,7 @@ The render dialog offers **format** (MP4 / GIF / WebM), **resolution**, and **fr
 | 3840×2160 | 60 | `-qk` |
 | any other combo | | `-qh -r W,H --fps N` |
 
-GIF/WebM append `--format gif|webm`; the output and download extension follow the format. Legacy `{quality}` payloads still work.
+GIF/WebM append `--format gif|webm`; PNG Frames uses `--format png` and the renderer ZIPs the output frames into `latest.zip`; WebM α uses `--format webm --transparent` for a VP9+alpha stream. The download link and extension follow the format. Legacy `{quality}` payloads still work.
 
 ### Environment Variables
 
@@ -436,7 +436,7 @@ npm run format:check  # Prettier (.js/.ts/.vue/.json/.css)
 The backend services and shared package have their own suites (from the repo root):
 
 ```bash
-npm test --workspace services/api             # 53 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety)
+npm test --workspace services/api             # 55 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety)
 npm --workspace packages/manim-codegen test   # 12 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping)
 ```
 
@@ -487,7 +487,17 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.22.0 (current)
+### v3.23.0 (current)
+
+PNG frame sequences (ZIP) and transparent WebM export.
+
+- **PNG Frames export** (`png` format): render dialog gains a "PNG Frames" button; Manim writes per-frame PNGs to `images/<module>/<SceneName><frame>.png` (no per-scene subdirectory — scene-prefixed files only), which the renderer ZIPs with `ZIP_DEFLATED` and serves as `latest.zip`; the completed dialog shows a "ZIP İndir" download link.
+- **Transparent WebM export** (`webm_transparent` format): "WebM α" button maps to `--format webm --transparent`; output is a VP9+alpha stream served as `latest.webm`.
+- **Render dialog**: 5 format buttons — MP4, GIF, WebM, PNG Frames, WebM α. CSS grid layout (`auto-fill, minmax(70px, 1fr)`) keeps all 5 fitting cleanly.
+- **ZIP output path**: `FORMAT_EXT` maps `png→zip`; the store's `renderOnServer` uses `FORMAT_TO_EXT` so `renderFormat` always holds the real extension (`zip` / `webm`) not the format name. `images/` is cleaned at job start to prevent stale frames from prior renders leaking into the archive.
+- **Tests**: 53 → **55 api tests** (render-files: `isRenderExt('zip')`, `contentTypeFor('zip')`, `isRenderFilename('latest.zip')`); all suites green (714 unit / 114 engine / 55 api / 12 codegen).
+
+### v3.22.0
 
 Wave 1 — four parallel tracks (showcase, export formats, content objects, editor UX), built by 4 concurrent worktree agents and integrated sequentially with a full test gate per merge.
 
