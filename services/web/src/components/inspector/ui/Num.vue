@@ -4,7 +4,8 @@
       class="num-label text-[9px] text-studio-text-muted/50 cursor-ew-resize select-none"
       :class="{ 'text-yellow-400': scrubbing }"
       @mousedown="onLabelMousedown"
-    >{{ label }}</span>
+      >{{ label }}</span
+    >
     <input
       class="input input-sm"
       type="number"
