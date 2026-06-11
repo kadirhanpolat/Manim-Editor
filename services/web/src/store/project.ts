@@ -78,6 +78,7 @@ export interface StoreProject {
   sceneType: '2d' | '3d';
   camera3d: StoreCamera3d;
   sections: Array<{ id: string; time: number; title: string }>;
+  guides: Array<{ id: string; axis: 'h' | 'v'; pos: number }>;
 }
 
 interface FrameState {
@@ -197,6 +198,7 @@ function createDefaultProject(editorMode = 'visual'): StoreProject {
     },
     sceneType: '2d', // '2d' | '3d'
     sections: [],
+    guides: [],
     camera3d: {
       phi: 75,
       theta: -45,
@@ -2346,6 +2348,26 @@ const useProjectStore = defineStore('project', {
       if (!s) return;
       Object.assign(s, patch);
       this.project.sections = [...this.project.sections].sort((a, b) => a.time - b.time);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    addGuide(axis: 'h' | 'v', pos: number) {
+      this.project.guides = [...this.project.guides, { id: uid(), axis, pos }];
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    removeGuide(guideId: string) {
+      this.project.guides = this.project.guides.filter((g) => g.id !== guideId);
+      this.isDirty = true;
+      this.commitState();
+    },
+
+    moveGuide(guideId: string, pos: number) {
+      const g = this.project.guides.find((g) => g.id === guideId);
+      if (!g) return;
+      g.pos = pos;
       this.isDirty = true;
       this.commitState();
     },
