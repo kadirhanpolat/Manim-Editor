@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.23.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.24.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -487,7 +487,13 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.23.0 (current)
+### v3.24.0 (current)
+
+Download button label fix — render completed dialog now shows the correct format name ("MP4 İndir" / "GIF İndir" / "WebM İndir") instead of a hardcoded "Download MP4" for all formats.
+
+- **`downloadLabel` computed** (`App.vue`): maps `renderFormat` → localized label via a `Record<string, string>` — `mp4→"MP4 İndir"`, `gif→"GIF İndir"`, `webm→"WebM İndir"`, `zip→"ZIP İndir"`. The ZIP branch already had its own "ZIP İndir" link; this fixes the default download `<a>` that was hardcoded to "Download MP4".
+
+### v3.23.0
 
 PNG frame sequences (ZIP) and transparent WebM export.
 

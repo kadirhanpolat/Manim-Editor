@@ -554,7 +554,7 @@
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
-                  Download MP4
+                  {{ downloadLabel }}
                 </a>
                 <button
                   class="px-4 py-2.5 rounded-lg bg-studio-border hover:bg-studio-border/80 text-studio-text text-sm font-medium transition-colors"
@@ -833,6 +833,10 @@ const renderError = computed(() => store.renderError);
 const renderVideoUrl = computed(() => store.renderVideoUrl);
 const renderLog = computed(() => store.renderLog);
 const renderFormat = computed(() => store.renderFormat);
+const downloadLabel = computed(() => {
+  const labels: Record<string, string> = { mp4: 'MP4', gif: 'GIF', webm: 'WebM', zip: 'ZIP' };
+  return (labels[renderFormat.value] ?? renderFormat.value.toUpperCase()) + ' İndir';
+});
 interface ServerProject {
   id: string;
   name: string;
