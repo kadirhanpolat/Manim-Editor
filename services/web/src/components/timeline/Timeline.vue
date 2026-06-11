@@ -51,6 +51,16 @@
           +
         </button>
       </div>
+
+      <!-- Add section at playhead -->
+      <button
+        class="text-studio-text-muted hover:text-studio-text text-xs px-2"
+        title="Playhead konumuna bölüm ekle"
+        aria-label="Add section at playhead"
+        @click="store.addSection(store.playbackTime, 'Bölüm')"
+      >
+        + Bölüm
+      </button>
     </div>
 
     <!-- ═════════ TIMELINE ═════════ -->
@@ -79,6 +89,33 @@
               class="text-[8px] text-studio-text-muted/60 ml-0.5 leading-none"
               >{{ tk.label }}</span
             >
+          </div>
+          <!-- Section markers -->
+          <div
+            v-for="sec in store.project.sections"
+            :key="sec.id"
+            class="absolute top-0 h-full flex flex-col pointer-events-auto select-none"
+            :style="{ left: sec.time * pps + 'px' }"
+            :title="sec.title"
+          >
+            <div class="w-px h-full bg-studio-accent/60"></div>
+            <template v-if="editingSectionId === sec.id">
+              <input
+                v-model="editingSectionTitle"
+                class="absolute top-0 left-1 text-[9px] bg-studio-surface2 text-studio-accent border border-studio-accent rounded px-1"
+                style="width: 72px"
+                @blur="commitSectionEdit"
+                @keydown.enter.prevent="commitSectionEdit"
+                @keydown.escape.prevent="editingSectionId = null"
+              />
+            </template>
+            <template v-else>
+              <span
+                class="absolute top-0 left-1 text-[9px] text-studio-accent/80 whitespace-nowrap cursor-pointer"
+                @dblclick.stop="startSectionEdit(sec.id)"
+                >{{ sec.title }}</span
+              >
+            </template>
           </div>
         </div>
       </div>
@@ -291,6 +328,22 @@ function startSeek(e: MouseEvent): void {
 
 const pps = ref(80);
 const labelW = ref(90);
+
+const editingSectionId = ref<string | null>(null);
+const editingSectionTitle = ref('');
+
+function startSectionEdit(id: string) {
+  const s = store.project.sections.find((sec) => sec.id === id);
+  if (!s) return;
+  editingSectionId.value = id;
+  editingSectionTitle.value = s.title;
+}
+
+function commitSectionEdit() {
+  if (!editingSectionId.value) return;
+  store.updateSection(editingSectionId.value, { title: editingSectionTitle.value });
+  editingSectionId.value = null;
+}
 const draggingObjId = ref<string | null>(null);
 
 const totalDuration = computed(() => store.computedDuration);
