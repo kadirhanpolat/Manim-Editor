@@ -213,7 +213,7 @@ Drag shapes on the canvas. Edit fill, stroke, opacity, size, rotation in the Pro
 Click the **Code** tab to see the Manim Python generated from your canvas. Copy or download the `.py` file. Scrub the timeline to review your edit structure.
 
 ### 6. Render
-Click **Tools > Render HQ** in the menubar. Choose quality (Low/Medium/High/4K) and click Start Render. The project is saved to the server, compiled to a Manim scene, and rendered. When done, watch and download the MP4.
+Click **Tools > Render HQ** in the menubar. Choose **format** (MP4 / GIF / WebM / PNG Frames / WebM α), **resolution** (480p–4K), and **fps** (15/30/60), then click Start Render. The project is saved to the server, compiled to a Manim scene, and rendered. When done, watch or download — PNG Frames renders download as a ZIP archive.
 
 ### 7. Code View & Export
 The **Code** tab shows the generated Manim Python with syntax highlighting. Edit the code if needed, or copy/download the `.py` file to use elsewhere.
@@ -301,7 +301,7 @@ Project
 | `GET` | `/api/audio/:jobId/status` | Poll TTS job status |
 | `DELETE` | `/api/audio/:audioId` | Delete audio file |
 | `GET` | `/api/jobs/:jobId` | Poll render job status |
-| `GET` | `/api/renders/:projectId/latest.mp4` | Stream latest render |
+| `GET` | `/api/renders/:projectId/latest.:ext` | Stream latest render (ext: mp4/gif/webm/zip) |
 | `GET` | `/health` | Health check |
 | `WS` | `/ws` | Job events: subscribe render (`subscribe`) + audio (`subscribe_audio`) |
 
