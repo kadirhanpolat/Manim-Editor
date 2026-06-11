@@ -1257,7 +1257,7 @@ function onStageDblClick(e: Record<string, unknown>) {
   const nodeId = typeof idFn === 'function' ? (idFn as () => string)() : undefined;
   if (!nodeId) return;
   const obj = store.objectById(nodeId);
-  if (obj && (obj.type === 'text' || obj.type === 'latex')) {
+  if (obj && (obj.type === 'text' || obj.type === 'latex' || obj.type === 'code')) {
     startTextEdit(nodeId);
   }
 }

@@ -111,7 +111,9 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
 
   function commitTextEdit(newText: string) {
     if (!editingTextId.value) return;
-    store.updateObject(editingTextId.value, { text: newText });
+    const obj = store.objectById(editingTextId.value);
+    const field = obj?.type === 'code' ? 'codeText' : 'text';
+    store.updateObject(editingTextId.value, { [field]: newText });
     editingTextId.value = null;
   }
 
