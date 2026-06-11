@@ -68,10 +68,11 @@ test.describe('Wave 2 E2E coverage', () => {
       )?.id;
       if (id) window.__projectStore.toggleLocked(id);
     });
-    const locked = await page.evaluate(() =>
-      window.__projectStore.project.objects.find(
-        (o: Record<string, unknown>) => o.name === 'LockMe'
-      )?.locked
+    const locked = await page.evaluate(
+      () =>
+        window.__projectStore.project.objects.find(
+          (o: Record<string, unknown>) => o.name === 'LockMe'
+        )?.locked
     );
     expect(locked).toBe(true);
   });
@@ -114,7 +115,10 @@ test.describe('Wave 2 E2E coverage', () => {
       window.__projectStore.commitState();
       const obj = window.__projectStore.project.objects[0];
       window.__projectStore.addClip({
-        type: 'fade', objectId: obj.id, startTime: 0, duration: 4,
+        type: 'fade',
+        objectId: obj.id,
+        startTime: 0,
+        duration: 4,
       });
       window.__projectStore.setPlaybackTime(2);
       const clip = window.__projectStore.project.tracks[0].clips[0];
