@@ -80,6 +80,14 @@ export const EASING_FUNCTIONS: Record<string, (t: number) => number> = {
     return -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
   },
 
+  ease_in_out_elastic(t: number): number {
+    if (t === 0 || t === 1) return t;
+    const c5 = (2 * Math.PI) / 4.5;
+    return t < 0.5
+      ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
+      : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+  },
+
   ease_out_bounce(t: number): number {
     const n1 = 7.5625;
     const d1 = 2.75;
@@ -92,6 +100,30 @@ export const EASING_FUNCTIONS: Record<string, (t: number) => number> = {
     } else {
       return n1 * (t -= 2.625 / d1) * t + 0.984375;
     }
+  },
+
+  ease_in_bounce(t: number): number {
+    const n1 = 7.5625,
+      d1 = 2.75;
+    let u = 1 - t;
+    let r: number;
+    if (u < 1 / d1) r = n1 * u * u;
+    else if (u < 2 / d1) r = n1 * (u -= 1.5 / d1) * u + 0.75;
+    else if (u < 2.5 / d1) r = n1 * (u -= 2.25 / d1) * u + 0.9375;
+    else r = n1 * (u -= 2.625 / d1) * u + 0.984375;
+    return 1 - r;
+  },
+
+  ease_in_out_bounce(t: number): number {
+    const n1 = 7.5625,
+      d1 = 2.75;
+    function outBounce(x: number): number {
+      if (x < 1 / d1) return n1 * x * x;
+      else if (x < 2 / d1) return n1 * (x -= 1.5 / d1) * x + 0.75;
+      else if (x < 2.5 / d1) return n1 * (x -= 2.25 / d1) * x + 0.9375;
+      else return n1 * (x -= 2.625 / d1) * x + 0.984375;
+    }
+    return t < 0.5 ? (1 - outBounce(1 - 2 * t)) / 2 : (1 + outBounce(2 * t - 1)) / 2;
   },
 
   spring(t: number): number {
@@ -178,7 +210,10 @@ export const EASING_LIST: { value: string; label: string }[] = [
   { value: 'ease_in_out_back', label: 'Ease In/Out Back' },
   { value: 'ease_out_elastic', label: 'Elastic Out' },
   { value: 'ease_in_elastic', label: 'Elastic In' },
+  { value: 'ease_in_out_elastic', label: 'Elastic In/Out' },
   { value: 'ease_out_bounce', label: 'Bounce Out' },
+  { value: 'ease_in_bounce', label: 'Bounce In' },
+  { value: 'ease_in_out_bounce', label: 'Bounce In/Out' },
   { value: 'spring', label: 'Spring' },
 ];
 

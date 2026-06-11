@@ -226,6 +226,14 @@ assert(EASING_MAP.ease_in_out_quart, 'ease_in_out_quart must be mapped');
 assert(EASING_MAP.ease_in_out_back, 'ease_in_out_back must be mapped');
 assert(EASING_MAP.ease_out_elastic, 'ease_out_elastic must be mapped');
 assert(EASING_MAP.ease_in_elastic, 'ease_in_elastic must be mapped');
+assert(EASING_MAP.ease_out_bounce,      'ease_out_bounce must be mapped');
+assert(EASING_MAP.ease_in_out_elastic,  'ease_in_out_elastic must be mapped');
+assert(EASING_MAP.ease_in_bounce,       'ease_in_bounce must be mapped');
+assert(EASING_MAP.ease_in_out_bounce,   'ease_in_out_bounce must be mapped');
+assert(
+  EASING_MAP.ease_in_out_elastic === 'rate_functions.ease_in_out_elastic',
+  'ease_in_out_elastic must map to rate_functions.ease_in_out_elastic'
+);
 assert(EASING_MAP.ease_in_out_cubic === 'rate_functions.ease_in_out_cubic', 'ease_in_out_cubic must map to rate_functions.ease_in_out_cubic');
 assert(EASING_MAP.spring === 'rate_functions.ease_out_elastic', 'spring must map to rate_functions.ease_out_elastic');
 
@@ -234,7 +242,8 @@ const EXPECTED_KEYS = [
   'ease_in_cubic','ease_out_cubic','ease_in_out_cubic',
   'ease_in_quart','ease_out_quart','ease_in_out_quart',
   'ease_in_back','ease_out_back','ease_in_out_back',
-  'ease_out_elastic','ease_in_elastic','ease_out_bounce','spring'
+  'ease_out_elastic','ease_in_elastic','ease_in_out_elastic',
+  'ease_out_bounce','ease_in_bounce','ease_in_out_bounce','spring'
 ];
 for (const k of EXPECTED_KEYS) assert(EASING_MAP[k], `EASING_MAP missing key: ${k}`);
 

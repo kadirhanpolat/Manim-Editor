@@ -15,7 +15,10 @@ export const EASING_MAP: Record<string, string> = {
   ease_in_out_back: 'rate_functions.ease_in_out_back',
   ease_out_elastic: 'rate_functions.ease_out_elastic',
   ease_in_elastic: 'rate_functions.ease_in_elastic',
+  ease_in_out_elastic: 'rate_functions.ease_in_out_elastic',
   ease_out_bounce: 'rate_functions.ease_out_bounce',
+  ease_in_bounce: 'rate_functions.ease_in_bounce',
+  ease_in_out_bounce: 'rate_functions.ease_in_out_bounce',
   spring: 'rate_functions.ease_out_elastic',
 };
 
