@@ -118,6 +118,7 @@ interface State {
   selectedClipId: string | null;
   selectedKeyframeId: SelectedKeyframeId | null;
   activeTool: string;
+  recentColors: string[];
   playbackTime: number;
   playbackPlaying: boolean;
   playbackLoop: boolean;
@@ -465,6 +466,15 @@ export const SHAPE_COLORS = {
   cross: '#ef4444',
 };
 
+function loadRecentColors(): string[] {
+  try {
+    const raw = localStorage.getItem('manim-motion-recent-colors');
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
 
 export const pinia = createPinia();
@@ -477,6 +487,7 @@ const useProjectStore = defineStore('project', {
     selectedClipId: null,
     selectedKeyframeId: null,
     activeTool: 'select',
+    recentColors: loadRecentColors(),
     playbackTime: 0,
     playbackPlaying: false,
     playbackLoop: true,
@@ -1706,6 +1717,15 @@ const useProjectStore = defineStore('project', {
 
     setPlaybackTime(t: number) {
       this.playbackTime = t;
+    },
+    addRecentColor(hex: string) {
+      const filtered = this.recentColors.filter((c) => c !== hex);
+      this.recentColors = [hex, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('manim-motion-recent-colors', JSON.stringify(this.recentColors));
+      } catch {
+        // localStorage may be unavailable in test env
+      }
     },
     setPlaybackPlaying(p: boolean) {
       this.playbackPlaying = p;
