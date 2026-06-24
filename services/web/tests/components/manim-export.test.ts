@@ -1053,3 +1053,69 @@ describe('parser round-trip — sections', () => {
     expect(sectionLines(gen2)).toEqual(sectionLines(gen1));
   });
 });
+
+describe('parser multi-line robustness', () => {
+  const HEAD = ['from manim import *', 'class MainScene(Scene):', '    def construct(self):'];
+
+  it('parses a constructor split across multiple lines', () => {
+    const py = [
+      ...HEAD,
+      '        obj_1 = Circle(',
+      '            radius=2.0',
+      '        )',
+      '        obj_1.set_fill(color="#22c55e", opacity=1)',
+      '        obj_1.move_to([0.000, 0.000, 0])',
+      '        self.play(FadeIn(obj_1))',
+      '        self.wait(1)',
+    ].join('\n');
+    const result = parseManimScript(py, SW, SH);
+    expect(result.objects.find((o) => o.type === 'circle')).toBeTruthy();
+  });
+
+  it('preserves in-string commas, parens and spaces when joining lines', () => {
+    const py = [
+      ...HEAD,
+      '        obj_1 = Text(',
+      '            "a, b (c)",',
+      '            font_size=48,',
+      '            font="Arial"',
+      '        )',
+      '        obj_1.move_to([0.000, 0.000, 0])',
+      '        self.play(FadeIn(obj_1))',
+      '        self.wait(1)',
+    ].join('\n');
+    const result = parseManimScript(py, SW, SH);
+    const t = result.objects.find((o) => o.type === 'text');
+    expect(t).toBeTruthy();
+    expect(t.content).toBe('a, b (c)');
+  });
+
+  it('parses a multi-line animation call', () => {
+    const py = [
+      ...HEAD,
+      '        obj_1 = Circle(radius=2.0)',
+      '        obj_1.move_to([0.000, 0.000, 0])',
+      '        self.play(',
+      '            obj_1.animate.move_to([2.000, 0.000, 0]),',
+      '            run_time=1.0',
+      '        )',
+      '        self.wait(1)',
+    ].join('\n');
+    const result = parseManimScript(py, SW, SH);
+    const clips = result.tracks[0]?.clips || [];
+    expect(clips.find((c) => c.type === 'move')).toBeTruthy();
+  });
+
+  it('does not alter equivalent single-line input (no regression)', () => {
+    const py = [
+      ...HEAD,
+      '        obj_1 = Circle(radius=2.0)',
+      '        obj_1.set_fill(color="#22c55e", opacity=1)',
+      '        obj_1.move_to([0.000, 0.000, 0])',
+      '        self.play(FadeIn(obj_1))',
+      '        self.wait(1)',
+    ].join('\n');
+    const result = parseManimScript(py, SW, SH);
+    expect(result.objects.find((o) => o.type === 'circle')).toBeTruthy();
+  });
+});

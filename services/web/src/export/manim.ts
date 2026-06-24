@@ -87,10 +87,93 @@ interface ManimPoint {
 }
 
 /**
+ * Bracket-depth change of a line, ignoring brackets inside Python string
+ * literals and trailing `#` comments — used to detect statements that continue
+ * onto the next physical line.
+ */
+function bracketDelta(line: string): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") quote = c;
+    else if (c === '#') break;
+    else if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+  }
+  return depth;
+}
+
+/**
+ * Collapse a multi-physical-line statement to the single-line, tight spacing the
+ * per-line regexes expect: drop whitespace just inside `([{` and just before
+ * `)]}`, collapse runs to one space — all while preserving string contents.
+ */
+function normalizeJoined(parts: string[]): string {
+  const joined = parts.map((p) => p.trim()).join(' ');
+  let out = '';
+  let quote: string | null = null;
+  for (let i = 0; i < joined.length; i++) {
+    const c = joined[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && i + 1 < joined.length) out += joined[++i];
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      out += c;
+      continue;
+    }
+    if (c === ' ') {
+      const prev = out[out.length - 1];
+      const next = joined[i + 1];
+      if (prev === '(' || prev === '[' || prev === '{') continue;
+      if (next === ')' || next === ']' || next === '}') continue;
+      if (prev === ' ' || prev === undefined) continue;
+      out += ' ';
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+/**
+ * Split source into LOGICAL lines: a statement whose brackets are unbalanced
+ * absorbs following physical lines until balanced. A single balanced physical
+ * line passes through with only `.trim()` — byte-identical to the previous
+ * behavior, so single-line codegen output (and every existing round-trip test)
+ * is unaffected; only genuinely multi-line input is reflowed.
+ */
+function joinLogicalLines(rawLines: string[]): string[] {
+  const out: string[] = [];
+  let parts: string[] = [];
+  let depth = 0;
+  for (const raw of rawLines) {
+    parts.push(raw);
+    depth += bracketDelta(raw);
+    if (depth <= 0) {
+      out.push(parts.length === 1 ? parts[0].trim() : normalizeJoined(parts));
+      parts = [];
+      depth = 0;
+    }
+  }
+  if (parts.length) out.push(normalizeJoined(parts));
+  return out;
+}
+
+/**
  * Parse Manim Python code back into project objects, tracks, and stage.
  */
 export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProject {
-  const lines = code.split('\n').map((l) => l.trim());
+  const lines = joinLogicalLines(code.split('\n'));
   const objects: SceneObject[] = [];
   const clips: Clip[] = [];
   const varMap: Record<string, string> = {};

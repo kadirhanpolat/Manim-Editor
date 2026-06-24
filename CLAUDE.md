@@ -81,7 +81,7 @@ All Manim Python generation lives in the **`@manim/codegen`** npm-workspace pack
 
 Both services are **thin wrappers** calling `generateScene(project, { resolveAsset })` — the only intentional divergence is `resolveAsset` (server file path vs client placeholder). The **`.py` parser** (`parseManimScript`) is web-only, in `manim.ts`.
 
-**Adding a new object/clip type → edit the package once + the `manim.ts` parser for round-trip.** Emit constructors on **one line** so the regex parser can read them back.
+**Adding a new object/clip type → edit the package once + the `manim.ts` parser for round-trip.** Emit constructors on **one line** (the canonical form). The parser now also tolerates **multi-line** input: `joinLogicalLines` (in `manim.ts`, before `parseManimScript`) reflows any statement with unbalanced brackets onto one logical line before the per-line regexes run — string-aware (in-string commas/parens/quotes preserved), and a no-op on already-single-line input (so existing round-trips are byte-identical). Known limit: inline `#` comments mid-constructor.
 
 `Project` type carries `sections?: Array<{ id: string; time: number; title: string }>` and `sceneDuration?: number` — used by `generateScene` to emit `self.next_section(…)` calls interleaved with animation steps.
 
