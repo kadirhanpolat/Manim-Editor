@@ -440,11 +440,13 @@ npm test --workspace services/api             # 55 api tests (compiler validate/
 npm --workspace packages/manim-codegen test   # 15 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
 ```
 
-**Render-truth (opt-in).** A real Manim CE process renders a representative scene corpus — proving the generated Python actually _runs_, not merely that it parses (the AST check above). Heavy, so it stays off the default suite:
+**Render-truth + golden-frame (opt-in).** A real Manim CE process renders a representative scene corpus — proving the generated Python actually _runs_, not merely that it parses (the AST check above). A companion **golden-frame** check perceptually hashes (dHash) a stable geometric corpus's last frame and compares it to a committed baseline (Hamming-tolerant), catching unintended render drift an exit-code check cannot see. Heavy, so both stay off the default suite:
 
 ```bash
 cd services/web
-RUN_MANIM_RENDER=1 npm run test:render   # 6-scene corpus + a teeth self-check. Skips unless RUN_MANIM_RENDER=1 AND `manim` is on PATH; needs the renderer's Python deps (manim + manim-fonts). Verified against Manim CE v0.20.1.
+RUN_MANIM_RENDER=1 npm run test:render                          # render-truth (6 scenes) + golden-frame regression (3 scenes)
+RUN_MANIM_RENDER=1 UPDATE_RENDER_BASELINE=1 npm run test:render # re-baseline after an intentional render change
+# Skips unless RUN_MANIM_RENDER=1 AND `manim` is on PATH (+ a Pillow-capable python); needs the renderer's Python deps (manim + manim-fonts). Verified against Manim CE v0.20.1.
 ```
 
 ### End-to-end (Playwright)
@@ -499,8 +501,9 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 Wave 3 — quality & trust foundation. The feature backlog is closed; this wave attacks the two highest-value _verification_ gaps instead of adding features. Spec: `docs/superpowers/specs/2026-06-24-wave3-quality-trust-design.md`.
 
 - **Render-truth harness** (`services/web/tests/components/render-integration.test.ts`): an opt-in `npm run test:render` that drives a **real Manim CE process** over a 6-scene corpus (2D shapes + clip · text + LaTeX · axes · emphasis · sections · 3D) plus a teeth self-check — proving the generated Python actually _runs_, not merely that it is AST-valid (`codegen-python-validity`'s job). Gated behind `RUN_MANIM_RENDER=1` + `manim` on PATH; needs the renderer's Python deps (manim + manim-fonts). It immediately surfaced that `text` rendering hard-depends on `manim_fonts` — already pinned in the renderer image, so confirmed _not_ a production bug. Explicit non-goal: cross-engine pixel parity with the Konva preview.
+- **Golden-frame regression** (`render-golden.test.ts`): perceptually hashes (256-bit dHash via Pillow) a stable geometric corpus's (`shapes · axes · 3D`) last frame and compares it to a committed baseline (`__render_baselines__/dhash.json`) within a Hamming tolerance (≤8); re-baseline with `UPDATE_RENDER_BASELINE=1`. Measured discrimination: same scene → 0 bits, structurally different → ~23. Building it surfaced that `addObject`'s default object carries a `FadeOut` exit that blanks the `-s` last frame (the corpus sets `exitAnim='none'`), and that render-truth's exit-0 check is blind to blank frames.
 - **`next_section` parser round-trip**: `parseManimScript` now reconstructs `project.sections` from emitted `self.next_section("…")` lines (`ParsedProject.sections`, applied in `applyCodeToCanvas`), deriving each marker's time from the accumulated playback time at its emit point so it re-emits identically. Closes a Wave 3 backlog item — scene sections are no longer a one-way street.
-- **Tests**: 744 → **746 web unit** (+2 section round-trip), plus a 7-case opt-in render-truth suite (122 engine + 55 api + 15 codegen + 17 e2e unchanged).
+- **Tests**: 744 → **746 web unit** (+2 section round-trip), plus opt-in render harnesses (7-case render-truth + 4-case golden-frame regression) (122 engine + 55 api + 15 codegen + 17 e2e unchanged).
 
 ### v3.25.0
 

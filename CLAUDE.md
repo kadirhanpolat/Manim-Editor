@@ -34,7 +34,7 @@ npm test --workspace packages/manim-codegen  # 15 codegen tests
 cd e2e && npm install && npx playwright install chromium   # first time only
 cd e2e && npm test                      # 17 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
 
-cd services/web && RUN_MANIM_RENDER=1 npm run test:render  # OPT-IN render-truth harness: a REAL Manim CE process renders a 6-scene corpus + a teeth self-check (proves generated Python runs, not just that it's AST-valid). Skips silently unless RUN_MANIM_RENDER=1 AND `manim` is on PATH; needs the renderer's Python deps (manim + manim-fonts). Local Manim verified: v0.20.1.
+cd services/web && RUN_MANIM_RENDER=1 npm run test:render  # OPT-IN, real Manim CE. Two harnesses: (1) render-truth (render-integration.test.ts) — a 6-scene corpus + self-check proves generated Python RUNS, not just that it's AST-valid; (2) golden-frame regression (render-golden.test.ts) — dHashes a stable geometric corpus's last frame vs a committed baseline (tests/components/__render_baselines__/dhash.json), Hamming-tolerant (≤8/256). Re-baseline after an intentional render change: RUN_MANIM_RENDER=1 UPDATE_RENDER_BASELINE=1 npm run test:render. Skips unless RUN_MANIM_RENDER=1 + `manim` on PATH + a Pillow-capable python; needs renderer deps (manim-fonts). Manim v0.20.1. NOTE: render-truth only checks exit 0 (a frame can be blank — addObject's default FadeOut exit blanks the last frame; golden corpus sets exitAnim='none').
 ```
 
 Tooling (run from repo root) — all are CI gates:
