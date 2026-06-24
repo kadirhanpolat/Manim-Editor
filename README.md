@@ -421,7 +421,7 @@ GIF/WebM append `--format gif|webm`; PNG Frames uses `--format png` and the rend
 ```bash
 cd services/web
 npm test           # 122 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 744 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, Wave 2: splitClip/sections/guides/snap/timeline-ctx, + characterization snapshots)
+npm run test:unit  # 746 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -438,6 +438,13 @@ The backend services and shared package have their own suites (from the repo roo
 ```bash
 npm test --workspace services/api             # 55 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety)
 npm --workspace packages/manim-codegen test   # 15 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
+```
+
+**Render-truth (opt-in).** A real Manim CE process renders a representative scene corpus — proving the generated Python actually _runs_, not merely that it parses (the AST check above). Heavy, so it stays off the default suite:
+
+```bash
+cd services/web
+RUN_MANIM_RENDER=1 npm run test:render   # 6-scene corpus + a teeth self-check. Skips unless RUN_MANIM_RENDER=1 AND `manim` is on PATH; needs the renderer's Python deps (manim + manim-fonts). Verified against Manim CE v0.20.1.
 ```
 
 ### End-to-end (Playwright)
@@ -487,7 +494,15 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.25.0 (current)
+### v3.26.0 (current)
+
+Wave 3 — quality & trust foundation. The feature backlog is closed; this wave attacks the two highest-value _verification_ gaps instead of adding features. Spec: `docs/superpowers/specs/2026-06-24-wave3-quality-trust-design.md`.
+
+- **Render-truth harness** (`services/web/tests/components/render-integration.test.ts`): an opt-in `npm run test:render` that drives a **real Manim CE process** over a 6-scene corpus (2D shapes + clip · text + LaTeX · axes · emphasis · sections · 3D) plus a teeth self-check — proving the generated Python actually _runs_, not merely that it is AST-valid (`codegen-python-validity`'s job). Gated behind `RUN_MANIM_RENDER=1` + `manim` on PATH; needs the renderer's Python deps (manim + manim-fonts). It immediately surfaced that `text` rendering hard-depends on `manim_fonts` — already pinned in the renderer image, so confirmed _not_ a production bug. Explicit non-goal: cross-engine pixel parity with the Konva preview.
+- **`next_section` parser round-trip**: `parseManimScript` now reconstructs `project.sections` from emitted `self.next_section("…")` lines (`ParsedProject.sections`, applied in `applyCodeToCanvas`), deriving each marker's time from the accumulated playback time at its emit point so it re-emits identically. Closes a Wave 3 backlog item — scene sections are no longer a one-way street.
+- **Tests**: 744 → **746 web unit** (+2 section round-trip), plus a 7-case opt-in render-truth suite (122 engine + 55 api + 15 codegen + 17 e2e unchanged).
+
+### v3.25.0
 
 Wave 2 — four parallel tracks (editor polish, timeline structure, precision layout, quality), built sequentially and integrated with a full test gate per merge.
 

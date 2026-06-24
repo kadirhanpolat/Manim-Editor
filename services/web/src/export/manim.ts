@@ -67,6 +67,7 @@ interface ParsedProject {
   sceneType: '2d' | '3d';
   cameraType: 'static' | 'moving';
   cameraTrack: Clip[];
+  sections: { id: string; time: number; title: string }[];
 }
 
 /** Partial clip used internally by parseAnimExpr. */
@@ -107,6 +108,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
   let cameraType: 'static' | 'moving' = 'static';
   let sceneType: '2d' | '3d' = '2d';
   const cameraTrack: Clip[] = [];
+  const sections: { id: string; time: number; title: string }[] = [];
   let ct = 0;
   let clipIdx = 0;
   let objIdx = 0;
@@ -280,6 +282,16 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     m = line.match(/self\.camera\.background_color\s*=\s*["']([^"']+)["']/);
     if (m) {
       bgColor = m[1];
+      continue;
+    }
+
+    // Scene section marker — self.next_section("Title"). codegen emits this
+    // immediately before the first step at/after section.time, so the current
+    // accumulated time (ct, pre-wait) reconstructs a placement that re-emits
+    // identically. Round-trips a Wave 2 feature that was previously one-way.
+    m = line.match(/^self\.next_section\("(.*)"\)$/);
+    if (m) {
+      sections.push({ id: uid('section'), time: ct, title: m[1] });
       continue;
     }
 
@@ -2862,6 +2874,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     sceneType,
     cameraType,
     cameraTrack,
+    sections,
   };
 }
 

@@ -10,6 +10,7 @@
     "test": "tsx tests/engine.test.mjs",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
+    "test:render": "vitest run tests/components/render-integration.test.ts",
     "test:coverage": "vitest run --coverage",
     "typecheck": "vue-tsc --noEmit"
   },

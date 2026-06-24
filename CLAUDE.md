@@ -24,7 +24,7 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 744 unit tests (store, components, export)
+cd services/web && npm run test:unit    # 746 unit tests (store, components, export)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 55 api tests (compiler pipeline + path/scene-name/render-options safety)
@@ -33,6 +33,8 @@ npm test --workspace packages/manim-codegen  # 15 codegen tests
 
 cd e2e && npm install && npx playwright install chromium   # first time only
 cd e2e && npm test                      # 17 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
+
+cd services/web && RUN_MANIM_RENDER=1 npm run test:render  # OPT-IN render-truth harness: a REAL Manim CE process renders a 6-scene corpus + a teeth self-check (proves generated Python runs, not just that it's AST-valid). Skips silently unless RUN_MANIM_RENDER=1 AND `manim` is on PATH; needs the renderer's Python deps (manim + manim-fonts). Local Manim verified: v0.20.1.
 ```
 
 Tooling (run from repo root) — all are CI gates:
@@ -209,7 +211,7 @@ clip.audio = {
 - **Right-click context menu** (`stage/ContextMenu.vue`): object variant (cut/copy/paste/duplicate/delete, bring-to-front/send-to-back, lock, hide) + empty-canvas variant. Store actions added for it: `bringToFront`, `sendToBack`, `duplicateSelection`, `cutSelection`, `selectAllObjects`, `translateObjects`.
 - **Timeline clip context menu** (`TimelineClip.vue`): right-click a clip → Kopyala/Kes/Yapıştır/Çoğalt/Böl/Sil. Reuses `ContextMenu.vue`. Paste uses `store.pasteSelection()` (NOT `pasteClipboard`).
 - **Split clip**: `store.splitClip(clipId)` splits at `store.playbackTime`; guard: split point must be strictly inside the clip. Both halves keep the original `type`/`objectId`.
-- **Scene sections**: `store.project.sections[]` sorted `{ id, time, title }` array; `addSection/removeSection/updateSection` actions (all `commitState()`). Codegen (`@manim/codegen/index.ts`) emits `self.next_section("Title")` before the first animation step at or after each `section.time`. Timeline ruler shows vertical markers + inline-editable titles (double-click); "+ Bölüm" button adds at playhead.
+- **Scene sections**: `store.project.sections[]` sorted `{ id, time, title }` array; `addSection/removeSection/updateSection` actions (all `commitState()`). Codegen (`@manim/codegen/index.ts`) emits `self.next_section("Title")` before the first animation step at or after each `section.time`. Timeline ruler shows vertical markers + inline-editable titles (double-click); "+ Bölüm" button adds at playhead. The `.py` parser **round-trips** these back (`parseManimScript` matches `self.next_section("…")` → `result.sections` → applied in `applyCodeToCanvas`); each marker's `time` is reconstructed from the accumulated playback time at its emit point, which re-emits identically.
 - **Canvas rulers** (`useStageRulers.ts`): H + V ruler `<canvas>` overlays (18 px, `RULER_SIZE`), tick interval auto-scaled to zoom, visible in 2D mode only. Drag from a ruler onto the canvas to create a guide.
 - **Guides**: `store.project.guides[]` array of `{ id, axis:'h'|'v', pos }` (project px). `addGuide/removeGuide/moveGuide` actions. Rendered as a blue dashed Konva layer on `StageCanvas`; drag on guide to reposition, drag out of stage to delete.
 - **Smart snapping**: on drag-end, `useStageInteractions.onDragEnd` calls `snapPoint` (from `engine/snap.ts`) with guide positions + other objects' bounding-box edges as candidates (threshold 8 canvas px, 2D only). Coordinates round-trip through `s2c`/`c2s` for canvas space.

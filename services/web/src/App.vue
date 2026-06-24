@@ -1235,6 +1235,9 @@ function applyCodeToCanvas() {
     if (Array.isArray(result.cameraTrack) && result.cameraTrack.length > 0) {
       store.project.cameraTrack = result.cameraTrack;
     }
+    if (Array.isArray(result.sections)) {
+      store.project.sections = result.sections;
+    }
     store.deselectAll();
 
     codeEdited.value = false;

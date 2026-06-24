@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { setActivePinia, createPinia } from 'pinia';
 import { generateManimScript } from '../../src/export/manim.js';
+import { useProjectStore } from '../../src/store/project.js';
 
 const SW = 1920,
   SH = 1080;
@@ -1006,5 +1008,48 @@ describe('parser round-trip — bar_chart', () => {
     // x_length/y_length are emitted with 1 decimal → ~2% size tolerance
     expect(Math.abs(o.width - 600)).toBeLessThan(15);
     expect(Math.abs(o.height - 400)).toBeLessThan(15);
+  });
+});
+
+describe('parser round-trip — sections', () => {
+  function projectWithSections() {
+    setActivePinia(createPinia());
+    const store = useProjectStore();
+    store.newProject('Test', 'visual');
+    store.addObject('circle', 800, 540);
+    store.selectObject(store.project.objects[0].id);
+    store.createAnimation('move', { targetX: 300, targetY: 200 });
+    store.addSection(0, 'Intro');
+    store.addSection(1, 'Outro');
+    return store.project;
+  }
+
+  const sectionLines = (src) =>
+    src
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('self.next_section('));
+
+  it('round-trips next_section markers back to project.sections', () => {
+    const py = generateManimScript(projectWithSections());
+    expect(py).toContain('self.next_section("Intro")');
+    expect(py).toContain('self.next_section("Outro")');
+
+    const back = parseManimScript(py, SW, SH);
+    expect(Array.isArray(back.sections)).toBe(true);
+    expect(back.sections.map((s) => s.title)).toEqual(['Intro', 'Outro']);
+    // each parsed section carries a stable id + numeric, non-decreasing time
+    expect(back.sections.every((s) => typeof s.id === 'string' && s.id.length > 0)).toBe(true);
+    expect(back.sections[0].time).toBeLessThanOrEqual(back.sections[1].time);
+  });
+
+  it('re-emits identical next_section lines (round-trip stability)', () => {
+    const project = projectWithSections();
+    const gen1 = generateManimScript(project);
+    const back = parseManimScript(gen1, SW, SH);
+    // Swap the parsed sections back onto the same timeline; placement must be identical.
+    const project2 = { ...project, sections: back.sections };
+    const gen2 = generateManimScript(project2);
+    expect(sectionLines(gen2)).toEqual(sectionLines(gen1));
   });
 });
