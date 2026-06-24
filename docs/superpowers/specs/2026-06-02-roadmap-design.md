@@ -3,10 +3,25 @@
 **Tarih:** 2026-06-02
 **Kapsam:** Mevcut özelliklerin analizi, eksik Manim CE kapasitelerinin tespiti ve önceliklendirilmiş geliştirme planı
 **Yaklaşım:** Etki/Maliyet matrisi + aşamalı uygulama planı (Hibrit)
+**Son güncelleme:** 2026-06-24 — yol haritası büyük ölçüde tamamlandı (bkz. §0)
 
 ---
 
-## 1. Mevcut Durum
+## 0. Durum (2026-06-24)
+
+**Bu yol haritası büyük ölçüde tamamlandı.** Orijinal 3 fazın 14 ana maddesinden **13'ü** teslim edildi; tek açık madde **paralel render worker** (düşük öncelik, tek-kullanıcı-local senaryoda düşük değer). Üstüne, planda hiç olmayan kapsamlı iş eklendi: strict TypeScript göçü, nesne tipleri 17 → ~58, 2D efektler + emphasis animasyonları, export formatları (MP4/GIF/WebM/PNG/WebM-α) ve üç kalite dalgası (bkz. §5).
+
+| Faz | Durum |
+|---|---|
+| Phase 1 — Hızlı Kazanımlar | ✅ easing · WebSocket render · Vitest altyapısı · şablonlar · render geçmişi — ⬜ paralel render worker |
+| Phase 2 — Yüksek Değer | ✅ grafik/NumberPlane · AnimationGroup/LaggedStart · path · kamera |
+| Phase 3 — Uzun Vadeli | ✅ ses/voiceover · Vue 3 göçü · keyframe sistemi · 3D sahne |
+
+Güncel sürüm **v3.26.0** · 750 web unit + 122 engine + 55 api + 15 codegen + 17 e2e · strict TypeScript · tüm CI kapıları yeşil.
+
+---
+
+## 1. Mevcut Durum *(2026-06-02 başlangıç durumu — tarihsel)*
 
 Manim Motion Editor v1.1.0, 4 Docker servisinden oluşan (Vue 2.7 frontend, Node.js API, Python Manim worker, Redis) bir animasyon editörüdür. Temel özellikler çalışmaktadır: 17 şekil tipi, 5 klip tipi, 11 giriş + 9 çıkış animasyonu, undo/redo, çift editör modu (Visual + Code-Only), server-side render (480p–4K).
 
@@ -54,7 +69,7 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
 
 ## 3. Aşamalı Uygulama Planı
 
-### Phase 1 — Hızlı Kazanımlar
+### Phase 1 — Hızlı Kazanımlar ✅ *(tamamlandı; tek istisna: paralel render worker — açık)*
 
 **Hedef:** Mevcut hataları gider, geliştirme zeminini hazırla, yeni kullanıcı deneyimini iyileştir.
 
@@ -76,7 +91,7 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
    - `App.vue` "Yeni Proje" diyaloğuna şablon seçici eklenir
    - Şablonlar: Teorem açıklama, Fonksiyon grafiği taslağı, Formül tanıtımı, Vektör diyagramı, Sunu başlığı
 
-5. **Paralel render worker**
+5. **Paralel render worker** ⬜ *(açık — henüz yapılmadı; tek-kullanıcı-local senaryoda düşük değer)*
    - `docker-compose.yml`'de `renderer-2` servisi (aynı image, aynı Redis kuyruğu)
    - Mevcut iş akışına dokunmaz; iki job aynı anda işlenebilir
 
@@ -84,7 +99,7 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
    - Proje başına son 5 render dosyalanır (`render_1.mp4`, `render_2.mp4`...)
    - `RenderPanel.vue`'ya geçmiş listesi eklenir
 
-### Phase 2 — Yüksek Değer Özellikler
+### Phase 2 — Yüksek Değer Özellikler ✅ *(tamamlandı)*
 
 **Hedef:** Manim'in temel matematiksel yeteneklerini görsel editöre taşı.
 
@@ -111,7 +126,7 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
 
 5. ~~Paralel render worker~~ *(Phase 1'e taşındı)*
 
-### Phase 3 — Uzun Vadeli Yeniden Yapılandırma
+### Phase 3 — Uzun Vadeli Yeniden Yapılandırma ✅ *(tamamlandı)*
 
 **Hedef:** Teknik borcu öde, ekosistemin geri kalanını kapat.
 
@@ -146,3 +161,20 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
 | Phase 1 | Render önizleme uyumu %100; yeni kullanıcı şablon ile 5 dakikada ilk renderı alır |
 | Phase 2 | Matematik içerikli bir eğitim videosu Code-Only moda gerek kalmadan tamamen görsel editörde yapılabilir |
 | Phase 3 | Vue 3 göçü tamamlandıktan sonra tüm mevcut özellikler aynı davranışı korur; ses senkronize render çalışır |
+
+---
+
+## 5. Yol Haritası Ötesi — Kalite Dalgaları (2026-06)
+
+Orijinal 3 faz bittikten sonra, planda olmayan kapsamlı bir iş ve üç "kalite/güven dalgası" eklendi:
+
+- **Wave 1** — showcase şablonları, ek export formatları, içerik nesneleri (`code`/`bar_chart`), UX paketi (lock/hide, marquee, context menu, autosave).
+- **Wave 2** — editör cilası (inline text edit, numeric scrub, recent colors), timeline yapısı (split clip, sahne bölümleri/`next_section`), hassas yerleşim (cetvel/guide/smart-snap), kalite (elastic/bounce easing, render geçmişi).
+- **Wave 3 — kalite & güven** *(post-Wave-2 analizinde "eksikler özellik değil, doğrulama tarafında" tespitiyle)*:
+  - **Render-truth harness** — üretilen Python'un gerçek Manim CE'de *çalıştığını* doğrular (yalnızca AST-geçerli olduğunu değil); opt-in `npm run test:render`.
+  - **Golden-frame regression** — render çıktısını dHash baseline'a karşı izler (istemsiz sapma koruması).
+  - **Round-trip dayanıklılığı** — `next_section` geri-okuma + parser çok-satır constructor desteği.
+
+Yapısal olarak ayrıca: **strict TypeScript göçü** (tüm kod tabanı), mimari ayrıştırma (StageCanvas/PropertiesPanel/Topbar + paylaşılan `@manim/codegen` paketi), güvenlik sertleştirmesi (path-traversal guard'ları), performans (bundle 1.7MB → ~800kB).
+
+**Kalan açık backlog** *(düşük öncelik)*: paralel render worker · `vector_field` virgül round-trip · grid snapping · mini-map · nesne arama · render harness'ini non-blocking CI job'u yapmak.

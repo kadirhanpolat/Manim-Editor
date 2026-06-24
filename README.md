@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.25.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.26.0-6B7280" alt="Version">
 </p>
 
 ---
