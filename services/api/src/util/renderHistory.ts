@@ -11,7 +11,7 @@ export interface RenderHistoryEntry {
   url: string;
 }
 
-const ROTATED_RENDER_RE = /^render_(\d+)\.(mp4|gif|webm)$/;
+const ROTATED_RENDER_RE = /^render_(\d+)\.(mp4|gif|webm|zip)$/;
 
 export function parseRotatedRenderFilename(name: string): { index: number; ext: RenderExt } | null {
   const match = name.match(ROTATED_RENDER_RE);

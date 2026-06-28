@@ -27,13 +27,17 @@ def test_rotate_render_history_shifts_and_copies(tmp_path: Path) -> None:
     assert (media / "render_5.mp4").exists() is False
 
 
-def test_rotate_render_history_skips_png_zip(tmp_path: Path) -> None:
+def test_rotate_render_history_rotates_png_zip(tmp_path: Path) -> None:
     media = tmp_path
     latest = media / "latest.zip"
-    latest.write_text("zip")
+    latest.write_text("zip-new")
     (media / "render_1.zip").write_text("one")
+    (media / "render_2.zip").write_text("two")
+    (media / "render_5.zip").write_text("five")
 
     rotate_render_history(str(media), str(latest), "zip", limit=5)
 
-    assert (media / "render_1.zip").read_text() == "one"
-    assert not (media / "render_2.zip").exists()
+    assert (media / "render_1.zip").read_text() == "zip-new"
+    assert (media / "render_2.zip").read_text() == "one"
+    assert (media / "render_3.zip").read_text() == "two"
+    assert not (media / "render_5.zip").exists()

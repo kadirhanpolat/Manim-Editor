@@ -505,6 +505,7 @@ Workflow & scale follow-up to close the remaining low-risk backlog items from th
 - **Mini-map viewport**: the stage overlay now includes a compact 2D mini-map with object extents and a clickable viewport frame that recenters the canvas.
 - **3D viewport editing**: rulers stay visible in 3D scenes and text / LaTeX / code objects can be edited inline by double-clicking them.
 - **`vector_field` comma round-trip**: the parser now splits `ArrowVectorField` `fx`/`fy` expressions on the top-level comma, so expressions such as `max(x, y)` and `min(x, y)` survive generate -> parse.
+- **PNG render history rotation**: PNG Frames now rotate `render_1.zip` through `render_5.zip` the same way as the other render formats, so the completed dialog shows up to five ZIP history entries.
 - **Render harness CI signal**: GitHub Actions now runs the real-Manim render-truth + golden-frame harnesses as a non-blocking `render-harness` job, matching the existing non-blocking browser smoke-test model.
 - **Tests**: **760 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser, +2 mini-map) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 17 e2e unchanged.
 

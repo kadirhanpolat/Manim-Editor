@@ -12,12 +12,9 @@ def rotate_render_history(media_dir: str, latest_path: str, ext: str, limit: int
     """Rotate numbered render history files.
 
     Keeps render_1.<ext> as the newest copy and shifts older copies up to
-    render_<limit>.<ext>. PNG ZIP outputs are intentionally skipped by the
-    caller.
+    render_<limit>.<ext>. ZIP outputs are rotated the same way as media files.
     """
     if limit <= 0:
-        return
-    if ext == "zip":
         return
 
     def slot_path(idx: int) -> str:

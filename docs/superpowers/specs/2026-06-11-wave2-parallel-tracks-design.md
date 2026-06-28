@@ -180,4 +180,4 @@ TDD inside every track. Track A: `Num.vue` scrub unit test, `ColorRow.vue` recen
 
 ## Wave 3 backlog (explicitly out of scope)
 
-Grid snapping · `next_section` round-trip parser · multi-line-robust parser · `vector_field` comma round-trip · mini-map · object search · PNG render history rotation · 3D viewport rulers / inline text editing.
+Grid snapping · `next_section` round-trip parser · multi-line-robust parser · `vector_field` comma round-trip · mini-map · object search · 3D viewport rulers / inline text editing.
