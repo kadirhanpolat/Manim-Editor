@@ -59,7 +59,8 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `packages/manim-codegen/src/` | **Single source of truth for codegen** — `constants.ts`, `helpers.ts`, `objects.ts`, `objects3d.ts`, `clips.ts`, `keyframes.ts`, `index.ts` (`generateScene`), `types.ts` |
 | `services/api/src/compiler/codegen.ts` | Thin server wrapper over `@manim/codegen` (server asset paths via `resolveAsset`) |
 | `services/web/src/export/manim.ts` | Thin client generator wrapper + the web-only `.py` **parser** (`parseManimScript`) |
-| `services/web/src/components/stage/StageCanvas.vue` | Orchestrator (~1230 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders (interactive configs lock-wrapped via `L()`) |
+| `services/web/src/components/stage/StageCanvas.vue` | Orchestrator (~1230 lines) — wires the 4 stage composables + builds `ctx`; renders all object types via config builders (interactive configs lock-wrapped via `L()`); mounts the 2D mini-map overlay |
+| `services/web/src/components/stage/StageMiniMap.vue` | Compact 2D stage overview overlay with viewport recentering |
 | `services/web/src/components/stage/configs/*.ts` | **Pure** Konva config builders `fn(obj, ctx)` (unit-tested): `context.ts` (ctx contract), `shapes2d`, `text`, `dataObjects`, `relational`, `axes`, `objects3d`, `overlays`, `chrome`, `effects` |
 | `services/web/src/components/stage/composables/*.ts` | `useStageViewport` (vs/ox/oy, 3D projection, pan/zoom, s2c/c2s, iso), `useStageInteractions` (drag/transform/select; `editingTextId` for inline text edit; smart snap in `onDragEnd`), `useStagePathDraw`, `useStageAssets`, `useStageRulers` (H+V ruler canvases, adaptive ticks) |
 | `services/web/src/engine/snap.ts` | Pure `snapPoint(x, y, candidates, threshold)` + `stageSnapCandidates(...)` helpers — snaps to grid/center, guide lines, and object bounding-box edges; unit-tested without Konva |

@@ -502,9 +502,10 @@ Workflow & scale follow-up to close the remaining low-risk backlog items from th
 
 - **Command palette / object search**: `Ctrl/Cmd+K` opens a searchable command surface for adding any palette object, selecting existing scene objects by name/type, clearing/selecting all objects, and toggling grid/snap. 3D add commands appear only in 3D scenes.
 - **Grid-aware smart snapping**: `stageSnapCandidates` adds grid and center snap candidates to the existing guide/object-edge `snapPoint` pipeline. Snapping is now consistently gated by the global Snap toggle instead of mixing always-on smart snap with a separate hard grid rounding pass.
+- **Mini-map viewport**: the stage overlay now includes a compact 2D mini-map with object extents and a clickable viewport frame that recenters the canvas.
 - **`vector_field` comma round-trip**: the parser now splits `ArrowVectorField` `fx`/`fy` expressions on the top-level comma, so expressions such as `max(x, y)` and `min(x, y)` survive generate -> parse.
 - **Render harness CI signal**: GitHub Actions now runs the real-Manim render-truth + golden-frame harnesses as a non-blocking `render-harness` job, matching the existing non-blocking browser smoke-test model.
-- **Tests**: **758 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 17 e2e unchanged.
+- **Tests**: **760 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser, +2 mini-map) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 17 e2e unchanged.
 
 ### v3.26.0
 

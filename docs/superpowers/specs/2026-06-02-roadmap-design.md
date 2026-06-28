@@ -178,4 +178,4 @@ Orijinal 3 faz bittikten sonra, planda olmayan kapsamlı bir iş ve üç "kalite
 
 Yapısal olarak ayrıca: **strict TypeScript göçü** (tüm kod tabanı), mimari ayrıştırma (StageCanvas/PropertiesPanel/Topbar + paylaşılan `@manim/codegen` paketi), güvenlik sertleştirmesi (path-traversal guard'ları), performans (bundle 1.7MB → ~800kB).
 
-**Kalan açık backlog** *(düşük öncelik)*: paralel render worker · mini-map.
+**Kalan açık backlog** *(düşük öncelik)*: paralel render worker.

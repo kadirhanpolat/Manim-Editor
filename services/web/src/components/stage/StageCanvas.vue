@@ -876,6 +876,22 @@
         </div>
       </div>
 
+      <!-- Mini-map overlay -->
+      <StageMiniMap
+        :is3d="is3D"
+        :stage-width="store.project.stage.width"
+        :stage-height="store.project.stage.height"
+        :viewport-width="containerWidth"
+        :viewport-height="containerHeight"
+        :ox="ox"
+        :oy="oy"
+        :vs="vs"
+        :accent="themeAccent"
+        :objects="objects"
+        :get-object-bounds="ctx.objectBounds"
+        @focus="onMiniMapFocus"
+      />
+
       <!-- Zoom indicator -->
       <div
         class="absolute bottom-2 right-2 text-[10px] text-studio-text-muted/40 font-mono pointer-events-none select-none"
@@ -907,6 +923,7 @@ import { useStagePathDraw } from './composables/useStagePathDraw.js';
 import { useStageInteractions } from './composables/useStageInteractions.js';
 import ContextMenu from './ContextMenu.vue';
 import type { ContextMenuItem } from './ContextMenu.vue';
+import StageMiniMap from './StageMiniMap.vue';
 import { useStageAssets } from './composables/useStageAssets.js';
 import { useStageRulers, RULER_SIZE } from './composables/useStageRulers.js';
 
@@ -930,6 +947,7 @@ const transformer = ref<any>(null);
 const {
   containerWidth,
   containerHeight,
+  panOffset,
   zoomLevel,
   stg,
   vs,
@@ -1097,6 +1115,14 @@ function onVRulerMousedown(_e: MouseEvent) {
   };
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
+}
+
+function onMiniMapFocus(point: { x: number; y: number }) {
+  const center = c2s(containerWidth.value / 2, containerHeight.value / 2);
+  panOffset.value = {
+    x: panOffset.value.x + (center.x - point.x) * vs.value,
+    y: panOffset.value.y + (center.y - point.y) * vs.value,
+  };
 }
 
 // ── Guide line config (Konva) ──
