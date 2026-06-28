@@ -63,7 +63,7 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 ### Visual Editor
 - **Drag-and-drop stage** -- Canvas with optional grid, resize/rotate handles, multi-select, snapping; background color and opacity configurable in the Properties panel (no selection)
 - **Light & Dark themes** -- Toggle between warm light and sleek dark palettes via View > Theme; persists across sessions
-- **Desktop-style menubar** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse
+- **Desktop-style menubar + command palette** -- File, Edit, View, Tools, Help menus with keyboard shortcuts and responsive collapse; `Ctrl/Cmd+K` opens object search and quick commands
 - **40+ shape types (2D)** -- Rectangle, Square, Circle, Ellipse, Triangle, Star, Polygon, Arrow, Heart, Line, Dot, Dot Grid, Text, Image, SVG, plus the Phase 2 set: Annulus, Arc, Sector, Double Arrow, Free Polygon (draggable vertices), Parametric curve, Matrix (grid editor), **Counter** (animated `DecimalNumber`, with an Integer mode → `Integer` mobject), the Phase 4 set: **Table** (Table/MathTable with row/col labels), **Complex Plane**, **Polar Plane**, **Graph** (Graph/DiGraph with manual vertex layout), **Vector Field** (ArrowVectorField with sampled-arrow preview), and the object-library extensions: **Vector Components** (x/y projection arrows), **Ray** (source dot + direction arrow), **Coord Point** (live `(x, y)` label via `always_redraw`), **Bezier** (smooth open curve through draggable anchors), and the content objects: **Code Block** (`Code` mobject — real Pygments highlighting in render, 9-language allowlist) and **Bar Chart** (`BarChart` with editable values, names, and colors)
 - **8 shape types (3D)** -- Sphere, Cube, Cone, Cylinder, Torus, ThreeDAxes, **Surface** (`z = f(x, y)` with wireframe preview), and **Prism** (box with per-axis dimensions) — available when scene is switched to 3D mode
 - **2D/3D scene toggle** -- Switch any visual project between 2D and 3D mode from the Topbar; 3D mode uses `ThreeDScene` base class
@@ -421,7 +421,7 @@ GIF/WebM append `--format gif|webm`; PNG Frames uses `--format png` and the rend
 ```bash
 cd services/web
 npm test           # 122 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 746 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
+npm run test:unit  # 758 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -496,7 +496,17 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.26.0 (current)
+### v3.27.0 (current)
+
+Workflow & scale follow-up to close the remaining low-risk backlog items from the roadmap.
+
+- **Command palette / object search**: `Ctrl/Cmd+K` opens a searchable command surface for adding any palette object, selecting existing scene objects by name/type, clearing/selecting all objects, and toggling grid/snap. 3D add commands appear only in 3D scenes.
+- **Grid-aware smart snapping**: `stageSnapCandidates` adds grid and center snap candidates to the existing guide/object-edge `snapPoint` pipeline. Snapping is now consistently gated by the global Snap toggle instead of mixing always-on smart snap with a separate hard grid rounding pass.
+- **`vector_field` comma round-trip**: the parser now splits `ArrowVectorField` `fx`/`fy` expressions on the top-level comma, so expressions such as `max(x, y)` and `min(x, y)` survive generate -> parse.
+- **Render harness CI signal**: GitHub Actions now runs the real-Manim render-truth + golden-frame harnesses as a non-blocking `render-harness` job, matching the existing non-blocking browser smoke-test model.
+- **Tests**: **758 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 17 e2e unchanged.
+
+### v3.26.0
 
 Wave 3 — quality & trust foundation. The feature backlog is closed; this wave attacks the two highest-value _verification_ gaps instead of adding features. Spec: `docs/superpowers/specs/2026-06-24-wave3-quality-trust-design.md`.
 
@@ -729,7 +739,7 @@ Data & Coordinate Objects (Phase 4) — five new 2D object types, all byte-ident
 - **Polar Plane** (`polar_plane` → `PolarPlane`): `radiusMax`, `radiusStep`, `azimuthUnits`; canvas preview = concentric rings + radial spokes. Store actions: `setPolarRadiusMax`, `setPolarRadiusStep`, `setPolarAzimuth`.
 - **Graph** (`graph` → `Graph` / `DiGraph`): `vertices`, `edges`, `positions` (manual vertex layout using the `polygon_free` px↔Manim scale with y-sign flip), `directed`, `showLabels`. Draggable vertex handles via the generalized `polygonHandles`. `labels=True` gated on `showLabels`; `fill` is preview/inspector-only. Store actions: `addGraphVertex`, `removeGraphVertex`, `addGraphEdge`, `removeGraphEdge`, `renameGraphVertex`, `setGraphVertexPosition`, `setGraphDirected`, `setGraphShowLabels`.
 - **Vector Field** (`vector_field` → `ArrowVectorField`): `fx`/`fy` expression strings (via `safeMathExpr`, identical whitelist across `codegen.js`/`manim.js`/`StageCanvas.vue`), `xRange`/`yRange`. Emitted as a double-lambda single-line form. 8×8 sampled-arrow canvas preview. Store actions: `setFieldExpr`, `setFieldRange`.
-- **Accepted preview ≈ render divergences**: table label alignment and cell spacing; plane axis labels; graph edge styling; vector-field sparsity (preview 8×8, Manim samples densely). **Known limitation**: `vector_field` expressions with a top-level comma (e.g. `max(x, y)`) do not round-trip cleanly.
+- **Accepted preview ≈ render divergences**: table label alignment and cell spacing; plane axis labels; graph edge styling; vector-field sparsity (preview 8×8, Manim samples densely). Top-level comma expressions in `vector_field` now round-trip via the parser's balanced comma splitter.
 - **Tests**: +7 parity invariant tests in `manim-export.test.js` (byte-stable exact-string assertions for all five new types); totals now **339 unit + 114 engine**.
 
 ### v3.12.0

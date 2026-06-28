@@ -3,7 +3,7 @@
 **Tarih:** 2026-06-02
 **Kapsam:** Mevcut özelliklerin analizi, eksik Manim CE kapasitelerinin tespiti ve önceliklendirilmiş geliştirme planı
 **Yaklaşım:** Etki/Maliyet matrisi + aşamalı uygulama planı (Hibrit)
-**Son güncelleme:** 2026-06-24 — yol haritası büyük ölçüde tamamlandı (bkz. §0)
+**Son güncelleme:** 2026-06-28 — yol haritası büyük ölçüde tamamlandı (bkz. §0)
 
 ---
 
@@ -17,7 +17,7 @@
 | Phase 2 — Yüksek Değer | ✅ grafik/NumberPlane · AnimationGroup/LaggedStart · path · kamera |
 | Phase 3 — Uzun Vadeli | ✅ ses/voiceover · Vue 3 göçü · keyframe sistemi · 3D sahne |
 
-Güncel sürüm **v3.26.0** · 750 web unit + 122 engine + 55 api + 15 codegen + 17 e2e · strict TypeScript · tüm CI kapıları yeşil.
+Güncel sürüm **v3.27.0** · 758 web unit + 122 engine + 55 api + 15 codegen + 17 e2e · strict TypeScript · tüm CI kapıları yeşil.
 
 ---
 
@@ -174,7 +174,8 @@ Orijinal 3 faz bittikten sonra, planda olmayan kapsamlı bir iş ve üç "kalite
   - **Render-truth harness** — üretilen Python'un gerçek Manim CE'de *çalıştığını* doğrular (yalnızca AST-geçerli olduğunu değil); opt-in `npm run test:render`.
   - **Golden-frame regression** — render çıktısını dHash baseline'a karşı izler (istemsiz sapma koruması).
   - **Round-trip dayanıklılığı** — `next_section` geri-okuma + parser çok-satır constructor desteği.
+- **Wave 4 — workflow & scale follow-up** — komut paleti/nesne arama, grid-aware smart snapping, `vector_field` virgül round-trip düzeltmesi ve render harness'in non-blocking CI job'u.
 
 Yapısal olarak ayrıca: **strict TypeScript göçü** (tüm kod tabanı), mimari ayrıştırma (StageCanvas/PropertiesPanel/Topbar + paylaşılan `@manim/codegen` paketi), güvenlik sertleştirmesi (path-traversal guard'ları), performans (bundle 1.7MB → ~800kB).
 
-**Kalan açık backlog** *(düşük öncelik)*: paralel render worker · `vector_field` virgül round-trip · grid snapping · mini-map · nesne arama · render harness'ini non-blocking CI job'u yapmak.
+**Kalan açık backlog** *(düşük öncelik)*: paralel render worker · mini-map.

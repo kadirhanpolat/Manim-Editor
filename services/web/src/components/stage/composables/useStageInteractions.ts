@@ -4,7 +4,7 @@ import { canvasToVertex } from '../../../engine/polygonVertices.js';
 import { normalizeRect, marqueeSelectIds } from '../../../engine/marquee.js';
 import type { PathPoint } from '@manim/codegen';
 import { useProjectStore } from '../../../store/project.js';
-import { snapPoint } from '../../../engine/snap.js';
+import { snapPoint, stageSnapCandidates } from '../../../engine/snap.js';
 import type { SnapCandidate } from '../../../engine/snap.js';
 
 type ProjectStore = ReturnType<typeof useProjectStore>;
@@ -100,7 +100,8 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
   const shiftKey = ref(false);
 
   function buildSnapCandidates(excludeIds: string[]): SnapCandidate[] {
-    const candidates: SnapCandidate[] = [];
+    const stage = store.project.stage;
+    const candidates: SnapCandidate[] = stageSnapCandidates(stage, vs.value, ox.value, oy.value);
     for (const g of guides.value) {
       if (g.axis === 'h') candidates.push({ y: g.pos * vs.value + oy.value });
       else candidates.push({ x: g.pos * vs.value + ox.value });
@@ -432,28 +433,14 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
       newX = sp.x;
       newY = sp.y;
     }
-    // Guide + object edge snapping (2D only)
-    if (!is3D.value) {
+    // Grid, guide, and object edge snapping (2D only)
+    if (!is3D.value && store.project.stage.snapEnabled) {
       const canvasPos = s2c(newX, newY);
       const snapped = snapPoint(canvasPos.x, canvasPos.y, buildSnapCandidates([id]));
       if (snapped.snappedX || snapped.snappedY) {
         const sp2 = c2s(snapped.x, snapped.y);
         newX = sp2.x;
         newY = sp2.y;
-      }
-    }
-    if (store.project.stage.snapEnabled) {
-      const gs = store.project.stage.width / (store.project.stage.gridSize ?? 1);
-      const gs2 = store.project.stage.height / (store.project.stage.gridSize ?? 1);
-      if (store.project.stage.snapToGrid) {
-        newX = Math.round(newX / gs) * gs;
-        newY = Math.round(newY / gs2) * gs2;
-      }
-      if (store.project.stage.snapToCenter) {
-        const cx = store.project.stage.width / 2;
-        const cy = store.project.stage.height / 2;
-        if (Math.abs(newX - cx) < 30) newX = cx;
-        if (Math.abs(newY - cy) < 30) newY = cy;
       }
     }
     // Multi-selection group drag: fan the dragged delta out to the whole

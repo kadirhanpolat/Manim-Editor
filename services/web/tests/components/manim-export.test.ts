@@ -838,6 +838,19 @@ describe('generator — vector_field', () => {
       'ArrowVectorField(lambda p: (lambda x, y: np.array([y, -x, 0]))(p[0], p[1])'
     );
   });
+
+  it('round-trips top-level comma expressions in fx and fy', () => {
+    const obj = makeObj('vf1', 'vector_field', {
+      fx: 'max(x, y)',
+      fy: 'min(x, y)',
+      xRange: [-3, 3, 1],
+      yRange: [-2, 2, 1],
+    });
+    const parsed = parseManimScript(generateManimScript(makeProject([obj], [])), SW, SH);
+    const vf = parsed.objects.find((o) => o.type === 'vector_field');
+    expect(vf?.fx).toBe('max(x, y)');
+    expect(vf?.fy).toBe('min(x, y)');
+  });
 });
 
 // ── Wave 1 Track C — content objects ─────────────────────────────────────────

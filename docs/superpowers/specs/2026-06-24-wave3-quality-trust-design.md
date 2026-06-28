@@ -56,6 +56,8 @@ A new env-gated test, `services/web/tests/components/render-integration.test.ts`
 | Section title with embedded quote | Out of scope; documented limitation. Codegen does not currently emit such titles escaped. |
 | Temp-file leakage from harness | `afterAll` cleanup + unique `os.tmpdir()` subdir per run. |
 
-## Wave 3+ backlog (explicitly out of scope here)
+## Wave 3+ backlog status
 
-Golden-frame **regression** snapshots (perceptual-hash the rendered last frame, commit references, diff on re-run) · render harness as a non-blocking CI job · `next_section` title-quote escaping · multi-line-robust parser · `vector_field` comma round-trip · grid snapping · mini-map · object search · parallel render worker · rulers/inline-text in 3D viewport.
+Completed after this spec: golden-frame **regression** snapshots, render harness as a non-blocking CI job, multi-line-robust parser, `vector_field` comma round-trip, grid-aware snapping, and object search / command palette.
+
+Remaining low-priority backlog: `next_section` title-quote escaping · mini-map · parallel render worker · rulers/inline-text in 3D viewport.

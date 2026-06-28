@@ -54,6 +54,31 @@ jobs:
         run: npm test
         working-directory: e2e
 
+  render-harness:
+    runs-on: ubuntu-latest
+    # Non-blocking: this exercises real Manim + LaTeX/Pillow render paths. It is
+    # valuable signal, but too heavyweight and environment-sensitive to gate pushes.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system render deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libcairo2-dev libpango1.0-dev dvisvgm texlive-latex-base texlive-latex-extra texlive-fonts-recommended
+      - name: Install node deps
+        run: npm ci
+      - name: Install Manim render deps
+        run: python -m pip install manim==0.20.1 manim-fonts pillow
+      - name: Run render-truth and golden-frame harnesses
+        run: RUN_MANIM_RENDER=1 npm run test:render --workspace services/web
+
   python:
     runs-on: ubuntu-latest
     steps:

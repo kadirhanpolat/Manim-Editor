@@ -145,6 +145,29 @@ function normalizeJoined(parts: string[]): string {
   return out;
 }
 
+function splitTopLevelCommaPair(body: string): [string, string] | null {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === '(' || ch === '[' || ch === '{') depth++;
+    else if (ch === ')' || ch === ']' || ch === '}') depth--;
+    else if (ch === ',' && depth === 0) {
+      return [body.slice(0, i).trim(), body.slice(i + 1).trim()];
+    }
+  }
+  return null;
+}
+
 /**
  * Split source into LOGICAL lines: a statement whose brackets are unbalanced
  * absorbs following physical lines until balanced. A single balanced physical
@@ -1615,9 +1638,12 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
 
     // ArrowVectorField
     m = line.match(
-      /^(\w+) = ArrowVectorField\(lambda p: \(lambda x, y: np\.array\(\[(.*?), (.*?), 0\]\)\)\(p\[0\], p\[1\]\), x_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\], y_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\]\)/
+      /^(\w+) = ArrowVectorField\(lambda p: \(lambda x, y: np\.array\(\[(.+), 0\]\)\)\(p\[0\], p\[1\]\), x_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\], y_range=\[([-\d.]+), ([-\d.]+), ([-\d.]+)\]\)/
     );
     if (m) {
+      const parts = splitTopLevelCommaPair(m[2]);
+      const fx = parts?.[0] ?? m[2].trim();
+      const fy = parts?.[1] ?? '-x';
       const obj: SceneObject = {
         id: uid('obj'),
         type: 'vector_field',
@@ -1636,10 +1662,10 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
         enterAnim: 'fade_in',
         exitAnim: 'fade_out',
         zOrder: objects.length,
-        fx: m[2],
-        fy: m[3],
-        xRange: [parseFloat(m[4]), parseFloat(m[5]), parseFloat(m[6])],
-        yRange: [parseFloat(m[7]), parseFloat(m[8]), parseFloat(m[9])],
+        fx,
+        fy,
+        xRange: [parseFloat(m[3]), parseFloat(m[4]), parseFloat(m[5])],
+        yRange: [parseFloat(m[6]), parseFloat(m[7]), parseFloat(m[8])],
       };
       varMap[m[1]] = obj.id;
       objById[obj.id] = obj;
@@ -1653,20 +1679,9 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     );
     if (m) {
       const [, name, body, t0, t1, color, sw_] = m;
-      // split "xExpr, yExpr" on the top-level (paren-depth 0) comma
-      let depth = 0,
-        splitAt = -1;
-      for (let i = 0; i < body.length; i++) {
-        const ch = body[i];
-        if (ch === '(') depth++;
-        else if (ch === ')') depth--;
-        else if (ch === ',' && depth === 0) {
-          splitAt = i;
-          break;
-        }
-      }
-      const xe = (splitAt >= 0 ? body.slice(0, splitAt) : body).trim();
-      const ye = (splitAt >= 0 ? body.slice(splitAt + 1) : '0').trim();
+      const parts = splitTopLevelCommaPair(body);
+      const xe = parts?.[0] ?? body.trim();
+      const ye = parts?.[1] ?? '0';
       const id = uid('obj');
       const obj: SceneObject = {
         id,

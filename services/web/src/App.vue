@@ -718,6 +718,8 @@
       </div>
     </transition>
 
+    <CommandPalette :open="commandPaletteOpen" @close="commandPaletteOpen = false" />
+
     <!-- Error Toast -->
     <transition name="slide-up">
       <div
@@ -788,6 +790,7 @@ import PropertiesPanel from './components/inspector/PropertiesPanel.vue';
 import Timeline from './components/timeline/Timeline.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
 import RenderOptionsDialog from './components/RenderOptionsDialog.vue';
+import CommandPalette from './components/command/CommandPalette.vue';
 import { DEFAULT_RENDER_OPTIONS } from './api.js';
 import type { RenderOptions } from './api.js';
 
@@ -803,6 +806,7 @@ const stageCopied = ref(false);
 const codeEdited = ref(false);
 const parseMessage = ref('');
 const parseMessageOk = ref(false);
+const commandPaletteOpen = ref(false);
 
 // Non-reactive timer IDs
 let _stageCodeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -968,6 +972,12 @@ onBeforeUnmount(() => {
 
 // ── Methods ──
 function handleKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    commandPaletteOpen.value = true;
+    e.preventDefault();
+    return;
+  }
+  if (commandPaletteOpen.value) return;
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) return;
 
   if ((e.key === 'v' || e.key === 'V') && !e.ctrlKey && !e.metaKey) {

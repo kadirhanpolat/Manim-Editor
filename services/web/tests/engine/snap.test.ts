@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { snapPoint } from '../../src/engine/snap.js';
+import { snapPoint, stageSnapCandidates } from '../../src/engine/snap.js';
 
 describe('snapPoint', () => {
   it('returns original coords when no candidates', () => {
@@ -44,5 +44,36 @@ describe('snapPoint', () => {
     const r = snapPoint(107, 200, [{ x: 100 }]); // distance = 7 ≤ 8
     expect(r.snappedX).toBe(true);
     expect(r.x).toBe(100);
+  });
+});
+
+describe('stageSnapCandidates', () => {
+  it('adds grid candidates in canvas coordinates', () => {
+    const candidates = stageSnapCandidates(
+      { width: 1920, height: 1080, gridSize: 4, snapToGrid: true },
+      0.5,
+      10,
+      20
+    );
+    expect(candidates).toContainEqual({ x: 10 });
+    expect(candidates).toContainEqual({ x: 250 });
+    expect(candidates).toContainEqual({ x: 970 });
+    expect(candidates).toContainEqual({ y: 20 });
+    expect(candidates).toContainEqual({ y: 155 });
+    expect(candidates).toContainEqual({ y: 560 });
+  });
+
+  it('adds center candidates independently from grid candidates', () => {
+    const candidates = stageSnapCandidates(
+      { width: 1920, height: 1080, gridSize: 4, snapToCenter: true },
+      0.5,
+      10,
+      20
+    );
+    expect(candidates).toEqual([{ x: 490 }, { y: 290 }]);
+  });
+
+  it('returns no candidates when grid and center snapping are disabled', () => {
+    expect(stageSnapCandidates({ width: 1920, height: 1080, gridSize: 4 }, 1, 0, 0)).toEqual([]);
   });
 });
