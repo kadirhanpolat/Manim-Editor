@@ -96,3 +96,15 @@ describe('polygonHandles lock guard', () => {
     expect(polygonHandles.value).toBe(null);
   });
 });
+
+describe('3D inline text editing', () => {
+  it('allows double-click text editing in 3D scenes', () => {
+    store.project.sceneType = '3d';
+    const obj = store.addObject('text', 400, 400, { text: '3D label' });
+    const { startTextEdit, editingTextId } = useStageInteractions(store, makeDeps({ is3D: computed(() => true) }));
+
+    startTextEdit(obj.id);
+
+    expect(editingTextId.value).toBe(obj.id);
+  });
+});

@@ -791,18 +791,16 @@
         @keydown.ctrl.enter.prevent="(e) => commitTextEdit((e.target as HTMLTextAreaElement).value)"
       />
 
-      <!-- Horizontal ruler (2D only) -->
+      <!-- Horizontal ruler -->
       <canvas
-        v-if="!is3D"
         ref="hRulerRef"
         class="ruler ruler-h"
         :width="containerWidth"
         :height="RULER_SIZE"
         @mousedown="onHRulerMousedown"
       />
-      <!-- Vertical ruler (2D only) -->
+      <!-- Vertical ruler -->
       <canvas
-        v-if="!is3D"
         ref="vRulerRef"
         class="ruler ruler-v"
         :width="RULER_SIZE"
@@ -810,7 +808,7 @@
         @mousedown="onVRulerMousedown"
       />
       <!-- Corner block -->
-      <div v-if="!is3D" class="ruler-corner" />
+      <div class="ruler-corner" />
 
       <!-- 3D view selector (overlay, top-left) -->
       <div v-if="is3D" class="absolute top-2 left-2" style="z-index: var(--z-overlay)">

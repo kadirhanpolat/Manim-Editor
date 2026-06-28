@@ -58,6 +58,6 @@ A new env-gated test, `services/web/tests/components/render-integration.test.ts`
 
 ## Wave 3+ backlog status
 
-Completed after this spec: golden-frame **regression** snapshots, render harness as a non-blocking CI job, multi-line-robust parser, `vector_field` comma round-trip, grid-aware snapping, object search / command palette, and mini-map.
+Completed after this spec: golden-frame **regression** snapshots, render harness as a non-blocking CI job, multi-line-robust parser, `vector_field` comma round-trip, grid-aware snapping, object search / command palette, mini-map, and 3D viewport editing.
 
-Remaining low-priority backlog: rulers/inline-text in 3D viewport.
+Remaining low-priority backlog: none.

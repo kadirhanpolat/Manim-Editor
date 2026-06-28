@@ -111,4 +111,4 @@ TDD inside every track (failing test first; see each plan). Integration relies o
 
 ## Wave 2 backlog (explicitly out of scope)
 
-Rulers + guides + smart snapping · inline text editing (double-click) · timeline clip context menu · scene sections (`next_section`) · PNG sequence + transparent WebM export · easing map expansion (lossy mappings) · multi-line-robust parser · `vector_field` comma round-trip · e2e expansion beyond 9 smoke tests · mini-map / object search / recent colors / numeric scrubbing.
+Rulers + guides + smart snapping · inline text editing (double-click) · timeline clip context menu · scene sections (`next_section`) · PNG sequence + transparent WebM export · easing map expansion (lossy mappings) · multi-line-robust parser · `vector_field` comma round-trip · e2e expansion beyond 9 smoke tests · mini-map / object search / recent colors / numeric scrubbing · 3D viewport rulers / inline text editing.

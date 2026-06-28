@@ -136,7 +136,6 @@ export function useStageInteractions(store: ProjectStore, deps: Deps) {
   const TEXT_EDITABLE_TYPES = ['text', 'latex', 'code'] as const;
 
   function startTextEdit(objId: string) {
-    if (is3D.value) return;
     const obj = store.objectById(objId);
     if (!obj || obj.locked) return;
     if (!TEXT_EDITABLE_TYPES.includes(obj.type as (typeof TEXT_EDITABLE_TYPES)[number])) return;
