@@ -34,6 +34,7 @@ def test_rotate_render_history_rotates_png_zip(tmp_path: Path) -> None:
     (media / "render_1.zip").write_text("one")
     (media / "render_2.zip").write_text("two")
     (media / "render_5.zip").write_text("five")
+    (media / "render_20260628_120000.zip").write_text("legacy")
 
     rotate_render_history(str(media), str(latest), "zip", limit=5)
 
@@ -41,3 +42,4 @@ def test_rotate_render_history_rotates_png_zip(tmp_path: Path) -> None:
     assert (media / "render_2.zip").read_text() == "one"
     assert (media / "render_3.zip").read_text() == "two"
     assert not (media / "render_5.zip").exists()
+    assert not (media / "render_20260628_120000.zip").exists()

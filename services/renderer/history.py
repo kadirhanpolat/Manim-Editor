@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 
 HISTORY_LIMIT = 5
+
+
+def cleanup_legacy_render_history(media_dir: str, ext: str) -> None:
+    """Remove old timestamped render history copies for the given extension."""
+    legacy_re = re.compile(rf"^render_\d{{8}}_\d{{6}}\.{re.escape(ext)}$")
+    for name in os.listdir(media_dir):
+        if not legacy_re.match(name):
+            continue
+        path = os.path.join(media_dir, name)
+        if os.path.exists(path) or os.path.islink(path):
+            os.remove(path)
 
 
 def rotate_render_history(media_dir: str, latest_path: str, ext: str, limit: int = HISTORY_LIMIT) -> None:
@@ -36,3 +48,4 @@ def rotate_render_history(media_dir: str, latest_path: str, ext: str, limit: int
     if os.path.exists(slot_path(1)) or os.path.islink(slot_path(1)):
         os.remove(slot_path(1))
     shutil.copy2(latest_path, slot_path(1))
+    cleanup_legacy_render_history(media_dir, ext)

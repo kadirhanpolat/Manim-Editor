@@ -507,6 +507,7 @@ Workflow & scale follow-up to close the remaining low-risk backlog items from th
 - **`vector_field` comma round-trip**: the parser now splits `ArrowVectorField` `fx`/`fy` expressions on the top-level comma, so expressions such as `max(x, y)` and `min(x, y)` survive generate -> parse.
 - **PNG render history rotation**: PNG Frames now rotate `render_1.zip` through `render_5.zip` the same way as the other render formats, so the completed dialog shows up to five ZIP history entries.
 - **Render history E2E**: Playwright now covers the completed render dialog with a mocked two-entry history response, verifying the numbered ZIP/MP4 labels and download links.
+- **Legacy history cleanup**: old timestamped render copies are pruned during history rotation, so pre-rotation files do not accumulate beside the numbered slots.
 - **Render harness CI signal**: GitHub Actions now runs the real-Manim render-truth + golden-frame harnesses as a non-blocking `render-harness` job, matching the existing non-blocking browser smoke-test model.
 - **Tests**: **760 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser, +2 mini-map) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 18 e2e unchanged.
 
