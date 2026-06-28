@@ -117,7 +117,7 @@ Files: `packages/manim-codegen/src/constants.ts`, `services/web/src/engine/easin
 
 ### Render history
 
-Renderer writes `latest.<ext>` as before (no behavior change). Additionally, after writing `latest`, it rotates `render_1` … `render_5` (index 1 = newest): `render_1` is renamed to `render_2`, `render_2` → `render_3`, … `render_5` deleted, then `latest` copied to `render_1`. **Exception:** PNG frames (ZIP) are not rotated (size concern).
+Renderer writes `latest.<ext>` as before (no behavior change). Additionally, after writing `latest`, it rotates `render_1` … `render_5` (index 1 = newest): `render_1` is renamed to `render_2`, `render_2` → `render_3`, … `render_5` deleted, then `latest` copied to `render_1`. Legacy timestamped render copies are pruned during rotation so old pre-rotation files do not accumulate. PNG frames (ZIP) follow the same numbered history flow.
 
 New API endpoint: `GET /api/render/:projectId/history` → `[{ index, ext, size, mtime, url }]` (lists existing `render_1` … `render_5` for the project). `renders.ts` gains a `listHistory` helper.
 
