@@ -14,6 +14,7 @@ import zipfile
 
 import redis
 
+from history import rotate_render_history
 from render_args import FORMAT_EXT, build_render_args, output_ext
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
@@ -182,26 +183,9 @@ def render_job(payload: dict) -> dict:
 
             print(f"[render] Output saved to: {latest_link}")
 
-        # Save a timestamped copy for history (keep last 5)
+        # Rotate numbered history copies (keep last 5).
         if output_video and os.path.exists(output_video):
-            timestamp = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
-            history_path = os.path.join(media_dir, f"render_{timestamp}.{ext}")
-            shutil.copy2(output_video, history_path)
-
-            # Prune: keep only the 5 most recent history files
-            history_files = sorted(
-                [
-                    f
-                    for f in os.listdir(media_dir)
-                    if f.startswith("render_") and f.endswith((".mp4", ".gif", ".webm"))
-                ],
-                reverse=True,
-            )
-            for old in history_files[5:]:
-                try:
-                    os.remove(os.path.join(media_dir, old))
-                except Exception:
-                    pass
+            rotate_render_history(media_dir, latest_link, ext)
 
         return {
             "ok": result.returncode == 0,

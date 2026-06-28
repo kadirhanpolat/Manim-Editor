@@ -148,6 +148,7 @@ export const renders = {
   getLatestUrl: (projectId: string, ext: string = 'mp4') =>
     `${API_BASE}/renders/${projectId}/latest.${ext}?t=${Date.now()}`,
   getInfo: (projectId: string) => request(`/renders/${projectId}`),
+  getHistory: (projectId: string) => request(`/render/${projectId}/history`),
 };
 
 // ─── Audio ────────────────────────────────────────────────────────────────────

@@ -936,7 +936,7 @@ Bug-fix release — three latent defects that broke a clean Docker build / first
 - **Feature**: Vitest test altyapısı — `npm run test:unit` ile Vue 2 uyumlu unit testler; `@vue/test-utils@1`, jsdom ortamı
 - **Feature**: 5 proje şablonu — "New Project" diyaloğuna şablon seçici eklendi: Boş Proje, Formül Tanıtım, Şekil Dönüşümü, Başlık Slaydı, Koordinat Sistemi
 - **Feature**: Paralel render worker — `docker-compose.yml`'e `renderer-2` servisi eklendi; aynı Redis kuyruğundan iki iş eş zamanlı işlenebilir
-- **Feature**: Render geçmişi — Her render sonunda tarihli kopya (`render_YYYYMMDD_HHMMSS.mp4`) kaydedilir, son 5 kopya tutulur; render diyaloğunda geçmiş listesi ve indirme bağlantıları
+- **Feature**: Render geçmişi — Her render sonunda numaralı kopyalar (`render_1.mp4` ... `render_5.webm`) döndürülür, son 5 kopya tutulur; render diyaloğunda geçmiş listesi ve indirme bağlantıları
 
 ### v1.1.0
 

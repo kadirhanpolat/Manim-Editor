@@ -46,6 +46,7 @@ app.get('/health', (_req: Request, res: Response) =>
 app.use('/api/projects', projectsRouter);
 app.use('/api/assets', assetsRouter);
 app.use('/api/renders', rendersRouter);
+app.use('/api/render', rendersRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/fonts', fontsRouter);
 app.use('/api/audio', audioRouter);

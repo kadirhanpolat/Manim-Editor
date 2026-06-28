@@ -7,6 +7,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { isSafeSegment } from '../util/paths.js';
 import { RENDER_EXTS, isRenderExt, contentTypeFor, isRenderFilename } from '../util/renderFiles.js';
+import { listRotatedRenderHistory } from '../util/renderHistory.js';
 import fs from 'fs/promises';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
@@ -110,27 +111,10 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
       }
     }
     const hasLatest = latestName !== null;
-
-    const entries = await fs.readdir(rendersDir);
-    const historyFiles = entries
-      .filter((f) => f.startsWith('render_') && isRenderFilename(f))
-      .sort()
-      .reverse()
-      .slice(0, 5);
-
-    const history = await Promise.all(
-      historyFiles.map(async (name) => {
-        const fPath = path.join(rendersDir, name);
-        const stat = await fs.stat(fPath).catch(() => null);
-        return stat
-          ? {
-              name,
-              size: stat.size,
-              modifiedAt: stat.mtime,
-              url: `/api/renders/${req.params['projectId']}/${name}`,
-            }
-          : null;
-      })
+    const history = await listRotatedRenderHistory(
+      rendersDir,
+      req.params['projectId'],
+      '/api/renders'
     );
 
     res.json({
@@ -146,8 +130,26 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
             ]
           : [],
       hasLatest,
-      history: history.filter(Boolean),
+      history,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * List rotated render history for a project.
+ * GET /api/render/:projectId/history
+ */
+router.get('/:projectId/history', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rendersDir = path.join(req.dataDir, 'renders', req.params['projectId']);
+    const history = await listRotatedRenderHistory(
+      rendersDir,
+      req.params['projectId'],
+      '/api/render'
+    );
+    res.json({ history });
   } catch (err) {
     next(err);
   }

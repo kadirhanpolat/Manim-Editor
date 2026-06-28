@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useProjectStore } from '../../src/store/project.js';
 import api, { DEFAULT_RENDER_OPTIONS } from '../../src/api.js';
@@ -9,6 +9,10 @@ beforeEach(() => {
   store = useProjectStore();
   store.newProject('Test', 'visual');
   store.commitState();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('render export options — api client', () => {
@@ -22,6 +26,19 @@ describe('render export options — api client', () => {
     expect(api.renders.getLatestUrl('p1', 'webm')).toMatch(
       /\/api\/renders\/p1\/latest\.webm\?t=\d+/
     );
+  });
+
+  it('getHistory uses the dedicated history endpoint', () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    return api.renders.getHistory('p1').then(() => {
+      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/render/p1/history');
+    });
   });
 });
 

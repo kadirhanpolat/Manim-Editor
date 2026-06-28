@@ -29,6 +29,8 @@ describe('renderFiles helpers', () => {
   });
 
   it('accepts history filenames for all three formats, rejects traversal/other', () => {
+    expect(isRenderFilename('render_1.mp4')).toBe(true);
+    expect(isRenderFilename('render_5.gif')).toBe(true);
     expect(isRenderFilename('render_20260610_120000.mp4')).toBe(true);
     expect(isRenderFilename('render_20260610_120000.gif')).toBe(true);
     expect(isRenderFilename('latest.webm')).toBe(true);

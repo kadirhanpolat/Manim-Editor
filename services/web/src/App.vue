@@ -579,7 +579,7 @@
                     style="background: var(--studio-bg)"
                   >
                     <span class="text-[11px] font-mono" style="color: var(--studio-text-muted)">{{
-                      formatRenderDate(r.name)
+                      formatRenderLabel(r)
                     }}</span>
                     <a
                       :href="r.url"
@@ -799,7 +799,7 @@ const store = useProjectStore();
 // ── Reactive state ──
 const copied = ref(false);
 const renderOptions = ref<RenderOptions>({ ...DEFAULT_RENDER_OPTIONS });
-const renderHistory = ref<Array<{ name: string; url: string }>>([]);
+const renderHistory = ref<Array<{ index: number; ext: string; name: string; url: string }>>([]);
 const stageViewMode = ref('canvas');
 const stageCode = ref('# Add objects to see generated Manim code');
 const stageCopied = ref(false);
@@ -1297,8 +1297,8 @@ function downloadStageCode() {
 async function loadRenderHistory() {
   if (!projectId.value) return;
   try {
-    const info = (await api.renders.getInfo(projectId.value)) as {
-      history?: Array<{ name: string; url: string }>;
+    const info = (await api.renders.getHistory(projectId.value)) as {
+      history?: Array<{ index: number; ext: string; name: string; url: string }>;
     };
     renderHistory.value = info.history || [];
   } catch {
@@ -1306,10 +1306,9 @@ async function loadRenderHistory() {
   }
 }
 
-function formatRenderDate(filename: string) {
-  const m = filename.match(/render_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
-  if (!m) return filename;
-  return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
+function formatRenderLabel(item: { index: number; ext: string; name: string }) {
+  const slot = Number.isFinite(item.index) && item.index > 0 ? `Render #${item.index}` : item.name;
+  return `${slot}.${item.ext}`;
 }
 
 // ── Error ──
