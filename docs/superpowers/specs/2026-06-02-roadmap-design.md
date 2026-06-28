@@ -9,15 +9,15 @@
 
 ## 0. Durum (2026-06-24)
 
-**Bu yol haritası büyük ölçüde tamamlandı.** Orijinal 3 fazın 14 ana maddesinden **13'ü** teslim edildi; tek açık madde **paralel render worker** (düşük öncelik, tek-kullanıcı-local senaryoda düşük değer). Üstüne, planda hiç olmayan kapsamlı iş eklendi: strict TypeScript göçü, nesne tipleri 17 → ~58, 2D efektler + emphasis animasyonları, export formatları (MP4/GIF/WebM/PNG/WebM-α) ve üç kalite dalgası (bkz. §5).
+**Bu yol haritası büyük ölçüde tamamlandı.** Orijinal 3 fazın 14 ana maddesinin **tamamı** teslim edildi; paralel render worker da `renderer-2` servisiyle kapatıldı. Üstüne, planda hiç olmayan kapsamlı iş eklendi: strict TypeScript göçü, nesne tipleri 17 → ~58, 2D efektler + emphasis animasyonları, export formatları (MP4/GIF/WebM/PNG/WebM-α) ve üç kalite dalgası (bkz. §5).
 
 | Faz | Durum |
 |---|---|
-| Phase 1 — Hızlı Kazanımlar | ✅ easing · WebSocket render · Vitest altyapısı · şablonlar · render geçmişi — ⬜ paralel render worker |
+| Phase 1 — Hızlı Kazanımlar | ✅ easing · WebSocket render · Vitest altyapısı · şablonlar · render geçmişi · paralel render worker |
 | Phase 2 — Yüksek Değer | ✅ grafik/NumberPlane · AnimationGroup/LaggedStart · path · kamera |
 | Phase 3 — Uzun Vadeli | ✅ ses/voiceover · Vue 3 göçü · keyframe sistemi · 3D sahne |
 
-Güncel sürüm **v3.27.0** · 758 web unit + 122 engine + 55 api + 15 codegen + 17 e2e · strict TypeScript · tüm CI kapıları yeşil.
+Güncel sürüm **v3.27.0** · 760 web unit + 122 engine + 55 api + 15 codegen + 17 e2e · strict TypeScript · tüm CI kapıları yeşil.
 
 ---
 
@@ -69,7 +69,7 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
 
 ## 3. Aşamalı Uygulama Planı
 
-### Phase 1 — Hızlı Kazanımlar ✅ *(tamamlandı; tek istisna: paralel render worker — açık)*
+### Phase 1 — Hızlı Kazanımlar ✅ *(tamamlandı)*
 
 **Hedef:** Mevcut hataları gider, geliştirme zeminini hazırla, yeni kullanıcı deneyimini iyileştir.
 
@@ -91,7 +91,7 @@ Efor etiketleri: **S** (1–3 gün) · **M** (1–2 hafta) · **L** (2–4 hafta
    - `App.vue` "Yeni Proje" diyaloğuna şablon seçici eklenir
    - Şablonlar: Teorem açıklama, Fonksiyon grafiği taslağı, Formül tanıtımı, Vektör diyagramı, Sunu başlığı
 
-5. **Paralel render worker** ⬜ *(açık — henüz yapılmadı; tek-kullanıcı-local senaryoda düşük değer)*
+5. **Paralel render worker** ✅
    - `docker-compose.yml`'de `renderer-2` servisi (aynı image, aynı Redis kuyruğu)
    - Mevcut iş akışına dokunmaz; iki job aynı anda işlenebilir
 
@@ -178,4 +178,4 @@ Orijinal 3 faz bittikten sonra, planda olmayan kapsamlı bir iş ve üç "kalite
 
 Yapısal olarak ayrıca: **strict TypeScript göçü** (tüm kod tabanı), mimari ayrıştırma (StageCanvas/PropertiesPanel/Topbar + paylaşılan `@manim/codegen` paketi), güvenlik sertleştirmesi (path-traversal guard'ları), performans (bundle 1.7MB → ~800kB).
 
-**Kalan açık backlog** *(düşük öncelik)*: paralel render worker.
+**Kalan açık backlog** *(düşük öncelik)*: yok.
