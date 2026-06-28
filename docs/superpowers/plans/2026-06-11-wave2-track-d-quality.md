@@ -4,7 +4,7 @@
 
 **Goal:** Add three missing easing families (`ease_in_out_elastic`, `ease_in_bounce`, `ease_in_out_bounce`) to preview + codegen in sync, and expand Playwright E2E coverage from 9 to 17 tests.
 
-**Background:** Render history is already implemented (renderer saves numbered history files, prunes legacy timestamped copies, API returns them, App.vue displays them). `easing.ts` already has `ease_in_elastic`, `ease_out_elastic`, `ease_out_bounce`, and the full `back` family. The EASING_MAP in `@manim/codegen/constants.ts` maps preview names to Manim CE `rate_functions.*` names. New easings must be added to both files together (parity invariant).
+**Background:** Render history is already implemented (renderer saves numbered history files, prunes legacy copies, API returns them, App.vue displays them). `easing.ts` already has `ease_in_elastic`, `ease_out_elastic`, `ease_out_bounce`, and the full `back` family. The EASING_MAP in `@manim/codegen/constants.ts` maps preview names to Manim CE `rate_functions.*` names. New easings must be added to both files together (parity invariant).
 
 **Architecture:** `easing.ts` preview functions + `EASING_LIST` → UI display; `constants.ts` `EASING_MAP` → codegen; `engine.test.mjs` asserts the parity. E2E tests live in `e2e/tests/` and use `window.__projectStore` for state injection.
 
