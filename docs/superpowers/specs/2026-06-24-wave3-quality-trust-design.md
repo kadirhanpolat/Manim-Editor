@@ -60,4 +60,4 @@ A new env-gated test, `services/web/tests/components/render-integration.test.ts`
 
 Completed after this spec: golden-frame **regression** snapshots, render harness as a non-blocking CI job, multi-line-robust parser, `vector_field` comma round-trip, grid-aware snapping, object search / command palette, and mini-map.
 
-Remaining low-priority backlog: `next_section` title-quote escaping · rulers/inline-text in 3D viewport.
+Remaining low-priority backlog: rulers/inline-text in 3D viewport.

@@ -1,5 +1,14 @@
 import { FRAME_WIDTH, ANNOTATION_TYPES } from './constants.js';
-import { rfOpt, rtOpt, vn, hex, stageToManim, pathPointsPy, isSystemFont } from './helpers.js';
+import {
+  rfOpt,
+  rtOpt,
+  vn,
+  hex,
+  safeText,
+  stageToManim,
+  pathPointsPy,
+  isSystemFont,
+} from './helpers.js';
 import { objectCode } from './objects.js';
 import { objectCode3d } from './objects3d.js';
 import { transformExpr, emphasisExpr } from './clips.js';
@@ -567,7 +576,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       nextSectionIdx < sectionQueue.length &&
       sectionQueue[nextSectionIdx]!.time <= step.time
     ) {
-      L.push(`${indent}self.next_section("${sectionQueue[nextSectionIdx]!.title}")`);
+      L.push(`${indent}self.next_section("${safeText(sectionQueue[nextSectionIdx]!.title)}")`);
       nextSectionIdx++;
     }
     const wait = step.time - t;
@@ -602,7 +611,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
 
   // Emit any sections that come after all animation steps
   while (nextSectionIdx < sectionQueue.length) {
-    L.push(`${indent}self.next_section("${sectionQueue[nextSectionIdx]!.title}")`);
+    L.push(`${indent}self.next_section("${safeText(sectionQueue[nextSectionIdx]!.title)}")`);
     nextSectionIdx++;
   }
 

@@ -1032,7 +1032,7 @@ describe('parser round-trip — sections', () => {
     store.addObject('circle', 800, 540);
     store.selectObject(store.project.objects[0].id);
     store.createAnimation('move', { targetX: 300, targetY: 200 });
-    store.addSection(0, 'Intro');
+    store.addSection(0, 'Intro "A" \\ path');
     store.addSection(1, 'Outro');
     return store.project;
   }
@@ -1045,12 +1045,12 @@ describe('parser round-trip — sections', () => {
 
   it('round-trips next_section markers back to project.sections', () => {
     const py = generateManimScript(projectWithSections());
-    expect(py).toContain('self.next_section("Intro")');
+    expect(py).toContain('self.next_section("Intro \\"A\\" \\\\ path")');
     expect(py).toContain('self.next_section("Outro")');
 
     const back = parseManimScript(py, SW, SH);
     expect(Array.isArray(back.sections)).toBe(true);
-    expect(back.sections.map((s) => s.title)).toEqual(['Intro', 'Outro']);
+    expect(back.sections.map((s) => s.title)).toEqual(['Intro "A" \\ path', 'Outro']);
     // each parsed section carries a stable id + numeric, non-decreasing time
     expect(back.sections.every((s) => typeof s.id === 'string' && s.id.length > 0)).toBe(true);
     expect(back.sections[0].time).toBeLessThanOrEqual(back.sections[1].time);

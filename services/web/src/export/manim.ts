@@ -45,6 +45,23 @@ export function unescapePyMultiline(s: unknown): string {
   );
 }
 
+function unescapePyString(s: string): string {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c !== '\\' || i + 1 >= s.length) {
+      out += c;
+      continue;
+    }
+    const n = s[++i];
+    if (n === 'n') out += '\n';
+    else if (n === 't') out += '\t';
+    else if (n === 'r') out += '\r';
+    else out += n;
+  }
+  return out;
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // CODEGEN: project → Manim Python (thin wrapper — logic lives in @manim/codegen)
 // ═════════════════════════════════════════════════════════════════════════════
@@ -395,9 +412,9 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     // immediately before the first step at/after section.time, so the current
     // accumulated time (ct, pre-wait) reconstructs a placement that re-emits
     // identically. Round-trips a Wave 2 feature that was previously one-way.
-    m = line.match(/^self\.next_section\("(.*)"\)$/);
+    m = line.match(/^self\.next_section\("((?:\\.|[^"\\])*)"\)$/);
     if (m) {
-      sections.push({ id: uid('section'), time: ct, title: m[1] });
+      sections.push({ id: uid('section'), time: ct, title: unescapePyString(m[1]!) });
       continue;
     }
 
