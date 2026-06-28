@@ -32,7 +32,8 @@ test.describe('Wave 2 E2E coverage', () => {
   // 2. Add object via store → verify count
   test('addObject creates exactly one object', async ({ page }) => {
     await page.evaluate(() => {
-      window.__projectStore.addObject({ type: 'circle', name: 'TestCircle' });
+      const obj = window.__projectStore.addObject('circle', 960, 540);
+      obj.name = 'TestCircle';
       window.__projectStore.commitState();
     });
     const count = await page.evaluate(() => window.__projectStore.project.objects.length);
@@ -44,12 +45,13 @@ test.describe('Wave 2 E2E coverage', () => {
   // 3. Undo removes last added object
   test('undo removes last added object', async ({ page }) => {
     await page.evaluate(() => {
-      window.__projectStore.addObject({ type: 'star', name: 'UndoTarget' });
+      const obj = window.__projectStore.addObject('star', 960, 540);
+      obj.name = 'UndoTarget';
       window.__projectStore.commitState();
     });
-    await page.waitForTimeout(100);
-    await page.keyboard.press('Control+Z');
-    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      window.__projectStore.undo();
+    });
     const names = await page.evaluate(() =>
       window.__projectStore.project.objects.map((o: Record<string, unknown>) => o.name)
     );
@@ -59,7 +61,8 @@ test.describe('Wave 2 E2E coverage', () => {
   // 4. Lock object → locked flag is true
   test('toggleLocked sets object.locked to true', async ({ page }) => {
     await page.evaluate(() => {
-      window.__projectStore.addObject({ type: 'rectangle', name: 'LockMe' });
+      const obj = window.__projectStore.addObject('rectangle', 960, 540);
+      obj.name = 'LockMe';
       window.__projectStore.commitState();
     });
     await page.evaluate(() => {
@@ -111,17 +114,19 @@ test.describe('Wave 2 E2E coverage', () => {
   // 8. Split clip action
   test('splitClip divides a clip into two at playback time', async ({ page }) => {
     await page.evaluate(() => {
-      window.__projectStore.addObject({ type: 'circle', name: 'SplitObj' });
+      const created = window.__projectStore.addObject('circle', 960, 540);
+      created.name = 'SplitObj';
       window.__projectStore.commitState();
-      const obj = window.__projectStore.project.objects[0];
-      window.__projectStore.addClip({
+      const obj = window.__projectStore.project.objects.find(
+        (item: Record<string, unknown>) => item.name === 'SplitObj'
+      );
+      const clip = window.__projectStore.addClip(0, {
         type: 'fade',
         objectId: obj.id,
         startTime: 0,
         duration: 4,
       });
       window.__projectStore.setPlaybackTime(2);
-      const clip = window.__projectStore.project.tracks[0].clips[0];
       window.__projectStore.splitClip(clip.id);
     });
     const clipCount = await page.evaluate(
