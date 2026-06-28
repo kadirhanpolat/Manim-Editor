@@ -129,4 +129,47 @@ test.describe('Wave 2 E2E coverage', () => {
     );
     expect(clipCount).toBe(2);
   });
+
+  // 9. Render history list
+  test('render history dialog shows two completed renders', async ({ page }) => {
+    const projectId = 'e2e-render-history';
+    await page.route('**/api/render/**/history', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          history: [
+            {
+              index: 1,
+              ext: 'zip',
+              name: 'render_1.zip',
+              size: 1234,
+              mtime: '2026-06-28T12:00:00.000Z',
+              url: `/api/render/${projectId}/render_1.zip`,
+            },
+            {
+              index: 2,
+              ext: 'mp4',
+              name: 'render_2.mp4',
+              size: 4321,
+              mtime: '2026-06-28T12:05:00.000Z',
+              url: `/api/render/${projectId}/render_2.mp4`,
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.evaluate(() => {
+      window.__projectStore.project.id = 'e2e-render-history';
+      window.__projectStore.showRenderDialog = true;
+      window.__projectStore.renderStatus = 'completed';
+      window.__projectStore.renderVideoUrl = '/api/renders/e2e-render-history/latest.mp4';
+    });
+
+    await expect(page.getByText('Render #1.zip')).toBeVisible();
+    await expect(page.getByText('Render #2.mp4')).toBeVisible();
+    await expect(page.locator(`a[href="/api/render/${projectId}/render_1.zip"]`)).toHaveCount(1);
+    await expect(page.locator(`a[href="/api/render/${projectId}/render_2.mp4"]`)).toHaveCount(1);
+  });
 });
