@@ -227,7 +227,7 @@
               style="color: var(--studio-accent)"
               @click="stageViewMode = 'canvas'"
             >
-              ← Back to Canvas
+              Ã¢â€ Â Back to Canvas
             </button>
           </div>
         </div>
@@ -238,9 +238,9 @@
     <!-- Bottom Timeline (hidden in code-only mode) -->
     <ErrorBoundary v-if="!isCodeMode" label="timeline"><Timeline /></ErrorBoundary>
 
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <!-- Export Dialog (client-side .py download) -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <transition name="fade">
       <div
         v-if="showExport"
@@ -347,9 +347,9 @@
       </div>
     </transition>
 
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <!-- Server Render Dialog -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <transition name="fade">
       <div
         v-if="showRender"
@@ -438,7 +438,7 @@
                     class="text-[10px] text-studio-accent hover:opacity-80"
                     @click="copyRenderLog"
                   >
-                    {{ renderCopied ? '✓ Copied' : '⧉ Copy log' }}
+                    {{ renderCopied ? 'Ã¢Å“â€œ Copied' : 'Ã¢Â§â€° Copy log' }}
                   </button>
                 </div>
                 <p
@@ -458,7 +458,7 @@
               <div class="flex items-center justify-between mb-1">
                 <p class="text-xs text-red-400 font-medium">Render Failed</p>
                 <button class="text-[10px] text-red-300 hover:text-red-100" @click="copyRenderLog">
-                  {{ renderCopied ? '✓ Copied' : '⧉ Copy error' }}
+                  {{ renderCopied ? 'Ã¢Å“â€œ Copied' : 'Ã¢Â§â€° Copy error' }}
                 </button>
               </div>
               <p
@@ -518,13 +518,13 @@
                   <line x1="12" y1="12" x2="12" y2="18" />
                   <polyline points="9 15 12 18 15 15" />
                 </svg>
-                <span class="text-sm text-studio-text-muted">PNG frame dizisi hazır</span>
+                <span class="text-sm text-studio-text-muted">PNG frame dizisi hazÃ„Â±r</span>
                 <a
                   :href="renderVideoUrl"
                   download="frames.zip"
                   class="px-4 py-2 rounded-lg bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium transition-colors"
                 >
-                  ZIP İndir
+                  ZIP Ã„Â°ndir
                 </a>
               </div>
               <video
@@ -565,13 +565,35 @@
               </div>
               <!-- Render History -->
               <div v-if="renderHistory.length > 0" class="mt-4">
-                <p
-                  class="text-xs font-medium uppercase tracking-wider mb-2"
-                  style="color: var(--studio-text-muted)"
+                <button
+                  type="button"
+                  class="w-full flex items-center justify-between gap-3 px-0 py-0 text-left"
+                  @click="renderHistoryExpanded = !renderHistoryExpanded"
+                  :aria-expanded="renderHistoryExpanded"
                 >
-                  Render Geçmişi
-                </p>
-                <div class="space-y-1.5">
+                  <span
+                    class="text-xs font-medium uppercase tracking-wider"
+                    style="color: var(--studio-text-muted)"
+                  >
+                    Ã–nceki Render'lar
+                  </span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    :style="{
+                      color: 'var(--studio-text-muted)',
+                      transform: renderHistoryExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.15s ease',
+                    }"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                <div v-show="renderHistoryExpanded" class="space-y-1.5 mt-2">
                   <div
                     v-for="r in renderHistory"
                     :key="r.name"
@@ -586,7 +608,7 @@
                       download
                       class="text-[11px] px-2 py-1 rounded"
                       style="color: var(--studio-accent); background: var(--studio-accent-subtle)"
-                      >İndir</a
+                      >Ã„Â°ndir</a
                     >
                   </div>
                 </div>
@@ -597,9 +619,9 @@
       </div>
     </transition>
 
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <!-- Server Project Browser -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <transition name="fade">
       <div
         v-if="showProjectBrowser"
@@ -639,7 +661,7 @@
               class="text-center py-8 text-studio-text-muted text-sm"
               role="status"
             >
-              Loading project…
+              Loading projectÃ¢â‚¬Â¦
             </div>
             <div
               v-else-if="serverProjects.length === 0"
@@ -796,10 +818,11 @@ import type { RenderOptions } from './api.js';
 
 const store = useProjectStore();
 
-// ── Reactive state ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Reactive state Ã¢â€â‚¬Ã¢â€â‚¬
 const copied = ref(false);
 const renderOptions = ref<RenderOptions>({ ...DEFAULT_RENDER_OPTIONS });
-const renderHistory = ref<Array<{ index: number; ext: string; name: string; url: string }>>([]);
+const renderHistoryExpanded = ref(true);
+const renderHistory = ref<Array<{ index: number; ext: string; name: string; url: string; mtime?: string }>>([]);
 const stageViewMode = ref('canvas');
 const stageCode = ref('# Add objects to see generated Manim code');
 const stageCopied = ref(false);
@@ -816,7 +839,7 @@ let _parseMessageTimer: ReturnType<typeof setTimeout> | undefined;
 const highlightPre = ref<HTMLPreElement | null>(null);
 const codeArea = ref<HTMLTextAreaElement | null>(null);
 
-// ── Computed ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Computed Ã¢â€â‚¬Ã¢â€â‚¬
 const projectId = computed(() => store.project.id);
 const isCodeMode = computed(() => store.project.editorMode === 'code');
 const error = computed(() => store.error);
@@ -839,7 +862,7 @@ const renderLog = computed(() => store.renderLog);
 const renderFormat = computed(() => store.renderFormat);
 const downloadLabel = computed(() => {
   const labels: Record<string, string> = { mp4: 'MP4', gif: 'GIF', webm: 'WebM', zip: 'ZIP' };
-  return (labels[renderFormat.value] ?? renderFormat.value.toUpperCase()) + ' İndir';
+  return (labels[renderFormat.value] ?? renderFormat.value.toUpperCase()) + ' Ã„Â°ndir';
 });
 interface ServerProject {
   id: string;
@@ -881,7 +904,7 @@ const highlightedCode = computed(() => {
   }
 });
 
-// ── Watchers ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Watchers Ã¢â€â‚¬Ã¢â€â‚¬
 watch(
   () => store.project.keyframeDefaults,
   (defaults) => {
@@ -936,7 +959,7 @@ watch(
 
 let _disposeAutosave: (() => void) | null = null;
 
-// ── Lifecycle ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Lifecycle Ã¢â€â‚¬Ã¢â€â‚¬
 onMounted(() => {
   const engine = getPlaybackEngine();
   engine.onTimeUpdate((t) => store.setPlaybackTime(t));
@@ -970,7 +993,7 @@ onBeforeUnmount(() => {
   _disposeAutosave?.();
 });
 
-// ── Methods ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Methods Ã¢â€â‚¬Ã¢â€â‚¬
 function handleKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     commandPaletteOpen.value = true;
@@ -1064,7 +1087,7 @@ function togglePlayback() {
   }
 }
 
-// ── Export dialog ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Export dialog Ã¢â€â‚¬Ã¢â€â‚¬
 function closeExport() {
   store.showExportDialog = false;
 }
@@ -1090,7 +1113,7 @@ function copyCode() {
   });
 }
 
-// ── Render dialog ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Render dialog Ã¢â€â‚¬Ã¢â€â‚¬
 function closeRender() {
   // Allow closing at any time; if still rendering, polling continues in bg
   store.showRenderDialog = false;
@@ -1146,7 +1169,7 @@ function copyRenderLog() {
     });
 }
 
-// ── Project browser ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Project browser Ã¢â€â‚¬Ã¢â€â‚¬
 function closeProjectBrowser() {
   store.showProjectBrowser = false;
 }
@@ -1170,7 +1193,7 @@ async function deleteServerProject(id: string, name: string) {
   }
 }
 
-// ── Stage code view ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Stage code view Ã¢â€â‚¬Ã¢â€â‚¬
 function switchToCode() {
   stageViewMode.value = 'code';
   codeEdited.value = false;
@@ -1293,14 +1316,15 @@ function downloadStageCode() {
   }
 }
 
-// ── Render history ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Render history Ã¢â€â‚¬Ã¢â€â‚¬
 async function loadRenderHistory() {
   if (!projectId.value) return;
   try {
     const info = (await api.renders.getHistory(projectId.value)) as {
-      history?: Array<{ index: number; ext: string; name: string; url: string }>;
+      history?: Array<{ index: number; ext: string; name: string; url: string; mtime?: string }>;
     };
     renderHistory.value = info.history || [];
+    renderHistoryExpanded.value = renderHistory.value.length > 0;
   } catch {
     /* ignore */
   }
@@ -1311,7 +1335,7 @@ function formatRenderLabel(item: { index: number; ext: string; name: string }) {
   return `${slot}.${item.ext}`;
 }
 
-// ── Error ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ Error Ã¢â€â‚¬Ã¢â€â‚¬
 function clearError() {
   store.clearError();
 }

@@ -7,7 +7,7 @@ export interface RenderHistoryEntry {
   ext: RenderExt;
   name: string;
   size: number;
-  modifiedAt: Date;
+  mtime: Date;
   url: string;
 }
 
@@ -44,7 +44,7 @@ export async function listRotatedRenderHistory(
             ext: parsed.ext,
             name,
             size: stat.size,
-            modifiedAt: stat.mtime,
+            mtime: stat.mtime,
             url: `${basePath}/${projectId}/${name}`,
           }
         : null;
