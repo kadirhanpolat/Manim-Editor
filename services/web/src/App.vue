@@ -439,7 +439,13 @@
                 ></div>
               </div>
               <div v-if="renderLog" class="mt-3">
-                <div class="flex justify-end mb-1">
+                <div class="flex justify-end gap-2 mb-1">
+                  <button
+                    class="text-[10px] text-studio-text-muted hover:text-studio-text"
+                    @click="downloadRenderLog"
+                  >
+                    ⇩ Download log
+                  </button>
                   <button
                     class="text-[10px] text-studio-accent hover:opacity-80"
                     @click="copyRenderLog"
@@ -1194,6 +1200,18 @@ function copyRenderLog() {
       ta.remove();
       done();
     });
+}
+
+function downloadRenderLog() {
+  const text = [store.renderError, store.renderLog].filter(Boolean).join('\n\n');
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `render-${projectId.value || 'log'}.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 // Project browser

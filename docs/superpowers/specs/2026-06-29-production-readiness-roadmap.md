@@ -1,0 +1,237 @@
+# Manim Motion Editor Production Readiness Roadmap
+
+**Date:** 2026-06-29
+**Status:** Proposed
+**Purpose:** Turn the current feature-rich editor into a more reliable production tool.
+
+## Context
+
+The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
+
+The next development stage should not primarily add more object types. The highest-value work is reliability, preview/render trust, large-scene performance, and maintainability.
+
+## Priority Roadmap
+
+### 1. Render Pipeline Reliability
+
+**Why it matters:** Rendering is the core product promise. If a job stalls, fails silently, or gives weak feedback, the whole editor feels unreliable.
+
+**Scope:**
+- Worker health endpoint and UI-visible worker availability.
+- Stalled-job detection for queued/running jobs.
+- Render job timeout and structured failure reasons.
+- Cancel and retry support.
+- Downloadable full render log per job.
+- Queue position and active worker count in the render dialog.
+
+**Acceptance criteria:**
+- A stuck worker cannot leave the UI in an indefinite waiting state.
+- A failed render always shows a clear reason and log.
+- A user can retry a failed render without reopening the project.
+
+### 2. Preview / Render Parity
+
+**Why it matters:** The editor is only trustworthy if the canvas preview is close enough to final Manim output.
+
+**Scope:**
+- Create a documented preview-vs-render divergence matrix.
+- Expand golden-frame coverage beyond the current small corpus.
+- Add cases for text, LaTeX, gradients, rounded corners, shadows, 3D camera, paths, and emphasis clips.
+- Label accepted preview-only differences explicitly in the UI/docs.
+
+**Acceptance criteria:**
+- Every known preview/render mismatch is either fixed or documented.
+- Render regression tests cover the most common visual object families.
+- New visual features must add parity coverage or explicitly document a non-goal.
+
+### 3. Code / Visual Round-Trip Robustness
+
+**Why it matters:** The project has two editor modes. The code-to-canvas path should not silently drop important information.
+
+**Scope:**
+- Audit `parseManimScript` losses against generated output.
+- Move fragile parser areas toward structured metadata or a stronger parsing strategy.
+- Add round-trip fixtures for every major object family.
+- Make unsupported imports/custom code degrade safely instead of corrupting the visual project.
+
+**Acceptance criteria:**
+- Generated code can be parsed back without losing supported project state.
+- Unsupported code is reported clearly.
+- Round-trip tests cover objects, clips, sections, camera, audio, and render-relevant settings.
+
+### 4. Large-Scene Performance
+
+**Why it matters:** The object catalog is now large. Performance problems will appear when users build real scenes, not just demos.
+
+**Scope:**
+- Profile Konva stage render cost with 100, 250, and 500 objects.
+- Reduce unnecessary layers and move overlay-only visuals into groups where possible.
+- Batch redraw expensive updates.
+- Add large-project smoke fixtures.
+- Track bundle size and runtime hot paths.
+
+**Acceptance criteria:**
+- A 250-object project remains usable for selection, drag, pan, and zoom.
+- Konva layer count stays within the recommended range in normal editor states.
+- Performance regressions have repeatable local checks.
+
+### 5. Inspector Consistency Matrix
+
+**Why it matters:** There are many shape types. Users need predictable editing controls across them.
+
+**Scope:**
+- Define a schema/table for supported properties per object type.
+- Verify common properties: position, size, rotation, fill, stroke, opacity, z-order, lock/hide, duration, entrance/exit animation.
+- Verify type-specific panels for geometry, data, text, LaTeX, 3D, and annotations.
+- Add browser coverage for representative edit operations, not just panel visibility.
+
+**Acceptance criteria:**
+- Every object type has an explicit inspector capability row.
+- Missing controls are intentional and documented.
+- E2E tests cover editing core properties across each object family.
+
+### 6. Render UX and Observability
+
+**Why it matters:** Queue depth is a good start, but the user still needs richer feedback during long renders.
+
+**Scope:**
+- Show queue position, active worker count, and current job phase.
+- Add estimated duration where enough history exists.
+- Add copy/download log actions for both failed and completed jobs.
+- Preserve the last failed render state when reopening the dialog.
+
+**Acceptance criteria:**
+- The render dialog explains whether the job is queued, running, stalled, failed, or complete.
+- The user can act on each state: wait, cancel, retry, download, or inspect logs.
+
+**Implemented so far:**
+- Queue depth is shown before submission.
+- Render logs can be copied or downloaded from the dialog.
+
+### 7. Project History and Versioning
+
+**Why it matters:** Autosave and render history exist, but users need safer editing workflows for real projects.
+
+**Scope:**
+- Manual project snapshots.
+- Restore previous project snapshots.
+- Project package export/import including assets and render metadata.
+- Better autosave conflict handling.
+
+**Acceptance criteria:**
+- A user can recover from accidental destructive edits.
+- A project can be moved to another machine without losing assets.
+
+### 8. CI and Full-Stack Smoke Reliability
+
+**Why it matters:** The project has many moving parts. CI should catch real integration breakage without becoming noisy.
+
+**Scope:**
+- Stabilize Playwright port handling.
+- Add a Docker full-stack smoke for API + web + Redis + renderer.
+- Keep real Manim render harness non-blocking until environment stability is proven.
+- Record clear local commands for reproducing CI failures.
+
+**Acceptance criteria:**
+- Browser smoke tests do not fail because a local/dev port is already occupied.
+- At least one CI job proves the full Docker stack can start and accept a render request.
+
+### 9. Security and Render Isolation
+
+**Why it matters:** Code-only rendering executes user-provided Python. Even in a local-first project, guardrails matter.
+
+**Scope:**
+- CPU, memory, and wall-time limits for render jobs.
+- Clear filesystem boundary for project assets/renders.
+- Review code-only mode threat model.
+- Keep path traversal and argument injection tests current.
+
+**Acceptance criteria:**
+- A bad render cannot run forever or consume unbounded resources.
+- File access remains inside the intended data directories.
+
+### 10. Startup and Support Experience
+
+**Why it matters:** The project should be easy to run and debug on a fresh machine.
+
+**Scope:**
+- `start.bat` diagnostics for Docker availability and port conflicts.
+- One-command log collection.
+- Clear repair commands for stale volumes or broken workers.
+- Better first-run troubleshooting docs.
+
+**Acceptance criteria:**
+- A failed startup explains the concrete next action.
+- Users can collect useful logs without knowing Docker internals.
+
+### 11. Encoding and Language Consistency
+
+**Why it matters:** Mojibake in docs and mixed UI language reduce trust and make maintenance harder.
+
+**Scope:**
+- Clean README and roadmap mojibake.
+- Decide UI language strategy: English-only or explicit localization.
+- Move template labels/descriptions behind a localization-ready structure if Turkish content is kept.
+
+**Acceptance criteria:**
+- README and active roadmap docs render without corrupted characters.
+- User-facing labels follow one clear language policy.
+
+### 12. Template and Education Flow Quality
+
+**Why it matters:** The editor targets mathematical animations. Templates should demonstrate high-quality teaching workflows, not only object coverage.
+
+**Scope:**
+- Upgrade calculus, linear algebra, trigonometry, statistics, and programming templates.
+- Add narrative timing and camera polish.
+- Add template render smoke coverage for the most important examples.
+
+**Acceptance criteria:**
+- Top templates render successfully and look intentional.
+- A new user can start from a template and get a useful educational animation quickly.
+
+## Recommended Execution Order
+
+1. Render Pipeline Reliability
+2. Preview / Render Parity
+3. Code / Visual Round-Trip Robustness
+4. Large-Scene Performance
+5. Inspector Consistency Matrix
+6. Render UX and Observability
+7. Project History and Versioning
+8. CI and Full-Stack Smoke Reliability
+9. Security and Render Isolation
+10. Startup and Support Experience
+11. Encoding and Language Consistency
+12. Template and Education Flow Quality
+
+## Suggested Milestones
+
+### Milestone A: Reliable Rendering
+
+- Health checks, stalled-job detection, timeout, retry/cancel, richer logs.
+- Full-stack smoke proves the render path is alive.
+
+### Milestone B: Trustworthy Output
+
+- Expanded render regression corpus.
+- Preview/render divergence matrix.
+- Stronger round-trip fixtures.
+
+### Milestone C: Scalable Editing
+
+- Large-scene profiling and performance fixes.
+- Inspector capability matrix and edit-operation coverage.
+
+### Milestone D: Operational Polish
+
+- Project snapshots and package export/import.
+- Startup diagnostics.
+- Encoding/language cleanup.
+- Higher-quality education templates.
+
+## Non-Goals
+
+- Adding more shape types before reliability and parity improve.
+- Replacing Manim as the render engine.
+- Making pixel-perfect Konva-vs-Manim comparison the default gate; perceptual regression and documented divergences are preferred.

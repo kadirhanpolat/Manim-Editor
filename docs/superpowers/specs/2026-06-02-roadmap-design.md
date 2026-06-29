@@ -183,6 +183,7 @@ YapÃ„Â±sal olarak ayrÃ„Â±ca: **strict TypeScript gÃƒÂ¶ÃƒÂ§Ãƒ
 ---
 
 ## 6. Son Durum Notu (2026-06-29)
+- Next production-readiness roadmap: `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`.
 - README ve e2e kapsamÄ±, tÃ¼m shape kartlarÄ± ile type-specific inspector panellerini kapsayacak ÅŸekilde gÃ¼ncellendi.
 - Render akÄ±ÅŸÄ± gerÃ§ek tarayÄ±cÄ± smokenÄ±nda `Render complete!` seviyesine kadar doÄŸrulandÄ±.
 - Render dialog now surfaces live queue depth before submission; the API route and queue stats test are in place.
