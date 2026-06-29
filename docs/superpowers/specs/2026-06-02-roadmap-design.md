@@ -185,8 +185,7 @@ YapÃ„Â±sal olarak ayrÃ„Â±ca: **strict TypeScript gÃƒÂ¶ÃƒÂ§Ãƒ
 ## 6. Son Durum Notu (2026-06-29)
 - README ve e2e kapsamÄ±, tÃ¼m shape kartlarÄ± ile type-specific inspector panellerini kapsayacak ÅŸekilde gÃ¼ncellendi.
 - Render akÄ±ÅŸÄ± gerÃ§ek tarayÄ±cÄ± smokenÄ±nda `Render complete!` seviyesine kadar doÄŸrulandÄ±.
+- Render dialog now surfaces live queue depth before submission; the API route and queue stats test are in place.
 - `start.bat` ile full stack varsayÄ±lan olarak `http://localhost:8758` Ã¼zerinden aÃ§Ä±lÄ±yor.
 - Renderer image'Ä±na eksik `history.py` ve `sox` baÄŸÄ±mlÄ±lÄ±klarÄ± eklendi; worker kuyruÄŸu bu eksikle takÄ±lmÄ±yor.
 - Son e2e koÅŸusunda 24 Chromium testi yeÅŸil kaldÄ±.
-
-- Render dialog now surfaces live render queue depth before submission.

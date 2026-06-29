@@ -512,7 +512,7 @@ Workflow & scale follow-up to close the remaining low-risk backlog items from th
 - **Tests**: **760 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser, +2 mini-map) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 18 e2e unchanged.
 - **Inspector coverage**: Playwright now exercises every sidebar shape card plus type-specific inspector panels, so common shape editing and per-type controls are covered in a real browser.
 - **Render smoke**: the HQ render dialog was exercised end-to-end and reached `Render complete!` with a downloadable MP4, confirming the worker path stays live.
-- **Render observability**: the render dialog now shows live queue depth before submission, so waiting jobs are visible instead of implicit.
+- **Render observability**: the render dialog now shows live queue depth before submission, so waiting jobs are visible instead of implicit; this is backed by `GET /api/jobs/render-queue` and a dedicated `queue-stats` API test.
 - **Startup workflow**: `start.bat` now launches the full Docker stack on `http://localhost:8758`, with editor-only fallback kept for non-Docker environments.
 - **Renderer fix**: the Python worker image now includes the missing `history.py` module and `sox` dependencies, removing the stuck `In render queue, waiting for worker...` failure mode.
 - **Tests**: 58 api tests and 24 Chromium e2e tests pass across the browser smoke suite, topbar dialogs, shape editing, type-specific inspector panels, timeline coverage, render history, and render queue stats.
