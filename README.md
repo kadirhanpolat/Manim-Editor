@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/node-20-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/typescript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/version-3.26.0-6B7280" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.27.0-6B7280" alt="Version">
 </p>
 
 ---
@@ -129,6 +129,10 @@ docker compose up --build
 
 Open **http://localhost:8758** in your browser. Everything works out of the box -- editor, API, render queue, and Manim renderer.
 
+### Windows Launcher
+
+Run `start.bat` from the repo root on Windows. It checks Docker availability and port `8758`, then launches either the full Docker stack or editor-only mode.
+
 ### Editor Only (No Docker)
 
 This is an npm-workspaces monorepo (the shared `@manim/codegen` package is consumed
@@ -144,6 +148,12 @@ Open **http://localhost:5173**. You can build scenes and export Manim scripts. S
 ### Deploy Website (Netlify)
 
 The marketing site in `website/` deploys to Netlify via `netlify.toml`. Connect the repo to Netlify; build settings are read from the config (base: `website`, publish: `dist`).
+
+---
+
+## Roadmap
+
+The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). The remaining planned work is concentrated on render reliability, preview/render parity, large-scene performance, security and isolation, startup/support, encoding hygiene, and template quality.
 
 ---
 
@@ -479,7 +489,7 @@ a **non-blocking** job (a flaky browser run reports but doesn't gate every push)
 
 ---
 
-## Tech Stack![1775491376876](image/README/1775491376876.png)![1775491379141](image/README/1775491379141.png)![1775491380665](image/README/1775491380665.png)![1775491383028](image/README/1775491383028.png)
+## Tech Stack
 
 - **Frontend**: Vue 3, Pinia, Konva.js, Tailwind CSS (with CSS-variable theming), Vite
 - **Backend**: Node.js 20, Express, Multer, Zod, Redis

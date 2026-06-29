@@ -1,14 +1,16 @@
 # Manim Motion Editor Production Readiness Roadmap
 
 **Date:** 2026-06-29
-**Status:** Proposed
+**Status:** Active
 **Purpose:** Turn the current feature-rich editor into a more reliable production tool.
 
 ## Context
 
 The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
 
-The next development stage should not primarily add more object types. The highest-value work is reliability, preview/render trust, large-scene performance, and maintainability.
+Sections 1-8 below already have implementation notes or shipped work. The remaining planned work is concentrated in sections 9-12.
+
+The next development stage should not primarily add more object types. The highest-value work is reliability, preview/render trust, large-scene performance, maintainability, startup/support, security, and content quality.
 
 ## Priority Roadmap
 
