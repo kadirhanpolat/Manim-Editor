@@ -188,3 +188,5 @@ YapÃ„Â±sal olarak ayrÃ„Â±ca: **strict TypeScript gÃƒÂ¶ÃƒÂ§Ãƒ
 - `start.bat` ile full stack varsayÄ±lan olarak `http://localhost:8758` Ã¼zerinden aÃ§Ä±lÄ±yor.
 - Renderer image'Ä±na eksik `history.py` ve `sox` baÄŸÄ±mlÄ±lÄ±klarÄ± eklendi; worker kuyruÄŸu bu eksikle takÄ±lmÄ±yor.
 - Son e2e koÅŸusunda 24 Chromium testi yeÅŸil kaldÄ±.
+
+- Render dialog now surfaces live render queue depth before submission.

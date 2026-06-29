@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue';
+﻿import { ref, watch } from 'vue';
 import type { ComputedRef } from 'vue';
 
 export const RULER_SIZE = 18; // px — width of vertical ruler / height of horizontal ruler

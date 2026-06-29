@@ -79,6 +79,15 @@ export async function getJobStatus(jobId: string): Promise<Record<string, string
 }
 
 /**
+ * Get render queue stats for observability in the UI.
+ */
+export async function getRenderQueueStats(): Promise<{ queueDepth: number }> {
+  const redis = await getRedisClient();
+  const queueDepth = await redis.lLen('render:queue');
+  return { queueDepth };
+}
+
+/**
  * Enqueue an audio TTS job.
  */
 export async function enqueueAudioJob(job: AudioJob): Promise<string> {

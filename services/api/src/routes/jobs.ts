@@ -6,7 +6,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { isSafeSegment } from '../util/paths.js';
-import { getJobStatus } from '../queue.js';
+import { getJobStatus, getRenderQueueStats } from '../queue.js';
 
 const router = Router();
 
@@ -17,6 +17,19 @@ for (const _p of ['jobId']) {
     next();
   });
 }
+
+/**
+ * Get render queue stats.
+ * GET /api/jobs/render-queue
+ */
+router.get('/render-queue', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = await getRenderQueueStats();
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * Get job status.

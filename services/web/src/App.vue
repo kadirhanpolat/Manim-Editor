@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     id="app"
     class="h-screen flex flex-col overflow-hidden"
@@ -388,6 +388,12 @@
             <!-- Render options (before render starts) -->
             <div v-if="!renderStatus">
               <RenderOptionsDialog v-model="renderOptions" />
+              <div class="flex items-center justify-between text-[11px] text-studio-text-muted mb-2">
+                <span>Queue depth</span>
+                <span v-if="renderQueueLoading">Checking...</span>
+                <span v-else-if="renderQueueDepth !== null">{{ renderQueueDepth }} waiting</span>
+                <span v-else>Unavailable</span>
+              </div>
               <!-- Text size disclaimer -->
               <div
                 v-if="hasTextElements"
@@ -860,6 +866,8 @@ const renderError = computed(() => store.renderError);
 const renderVideoUrl = computed(() => store.renderVideoUrl);
 const renderLog = computed(() => store.renderLog);
 const renderFormat = computed(() => store.renderFormat);
+const renderQueueDepth = ref<number | null>(null);
+const renderQueueLoading = ref(false);
 const downloadLabel = computed(() => {
   const labels: Record<string, string> = { mp4: 'MP4', gif: 'GIF', webm: 'WebM', zip: 'ZIP' };
   return 'Download ' + (labels[renderFormat.value] ?? renderFormat.value.toUpperCase());
@@ -896,6 +904,18 @@ const renderProgress = computed(() => {
   return (store.renderStatus && map[store.renderStatus]) || 0;
 });
 
+async function loadRenderQueueStats() {
+  renderQueueLoading.value = true;
+  try {
+    const stats = (await api.jobs.getRenderQueueStats()) as { queueDepth?: number };
+    renderQueueDepth.value = Number.isFinite(stats.queueDepth) ? (stats.queueDepth as number) : 0;
+  } catch {
+    renderQueueDepth.value = null;
+  } finally {
+    renderQueueLoading.value = false;
+  }
+}
+
 const highlightedCode = computed(() => {
   try {
     return hljs.highlight(stageCode.value, { language: 'python' }).value;
@@ -925,6 +945,10 @@ watch(renderStatus, (status) => {
   if (status === 'completed' && projectId.value) {
     loadRenderHistory();
   }
+});
+
+watch(showRender, (open) => {
+  if (open && !renderStatus.value) loadRenderQueueStats();
 });
 
 watch(
@@ -1117,6 +1141,8 @@ function copyCode() {
 function closeRender() {
   // Allow closing at any time; if still rendering, polling continues in bg
   store.showRenderDialog = false;
+  renderQueueDepth.value = null;
+  renderQueueLoading.value = false;
   // Reset status ONLY if completed or failed so user can re-open cleanly
   if (store.renderStatus === 'completed' || store.renderStatus === 'failed') {
     // keep it so user can reopen and see the video / error
@@ -1138,6 +1164,7 @@ function resetRender() {
   store.renderError = null;
   store.renderVideoUrl = null;
   store.renderLog = '';
+  renderQueueDepth.value = null;
 }
 
 const renderCopied = ref(false);

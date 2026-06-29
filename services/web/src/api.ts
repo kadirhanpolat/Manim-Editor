@@ -140,6 +140,7 @@ export const assets = {
 
 export const jobs = {
   get: (jobId: string) => request(`/jobs/${jobId}`),
+  getRenderQueueStats: () => request('/jobs/render-queue'),
 };
 
 // ─── Renders ──────────────────────────────────────────────────────────────────

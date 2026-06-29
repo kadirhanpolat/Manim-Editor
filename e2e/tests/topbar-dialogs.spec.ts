@@ -44,6 +44,14 @@ test.describe('Topbar dialogs and menus', () => {
   });
 
   test('Render dialog opens and reflects selected render options', async ({ page }) => {
+    await page.route('**/api/jobs/render-queue', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ queueDepth: 3 }),
+      });
+    });
+
     await page.locator('.shape-card', { hasText: 'Circle' }).click();
     await page.locator('.menu-label', { hasText: 'Tools' }).click();
     await page.locator('[role="menuitem"]').filter({ hasText: 'Render HQ' }).click();
@@ -51,6 +59,7 @@ test.describe('Topbar dialogs and menus', () => {
     const dialog = page.getByRole('dialog', { name: 'Render with Manim' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('High-quality render via Docker')).toBeVisible();
+    await expect(dialog.getByText('3 waiting')).toBeVisible();
 
     await page.getByTestId('fmt-gif').click();
     await page.getByTestId('res-1280x720').click();
