@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatDurationMs,
+  renderDurationEstimateLabel,
   renderPhaseLabel,
   renderQueuePosition,
   renderWorkerSummary,
@@ -23,7 +25,17 @@ describe('render ui helpers', () => {
 
   it('summarizes worker health without leaking formatting noise', () => {
     expect(renderWorkerSummary(true, 2, 1, 0)).toBe('Checking workers...');
-    expect(renderWorkerSummary(false, 2, 1, 0)).toBe('2 online · 1 busy · 0 stale');
+    expect(renderWorkerSummary(false, 2, 1, 0)).toBe('2 online | 1 busy | 0 stale');
     expect(renderWorkerSummary(false, null, null, null)).toBe('Unavailable');
+  });
+
+  it('formats duration estimates into compact labels', () => {
+    expect(formatDurationMs(1200)).toBe('1s');
+    expect(formatDurationMs(65_000)).toBe('1m 05s');
+    expect(formatDurationMs(3_661_000)).toBe('1h 1m 01s');
+    expect(renderDurationEstimateLabel(null, null)).toBe(null);
+    expect(renderDurationEstimateLabel(65_000, 3)).toBe(
+      'Estimated duration: 1m 05s based on 3 renders'
+    );
   });
 });

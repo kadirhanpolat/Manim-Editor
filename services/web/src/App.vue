@@ -408,6 +408,9 @@
                   <span>{{ renderWorkerSummary }}</span>
                 </div>
               </div>
+              <div v-if="renderDurationEstimate" class="mb-2 text-[11px] text-studio-text-muted">
+                {{ renderDurationEstimate }}
+              </div>
               <!-- Preview / render disclaimer -->
               <div
                 v-if="previewNotes.length > 0"
@@ -463,6 +466,9 @@
               </div>
               <div v-if="renderJobStalled" class="mb-3 text-[11px] text-amber-300">
                 Render appears stalled.
+              </div>
+              <div v-if="renderDurationEstimate" class="mb-3 text-[11px] text-studio-text-muted">
+                {{ renderDurationEstimate }}
               </div>
               <div class="w-full bg-studio-bg rounded-full h-2 overflow-hidden">
                 <div
@@ -884,6 +890,7 @@ import CommandPalette from './components/command/CommandPalette.vue';
 import {
   renderPhaseLabel as getRenderPhaseLabel,
   renderQueuePosition as getRenderQueuePosition,
+  renderDurationEstimateLabel as getRenderDurationEstimateLabel,
   renderWorkerSummary as getRenderWorkerSummary,
 } from './components/render/render-ui.js';
 import { buildPreviewNotes } from './components/render/preview-notes.js';
@@ -897,6 +904,8 @@ const copied = ref(false);
 const renderOptions = ref<RenderOptions>({ ...DEFAULT_RENDER_OPTIONS });
 const renderHistoryExpanded = ref(true);
 const renderHistory = ref<Array<{ index: number; ext: string; name: string; url: string; mtime?: string }>>([]);
+const renderHistoryEstimateMs = ref<number | null>(null);
+const renderHistoryEstimateCount = ref<number | null>(null);
 const stageViewMode = ref('canvas');
 const stageCode = ref('# Add objects to see generated Manim code');
 const stageCopied = ref(false);
@@ -979,6 +988,9 @@ const renderWorkerSummary = computed(() =>
     renderQueueBusyWorkers.value,
     renderQueueStaleWorkers.value
   )
+);
+const renderDurationEstimate = computed(() =>
+  getRenderDurationEstimateLabel(renderHistoryEstimateMs.value, renderHistoryEstimateCount.value)
 );
 
 const renderProgress = computed(() => {
@@ -1507,13 +1519,27 @@ function downloadStageCode() {
 // Render history
 async function loadRenderHistory() {
   if (!projectId.value) return;
+  renderHistoryEstimateMs.value = null;
+  renderHistoryEstimateCount.value = null;
   try {
     const info = (await api.renders.getHistory(projectId.value)) as {
       history?: Array<{ index: number; ext: string; name: string; url: string; mtime?: string }>;
+      estimatedDurationMs?: number | null;
+      estimatedFromCount?: number | null;
     };
     renderHistory.value = info.history || [];
     renderHistoryExpanded.value = renderHistory.value.length > 0;
+    renderHistoryEstimateMs.value =
+      Number.isFinite(info.estimatedDurationMs as number) && (info.estimatedDurationMs ?? 0) > 0
+        ? (info.estimatedDurationMs as number)
+        : null;
+    renderHistoryEstimateCount.value =
+      Number.isFinite(info.estimatedFromCount as number) && (info.estimatedFromCount ?? 0) > 0
+        ? (info.estimatedFromCount as number)
+        : null;
   } catch {
+    renderHistoryEstimateMs.value = null;
+    renderHistoryEstimateCount.value = null;
     /* ignore */
   }
 }

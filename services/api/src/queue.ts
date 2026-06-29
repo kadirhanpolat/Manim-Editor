@@ -54,6 +54,11 @@ export interface CancelRenderJobResult {
   removedFromQueue: boolean;
 }
 
+export interface RenderDurationEstimate {
+  estimatedDurationMs: number;
+  sampleCount: number;
+}
+
 /**
  * Enqueue a render job.
  */
@@ -119,6 +124,44 @@ export async function getJobStatus(jobId: string): Promise<Record<string, string
   }
 
   return job;
+}
+
+/**
+ * Estimate render duration from recent successful jobs for a project.
+ */
+export async function getProjectRenderDurationEstimate(
+  projectId: string,
+  sampleSize = 5
+): Promise<RenderDurationEstimate | null> {
+  const redis = await getRedisClient();
+  const jobKeys = await redis.keys('render:job:*');
+  const samples: { completedAt: number; durationMs: number }[] = [];
+
+  for (const key of jobKeys) {
+    const job = await redis.hGetAll(key);
+    if (!job || Object.keys(job).length === 0) continue;
+    if (job.projectId !== projectId) continue;
+    if (job.status !== 'completed') continue;
+
+    const startedAt = Date.parse(job.startedAt ?? '');
+    const completedAt = Date.parse(job.completedAt ?? '');
+    if (!Number.isFinite(startedAt) || !Number.isFinite(completedAt) || completedAt <= startedAt) {
+      continue;
+    }
+
+    samples.push({ completedAt, durationMs: completedAt - startedAt });
+  }
+
+  if (samples.length < 3) return null;
+
+  samples.sort((a, b) => b.completedAt - a.completedAt);
+  const selected = samples.slice(0, Math.max(3, sampleSize));
+  const total = selected.reduce((sum, item) => sum + item.durationMs, 0);
+
+  return {
+    estimatedDurationMs: Math.round(total / selected.length),
+    sampleCount: selected.length,
+  };
 }
 
 /**

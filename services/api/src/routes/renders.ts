@@ -8,6 +8,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { isSafeSegment } from '../util/paths.js';
 import { RENDER_EXTS, isRenderExt, contentTypeFor, isRenderFilename } from '../util/renderFiles.js';
 import { listRotatedRenderHistory } from '../util/renderHistory.js';
+import { getProjectRenderDurationEstimate } from '../queue.js';
 import fs from 'fs/promises';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
@@ -116,6 +117,7 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
       req.params['projectId'],
       '/api/renders'
     );
+    const estimate = await getProjectRenderDurationEstimate(req.params['projectId']);
 
     res.json({
       renders:
@@ -131,6 +133,8 @@ router.get('/:projectId', async (req: Request, res: Response, next: NextFunction
           : [],
       hasLatest,
       history,
+      estimatedDurationMs: estimate?.estimatedDurationMs ?? null,
+      estimatedFromCount: estimate?.sampleCount ?? 0,
     });
   } catch (err) {
     next(err);
@@ -149,7 +153,12 @@ router.get('/:projectId/history', async (req: Request, res: Response, next: Next
       req.params['projectId'],
       '/api/render'
     );
-    res.json({ history });
+    const estimate = await getProjectRenderDurationEstimate(req.params['projectId']);
+    res.json({
+      history,
+      estimatedDurationMs: estimate?.estimatedDurationMs ?? null,
+      estimatedFromCount: estimate?.sampleCount ?? 0,
+    });
   } catch (err) {
     next(err);
   }

@@ -134,6 +134,7 @@ The next development stage should not primarily add more object types. The highe
 - Queue depth is shown before submission.
 - Worker availability is shown before submission.
 - Render logs can be copied or downloaded from the dialog.
+- Render dialogs now surface an estimated duration when enough successful render history exists.
 - Render progress now shows explicit phase, queue position, and worker summary lines.
 - Render jobs now expose a Cancel action while queued or running.
 - Stalled renders are surfaced in the dialog as an explicit warning.
