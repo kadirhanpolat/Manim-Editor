@@ -29,6 +29,12 @@ The next development stage should not primarily add more object types. The highe
 - A failed render always shows a clear reason and log.
 - A user can retry a failed render without reopening the project.
 
+**Implemented so far:**
+- Worker heartbeat metadata is exposed through the queue stats API.
+- The render dialog now shows queue depth, worker count, and stale-worker count.
+- Render jobs can be canceled from the API and the worker honors cancel requests.
+- Job status responses now include queue position and stalled-worker detection.
+
 ### 2. Preview / Render Parity
 
 **Why it matters:** The editor is only trustworthy if the canvas preview is close enough to final Manim output.
@@ -75,6 +81,10 @@ The next development stage should not primarily add more object types. The highe
 - Konva layer count stays within the recommended range in normal editor states.
 - Performance regressions have repeatable local checks.
 
+**Implemented so far:**
+- `services/web/src/components/stage/StageCanvas.vue` now renders the object tree and overlays in a single Konva layer.
+- `services/web/tests/components/stage/stage-canvas-layers.test.ts` locks the steady-state layer count to one.
+
 ### 5. Inspector Consistency Matrix
 
 **Why it matters:** There are many shape types. Users need predictable editing controls across them.
@@ -89,6 +99,11 @@ The next development stage should not primarily add more object types. The highe
 - Every object type has an explicit inspector capability row.
 - Missing controls are intentional and documented.
 - E2E tests cover editing core properties across each object family.
+
+**Implemented so far:**
+- `services/web/src/components/inspector/capability-matrix.ts` defines the shared control surface and one row per addable object type.
+- `services/web/tests/components/inspector-capability-matrix.test.ts` verifies palette coverage, shared controls, and representative special panels.
+- `services/web/tests/components/ui-tools-audit.test.ts` now consumes the capability matrix as its type source.
 
 ### 6. Render UX and Observability
 
@@ -105,8 +120,14 @@ The next development stage should not primarily add more object types. The highe
 - The user can act on each state: wait, cancel, retry, download, or inspect logs.
 
 **Implemented so far:**
+- Parser warnings report unsupported code instead of silently dropping it.
+- Preview/render divergence matrix: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`.
 - Queue depth is shown before submission.
+- Worker availability is shown before submission.
 - Render logs can be copied or downloaded from the dialog.
+- Render progress now shows explicit phase, queue position, and worker summary lines.
+- Render jobs now expose a Cancel action while queued or running.
+- Stalled renders are surfaced in the dialog as an explicit warning.
 
 ### 7. Project History and Versioning
 
@@ -122,6 +143,11 @@ The next development stage should not primarily add more object types. The highe
 - A user can recover from accidental destructive edits.
 - A project can be moved to another machine without losing assets.
 
+**Implemented so far:**
+- Local project snapshots can be created, listed, restored, and deleted from the topbar.
+- Project package export/import now preserves render metadata alongside the project payload.
+- Autosave restore prompts now name the unsaved project, which makes startup conflict handling less ambiguous.
+
 ### 8. CI and Full-Stack Smoke Reliability
 
 **Why it matters:** The project has many moving parts. CI should catch real integration breakage without becoming noisy.
@@ -135,6 +161,10 @@ The next development stage should not primarily add more object types. The highe
 **Acceptance criteria:**
 - Browser smoke tests do not fail because a local/dev port is already occupied.
 - At least one CI job proves the full Docker stack can start and accept a render request.
+
+**Implemented so far:**
+- `scripts/full-stack-smoke.mjs` exercises web, API, Redis-backed job creation, and renderer-backed job completion.
+- `.github/workflows/ci.yml` includes a dedicated `docker-smoke` job that boots the compose stack and runs the smoke script.
 
 ### 9. Security and Render Isolation
 
@@ -150,6 +180,10 @@ The next development stage should not primarily add more object types. The highe
 - A bad render cannot run forever or consume unbounded resources.
 - File access remains inside the intended data directories.
 
+**Implemented so far:**
+- Render worker project ids and scene-file resolution are clamped to the shared data directory.
+- Render worker timeouts kill the whole spawned process group, not just the top-level process.
+
 ### 10. Startup and Support Experience
 
 **Why it matters:** The project should be easy to run and debug on a fresh machine.
@@ -163,6 +197,10 @@ The next development stage should not primarily add more object types. The highe
 **Acceptance criteria:**
 - A failed startup explains the concrete next action.
 - Users can collect useful logs without knowing Docker internals.
+
+**Implemented so far:**
+- `start.bat` checks the relevant launch port before opening the browser.
+- `start.bat` falls back to editor-only mode when Docker is unavailable.
 
 ### 11. Encoding and Language Consistency
 

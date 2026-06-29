@@ -31,6 +31,25 @@ jobs:
       - name: API tests
         run: npm test --workspace services/api
 
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Start full Docker stack
+        run: docker compose up -d --build init redis api renderer renderer-2 web
+      - name: Run full-stack smoke
+        run: npm run smoke:fullstack
+      - name: Docker logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=200 api renderer renderer-2 web redis
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v --remove-orphans
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30

@@ -25,9 +25,12 @@ export interface MenuCtx {
   currentTheme: StringRef;
   newProject: () => void;
   loadProject: () => void;
+  loadPackage: () => void;
   saveProject: () => void;
+  savePackage: () => void;
   saveToServer: () => void;
   browseServer: () => void;
+  openSnapshots: () => void;
   openExport: () => void;
   openRender: () => void;
   showShortcuts: () => void;
@@ -70,9 +73,12 @@ export function buildMenus(ctx: MenuCtx): Menu[] {
     currentTheme,
     newProject,
     loadProject,
+    loadPackage,
     saveProject,
+    savePackage,
     saveToServer,
     browseServer,
+    openSnapshots,
     openExport,
     openRender,
     showShortcuts,
@@ -81,23 +87,27 @@ export function buildMenus(ctx: MenuCtx): Menu[] {
     toggleSnap,
     groupSelected,
   } = ctx;
+
   return [
     {
       id: 'file',
       label: 'File',
       items: [
         { id: 'f-new', label: 'New Project', action: () => newProject() },
-        { id: 'f-open', label: 'Open…', action: () => loadProject(), shortcut: `${mod}O` },
+        { id: 'f-open', label: 'Open...', action: () => loadProject(), shortcut: `${mod}O` },
+        { id: 'f-open-package', label: 'Import Package...', action: () => loadPackage() },
         { type: 'separator' },
         { id: 'f-save', label: 'Save', action: () => saveProject(), shortcut: `${mod}S` },
+        { id: 'f-save-package', label: 'Save Package...', action: () => savePackage() },
         {
           id: 'f-sync',
           label: 'Save to Server',
           action: () => saveToServer(),
           disabled: () => isSaving.value,
         },
-        { id: 'f-browse', label: 'Server Projects…', action: () => browseServer() },
+        { id: 'f-browse', label: 'Server Projects...', action: () => browseServer() },
         { type: 'separator' },
+        { id: 'f-snapshots', label: 'Project Snapshots...', action: () => openSnapshots() },
         { id: 'f-export', label: 'Export .py', action: () => openExport() },
       ],
     },
@@ -173,7 +183,7 @@ export function buildMenus(ctx: MenuCtx): Menu[] {
     {
       id: 'tools',
       label: 'Tools',
-      items: [{ id: 't-render', label: 'Render HQ…', action: () => openRender() }],
+      items: [{ id: 't-render', label: 'Render HQ...', action: () => openRender() }],
     },
     {
       id: 'help',

@@ -1132,3 +1132,25 @@ describe('parser multi-line robustness', () => {
     expect(result.objects.find((o) => o.type === 'circle')).toBeTruthy();
   });
 });
+
+describe('parser unsupported-code warnings', () => {
+  it('keeps supported objects and reports unsupported lines', () => {
+    const py = [
+      'from manim import *',
+      'from random import randint',
+      'class MainScene(Scene):',
+      '    def construct(self):',
+      '        obj_1 = Circle(radius=2.0)',
+      '        obj_1.move_to([0.000, 0.000, 0])',
+      '        print("ignored custom code")',
+      '        self.play(FadeIn(obj_1))',
+      '        self.wait(1)',
+    ].join('\n');
+    const result = parseManimScript(py, SW, SH);
+    expect(result.objects.find((o) => o.type === 'circle')).toBeTruthy();
+    expect(Array.isArray(result.warnings)).toBe(true);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings.some((w) => w.includes('from random import randint'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('print("ignored custom code")'))).toBe(true);
+  });
+});

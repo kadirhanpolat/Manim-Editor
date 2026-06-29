@@ -81,6 +81,46 @@ export interface StoreProject {
   guides: Array<{ id: string; axis: 'h' | 'v'; pos: number }>;
 }
 
+interface ProjectPackageRenderMetadata {
+  jobId: string | null;
+  status: string | null;
+  error: string | null;
+  workerId: string | null;
+  stalled: boolean;
+  queuePosition: number | null;
+  quality: string;
+  format: string;
+  videoUrl: string | null;
+  log: string;
+}
+
+interface ProjectPackageV1 {
+  kind: 'manim-motion-project-package';
+  version: 1;
+  exportedAt: number;
+  project: StoreProject;
+  render: ProjectPackageRenderMetadata;
+}
+
+interface ProjectSnapshotRecord {
+  id: string;
+  label: string;
+  createdAt: number;
+  package: ProjectPackageV1;
+}
+
+interface ProjectSnapshotSummary {
+  id: string;
+  label: string;
+  createdAt: number;
+  projectName: string;
+  projectId: string | null;
+  objectCount: number;
+  assetCount: number;
+  renderStatus: string | null;
+  renderFormat: string;
+}
+
 interface FrameState {
   objectOverrides: Record<string, unknown>;
   morphShapes: unknown[];
@@ -131,6 +171,9 @@ interface State {
   renderJobId: string | null;
   renderStatus: string | null;
   renderError: string | null;
+  renderWorkerId: string | null;
+  renderJobStalled: boolean;
+  renderQueuePosition: number | null;
   renderQuality: string;
   renderFormat: string;
   renderVideoUrl: string | null;
@@ -149,6 +192,8 @@ interface State {
 }
 
 const MAX_HISTORY = 50;
+const PROJECT_SNAPSHOTS_KEY = 'manim-motion-project-snapshots';
+const MAX_PROJECT_SNAPSHOTS = 20;
 // Default timeline duration (seconds) for an object with no explicit duration.
 // Single source of truth — matches the value addObject assigns on creation.
 const OBJ_DEFAULT_DURATION = 3;
@@ -479,6 +524,43 @@ function loadRecentColors(): string[] {
   }
 }
 
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function loadProjectSnapshots(): ProjectSnapshotRecord[] {
+  try {
+    const raw = localStorage.getItem(PROJECT_SNAPSHOTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is ProjectSnapshotRecord => {
+      if (!item || typeof item !== 'object') return false;
+      const record = item as ProjectSnapshotRecord;
+      return (
+        typeof record.id === 'string' &&
+        typeof record.label === 'string' &&
+        typeof record.createdAt === 'number' &&
+        !!record.package &&
+        record.package.kind === 'manim-motion-project-package' &&
+        record.package.version === 1 &&
+        !!record.package.project &&
+        !!record.package.render
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+function saveProjectSnapshots(records: ProjectSnapshotRecord[]): void {
+  try {
+    localStorage.setItem(PROJECT_SNAPSHOTS_KEY, JSON.stringify(records));
+  } catch {
+    /* localStorage may be unavailable in tests or private browsing */
+  }
+}
+
 // ─── Pinia Store ─────────────────────────────────────────────────────────────
 
 export const pinia = createPinia();
@@ -506,6 +588,9 @@ const useProjectStore = defineStore('project', {
     renderJobId: null,
     renderStatus: null,
     renderError: null,
+    renderWorkerId: null,
+    renderJobStalled: false,
+    renderQueuePosition: null,
     renderQuality: 'high',
     renderFormat: 'mp4',
     renderVideoUrl: null,
@@ -1780,25 +1865,89 @@ const useProjectStore = defineStore('project', {
     // ══════════════════════════════════════════════════════════════════════════
 
     exportJSON() {
-      return JSON.stringify(JSON.parse(JSON.stringify(this.project)), null, 2);
+      return JSON.stringify(cloneJson(this.project), null, 2);
+    },
+
+    _buildRenderMetadata(): ProjectPackageRenderMetadata {
+      return {
+        jobId: this.renderJobId,
+        status: this.renderStatus,
+        error: this.renderError,
+        workerId: this.renderWorkerId,
+        stalled: this.renderJobStalled,
+        queuePosition: this.renderQueuePosition,
+        quality: this.renderQuality,
+        format: this.renderFormat,
+        videoUrl: this.renderVideoUrl,
+        log: this.renderLog,
+      };
+    },
+
+    _applyRenderMetadata(render: Partial<ProjectPackageRenderMetadata> | null | undefined) {
+      this.renderJobId = render?.jobId ?? null;
+      this.renderStatus = render?.status ?? null;
+      this.renderError = render?.error ?? null;
+      this.renderWorkerId = render?.workerId ?? null;
+      this.renderJobStalled = render?.stalled ?? false;
+      this.renderQueuePosition = render?.queuePosition ?? null;
+      this.renderQuality = render?.quality ?? 'high';
+      this.renderFormat = render?.format ?? 'mp4';
+      this.renderVideoUrl = render?.videoUrl ?? null;
+      this.renderLog = render?.log ?? '';
+    },
+
+    exportProjectPackage() {
+      const pkg: ProjectPackageV1 = {
+        kind: 'manim-motion-project-package',
+        version: 1,
+        exportedAt: Date.now(),
+        project: cloneJson(this.project),
+        render: this._buildRenderMetadata(),
+      };
+      return JSON.stringify(pkg, null, 2);
     },
 
     importJSON(jsonStr: string) {
       try {
         const data = JSON.parse(jsonStr) as Record<string, unknown>;
-        if (!data.stage || !Array.isArray(data.objects)) throw new Error('Invalid project');
-        if (!data.tracks) data.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
-        if (!data.assets) data.assets = [];
-        if (!data.groups) data.groups = [];
-        if (!data.editorMode) data.editorMode = 'visual';
-        if (data.codeSource === undefined) data.codeSource = '';
-        if (!('cameraType' in data)) data.cameraType = 'static';
-        if (!Array.isArray(data.cameraTrack)) data.cameraTrack = [];
-        this.project = data as unknown as StoreProject;
+        const isPackage =
+          data.kind === 'manim-motion-project-package' && data.version === 1 && !!data.project;
+        const projectData = (isPackage ? data.project : data) as Record<string, unknown>;
+        const renderData = isPackage ? (data.render as Partial<ProjectPackageRenderMetadata>) : null;
+        if (!projectData.stage || !Array.isArray(projectData.objects))
+          throw new Error('Invalid project');
+        if (!projectData.tracks) projectData.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
+        if (!projectData.assets) projectData.assets = [];
+        if (!projectData.groups) projectData.groups = [];
+        if (!projectData.editorMode) projectData.editorMode = 'visual';
+        if (projectData.codeSource === undefined) projectData.codeSource = '';
+        if (!('cameraType' in projectData)) projectData.cameraType = 'static';
+        if (!Array.isArray(projectData.cameraTrack)) projectData.cameraTrack = [];
+        if (!projectData.keyframeDefaults) {
+          projectData.keyframeDefaults = { mode: 'opt-in', codegenMode: 'UpdateFromAlphaFunc' };
+        }
+        if (!projectData.sceneType) projectData.sceneType = '2d';
+        if (!projectData.camera3d) {
+          projectData.camera3d = createDefaultProject().camera3d;
+        }
+        if (!Array.isArray(projectData.sections)) projectData.sections = [];
+        if (!Array.isArray(projectData.guides)) projectData.guides = [];
+        this.project = projectData as unknown as StoreProject;
         this.selectedObjectIds = [];
         this.selectedClipId = null;
         this.isDirty = false;
         this.error = null;
+        this.renderJobId = null;
+        this.renderStatus = null;
+        this.renderError = null;
+        this.renderWorkerId = null;
+        this.renderJobStalled = false;
+        this.renderQueuePosition = null;
+        this.renderVideoUrl = null;
+        this.renderLog = '';
+        this.renderQuality = 'high';
+        this.renderFormat = 'mp4';
+        this._applyRenderMetadata(renderData);
         this.history.past = [];
         this.history.future = [];
         this.commitState();
@@ -1821,11 +1970,23 @@ const useProjectStore = defineStore('project', {
       this.isDirty = false;
     },
 
-    loadFromFile(): Promise<boolean> {
+    savePackageToFile() {
+      const json = this.exportProjectPackage();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${this.project.name || 'project'}.mmpkg.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.isDirty = false;
+    },
+
+    loadFromFile(accept = '.json'): Promise<boolean> {
       return new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json';
+        input.accept = accept;
         input.onchange = (e) => {
           const file = (e.target as HTMLInputElement).files?.[0];
           if (!file) {
@@ -1845,6 +2006,60 @@ const useProjectStore = defineStore('project', {
       });
     },
 
+    loadPackageFromFile(): Promise<boolean> {
+      return this.loadFromFile('.json,.mmpkg,.manim-package.json');
+    },
+
+    createProjectSnapshot(label?: string) {
+      const snapshotLabel = label?.trim() || `${this.project.name || 'Project'} Snapshot`;
+      const record: ProjectSnapshotRecord = {
+        id: uid('snapshot'),
+        label: snapshotLabel,
+        createdAt: Date.now(),
+        package: JSON.parse(this.exportProjectPackage()) as ProjectPackageV1,
+      };
+      const records = loadProjectSnapshots();
+      records.unshift(record);
+      saveProjectSnapshots(records.slice(0, MAX_PROJECT_SNAPSHOTS));
+      this.notify(`Snapshot saved: ${snapshotLabel}`);
+      return record.id;
+    },
+
+    listProjectSnapshots(): ProjectSnapshotSummary[] {
+      return loadProjectSnapshots().map((record) => ({
+        id: record.id,
+        label: record.label,
+        createdAt: record.createdAt,
+        projectName: record.package.project.name,
+        projectId: record.package.project.id,
+        objectCount: Array.isArray(record.package.project.objects)
+          ? record.package.project.objects.length
+          : 0,
+        assetCount: Array.isArray(record.package.project.assets)
+          ? record.package.project.assets.length
+          : 0,
+        renderStatus: record.package.render.status,
+        renderFormat: record.package.render.format,
+      }));
+    },
+
+    restoreProjectSnapshot(snapshotId: string) {
+      const record = loadProjectSnapshots().find((item) => item.id === snapshotId);
+      if (!record) {
+        this.setError('Snapshot not found');
+        return false;
+      }
+      return this.importJSON(JSON.stringify(record.package));
+    },
+
+    deleteProjectSnapshot(snapshotId: string) {
+      const records = loadProjectSnapshots();
+      const next = records.filter((item) => item.id !== snapshotId);
+      if (next.length === records.length) return false;
+      saveProjectSnapshots(next);
+      return true;
+    },
+
     newProject(name = 'My Animation', editorMode = 'visual') {
       this.project = createDefaultProject(editorMode);
       this.project.name = name;
@@ -1858,6 +2073,11 @@ const useProjectStore = defineStore('project', {
       this.renderJobId = null;
       this.renderStatus = null;
       this.renderError = null;
+      this.renderWorkerId = null;
+      this.renderJobStalled = false;
+      this.renderQueuePosition = null;
+      this.renderQuality = 'high';
+      this.renderFormat = 'mp4';
       this.renderVideoUrl = null;
       this.renderLog = '';
       this.history.past = [];
@@ -1974,6 +2194,11 @@ const useProjectStore = defineStore('project', {
         this.renderJobId = null;
         this.renderStatus = null;
         this.renderError = null;
+        this.renderWorkerId = null;
+        this.renderJobStalled = false;
+        this.renderQueuePosition = null;
+        this.renderQuality = 'high';
+        this.renderFormat = 'mp4';
         this.renderVideoUrl = null;
         this.notify('Project loaded');
         return true;
@@ -2024,6 +2249,9 @@ const useProjectStore = defineStore('project', {
       this.showRenderDialog = true;
       this.renderStatus = 'uploading';
       this.renderError = null;
+      this.renderWorkerId = null;
+      this.renderJobStalled = false;
+      this.renderQueuePosition = null;
       this.renderVideoUrl = null;
       this.renderLog = '';
       this.renderQuality = 'high';
@@ -2065,18 +2293,48 @@ const useProjectStore = defineStore('project', {
       this._stopPollRender();
 
       _pollDisconnect = connectJobWebSocket(jobId, (msg: Record<string, unknown>) => {
-        if (msg.status === 'running') {
+        if (msg.queuePosition) {
+          const qp = Number(msg.queuePosition);
+          this.renderQueuePosition = Number.isFinite(qp) && qp > 0 ? qp : null;
+        }
+        if (msg.status === 'queued') {
+          this.renderStatus = 'queued';
+          if (msg.workerId) this.renderWorkerId = String(msg.workerId);
+          this.renderJobStalled = false;
+        } else if (msg.status === 'running') {
           this.renderStatus = 'running';
+          if (msg.workerId) this.renderWorkerId = String(msg.workerId);
           if (msg.stdout) this.renderLog = msg.stdout as string;
+          this.renderQueuePosition = null;
+          this.renderJobStalled = msg.stalled === '1' || msg.stalled === true;
+        } else if (msg.status === 'canceling') {
+          this.renderStatus = 'canceling';
+          if (msg.workerId) this.renderWorkerId = String(msg.workerId);
+          this.renderQueuePosition = null;
+          this.renderJobStalled = false;
+        } else if (msg.status === 'canceled') {
+          this.renderStatus = 'canceled';
+          if (msg.workerId) this.renderWorkerId = String(msg.workerId);
+          this.renderError = (msg.error as string) || 'Render canceled';
+          this.renderLog = ((msg.stdout as string) || '') + '\n' + ((msg.stderr as string) || '');
+          this.renderQueuePosition = null;
+          this.renderJobStalled = false;
+          this._stopPollRender();
         } else if (msg.status === 'completed') {
           this.renderStatus = 'completed';
+          if (msg.workerId) this.renderWorkerId = String(msg.workerId);
           this.renderVideoUrl = api.renders.getLatestUrl(projectId, this.renderFormat);
           this.renderLog = (msg.stdout as string) || '';
+          this.renderQueuePosition = null;
+          this.renderJobStalled = false;
           this._stopPollRender();
         } else if (msg.status === 'failed') {
           this.renderStatus = 'failed';
+          if (msg.workerId) this.renderWorkerId = String(msg.workerId);
           this.renderError = (msg.error as string) || (msg.stderr as string) || 'Render failed';
           this.renderLog = ((msg.stdout as string) || '') + '\n' + ((msg.stderr as string) || '');
+          this.renderQueuePosition = null;
+          this.renderJobStalled = false;
           this._stopPollRender();
         }
       });

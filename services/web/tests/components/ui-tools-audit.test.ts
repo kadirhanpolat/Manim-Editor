@@ -1,63 +1,26 @@
-// UI Tools Audit — "enter every UI tool and verify it behaves correctly".
+// UI Tools Audit - "enter every UI tool and verify it behaves correctly".
 //
-// Exercises the LIVE add/clip/tool UI surfaces the way a user does — by
-// clicking the rendered buttons — and asserts the full chain reacts:
+// Exercises the LIVE add/clip/tool UI surfaces the way a user does - by
+// clicking the rendered buttons - and asserts the full chain reacts:
 // store.addObject fires, the object type is valid, codegen produces a scene,
-// and every inspector-registered type is reachable from the palette
-// (regression guard for the counter/numberplane "orphaned object" bugs found
-// in the 2026-06-07 audit).
+// and every inspector type is reachable from the palette.
 //
 // NOTE: AssetSidebar is the LIVE palette (mounted by App.vue). Toolbar.vue is
-// orphaned dead code (App.vue imports AssetSidebar, never Toolbar) — see audit
-// finding F6 — so it is intentionally NOT treated as a reachable tool here.
+// orphaned dead code (App.vue imports AssetSidebar, never Toolbar) - see audit
+// finding F6 - so it is intentionally NOT treated as a reachable tool here.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { mount } from '@vue/test-utils';
 import { useProjectStore } from '../../src/store/project.js';
 import { generateManimScript } from '../../src/export/manim.js';
 import { settingsComponentFor } from '../../src/components/inspector/object-settings/index.js';
+import {
+  INSPECTOR_TYPES,
+  IMPORT_ONLY_TYPES,
+  THREE_D_TYPES,
+} from '../../src/components/inspector/capability-matrix.js';
 import AssetSidebar from '../../src/components/sidebar/AssetSidebar.vue';
 import MotionPicker from '../../src/components/inspector/object-settings/MotionPicker.vue';
-
-// Every type that has a dedicated inspector settings component. If a type is
-// editable, a user must also be able to ADD it from the palette.
-const REGISTERED_TYPES = [
-  'dot_grid',
-  'star',
-  'polygon',
-  'polygon_free',
-  'annulus',
-  'arc',
-  'sector',
-  'parametric',
-  'vector_field',
-  'table',
-  'matrix',
-  'brace',
-  'angle',
-  'counter',
-  'graph',
-  'latex',
-  'polar_plane',
-  'numberplane',
-  'complex_plane',
-  'numberline',
-  'axes',
-  'vector_components',
-  'ray',
-  'coord_point',
-  'bezier',
-  'surrounding_rect',
-  'underline',
-  'cross',
-  'code',
-  'bar_chart',
-];
-
-// Asset-only types — intentionally NOT a shape button (added via asset upload).
-const IMPORT_ONLY = ['image', 'svg_asset'];
-
-const THREE_D = ['sphere', 'cube', 'prism', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'];
 
 let store;
 beforeEach(() => {
@@ -103,9 +66,9 @@ describe('palette reachability', () => {
     }
   });
 
-  it('every inspector-registered type is reachable from the palette (F1/F3 guard)', () => {
-    const reachable = new Set(collectPaletteTypes());
-    const orphaned = REGISTERED_TYPES.filter((t) => !reachable.has(t));
+  it('every inspector type is reachable from the palette (F1/F3 guard)', () => {
+    const reachable = new Set([...collectPaletteTypes(), ...IMPORT_ONLY_TYPES]);
+    const orphaned = INSPECTOR_TYPES.filter((t) => !reachable.has(t));
     expect(orphaned, `types with an inspector but no add button: ${orphaned.join(', ')}`).toEqual(
       []
     );
@@ -125,18 +88,18 @@ describe('palette reachability', () => {
   });
 
   it('asset-only types have no shape-button settings component', () => {
-    for (const t of IMPORT_ONLY) expect(settingsComponentFor(t)).toBe(null);
+    for (const t of IMPORT_ONLY_TYPES) expect(settingsComponentFor(t)).toBe(null);
   });
 });
 
 describe('codegen validity for every reachable object type', () => {
   it('produces a MainScene for each type without "undefined" leakage', () => {
-    const reachable = [...new Set(collectPaletteTypes())];
+    const reachable = [...new Set([...collectPaletteTypes(), ...IMPORT_ONLY_TYPES])];
     for (const type of reachable) {
       setActivePinia(createPinia());
       const s = useProjectStore();
       s.newProject('Gen', 'visual');
-      if (THREE_D.includes(type)) s.project.sceneType = '3d';
+      if (THREE_D_TYPES.includes(type as (typeof THREE_D_TYPES)[number])) s.project.sceneType = '3d';
       s.addObject(type, 960, 540);
       const code = generateManimScript(s.project);
       expect(code, type).toContain('class MainScene');

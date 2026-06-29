@@ -4,6 +4,7 @@ import { useProjectStore } from '../../src/store/project.js';
 
 let store;
 beforeEach(() => {
+  localStorage.clear();
   setActivePinia(createPinia());
   store = useProjectStore();
   store.newProject('Test', 'visual');
@@ -86,6 +87,63 @@ describe('groupObjects', () => {
     const a = store.addObject('circle', 400, 400);
     const result = store.groupObjects([a.id]);
     expect(result).toBeNull();
+  });
+});
+
+describe('project package export/import', () => {
+  it('exports render metadata alongside the project payload', () => {
+    store.addObject('circle', 400, 400);
+    store.renderStatus = 'failed';
+    store.renderError = 'boom';
+    store.renderFormat = 'gif';
+
+    const pkg = JSON.parse(store.exportProjectPackage());
+
+    expect(pkg.kind).toBe('manim-motion-project-package');
+    expect(pkg.version).toBe(1);
+    expect(pkg.project.objects).toHaveLength(1);
+    expect(pkg.render.status).toBe('failed');
+    expect(pkg.render.error).toBe('boom');
+    expect(pkg.render.format).toBe('gif');
+  });
+
+  it('imports a package wrapper and restores render metadata', () => {
+    store.addObject('circle', 400, 400);
+    store.renderStatus = 'completed';
+    store.renderFormat = 'mp4';
+    const pkg = JSON.parse(store.exportProjectPackage());
+
+    store.newProject('Blank', 'visual');
+    const ok = store.importJSON(JSON.stringify(pkg));
+
+    expect(ok).toBe(true);
+    expect(store.project.objects).toHaveLength(1);
+    expect(store.renderStatus).toBe('completed');
+    expect(store.renderFormat).toBe('mp4');
+  });
+});
+
+describe('project snapshots', () => {
+  it('creates, lists, restores, and deletes a snapshot', () => {
+    const obj = store.addObject('circle', 400, 400);
+    store.renderStatus = 'failed';
+    store.renderLog = 'render log';
+
+    const snapshotId = store.createProjectSnapshot('Before cleanup');
+    const snapshots = store.listProjectSnapshots();
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0].label).toBe('Before cleanup');
+    expect(snapshots[0].objectCount).toBe(1);
+
+    store.newProject('Blank', 'visual');
+    expect(store.restoreProjectSnapshot(snapshotId)).toBe(true);
+    expect(store.project.objects).toHaveLength(1);
+    expect(store.project.objects[0].id).toBe(obj.id);
+    expect(store.renderStatus).toBe('failed');
+    expect(store.renderLog).toBe('render log');
+
+    expect(store.deleteProjectSnapshot(snapshotId)).toBe(true);
+    expect(store.listProjectSnapshots()).toHaveLength(0);
   });
 });
 

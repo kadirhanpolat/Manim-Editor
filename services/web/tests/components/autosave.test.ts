@@ -89,6 +89,23 @@ describe('autosave clear hooks ($onAction)', () => {
       URL.revokeObjectURL = origRevoke;
     }
   });
+
+  it('savePackageToFile (successful package export) clears the key', () => {
+    const origCreate = URL.createObjectURL;
+    const origRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn(() => 'blob:test');
+    URL.revokeObjectURL = vi.fn();
+    try {
+      store.addObject('circle', 400, 400);
+      vi.advanceTimersByTime(2100);
+      expect(localStorage.getItem(AUTOSAVE_KEY)).not.toBe(null);
+      store.savePackageToFile();
+      expect(localStorage.getItem(AUTOSAVE_KEY)).toBe(null);
+    } finally {
+      URL.createObjectURL = origCreate;
+      URL.revokeObjectURL = origRevoke;
+    }
+  });
 });
 
 describe('readAutosave / clearAutosave / restore round-trip', () => {

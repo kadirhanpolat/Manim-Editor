@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { Server } from 'http';
 import { getJobStatus, getAudioJobStatus } from './queue.js';
 
-const DONE_STATUSES = new Set(['completed', 'failed']);
+const DONE_STATUSES = new Set(['completed', 'failed', 'canceled']);
 const AUDIO_DONE = new Set(['ready', 'error']);
 
 const subscriptions = new Map<string, Set<WebSocket>>();
@@ -95,6 +95,7 @@ async function pollUntilDone(jobId: string): Promise<void> {
       type: 'job_update',
       jobId,
       status: job['status'],
+      workerId: job['workerId'] ?? '',
       stdout: job['stdout'] ?? '',
       stderr: job['stderr'] ?? '',
       error: job['error'] ?? '',

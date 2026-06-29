@@ -394,15 +394,37 @@
                 <span v-else-if="renderQueueDepth !== null">{{ renderQueueDepth }} waiting</span>
                 <span v-else>Unavailable</span>
               </div>
-              <!-- Text size disclaimer -->
+              <div class="space-y-1.5 text-[11px] text-studio-text-muted mb-2">
+                <div class="flex items-center justify-between">
+                  <span>Phase</span>
+                  <span class="text-studio-text">{{ renderPhaseLabel }}</span>
+                </div>
+                <div v-if="renderQueuePosition" class="flex items-center justify-between">
+                  <span>Queue position</span>
+                  <span class="text-studio-text">{{ renderQueuePosition }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span>Workers</span>
+                  <span>{{ renderWorkerSummary }}</span>
+                </div>
+              </div>
+              <!-- Preview / render disclaimer -->
               <div
-                v-if="hasTextElements"
+                v-if="previewNotes.length > 0"
                 class="mt-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg"
               >
                 <p class="text-[10px] text-amber-400 leading-relaxed">
-                  <strong>Note:</strong> Text size on the canvas preview may differ from the final
-                  rendered output.
+                  <strong>Preview note:</strong>
                 </p>
+                <ul class="mt-1 space-y-1">
+                  <li
+                    v-for="note in previewNotes"
+                    :key="note"
+                    class="text-[10px] text-amber-400 leading-relaxed"
+                  >
+                    {{ note }}
+                  </li>
+                </ul>
               </div>
               <button
                 :disabled="hasPendingAudio"
@@ -431,12 +453,44 @@
                 <div class="render-spinner"></div>
                 <span class="text-sm font-medium">{{ renderStatusText }}</span>
               </div>
+              <div v-if="renderWorkerId || renderQueueWorkers !== null" class="mb-3 text-[11px] text-studio-text-muted">
+                <span v-if="renderWorkerId">Worker: {{ renderWorkerId }}</span>
+                <span v-if="renderWorkerId && renderQueueWorkers !== null"> · </span>
+                <span v-if="renderQueueWorkers !== null">{{ renderQueueBusyWorkers }} / {{ renderQueueWorkers }} busy</span>
+                <span v-if="renderQueueStaleWorkers !== null && renderQueueStaleWorkers > 0">
+                  · {{ renderQueueStaleWorkers }} stale
+                </span>
+              </div>
+              <div v-if="renderJobStalled" class="mb-3 text-[11px] text-amber-300">
+                Render appears stalled.
+              </div>
               <div class="w-full bg-studio-bg rounded-full h-2 overflow-hidden">
                 <div
                   class="h-full rounded-full transition-all duration-500"
-                  :class="renderStatus === 'failed' ? 'bg-red-500' : 'bg-studio-accent'"
+                  :class="
+                    renderStatus === 'failed' || renderStatus === 'canceled'
+                      ? 'bg-red-500'
+                      : renderStatus === 'canceling'
+                        ? 'bg-amber-500'
+                        : 'bg-studio-accent'
+                  "
                   :style="{ width: renderProgress + '%' }"
                 ></div>
+              </div>
+              <div
+                v-if="
+                  renderStatus === 'queued' ||
+                  renderStatus === 'running' ||
+                  renderStatus === 'canceling'
+                "
+                class="mt-3 flex justify-end"
+              >
+                <button
+                  class="text-[10px] text-red-300 hover:text-red-100"
+                  @click="cancelRender"
+                >
+                  Cancel
+                </button>
               </div>
               <div v-if="renderLog" class="mt-3">
                 <div class="flex justify-end gap-2 mb-1">
@@ -464,26 +518,28 @@
 
             <!-- Error -->
             <div
-              v-if="renderStatus === 'failed'"
+              v-if="renderStatus === 'failed' || renderStatus === 'canceled'"
               class="bg-red-500/10 border border-red-500/30 rounded-lg p-4"
             >
               <div class="flex items-center justify-between mb-1">
-                <p class="text-xs text-red-400 font-medium">Render Failed</p>
+                <p class="text-xs text-red-400 font-medium">
+                  {{ renderStatus === 'canceled' ? 'Render Canceled' : 'Render Failed' }}
+                </p>
                 <button class="text-[10px] text-red-300 hover:text-red-100" @click="copyRenderLog">
-                  {{ renderCopied ? '✓ Copied' : '⧉ Copy error' }}
+                  {{ renderCopied ? '✓ Copied' : '⧉ Copy log' }}
                 </button>
               </div>
               <p
                 class="text-[11px] text-red-300 whitespace-pre-wrap select-text max-h-40 overflow-y-auto"
                 style="user-select: text"
               >
-                {{ renderError }}
+                {{ renderError || renderStatusText }}
               </p>
               <button
                 class="mt-3 px-4 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-colors"
                 @click="retryRender"
               >
-                Retry
+                Render Again
               </button>
             </div>
 
@@ -825,6 +881,11 @@ import Timeline from './components/timeline/Timeline.vue';
 import ErrorBoundary from './components/ErrorBoundary.vue';
 import RenderOptionsDialog from './components/RenderOptionsDialog.vue';
 import CommandPalette from './components/command/CommandPalette.vue';
+import {
+  renderPhaseLabel as getRenderPhaseLabel,
+  renderQueuePosition as getRenderQueuePosition,
+  renderWorkerSummary as getRenderWorkerSummary,
+} from './components/render/render-ui.js';
 import { DEFAULT_RENDER_OPTIONS } from './api.js';
 import type { RenderOptions } from './api.js';
 
@@ -865,14 +926,27 @@ const hasImages = computed(() =>
 const hasTextElements = computed(() =>
   store.project.objects.some((o) => o.type === 'text' || o.type === 'latex')
 );
+const hasLatexElements = computed(() => store.project.objects.some((o) => o.type === 'latex'));
+const previewNotes = computed(() => {
+  const notes: string[] = [];
+  if (hasTextElements.value) notes.push('Text layout can differ from the final render.');
+  if (hasLatexElements.value) notes.push("LaTeX uses the render container's math engine.");
+  if (store.project.sceneType === '3d') notes.push('3D framing is an approximation of the final camera.');
+  return notes;
+});
 const showRender = computed(() => store.showRenderDialog);
 const hasPendingAudio = computed(() => store.hasPendingAudio);
 const renderStatus = computed(() => store.renderStatus);
 const renderError = computed(() => store.renderError);
+const renderWorkerId = computed(() => store.renderWorkerId);
+const renderJobStalled = computed(() => store.renderJobStalled);
 const renderVideoUrl = computed(() => store.renderVideoUrl);
 const renderLog = computed(() => store.renderLog);
 const renderFormat = computed(() => store.renderFormat);
 const renderQueueDepth = ref<number | null>(null);
+const renderQueueWorkers = ref<number | null>(null);
+const renderQueueBusyWorkers = ref<number | null>(null);
+const renderQueueStaleWorkers = ref<number | null>(null);
 const renderQueueLoading = ref(false);
 const downloadLabel = computed(() => {
   const labels: Record<string, string> = { mp4: 'MP4', gif: 'GIF', webm: 'WebM', zip: 'ZIP' };
@@ -893,10 +967,28 @@ const renderStatusText = computed(() => {
     saving: 'Saving project...',
     queued: 'In render queue, waiting for worker...',
     running: 'Manim is rendering (this can take 30s-2min)...',
+    canceling: 'Canceling render...',
     failed: 'Render failed',
+    canceled: 'Render canceled',
+    completed: 'Render complete',
   };
   return (store.renderStatus && map[store.renderStatus]) || 'Processing...';
 });
+
+const renderPhaseLabel = computed(() => getRenderPhaseLabel(store.renderStatus));
+const renderQueuePosition = computed(() =>
+  store.renderQueuePosition !== null
+    ? `#${store.renderQueuePosition}`
+    : getRenderQueuePosition(store.renderStatus, renderQueueDepth.value)
+);
+const renderWorkerSummary = computed(() =>
+  getRenderWorkerSummary(
+    renderQueueLoading.value,
+    renderQueueWorkers.value,
+    renderQueueBusyWorkers.value,
+    renderQueueStaleWorkers.value
+  )
+);
 
 const renderProgress = computed(() => {
   const map: Record<string, number> = {
@@ -904,8 +996,10 @@ const renderProgress = computed(() => {
     saving: 30,
     queued: 45,
     running: 70,
+    canceling: 80,
     completed: 100,
     failed: 100,
+    canceled: 100,
   };
   return (store.renderStatus && map[store.renderStatus]) || 0;
 });
@@ -913,10 +1007,27 @@ const renderProgress = computed(() => {
 async function loadRenderQueueStats() {
   renderQueueLoading.value = true;
   try {
-    const stats = (await api.jobs.getRenderQueueStats()) as { queueDepth?: number };
+    const stats = (await api.jobs.getRenderQueueStats()) as {
+      queueDepth?: number;
+      workersOnline?: number;
+      busyWorkers?: number;
+      staleWorkers?: number;
+    };
     renderQueueDepth.value = Number.isFinite(stats.queueDepth) ? (stats.queueDepth as number) : 0;
+    renderQueueWorkers.value = Number.isFinite(stats.workersOnline)
+      ? (stats.workersOnline as number)
+      : 0;
+    renderQueueBusyWorkers.value = Number.isFinite(stats.busyWorkers)
+      ? (stats.busyWorkers as number)
+      : 0;
+    renderQueueStaleWorkers.value = Number.isFinite(stats.staleWorkers)
+      ? (stats.staleWorkers as number)
+      : 0;
   } catch {
     renderQueueDepth.value = null;
+    renderQueueWorkers.value = null;
+    renderQueueBusyWorkers.value = null;
+    renderQueueStaleWorkers.value = null;
   } finally {
     renderQueueLoading.value = false;
   }
@@ -954,7 +1065,7 @@ watch(renderStatus, (status) => {
 });
 
 watch(showRender, (open) => {
-  if (open && !renderStatus.value) loadRenderQueueStats();
+  if (open && renderQueueDepth.value === null) loadRenderQueueStats();
 });
 
 watch(
@@ -1004,7 +1115,11 @@ onMounted(() => {
   const saved = readAutosave();
   if (saved) {
     const when = new Date(saved.savedAt).toLocaleString();
-    if (confirm(`Unsaved work from a previous session (${when}) was found. Restore it?`)) {
+    const label =
+      typeof saved.projectName === 'string' && saved.projectName.trim().length > 0
+        ? `"${saved.projectName}"`
+        : 'a previous session';
+    if (confirm(`Unsaved work for ${label} from ${when} was found. Restore it?`)) {
       store.importJSON(JSON.stringify(saved.project));
     } else {
       clearAutosave();
@@ -1148,6 +1263,9 @@ function closeRender() {
   // Allow closing at any time; if still rendering, polling continues in bg
   store.showRenderDialog = false;
   renderQueueDepth.value = null;
+  renderQueueWorkers.value = null;
+  renderQueueBusyWorkers.value = null;
+  renderQueueStaleWorkers.value = null;
   renderQueueLoading.value = false;
   // Reset status ONLY if completed or failed so user can re-open cleanly
   if (store.renderStatus === 'completed' || store.renderStatus === 'failed') {
@@ -1163,6 +1281,27 @@ function startRender() {
 function retryRender() {
   store.renderStatus = null;
   store.renderError = null;
+  store.renderWorkerId = null;
+  store.renderJobStalled = false;
+  store.renderQueuePosition = null;
+  store.renderVideoUrl = null;
+  store.renderLog = '';
+  renderQueueDepth.value = null;
+  renderQueueWorkers.value = null;
+  renderQueueBusyWorkers.value = null;
+  renderQueueStaleWorkers.value = null;
+  startRender();
+}
+
+async function cancelRender() {
+  if (!store.renderJobId) return;
+  store.renderStatus = 'canceling';
+  try {
+    await api.jobs.cancel(store.renderJobId);
+  } catch (err) {
+    store.renderStatus = 'running';
+    store.renderError = (err as Error).message;
+  }
 }
 
 function resetRender() {
@@ -1170,7 +1309,13 @@ function resetRender() {
   store.renderError = null;
   store.renderVideoUrl = null;
   store.renderLog = '';
+  store.renderWorkerId = null;
+  store.renderJobStalled = false;
+  store.renderQueuePosition = null;
   renderQueueDepth.value = null;
+  renderQueueWorkers.value = null;
+  renderQueueBusyWorkers.value = null;
+  renderQueueStaleWorkers.value = null;
 }
 
 const renderCopied = ref(false);
@@ -1319,7 +1464,14 @@ function applyCodeToCanvas() {
     store.deselectAll();
 
     codeEdited.value = false;
-    parseMessage.value = `Applied: ${result.objects.length} objects, ${result.tracks.reduce((s, t) => s + t.clips.length, 0)} animations`;
+    const warningCount = Array.isArray((result as { warnings?: string[] }).warnings)
+      ? ((result as { warnings?: string[] }).warnings as string[]).length
+      : 0;
+    const warningSummary =
+      warningCount > 0
+        ? `, ${warningCount} unsupported line${warningCount === 1 ? '' : 's'} ignored`
+        : '';
+    parseMessage.value = `Applied: ${result.objects.length} objects, ${result.tracks.reduce((s, t) => s + t.clips.length, 0)} animations${warningSummary}`;
     parseMessageOk.value = true;
     _clearParseMsg();
 

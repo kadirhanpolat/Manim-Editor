@@ -85,6 +85,7 @@ interface ParsedProject {
   cameraType: 'static' | 'moving';
   cameraTrack: Clip[];
   sections: { id: string; time: number; title: string }[];
+  warnings: string[];
 }
 
 /** Partial clip used internally by parseAnimExpr. */
@@ -216,6 +217,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
   const lines = joinLogicalLines(code.split('\n'));
   const objects: SceneObject[] = [];
   const clips: Clip[] = [];
+  const warnings: string[] = [];
   const varMap: Record<string, string> = {};
   const objById: Record<string, SceneObject> = {};
   const graphVarMap: Record<string, Record<string, unknown>> = {};
@@ -240,6 +242,12 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     `${prefix}_${Date.now().toString(36)}_${(objIdx++).toString(36)}`;
 
   const pendingPaths: Record<string, ManimPoint[]> = {}; // varName → [{ mx, my, mz }]
+  const MAX_WARNINGS = 20;
+
+  function addWarning(line: string): void {
+    if (warnings.length >= MAX_WARNINGS) return;
+    warnings.push(`Unsupported code: ${line}`);
+  }
 
   function parseAnimExpr(expr: string): ParsedAnimClip | null {
     expr = expr.trim();
@@ -398,6 +406,22 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     m = line.match(/^class\s+\w+\(ThreeDScene/);
     if (m) {
       sceneType = '3d';
+      continue;
+    }
+
+    // Ignore boilerplate and imports; report everything else we cannot parse.
+    if (
+      line === '' ||
+      line.startsWith('#') ||
+      /^from\s+manim(\.| import\b)/.test(line) ||
+      /^from\s+numpy\s+import\s+/.test(line) ||
+      /^import\s+numpy\s+as\s+np$/.test(line) ||
+      /^import\s+/.test(line) ||
+      /^from\s+__future__\s+import\s+/.test(line) ||
+      /^class\s+\w+/.test(line) ||
+      /^def\s+construct\(/.test(line) ||
+      /^pass$/.test(line)
+    ) {
       continue;
     }
 
@@ -2974,6 +2998,8 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       delete pendingPaths[pathVar];
       continue;
     }
+
+    addWarning(line);
   }
 
   // Finalize object durations
@@ -2990,6 +3016,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     cameraType,
     cameraTrack,
     sections,
+    warnings,
   };
 }
 

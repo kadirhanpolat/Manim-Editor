@@ -23,12 +23,15 @@ const CLEAR_ACTIONS = new Set([
   'importJSON', // File → Open (loadFromFile delegates here)
   'loadFromServer', // server Open
   'saveToFile', // successful local save
+  'savePackageToFile', // successful package export
   'saveToServer', // successful server save (after() only runs on resolve)
 ]);
 
 export interface AutosavePayload {
   project: unknown;
   savedAt: number;
+  projectName?: string;
+  projectId?: string | null;
 }
 
 export function readAutosave(): AutosavePayload | null {
@@ -65,6 +68,8 @@ export function initAutosave(store: ProjectStore, debounceMs = DEBOUNCE_MS): () 
           const payload: AutosavePayload = {
             project: JSON.parse(JSON.stringify(state.project)),
             savedAt: Date.now(),
+            projectName: state.project.name,
+            projectId: state.project.id,
           };
           localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
         } catch {

@@ -136,6 +136,10 @@
 
     <!-- New Project dialog -->
     <NewProjectDialog :show="showNewProjectDialog" @close="showNewProjectDialog = false" />
+    <ProjectSnapshotsDialog
+      :show="showProjectSnapshotsDialog"
+      @close="showProjectSnapshotsDialog = false"
+    />
   </div>
 </template>
 
@@ -145,6 +149,7 @@ import { useProjectStore } from '../../store/project.js';
 import { generateManimScript } from '../../export/manim.js';
 import { buildMenus } from './menus.js';
 import NewProjectDialog from './NewProjectDialog.vue';
+import ProjectSnapshotsDialog from './ProjectSnapshotsDialog.vue';
 import MenuBar from './MenuBar.vue';
 
 const store = useProjectStore();
@@ -155,6 +160,7 @@ const mod = isMac ? '⌘' : 'Ctrl+';
 // Reactive state
 const collapsed = ref(false);
 const showNewProjectDialog = ref(false);
+const showProjectSnapshotsDialog = ref(false);
 
 // Non-reactive instance vars
 let _resizeObs: ResizeObserver | null = null;
@@ -191,9 +197,12 @@ const menus = computed(() =>
     currentTheme,
     newProject,
     loadProject,
+    loadPackage,
     saveProject,
+    savePackage,
     saveToServer,
     browseServer,
+    openSnapshots,
     openExport,
     openRender,
     showShortcuts,
@@ -249,8 +258,15 @@ async function loadProject() {
   if (store.isDirty && !confirm('Discard unsaved changes?')) return;
   await store.loadFromFile();
 }
+async function loadPackage() {
+  if (store.isDirty && !confirm('Discard unsaved changes?')) return;
+  await store.loadPackageFromFile();
+}
 function saveProject() {
   store.saveToFile();
+}
+function savePackage() {
+  store.savePackageToFile();
 }
 
 async function saveToServer() {
@@ -268,6 +284,9 @@ async function saveToServer() {
 function browseServer() {
   store.showProjectBrowser = true;
   store.listServerProjects();
+}
+function openSnapshots() {
+  showProjectSnapshotsDialog.value = true;
 }
 function openExport() {
   if (store.project.editorMode === 'code') {

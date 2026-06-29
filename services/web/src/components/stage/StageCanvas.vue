@@ -709,10 +709,7 @@
             <v-rect v-if="o.kind === 'rect'" :config="o" />
             <v-ellipse v-else :config="o" />
           </template>
-        </v-layer>
 
-        <!-- Overlay layer: previews, handles, guides, and selection transformer -->
-        <v-layer>
           <v-line v-for="(m, mi) in morphShapes" :key="'m' + mi" :config="morphCfg(m)" />
 
           <template v-if="pathDrawing && pathPoints.length >= 1">
@@ -733,43 +730,43 @@
           </template>
 
           <template v-if="polygonHandles">
-          <v-circle
-            v-for="pt in polygonHandles.points"
-            :key="'pv' + pt.key"
-            :config="{
-              x: pt.cx,
-              y: pt.cy,
-              radius: 6,
-              fill: '#4CEEF9',
-              stroke: '#0b1020',
-              strokeWidth: 1.5,
-              draggable: true,
-            }"
-            @dragmove="onVertexDrag(pt.key, $event)"
-            @dragend="onVertexDragEnd"
-          />
+            <v-circle
+              v-for="pt in polygonHandles.points"
+              :key="'pv' + pt.key"
+              :config="{
+                x: pt.cx,
+                y: pt.cy,
+                radius: 6,
+                fill: '#4CEEF9',
+                stroke: '#0b1020',
+                strokeWidth: 1.5,
+                draggable: true,
+              }"
+              @dragmove="onVertexDrag(pt.key, $event)"
+              @dragend="onVertexDragEnd"
+            />
           </template>
 
-        <!-- Group bounds layer -->
-        <v-rect v-for="gb in groupBounds" :key="'gb-' + gb.id" :config="gb" />
+          <!-- Group bounds overlay -->
+          <v-rect v-for="gb in groupBounds" :key="'gb-' + gb.id" :config="gb" />
 
-        <!-- Marquee selection overlay -->
-        <template v-if="marqueeRect">
-          <v-rect :config="marqueeRect" />
-        </template>
+          <!-- Marquee selection overlay -->
+          <template v-if="marqueeRect">
+            <v-rect :config="marqueeRect" />
+          </template>
 
-        <!-- Guide lines — not exported to render -->
-        <template v-if="!is3D">
-          <v-line
-            v-for="g in store.project.guides"
-            :key="g.id"
-            :config="guideLineConfig(g)"
-            @mousedown="onGuideMousedown(g.id, $event)"
-          />
-        </template>
+          <!-- Guide lines — not exported to render -->
+          <template v-if="!is3D">
+            <v-line
+              v-for="g in store.project.guides"
+              :key="g.id"
+              :config="guideLineConfig(g)"
+              @mousedown="onGuideMousedown(g.id, $event)"
+            />
+          </template>
 
-        <!-- Selection transformer -->
-        <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
+          <!-- Selection transformer -->
+          <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
         </v-layer>
       </v-stage>
 

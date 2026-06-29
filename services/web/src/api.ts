@@ -141,6 +141,10 @@ export const assets = {
 export const jobs = {
   get: (jobId: string) => request(`/jobs/${jobId}`),
   getRenderQueueStats: () => request('/jobs/render-queue'),
+  cancel: (jobId: string) =>
+    request(`/jobs/${jobId}/cancel`, {
+      method: 'POST',
+    }),
 };
 
 // ─── Renders ──────────────────────────────────────────────────────────────────

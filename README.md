@@ -110,10 +110,10 @@ Screenshots are stored in `docs/screenshots/`. Replace or add PNGs there and upd
 ### Workflow
 - **Undo / Redo** -- Full history stack (Ctrl+Z / Ctrl+Shift+Z) with 50-state memory
 - **Copy / Paste** -- Duplicate objects with offset (Ctrl+C / Ctrl+V)
-- **Autosave** -- Project JSON auto-saved to localStorage on a 2 s debounce; on startup the editor offers to restore unsaved work
+- **Autosave** -- Project JSON auto-saved to localStorage on a 2 s debounce; on startup the editor offers to restore the last unsaved project by name
 - **Generated Code view** -- Manim Python generated from your canvas; edit, copy, or download `.py`
 - **Server rendering** -- One-click HQ render via Docker — **MP4 / GIF / WebM / PNG Frames (ZIP) / WebM α (transparent)**, 480p to 4K, 15/30/60 fps — with progress tracking; the download link follows the chosen format (PNG renders download as a ZIP archive of frames)
-- **Project management** -- Save/load locally (JSON) or sync to Docker server
+- **Project management** -- Save/load locally (JSON), export/import portable project packages with assets + render metadata, manage local project snapshots, or sync to Docker server
 
 ---
 
@@ -219,7 +219,7 @@ Click **Tools > Render HQ** in the menubar. Choose **format** (MP4 / GIF / WebM 
 The **Code** tab shows the generated Manim Python with syntax highlighting. Edit the code if needed, or copy/download the `.py` file to use elsewhere.
 
 ### 8. Export
-Click **File > Export .py** to download a standalone `scene.py` you can run locally with `manim -qh scene.py MainScene`.
+Click **File > Export .py** to download a standalone `scene.py` you can run locally with `manim -qh scene.py MainScene`. Use **File > Save Package...** for a portable editor bundle, or **File > Project Snapshots...** to save and restore local restore points.
 
 ---
 
@@ -473,6 +473,7 @@ a **non-blocking** job (a flaky browser run reports but doesn't gate every push)
 |---------|----------|
 | **Render fails** | Check `docker compose logs renderer` for Manim errors. Ensure all services are running: `docker compose ps` |
 | **API not reachable** | Run `curl http://localhost:3000/health` -- should return `{"status":"ok"}`. Check `docker compose logs api` |
+| **`start.bat` says a port is busy** | Stop the process using the reported port (`8758` for Docker, `5173` for editor-only) and run `start.bat` again |
 | **Images not loading** | Upload via the sidebar (stored as base64). Assets auto-sync to server on render |
 | **Playback stutters** | Reduce morph quality in clip properties. Close DevTools. Use Chrome/Edge for best performance |
 
@@ -513,7 +514,8 @@ Workflow & scale follow-up to close the remaining low-risk backlog items from th
 - **Inspector coverage**: Playwright now exercises every sidebar shape card plus type-specific inspector panels, so common shape editing and per-type controls are covered in a real browser.
 - **Render smoke**: the HQ render dialog was exercised end-to-end and reached `Render complete!` with a downloadable MP4, confirming the worker path stays live.
 - **Render observability**: the render dialog now shows live queue depth before submission, so waiting jobs are visible instead of implicit; this is backed by `GET /api/jobs/render-queue` and a dedicated `queue-stats` API test.
-- **Startup workflow**: `start.bat` now launches the full Docker stack on `http://localhost:8758`, with editor-only fallback kept for non-Docker environments.
+- **Docker full-stack smoke**: `npm run smoke:fullstack` starts the web/API/Redis/renderer stack, creates a project, submits a PNG render, and waits for the job to reach a terminal state. Reproduce CI failures with `docker compose up -d --build init redis api renderer renderer-2 web && npm run smoke:fullstack`.
+- **Startup workflow**: `start.bat` now checks the relevant port before launch, starts the full Docker stack on `http://localhost:8758`, and falls back to editor-only mode when Docker is unavailable.
 - **Renderer fix**: the Python worker image now includes the missing `history.py` module and `sox` dependencies, removing the stuck `In render queue, waiting for worker...` failure mode.
 - **Tests**: 58 api tests and 24 Chromium e2e tests pass across the browser smoke suite, topbar dialogs, shape editing, type-specific inspector panels, timeline coverage, render history, and render queue stats.
 
