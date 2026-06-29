@@ -93,6 +93,8 @@ The next development stage should not primarily add more object types. The highe
 **Implemented so far:**
 - `services/web/src/components/stage/StageCanvas.vue` now renders the object tree and overlays in a single Konva layer.
 - `services/web/tests/components/stage/stage-canvas-layers.test.ts` locks the steady-state layer count to one.
+- `services/web/src/components/stage/StageCanvas.vue` now caches heavy axes preview geometry so repeated renders do less work.
+- `services/web/tests/components/stage/stage-large-scene-profile.test.ts` profiles 100/250/500 object scenes with an opt-in large-scene harness.
 
 ### 5. Inspector Consistency Matrix
 

@@ -266,22 +266,14 @@
               <v-text :config="axesLabelCfg(obj, 'x')" />
               <v-text :config="axesLabelCfg(obj, 'y')" />
               <!-- Graph curves preview -->
+              <v-line v-for="(ar, ai) in axesPreview(obj).areas" :key="'ar' + ai" :config="ar" />
+              <v-rect v-for="(rr, ri) in axesPreview(obj).rects" :key="'rr' + ri" :config="rr" />
               <v-line
-                v-for="(ar, ai) in axesAreaRiemann(obj).areas"
-                :key="'ar' + ai"
-                :config="ar"
-              />
-              <v-rect
-                v-for="(rr, ri) in axesAreaRiemann(obj).rects"
-                :key="'rr' + ri"
-                :config="rr"
-              />
-              <v-line
-                v-for="(tg, ti) in axesAreaRiemann(obj).tangents"
+                v-for="(tg, ti) in axesPreview(obj).tangents"
                 :key="'tg' + ti"
                 :config="tg"
               />
-              <v-line v-for="(gc, gi) in axesGraphCurves(obj)" :key="'gc' + gi" :config="gc" />
+              <v-line v-for="(gc, gi) in axesPreview(obj).curves" :key="'gc' + gi" :config="gc" />
             </v-group>
 
             <!-- NumberPlane / ComplexPlane -->
@@ -1403,8 +1395,36 @@ const axesYArrowCfg = (o: SceneObject) => axes.axesYArrowCfg(o, ctx.value);
 const axesXTicks = (o: SceneObject) => axes.axesXTicks(o, ctx.value);
 const axesYTicks = (o: SceneObject) => axes.axesYTicks(o, ctx.value);
 const axesLabelCfg = (o: SceneObject, axis: string) => axes.axesLabelCfg(o, axis, ctx.value);
-const axesGraphCurves = (o: SceneObject) => axes.axesGraphCurves(o, ctx.value);
-const axesAreaRiemann = (o: SceneObject) => axes.axesAreaRiemann(o, ctx.value);
+
+type AxesPreviewCacheEntry = {
+  areas: Record<string, unknown>[];
+  rects: Record<string, unknown>[];
+  tangents: Record<string, unknown>[];
+  curves: Record<string, unknown>[];
+};
+
+const axesPreviewCache = computed<Map<string, AxesPreviewCacheEntry>>(() => {
+  const cache = new Map<string, AxesPreviewCacheEntry>();
+  for (const obj of sortedObjects.value) {
+    if (obj.type !== 'axes') continue;
+    const area = axes.axesAreaRiemann(obj, ctx.value);
+    cache.set(obj.id, {
+      areas: area.areas,
+      rects: area.rects,
+      tangents: area.tangents,
+      curves: axes.axesGraphCurves(obj, ctx.value),
+    });
+  }
+  return cache;
+});
+
+const axesPreview = (o: SceneObject): AxesPreviewCacheEntry =>
+  axesPreviewCache.value.get(o.id) ?? {
+    areas: [],
+    rects: [],
+    tangents: [],
+    curves: [],
+  };
 
 // ── 3D view selector handler ──
 function onViewChange(e: Event) {
