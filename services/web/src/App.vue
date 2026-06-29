@@ -227,7 +227,7 @@
               style="color: var(--studio-accent)"
               @click="stageViewMode = 'canvas'"
             >
-              Ã¢â€ Â Back to Canvas
+              ← Back to Canvas
             </button>
           </div>
         </div>
@@ -438,7 +438,7 @@
                     class="text-[10px] text-studio-accent hover:opacity-80"
                     @click="copyRenderLog"
                   >
-                    {{ renderCopied ? 'Ã¢Å“â€œ Copied' : 'Ã¢Â§â€° Copy log' }}
+                    {{ renderCopied ? '✓ Copied' : '⧉ Copy log' }}
                   </button>
                 </div>
                 <p
@@ -458,7 +458,7 @@
               <div class="flex items-center justify-between mb-1">
                 <p class="text-xs text-red-400 font-medium">Render Failed</p>
                 <button class="text-[10px] text-red-300 hover:text-red-100" @click="copyRenderLog">
-                  {{ renderCopied ? 'Ã¢Å“â€œ Copied' : 'Ã¢Â§â€° Copy error' }}
+                  {{ renderCopied ? '✓ Copied' : '⧉ Copy error' }}
                 </button>
               </div>
               <p
@@ -518,13 +518,13 @@
                   <line x1="12" y1="12" x2="12" y2="18" />
                   <polyline points="9 15 12 18 15 15" />
                 </svg>
-                <span class="text-sm text-studio-text-muted">PNG frame dizisi hazÃ„Â±r</span>
+                <span class="text-sm text-studio-text-muted">PNG frame sequence ready</span>
                 <a
                   :href="renderVideoUrl"
                   download="frames.zip"
                   class="px-4 py-2 rounded-lg bg-studio-accent hover:bg-studio-accent-hover text-white text-sm font-medium transition-colors"
                 >
-                  ZIP Ã„Â°ndir
+                  Download ZIP
                 </a>
               </div>
               <video
@@ -575,7 +575,7 @@
                     class="text-xs font-medium uppercase tracking-wider"
                     style="color: var(--studio-text-muted)"
                   >
-                    Ã–nceki Render'lar
+                    Previous Renders
                   </span>
                   <svg
                     width="14"
@@ -608,7 +608,7 @@
                       download
                       class="text-[11px] px-2 py-1 rounded"
                       style="color: var(--studio-accent); background: var(--studio-accent-subtle)"
-                      >Ã„Â°ndir</a
+                      >Download</a
                     >
                   </div>
                 </div>
@@ -661,7 +661,7 @@
               class="text-center py-8 text-studio-text-muted text-sm"
               role="status"
             >
-              Loading projectÃ¢â‚¬Â¦
+              Loading project…
             </div>
             <div
               v-else-if="serverProjects.length === 0"
@@ -862,7 +862,7 @@ const renderLog = computed(() => store.renderLog);
 const renderFormat = computed(() => store.renderFormat);
 const downloadLabel = computed(() => {
   const labels: Record<string, string> = { mp4: 'MP4', gif: 'GIF', webm: 'WebM', zip: 'ZIP' };
-  return (labels[renderFormat.value] ?? renderFormat.value.toUpperCase()) + ' Ã„Â°ndir';
+  return 'Download ' + (labels[renderFormat.value] ?? renderFormat.value.toUpperCase());
 });
 interface ServerProject {
   id: string;

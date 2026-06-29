@@ -127,7 +127,7 @@ cd Manim-Editor
 docker compose up --build
 ```
 
-Open **http://localhost:8080** in your browser. Everything works out of the box -- editor, API, render queue, and Manim renderer.
+Open **http://localhost:8758** in your browser. Everything works out of the box -- editor, API, render queue, and Manim renderer.
 
 ### Editor Only (No Docker)
 
@@ -150,7 +150,7 @@ The marketing site in `website/` deploys to Netlify via `netlify.toml`. Connect 
 ## Architecture
 
 ```
-Browser (localhost:8080)
+Browser (localhost:8758)
   |
   |-- Nginx (serves Vue SPA, proxies /api/)
   |
@@ -371,7 +371,7 @@ Manim-docker/
 
 | Service | Image | Port | Purpose |
 |---------|-------|------|---------|
-| **web** | nginx:alpine | 8080 | Vue SPA + API proxy |
+| **web** | nginx:alpine | 8758 | Vue SPA + API proxy |
 | **api** | node:20-alpine | 3000 | REST API, compiler |
 | **renderer** | manimcommunity/manim | -- | Render worker + manim-voiceover |
 | **audio** | python:3.11-slim | -- | gTTS worker (always on) |
@@ -510,6 +510,11 @@ Workflow & scale follow-up to close the remaining low-risk backlog items from th
 - **Legacy history cleanup**: old timestamped render copies are pruned during history rotation, so pre-rotation files do not accumulate beside the numbered slots.
 - **Render harness CI signal**: GitHub Actions now runs the real-Manim render-truth + golden-frame harnesses as a non-blocking `render-harness` job, matching the existing non-blocking browser smoke-test model.
 - **Tests**: **760 web unit** passing (+4 command palette, +3 snap candidate, +1 vector-field parser, +2 mini-map) with the opt-in render harness still skipped unless `RUN_MANIM_RENDER=1`; 122 engine + 55 api + 15 codegen + 18 e2e unchanged.
+- **Inspector coverage**: Playwright now exercises every sidebar shape card plus type-specific inspector panels, so common shape editing and per-type controls are covered in a real browser.
+- **Render smoke**: the HQ render dialog was exercised end-to-end and reached `Render complete!` with a downloadable MP4, confirming the worker path stays live.
+- **Startup workflow**: `start.bat` now launches the full Docker stack on `http://localhost:8758`, with editor-only fallback kept for non-Docker environments.
+- **Renderer fix**: the Python worker image now includes the missing `history.py` module and `sox` dependencies, removing the stuck `In render queue, waiting for worker...` failure mode.
+- **Tests**: 24 Chromium e2e tests pass across the browser smoke suite, topbar dialogs, shape editing, type-specific inspector panels, timeline coverage, and render history.
 
 ### v3.26.0
 

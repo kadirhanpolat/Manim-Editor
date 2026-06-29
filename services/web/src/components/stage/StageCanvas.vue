@@ -21,8 +21,8 @@
         @wheel="handleWheel"
         @contextmenu="onStageContextMenu"
       >
-        <!-- Background layer -->
-        <v-layer>
+        <!-- Objects layer -->
+        <v-layer ref="objectsLayer">
           <v-rect :config="bgConfig" />
           <!-- Grid lines -->
           <template v-if="gridVisible">
@@ -30,10 +30,7 @@
             <v-line :config="centerH" />
             <v-line :config="centerV" />
           </template>
-        </v-layer>
 
-        <!-- Objects layer -->
-        <v-layer ref="objectsLayer">
           <!-- 3D reference grid + axes (faint, behind objects); segments are
                geometrically clipped to the viewport so zoom can't overflow -->
           <template v-if="is3D">
@@ -714,30 +711,28 @@
           </template>
         </v-layer>
 
-        <!-- Morph preview layer -->
+        <!-- Overlay layer: previews, handles, guides, and selection transformer -->
         <v-layer>
           <v-line v-for="(m, mi) in morphShapes" :key="'m' + mi" :config="morphCfg(m)" />
-        </v-layer>
 
-        <!-- Path draw preview layer -->
-        <v-layer v-if="pathDrawing && pathPoints.length >= 1">
-          <v-line v-if="pathPoints.length >= 2" :config="pathPreviewLineCfg" />
-          <v-circle
-            v-for="(pt, pi) in pathCanvasPoints"
-            :key="'pp' + pi"
-            :config="{
-              x: pt.cx,
-              y: pt.cy,
-              radius: 5,
-              fill: '#a855f7',
-              stroke: '#fff',
-              strokeWidth: 1,
-              listening: false,
-            }"
-          />
-        </v-layer>
+          <template v-if="pathDrawing && pathPoints.length >= 1">
+            <v-line v-if="pathPoints.length >= 2" :config="pathPreviewLineCfg" />
+            <v-circle
+              v-for="(pt, pi) in pathCanvasPoints"
+              :key="'pp' + pi"
+              :config="{
+                x: pt.cx,
+                y: pt.cy,
+                radius: 5,
+                fill: '#a855f7',
+                stroke: '#fff',
+                strokeWidth: 1,
+                listening: false,
+              }"
+            />
+          </template>
 
-        <v-layer v-if="polygonHandles">
+          <template v-if="polygonHandles">
           <v-circle
             v-for="pt in polygonHandles.points"
             :key="'pv' + pt.key"
@@ -753,31 +748,28 @@
             @dragmove="onVertexDrag(pt.key, $event)"
             @dragend="onVertexDragEnd"
           />
-        </v-layer>
+          </template>
 
         <!-- Group bounds layer -->
-        <v-layer>
-          <v-rect v-for="gb in groupBounds" :key="'gb-' + gb.id" :config="gb" />
-        </v-layer>
+        <v-rect v-for="gb in groupBounds" :key="'gb-' + gb.id" :config="gb" />
 
         <!-- Marquee selection overlay -->
-        <v-layer v-if="marqueeRect">
+        <template v-if="marqueeRect">
           <v-rect :config="marqueeRect" />
-        </v-layer>
+        </template>
 
         <!-- Guide lines — not exported to render -->
-        <v-layer v-if="!is3D" :config="{ listening: true }">
+        <template v-if="!is3D">
           <v-line
             v-for="g in store.project.guides"
             :key="g.id"
             :config="guideLineConfig(g)"
             @mousedown="onGuideMousedown(g.id, $event)"
           />
-        </v-layer>
+        </template>
 
         <!-- Selection transformer -->
-        <v-layer>
-          <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
+        <v-transformer v-if="selectedObjectIds.length > 0" ref="transformer" :config="trConfig" />
         </v-layer>
       </v-stage>
 

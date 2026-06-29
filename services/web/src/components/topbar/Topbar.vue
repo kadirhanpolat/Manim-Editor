@@ -315,7 +315,7 @@ function showShortcuts() {
       'C/V=Copy/Paste, ' +
       (isMac ? '⌘' : 'Ctrl+') +
       'G=Group, ' +
-      (isMac ? 'âŒ˜' : 'Ctrl+') +
+      (isMac ? '⌘' : 'Ctrl+') +
       'K=Command Palette, ' +
       (isMac ? '⌘' : 'Ctrl+') +
       'S=Save'

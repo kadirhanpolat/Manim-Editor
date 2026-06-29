@@ -13,6 +13,7 @@
       :min="min"
       :max="max"
       :step="step"
+      :aria-label="label"
       @change="onInput($event)"
     />
   </div>

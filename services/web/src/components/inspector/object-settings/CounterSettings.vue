@@ -9,6 +9,7 @@
           step="1"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.value ?? 0"
+          aria-label="Start value"
           @change="onValueChange($event)"
         />
       </div>
@@ -29,6 +30,7 @@
           min="0"
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.numDecimals ?? 0"
+          aria-label="Decimals"
           @change="onDecimalsChange($event)"
         />
       </div>

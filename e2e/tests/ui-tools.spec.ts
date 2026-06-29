@@ -114,3 +114,106 @@ test('AssetSidebar Transform button is gated until two objects are selected', as
   });
   await expect(transform).toBeEnabled();
 });
+
+test('Every sidebar shape card can be selected and edited through the inspector', async ({
+  page,
+}) => {
+  const cards = page.locator('.shape-card');
+  const total = await cards.count();
+  expect(total).toBeGreaterThan(30);
+
+  const seenTypes = new Set<string>();
+  for (let i = 0; i < total; i++) {
+    const before = await objCount(page);
+    await cards.nth(i).click();
+    await expect.poll(() => objCount(page)).toBe(before + 1);
+    await expect(page.getByText('Properties').first()).toBeVisible();
+
+    const type = await page.evaluate(() => window.__projectStore.project.objects.at(-1)?.type);
+    if (!type) throw new Error('expected a selected object type');
+    seenTypes.add(type);
+
+    const opacity = page.getByLabel('Object opacity');
+    await opacity.evaluate((el) => {
+      const input = el as HTMLInputElement;
+      input.value = '0.5';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(opacity).toHaveValue('0.5');
+
+    const fillHex = page.getByLabel('Fill color hex');
+    if ((await fillHex.count()) > 0) {
+      await fillHex.fill('#112233');
+      await expect(fillHex).toHaveValue('#112233');
+    }
+  }
+
+  expect(seenTypes.size).toBeGreaterThan(20);
+});
+
+test('Type-specific inspector panels expose and update their dedicated controls', async ({
+  page,
+}) => {
+  const cases = [
+    {
+      label: 'Polygon',
+      section: 'Polygon Settings',
+      control: 'Sides',
+      value: '8',
+    },
+    {
+      label: 'Star',
+      section: 'Star Settings',
+      control: 'Arms',
+      value: '7',
+    },
+    {
+      label: 'Dot Grid',
+      section: 'Grid Settings',
+      control: 'Columns',
+      value: '6',
+    },
+    {
+      label: 'Counter',
+      section: 'Counter',
+      control: 'Start value',
+      value: '42',
+    },
+    {
+      label: 'Number Line',
+      section: 'NumberLine Range',
+      control: 'Length (px)',
+      value: '640',
+    },
+    {
+      label: 'Number Plane',
+      section: 'NumberPlane Range',
+      control: 'X Min',
+      value: '-7',
+    },
+    {
+      label: 'Axes',
+      section: 'Axes Range',
+      control: 'Y Max',
+      value: '8',
+    },
+    {
+      label: 'Add Text',
+      section: 'Text Content',
+      control: 'Font Size',
+      value: '72',
+    },
+  ] as const;
+
+  for (const c of cases) {
+    const before = await objCount(page);
+    await page.locator('.shape-card, button', { hasText: c.label }).first().click();
+    await expect.poll(() => objCount(page)).toBe(before + 1);
+    await expect(page.getByText(c.section).first()).toBeVisible();
+
+    const input = page.getByLabel(c.control);
+    await expect(input).toBeVisible();
+    await input.fill(c.value);
+    await expect(input).toHaveValue(c.value);
+  }
+});

@@ -33,9 +33,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    # Non-blocking: the Playwright smoke suite boots a real browser + dev server,
-    # so a flaky run shouldn't gate every push. It still runs + reports on each push.
-    continue-on-error: true
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

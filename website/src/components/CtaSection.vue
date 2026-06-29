@@ -24,7 +24,7 @@ cd Manim-Editor
 docker compose up --build
 
 <span class="code-cm"># then open</span>
-<span class="code-str">http://localhost:8080</span></code></pre>
+<span class="code-str">http://localhost:8758</span></code></pre>
     </div>
     <div class="flex-center-wrap reveal reveal-delay-3">
       <a href="https://github.com/kadirhanpolat/Manim-Editor" target="_blank" rel="noopener noreferrer" class="btn-primary btn-primary--cta magnet">
