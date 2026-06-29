@@ -115,6 +115,7 @@ The next development stage should not primarily add more object types. The highe
 - `services/web/src/components/inspector/capability-matrix.ts` defines the shared control surface and one row per addable object type.
 - `services/web/tests/components/inspector-capability-matrix.test.ts` verifies palette coverage, shared controls, and representative special panels.
 - `services/web/tests/components/ui-tools-audit.test.ts` now consumes the capability matrix as its type source.
+- `services/web/tests/components/inspector/properties-panel-editing.test.ts` covers real geometry, opacity, text, and font-size edits through the object inspector.
 
 ### 6. Render UX and Observability
 
