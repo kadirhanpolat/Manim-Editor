@@ -12,7 +12,7 @@
           :key="s.type"
           class="shape-card group"
           draggable="true"
-          :title="'Drag or click to add ' + s.label"
+          :title="'Drag or click to add ' + displayLabel(s.label)"
           @dragstart="onDragStart(s.type, $event)"
           @dragend="onDragEnd"
           @click="addShape(s.type)"
@@ -20,7 +20,7 @@
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
           </div>
-          <span class="shape-label">{{ s.label }}</span>
+          <span class="shape-label">{{ displayLabel(s.label) }}</span>
         </button>
       </div>
     </div>
@@ -34,7 +34,7 @@
           :key="s.type"
           class="shape-card group"
           draggable="true"
-          :title="'Drag or click to add ' + s.label"
+          :title="'Drag or click to add ' + displayLabel(s.label)"
           @dragstart="onDragStart(s.type, $event)"
           @dragend="onDragEnd"
           @click="addShape(s.type)"
@@ -42,7 +42,7 @@
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
           </div>
-          <span class="shape-label">{{ s.label }}</span>
+          <span class="shape-label">{{ displayLabel(s.label) }}</span>
         </button>
       </div>
     </div>
@@ -55,13 +55,13 @@
           v-for="s in shapes3D"
           :key="s.type"
           class="shape-card group"
-          :title="'Add ' + s.label"
+          :title="'Add ' + displayLabel(s.label)"
           @click="addShape(s.type)"
         >
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
           </div>
-          <span class="shape-label">{{ s.label }}</span>
+          <span class="shape-label">{{ displayLabel(s.label) }}</span>
         </button>
       </div>
     </div>
@@ -621,6 +621,16 @@ const shapes3D = [
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9c3 4 6 4 9 0s6-4 9 0"/><path d="M3 15c3 4 6 4 9 0s6-4 9 0"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="18" y1="7" x2="18" y2="17"/></svg>',
   },
 ];
+
+const LABEL_MAP: Record<string, string> = {
+  'Çerçeve': 'Frame',
+  'Altı Çizgi': 'Underline',
+  'Üstü Çizili': 'Strikethrough',
+};
+
+function displayLabel(label: string): string {
+  return LABEL_MAP[label] ?? label;
+}
 
 const assets = computed(() => store.project.assets);
 const imageAssets = computed(() => assets.value.filter((a) => a.type === 'image'));

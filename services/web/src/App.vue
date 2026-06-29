@@ -886,6 +886,7 @@ import {
   renderQueuePosition as getRenderQueuePosition,
   renderWorkerSummary as getRenderWorkerSummary,
 } from './components/render/render-ui.js';
+import { buildPreviewNotes } from './components/render/preview-notes.js';
 import { DEFAULT_RENDER_OPTIONS } from './api.js';
 import type { RenderOptions } from './api.js';
 
@@ -923,17 +924,7 @@ const exportCode = computed(() => store.exportCode);
 const hasImages = computed(() =>
   store.project.objects.some((o) => o.type === 'image' || o.type === 'svg_asset')
 );
-const hasTextElements = computed(() =>
-  store.project.objects.some((o) => o.type === 'text' || o.type === 'latex')
-);
-const hasLatexElements = computed(() => store.project.objects.some((o) => o.type === 'latex'));
-const previewNotes = computed(() => {
-  const notes: string[] = [];
-  if (hasTextElements.value) notes.push('Text layout can differ from the final render.');
-  if (hasLatexElements.value) notes.push("LaTeX uses the render container's math engine.");
-  if (store.project.sceneType === '3d') notes.push('3D framing is an approximation of the final camera.');
-  return notes;
-});
+const previewNotes = computed(() => buildPreviewNotes(store.project));
 const showRender = computed(() => store.showRenderDialog);
 const hasPendingAudio = computed(() => store.hasPendingAudio);
 const renderStatus = computed(() => store.renderStatus);

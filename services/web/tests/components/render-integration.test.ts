@@ -100,6 +100,15 @@ const CORPUS: { name: string; setup: Setup }[] = [
     },
   },
   {
+    name: 'styled_triangle',
+    setup: (s) => {
+      const triangle = s.addObject('triangle', 960, 540);
+      s.setGradient(triangle.id, { colors: ['#f472b6', '#8b5cf6'], angle: 135 });
+      s.setCornerRadius(triangle.id, 24);
+      s.setShadow(triangle.id, { color: '#000000', opacity: 0.35, dx: 8, dy: 8, blur: 12 });
+    },
+  },
+  {
     name: 'axes',
     setup: (s) => {
       s.addObject('axes', 960, 540);

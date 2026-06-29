@@ -50,6 +50,11 @@ The next development stage should not primarily add more object types. The highe
 - Render regression tests cover the most common visual object families.
 - New visual features must add parity coverage or explicitly document a non-goal.
 
+**Implemented so far:**
+- `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md` records the accepted preview-only differences.
+- The render dialog now surfaces preview notes for text, LaTeX, 3D framing, and styled-object approximations.
+- Render-truth coverage now includes a styled triangle case that exercises gradient, rounded-corner, and shadow rendering.
+
 ### 3. Code / Visual Round-Trip Robustness
 
 **Why it matters:** The project has two editor modes. The code-to-canvas path should not silently drop important information.
@@ -214,6 +219,11 @@ The next development stage should not primarily add more object types. The highe
 **Acceptance criteria:**
 - README and active roadmap docs render without corrupted characters.
 - User-facing labels follow one clear language policy.
+
+**Implemented so far:**
+- The New Project dialog now renders template names/descriptions in English even when the source template data remains localized.
+- The asset sidebar normalizes the remaining localized shape labels into English at render time.
+- README render guidance now uses the same English-only language policy as the editor UI.
 
 ### 12. Template and Education Flow Quality
 

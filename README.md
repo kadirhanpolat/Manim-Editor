@@ -213,7 +213,7 @@ Drag shapes on the canvas. Edit fill, stroke, opacity, size, rotation in the Pro
 Click the **Code** tab to see the Manim Python generated from your canvas. Copy or download the `.py` file. Scrub the timeline to review your edit structure.
 
 ### 6. Render
-Click **Tools > Render HQ** in the menubar. Choose **format** (MP4 / GIF / WebM / PNG Frames / WebM α), **resolution** (480p–4K), and **fps** (15/30/60), then click Start Render. The project is saved to the server, compiled to a Manim scene, and rendered. When done, watch or download — PNG Frames renders download as a ZIP archive.
+Click **Tools > Render HQ** in the menubar. Choose **format** (MP4 / GIF / WebM / PNG Frames / WebM α), **resolution** (480p–4K), and **fps** (15/30/60), then click Start Render. The project is saved to the server, compiled to a Manim scene, and rendered. The dialog also surfaces preview notes for text, LaTeX, 3D framing, and styled-object approximations. When done, watch or download — PNG Frames renders download as a ZIP archive.
 
 ### 7. Code View & Export
 The **Code** tab shows the generated Manim Python with syntax highlighting. Edit the code if needed, or copy/download the `.py` file to use elsewhere.

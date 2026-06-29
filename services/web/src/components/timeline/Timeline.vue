@@ -55,11 +55,11 @@
       <!-- Add section at playhead -->
       <button
         class="text-studio-text-muted hover:text-studio-text text-xs px-2"
-        title="Playhead konumuna bölüm ekle"
+        title="Add a section at the playhead"
         aria-label="Add section at playhead"
-        @click="store.addSection(store.playbackTime, 'Bölüm')"
+        @click="store.addSection(store.playbackTime, 'Section')"
       >
-        + Bölüm
+        + Section
       </button>
     </div>
 

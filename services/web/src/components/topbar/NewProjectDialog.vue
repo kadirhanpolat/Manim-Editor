@@ -58,7 +58,7 @@
 
         <!-- Template selector (only for visual mode) -->
         <template v-if="newProjectMode === 'visual'">
-          <label class="np-label" style="margin-top: 12px">Şablon</label>
+          <label class="np-label" style="margin-top: 12px">Template</label>
 
           <!-- Category chips -->
           <div class="np-cat-chips">
@@ -90,8 +90,8 @@
               <span style="font-size: 18px; display: block; margin-bottom: 4px">{{
                 tpl.icon
               }}</span>
-              <span class="np-mode-label">{{ tpl.label }}</span>
-              <span class="np-mode-desc">{{ tpl.description }}</span>
+              <span class="np-mode-label">{{ displayTemplateText(tpl.label) }}</span>
+              <span class="np-mode-desc">{{ displayTemplateText(tpl.description) }}</span>
             </button>
           </div>
         </template>
@@ -117,13 +117,13 @@ const store = useProjectStore();
 const templates = TEMPLATES;
 
 const CATEGORY_LABELS: Record<string, string> = {
-  all: 'Tümü',
-  general: 'Genel',
+  all: 'All',
+  general: 'General',
   calculus: 'Calculus',
-  linear_algebra: 'Lineer Cebir',
-  trigonometry: 'Trigonometri',
-  statistics: 'İstatistik',
-  programming: 'Programlama',
+  linear_algebra: 'Linear Algebra',
+  trigonometry: 'Trigonometry',
+  statistics: 'Statistics',
+  programming: 'Programming',
 };
 
 const ALL_CATEGORIES: Array<'all' | TemplateCategory> = [
@@ -137,6 +137,81 @@ const ALL_CATEGORIES: Array<'all' | TemplateCategory> = [
 ];
 
 const selectedCategory = ref<'all' | TemplateCategory>('all');
+
+const TEMPLATE_TEXT_MAP: Record<string, string> = {
+  'Boş Proje': 'Blank Project',
+  'Sıfırdan başla': 'Start from scratch',
+  'Formül Tanıtım': 'Formula Reveal',
+  'LaTeX formülü yazma efektiyle ortaya çıkar': 'Reveal a LaTeX formula with a writing effect',
+  'Formül': 'Formula',
+  'Şekil Dönüşümü': 'Shape Transform',
+  'Bir şekil diğerine morph olur': 'Morph one shape into another',
+  'Kaynak': 'Source',
+  'Hedef': 'Target',
+  'Başlık Slaydı': 'Title Slide',
+  'Başlık ve alt başlık kademeli giriş': 'Title and subtitle fade in sequentially',
+  'Başlık': 'Title',
+  'Alt Başlık': 'Subtitle',
+  'Alt başlık açıklaması': 'Subtitle description',
+  'Koordinat Sistemi': 'Coordinate System',
+  'Eksenler sahneye çizilir': 'Axes are drawn onto the stage',
+  'Limit Yaklaşımı': 'Limit Approach',
+  'x → c yaklaşımı ile limit kavramı': 'Visualize the limit concept as x approaches c',
+  'Düzlem': 'Plane',
+  'x yaklaşan nokta': 'Point approaching x',
+  'Limit noktası': 'Limit point',
+  'Türev Teğet': 'Derivative Tangent',
+  'Bir noktada türev ve teğet çizgisi gösterimi': 'Show the derivative and tangent line at a point',
+  'Türev': 'Derivative',
+  'İntegral Alan': 'Integral Area',
+  'Belirli integral ve Riemann alanı gösterimi': 'Show a definite integral and Riemann area',
+  'Vektör Toplama': 'Vector Addition',
+  'İki vektörün bileşke toplamı gösterimi': 'Show the resultant sum of two vectors',
+  'u vektörü': 'u vector',
+  'v vektörü': 'v vector',
+  'Bileşke': 'Resultant',
+  'Matris Çarpımı': 'Matrix Multiplication',
+  'İki 2×2 matrisin çarpımı': 'Multiply two 2×2 matrices',
+  'Çarpı': 'Cross',
+  'Sonuç': 'Result',
+  'Birim Çember': 'Unit Circle',
+  'Trigonometrik birim çember ve sin/cos gösterimi': 'Trigonometric unit circle with sin/cos display',
+  'Sin & Cos Grafiği': 'Sine & Cosine Graph',
+  'Sinüs ve kosinüs dalgaları karşılaştırması': 'Compare the sine and cosine waves',
+  'Normal Dağılım': 'Normal Distribution',
+  'Gauss çanı eğrisi ve ±1σ alanı': 'Gaussian bell curve with the ±1σ region',
+  'Teorem İspatı': 'Theorem Proof',
+  'Teorem ifadesi, kanıt adımları ve sonuç': 'Theorem statement, proof steps, and conclusion',
+  'Kanıt başlığı': 'Proof title',
+  'Kanıt:': 'Proof:',
+  'Kanıt metni': 'Proof text',
+  'Dik üçgende hipotenüs karesi, diğer iki kenar karelerinin toplamına eşittir.':
+    'In a right triangle, the square of the hypotenuse equals the sum of the squares of the other two sides.',
+  'Algoritma Adımları': 'Algorithm Steps',
+  'Üç adımlı akış şeması: Başlat → İşle → Bitir': 'Three-step flowchart: Start → Process → End',
+  'Adım 1 kutusu': 'Step 1 box',
+  'Adım 2 kutusu': 'Step 2 box',
+  'Adım 3 kutusu': 'Step 3 box',
+  'Başlat': 'Start',
+  'İşle': 'Process',
+  'Bitir': 'End',
+};
+
+function displayTemplateText(text: string): string {
+  return TEMPLATE_TEXT_MAP[text] ?? text;
+}
+
+function localizeTemplateValue(value: unknown): unknown {
+  if (typeof value === 'string') return displayTemplateText(value);
+  if (Array.isArray(value)) return value.map((entry) => localizeTemplateValue(entry));
+  if (!value || typeof value !== 'object') return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === 'id') out[key] = entry;
+    else out[key] = localizeTemplateValue(entry);
+  }
+  return out;
+}
 
 const filteredTemplates = computed(() =>
   selectedCategory.value === 'all'
@@ -168,7 +243,7 @@ function confirmNewProject() {
   const name = newProjectName.value.trim() || 'My Animation';
   const tpl = newProjectTemplate.value;
   if (tpl && tpl.project) {
-    const projectData = tpl.project() as unknown as Record<string, unknown>;
+    const projectData = localizeTemplateValue(tpl.project()) as Record<string, unknown>;
     projectData['name'] = name;
     projectData['id'] = null;
     store._stopPollRender();

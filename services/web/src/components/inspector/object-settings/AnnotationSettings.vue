@@ -4,23 +4,23 @@
     <div class="space-y-2">
       <!-- Target picker -->
       <div>
-        <label class="block text-[10px] text-studio-text-muted mb-1">Hedef nesne</label>
+        <label class="block text-[10px] text-studio-text-muted mb-1">Target object</label>
         <select
           class="w-full px-2 py-1 text-[11px] rounded bg-studio-bg border border-studio-border text-studio-text"
           :value="obj.targetId ?? ''"
           @change="onTargetChange($event)"
         >
-          <option value="">— seçin —</option>
+          <option value="">— select —</option>
           <option v-for="candidate in otherObjects" :key="candidate.id" :value="candidate.id">
             {{ candidate.name || candidate.type }} ({{ candidate.id.slice(0, 6) }})
           </option>
         </select>
-        <p v-if="!obj.targetId" class="text-[10px] text-yellow-400 mt-1">Hedef nesne seçin</p>
+        <p v-if="!obj.targetId" class="text-[10px] text-yellow-400 mt-1">Choose a target object</p>
       </div>
 
       <!-- Color -->
       <ColorRow
-        label="Renk"
+        label="Color"
         :value="(obj.color as string) ?? '#ffffff'"
         @input="onColorChange($event)"
       />
@@ -28,7 +28,7 @@
       <!-- strokeWidth -->
       <div class="grid grid-cols-2 gap-1.5">
         <Num
-          label="Çizgi kalınlığı"
+          label="Stroke width"
           :value="(obj.strokeWidth as number) ?? 2"
           :min="0.5"
           :step="0.5"
@@ -38,7 +38,7 @@
         <!-- buff: surrounding_rect + underline only -->
         <Num
           v-if="obj.type !== 'cross'"
-          label="Boşluk (px)"
+          label="Padding (px)"
           :value="(obj.buff as number) ?? (obj.type === 'underline' ? 6 : 10)"
           :min="0"
           @input="u('buff', $event)"
@@ -48,7 +48,7 @@
       <!-- cornerRadius: surrounding_rect only -->
       <div v-if="obj.type === 'surrounding_rect'" class="grid grid-cols-2 gap-1.5">
         <Num
-          label="Köşe yarıçapı"
+          label="Corner radius"
           :value="(obj.cornerRadius as number) ?? 0"
           :min="0"
           @input="u('cornerRadius', $event)"

@@ -10,7 +10,7 @@
     <div class="clip-inner">
       <span class="clip-icon" v-html="typeIcon"></span>
       <span class="clip-label">{{ label }}</span>
-      <span
+  <span
         v-if="clip.parallel"
         class="inline-block ml-1 px-1 text-[8px] rounded bg-violet-500/30 text-violet-300 leading-none align-middle"
         title="Parallel (AnimationGroup)"
@@ -91,19 +91,19 @@ const clipStyle = computed(() => ({
 const ctxMenu = ref<{ x: number; y: number } | null>(null);
 
 const ctxItems = computed<ContextMenuItem[]>(() => [
-  { id: 'copy', label: 'Kopyala', action: () => store.copySelection() },
-  { id: 'cut', label: 'Kes', action: () => store.cutSelection() },
+  { id: 'copy', label: 'Copy', action: () => store.copySelection() },
+  { id: 'cut', label: 'Cut', action: () => store.cutSelection() },
   {
     id: 'paste',
-    label: 'Yapıştır',
+    label: 'Paste',
     action: () => store.pasteSelection(),
     disabled: store.clipboard.length === 0,
   },
-  { id: 'dup', label: 'Çoğalt', action: () => store.duplicateSelection() },
+  { id: 'dup', label: 'Duplicate', action: () => store.duplicateSelection() },
   { id: 'sep1', separator: true },
-  { id: 'split', label: 'Böl', action: () => store.splitClip(props.clip.id as string) },
+  { id: 'split', label: 'Split', action: () => store.splitClip(props.clip.id as string) },
   { id: 'sep2', separator: true },
-  { id: 'delete', label: 'Sil', action: () => store.deleteClip(props.clip.id as string) },
+  { id: 'delete', label: 'Delete', action: () => store.deleteClip(props.clip.id as string) },
 ]);
 
 function onContextMenu(e: MouseEvent) {
