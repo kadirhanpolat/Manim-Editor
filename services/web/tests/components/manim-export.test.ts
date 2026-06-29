@@ -79,6 +79,38 @@ describe('generator/parser — latex', () => {
   });
 });
 
+describe('generator/parser — svg_asset', () => {
+  it('round-trips an SVG asset as svg_asset with its width preserved', () => {
+    const project = makeProject(
+      [makeObj('obj1', 'svg_asset', { name: 'logo', width: 480, height: 320 })],
+      []
+    );
+    const script = generateManimScript(project);
+    expect(script).toContain('SVGMobject("logo.svg")');
+
+    const parsed = parseManimScript(script, SW, SH);
+    expect(parsed.objects).toHaveLength(1);
+    expect(parsed.objects[0].type).toBe('svg_asset');
+    expect(parsed.objects[0].width).toBe(480);
+  });
+});
+
+describe('generator/parser — image', () => {
+  it('round-trips a raster image as image with its width preserved', () => {
+    const project = makeProject(
+      [makeObj('obj1', 'image', { name: 'photo', width: 480, height: 320 })],
+      []
+    );
+    const script = generateManimScript(project);
+    expect(script).toContain('ImageMobject("photo.png")');
+
+    const parsed = parseManimScript(script, SW, SH);
+    expect(parsed.objects).toHaveLength(1);
+    expect(parsed.objects[0].type).toBe('image');
+    expect(parsed.objects[0].width).toBe(480);
+  });
+});
+
 describe('generator — numberline', () => {
   it('emits NumberLine with x_range and length', () => {
     const project = makeProject(

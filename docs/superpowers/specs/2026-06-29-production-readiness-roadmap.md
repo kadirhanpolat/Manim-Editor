@@ -70,6 +70,10 @@ The next development stage should not primarily add more object types. The highe
 - Unsupported code is reported clearly.
 - Round-trip tests cover objects, clips, sections, camera, audio, and render-relevant settings.
 
+**Implemented so far:**
+- The parser already reports unsupported imports/custom code as warnings instead of silently dropping them.
+- `services/web/tests/components/manim-export.test.ts` now round-trips `image` and `svg_asset` objects through generate → parse coverage.
+
 ### 4. Large-Scene Performance
 
 **Why it matters:** The object catalog is now large. Performance problems will appear when users build real scenes, not just demos.
