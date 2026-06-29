@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Isolated Playwright E2E suite (NOT a workspace member — keeps its own node_modules so it never perturbs the web/api dependency hoisting).",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed"
+    "test": "node ./scripts/run-tests.mjs",
+    "test:headed": "node ./scripts/run-tests.mjs --headed"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0"

@@ -1,9 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const webDir = path.resolve(__dirname, '../services/web');
+const webPort = Number.parseInt(process.env.E2E_WEB_PORT ?? '5188', 10);
+const resolvedWebPort = Number.isInteger(webPort) && webPort > 0 ? webPort : 5188;
+const webBaseURL = `http://127.0.0.1:${resolvedWebPort}`;
 
 export default defineConfig({
   testDir: './tests',
@@ -13,19 +11,8 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:5188',
+    baseURL: webBaseURL,
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  // Boot the frontend dev server on a dedicated port. It is fully client-side
-  // for object editing (Pinia store + Konva) — no API/Redis needed for the
-  // UI-tool smoke tests. A non-default port (5173 is commonly taken by other
-  // local Vite apps) + reuseExistingServer:false guarantees we drive OUR app.
-  webServer: {
-    command: 'npm run dev -- --port 5188 --strictPort',
-    cwd: webDir,
-    url: 'http://localhost:5188',
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
 });

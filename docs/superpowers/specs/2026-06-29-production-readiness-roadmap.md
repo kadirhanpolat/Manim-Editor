@@ -178,6 +178,7 @@ The next development stage should not primarily add more object types. The highe
 **Implemented so far:**
 - `scripts/full-stack-smoke.mjs` exercises web, API, Redis-backed job creation, and renderer-backed job completion.
 - `.github/workflows/ci.yml` includes a dedicated `docker-smoke` job that boots the compose stack and runs the smoke script.
+- `e2e/scripts/run-tests.mjs` now selects a free local dev port once, starts the Vite dev server, and exports the chosen port into Playwright so browser smoke tests stay on one consistent URL.
 
 ### 9. Security and Render Isolation
 

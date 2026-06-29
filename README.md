@@ -458,7 +458,7 @@ drives the real app in a browser:
 cd e2e
 npm install                      # first time only
 npx playwright install chromium  # first time only
-npm test                         # 17 Chromium tests; auto-boots the web dev server on :5188
+npm test                         # auto-boots the web dev server on a free local port
 ```
 
 It clicks every palette/clip/tool surface (add objects, MotionPicker clips,
@@ -697,8 +697,8 @@ three ways: code audit, jsdom unit tests, and a real-browser Playwright suite.
 - **New tests**: `ui-tools-audit.test.js` (palette-reachability invariant guarding
   the orphaned-object regression, MotionPicker clip tools, interaction tools) +
   `NumberLineSettings` + a `NumberLine` characterization snapshot; and a standalone
-  **Playwright `e2e/` package** (9 Chromium tests) that drives the real app on a
-  dedicated port via a DEV-only `window.__projectStore` hook.
+  **Playwright `e2e/` package** that drives the real app on a dedicated port via
+  a DEV-only `window.__projectStore` hook.
 - **Tests**: totals now **515 unit + 114 engine** (web) + **6** `@manim/codegen`
   package tests + **9** Playwright E2E. Audit report:
   `docs/superpowers/specs/2026-06-07-ui-tools-audit-design.md`.
