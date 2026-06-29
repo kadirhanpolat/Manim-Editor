@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     id="app"
     class="h-screen flex flex-col overflow-hidden"
@@ -824,7 +824,7 @@ import type { RenderOptions } from './api.js';
 
 const store = useProjectStore();
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Reactive state Ã¢â€â‚¬Ã¢â€â‚¬
+// Reactive state
 const copied = ref(false);
 const renderOptions = ref<RenderOptions>({ ...DEFAULT_RENDER_OPTIONS });
 const renderHistoryExpanded = ref(true);
@@ -845,7 +845,7 @@ let _parseMessageTimer: ReturnType<typeof setTimeout> | undefined;
 const highlightPre = ref<HTMLPreElement | null>(null);
 const codeArea = ref<HTMLTextAreaElement | null>(null);
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Computed Ã¢â€â‚¬Ã¢â€â‚¬
+// Computed
 const projectId = computed(() => store.project.id);
 const isCodeMode = computed(() => store.project.editorMode === 'code');
 const error = computed(() => store.error);
@@ -924,7 +924,7 @@ const highlightedCode = computed(() => {
   }
 });
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Watchers Ã¢â€â‚¬Ã¢â€â‚¬
+// Watchers
 watch(
   () => store.project.keyframeDefaults,
   (defaults) => {
@@ -983,7 +983,7 @@ watch(
 
 let _disposeAutosave: (() => void) | null = null;
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Lifecycle Ã¢â€â‚¬Ã¢â€â‚¬
+// Lifecycle
 onMounted(() => {
   const engine = getPlaybackEngine();
   engine.onTimeUpdate((t) => store.setPlaybackTime(t));
@@ -1017,7 +1017,7 @@ onBeforeUnmount(() => {
   _disposeAutosave?.();
 });
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Methods Ã¢â€â‚¬Ã¢â€â‚¬
+// Methods
 function handleKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     commandPaletteOpen.value = true;
@@ -1111,7 +1111,7 @@ function togglePlayback() {
   }
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Export dialog Ã¢â€â‚¬Ã¢â€â‚¬
+// Export dialog
 function closeExport() {
   store.showExportDialog = false;
 }
@@ -1137,7 +1137,7 @@ function copyCode() {
   });
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Render dialog Ã¢â€â‚¬Ã¢â€â‚¬
+// Render dialog
 function closeRender() {
   // Allow closing at any time; if still rendering, polling continues in bg
   store.showRenderDialog = false;
@@ -1196,7 +1196,7 @@ function copyRenderLog() {
     });
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Project browser Ã¢â€â‚¬Ã¢â€â‚¬
+// Project browser
 function closeProjectBrowser() {
   store.showProjectBrowser = false;
 }
@@ -1220,7 +1220,7 @@ async function deleteServerProject(id: string, name: string) {
   }
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Stage code view Ã¢â€â‚¬Ã¢â€â‚¬
+// Stage code view
 function switchToCode() {
   stageViewMode.value = 'code';
   codeEdited.value = false;
@@ -1343,7 +1343,7 @@ function downloadStageCode() {
   }
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Render history Ã¢â€â‚¬Ã¢â€â‚¬
+// Render history
 async function loadRenderHistory() {
   if (!projectId.value) return;
   try {
@@ -1362,7 +1362,7 @@ function formatRenderLabel(item: { index: number; ext: string; name: string }) {
   return `${slot}.${item.ext}`;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Error Ã¢â€â‚¬Ã¢â€â‚¬
+// Error
 function clearError() {
   store.clearError();
 }
