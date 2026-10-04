@@ -14,14 +14,15 @@ import uuid
 import zipfile
 
 import redis
-
 from history import rotate_render_history
-from safety import resolve_scene_file, terminate_process_tree
 from render_args import FORMAT_EXT, build_render_args, output_ext
+from safety import resolve_scene_file, terminate_process_tree
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
-WORKER_ID = os.environ.get("WORKER_ID") or os.environ.get("HOSTNAME") or f"worker-{uuid.uuid4().hex[:8]}"
+WORKER_ID = (
+    os.environ.get("WORKER_ID") or os.environ.get("HOSTNAME") or f"worker-{uuid.uuid4().hex[:8]}"
+)
 WORKER_KEY = f"render:worker:{WORKER_ID}"
 HEARTBEAT_INTERVAL = 5
 MAX_RENDER_SECONDS = 600
@@ -117,7 +118,9 @@ def render_job(payload: dict, job_id: str | None = None) -> dict:
     # Paths - honor explicit sceneFile from payload if provided, but never let it
     # escape the shared data directory.
     relative_scene = payload.get("sceneFile")
-    scene_file = resolve_scene_file(DATA_DIR, relative_scene if isinstance(relative_scene, str) else None, project_id)
+    scene_file = resolve_scene_file(
+        DATA_DIR, relative_scene if isinstance(relative_scene, str) else None, project_id
+    )
     media_dir = os.path.join(DATA_DIR, "renders", project_id)
     latest_link = os.path.join(media_dir, f"latest.{ext}")
 
@@ -200,7 +203,9 @@ def render_job(payload: dict, job_id: str | None = None) -> dict:
                         "stdout": stdout_text[-8000:] if stdout_text else "",
                         "stderr": stderr_text[-8000:] if stderr_text else "Render canceled",
                     }
-                heartbeat("running", job_id, phase="rendering", projectId=project_id, sceneName=scene_name)
+                heartbeat(
+                    "running", job_id, phase="rendering", projectId=project_id, sceneName=scene_name
+                )
                 if time.monotonic() - start_time >= MAX_RENDER_SECONDS:
                     terminate_process_tree(process)
                     stdout_text, stderr_text = process.communicate()
@@ -208,7 +213,11 @@ def render_job(payload: dict, job_id: str | None = None) -> dict:
                         "ok": False,
                         "error": "Render timeout (10 minutes exceeded)",
                         "stdout": stdout_text[-8000:] if stdout_text else "",
-                        "stderr": stderr_text[-8000:] if stderr_text else "Render timeout (10 minutes exceeded)",
+                        "stderr": (
+                            stderr_text[-8000:]
+                            if stderr_text
+                            else "Render timeout (10 minutes exceeded)"
+                        ),
                     }
 
         # PNG sequence: zip the frame directory and return early
