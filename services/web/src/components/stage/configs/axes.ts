@@ -3,6 +3,7 @@
 // No Vue refs, no reactive imports — all live values come through ctx.
 
 import { compileExpr } from '../../../engine/mathExpr.js';
+import { RIEMANN_FILL_OPACITY } from '@manim/codegen';
 import type { SceneObject } from '@manim/codegen';
 import type { StageCtx } from './context.js';
 
@@ -273,7 +274,7 @@ export function axesAreaRiemann(
             (riemann.color as string | undefined) ||
             (graph.color as string | undefined) ||
             '#f59e0b',
-          opacity: 0.45,
+          opacity: RIEMANN_FILL_OPACITY,
           stroke: '#fff',
           strokeWidth: 0.5,
           listening: false,

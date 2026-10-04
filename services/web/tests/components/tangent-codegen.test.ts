@@ -19,10 +19,14 @@ function axesWithTangent(tangent) {
 }
 
 describe('graph tangent line codegen', () => {
-  it('emits TangentLine at the right alpha when enabled', () => {
-    // x=1 in [-3,3] → alpha = (1-(-3))/(3-(-3)) = 0.667
+  // TangentLine's alpha is a proportion of the curve's ARC LENGTH, not of x:
+  // a linear x→alpha map put the x²-tangent for x=1 at x≈1.39. The point is
+  // located on the graph by x instead (checked in Manim 0.20.1: x=1, slope 2).
+  it('places the TangentLine at the graph point for x', () => {
     const py = axesWithTangent({ enabled: true, x: 1, length: 2 });
-    expect(py).toMatch(/_tangent = TangentLine\(\w+, alpha=0\.667, length=2/);
+    expect(py).toMatch(
+      /_tangent = TangentLine\((\w+), alpha=\1\.proportion_from_point\(\w+\.i2gp\(1, \1\)\), length=2/
+    );
   });
 
   it('omits TangentLine when disabled', () => {
@@ -30,9 +34,9 @@ describe('graph tangent line codegen', () => {
     expect(py).not.toContain('TangentLine');
   });
 
-  it('clamps alpha into [0,1] for out-of-range x', () => {
+  it('clamps x into the graph range', () => {
     const py = axesWithTangent({ enabled: true, x: 99, length: 2 });
-    expect(py).toMatch(/alpha=1\.000/);
+    expect(py).toMatch(/\.i2gp\(3, /);
   });
 
   it('round-trips tangent x/length through the parser', () => {

@@ -2231,7 +2231,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     }
     // axes.get_riemann_rectangles(graphVar, ...)
     m = line.match(
-      /^\w+\s*=\s*\w+\.get_riemann_rectangles\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\],\s*dx=([\d.]+),\s*input_sample_type=["'](\w+)["'](?:,\s*color=["']([^"']+)["'])?\)/
+      /^\w+\s*=\s*\w+\.get_riemann_rectangles\((\w+),\s*x_range=\[([-\d.]+),\s*([-\d.]+)\],\s*dx=([\d.]+),\s*input_sample_type=["'](\w+)["'](?:,\s*color=["']([^"']+)["'])?(?:,\s*fill_opacity=[\d.]+)?\)/
     );
     if (m) {
       const g = graphVarMap[m[1]];
@@ -2246,7 +2246,23 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
         };
       continue;
     }
-    // TangentLine(graphVar, alpha=..., length=..., color=...)
+    // TangentLine(graphVar, alpha=graphVar.proportion_from_point(axes.i2gp(x, graphVar)), …)
+    m = line.match(
+      /^\w+\s*=\s*TangentLine\((\w+),\s*alpha=\1\.proportion_from_point\(\w+\.i2gp\(([-\d.]+),\s*\1\)\),\s*length=([\d.]+)(?:,\s*color=["']([^"']+)["'])?\)/
+    );
+    if (m) {
+      const g = graphVarMap[m[1]];
+      if (g) {
+        g['tangent'] = {
+          enabled: true,
+          x: parseFloat(m[2]),
+          length: parseFloat(m[3]),
+          color: m[4] || g['color'],
+        };
+      }
+      continue;
+    }
+    // Legacy form: TangentLine(graphVar, alpha=<x-proportion>, length=..., color=...)
     m = line.match(
       /^\w+\s*=\s*TangentLine\((\w+),\s*alpha=([\d.]+),\s*length=([\d.]+)(?:,\s*color=["']([^"']+)["'])?\)/
     );

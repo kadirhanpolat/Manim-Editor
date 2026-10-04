@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import TEMPLATES, { type TemplateCategory } from '../../src/templates/index.js';
 import { generateManimScript } from '../../src/export/manim.js';
+import { compileExpr } from '../../src/engine/mathExpr.js';
 import type { Project } from '@manim/codegen';
 
 const VALID_CATEGORIES: TemplateCategory[] = [
@@ -141,5 +142,99 @@ describe('unit_circle template geometry', () => {
     expect(Math.abs(sin.rotation as number)).toBe(90);
     expect(sin.x).toBeCloseTo(p.x, 0);
     expect(sin.y).toBeCloseTo((plane.y + p.y) / 2, 0);
+  });
+});
+
+// Text objects store their string in `content` (store, inspector, preview and
+// codegen all read it). A `text:` field is silently ignored and the object
+// shows the "Text" placeholder in both the preview and the render.
+describe('template text content', () => {
+  for (const t of TEMPLATES) {
+    if (!t.project) continue;
+    it(`${t.id}: every text object has real content`, () => {
+      const objs = (t.project!() as unknown as { objects: Array<Record<string, unknown>> }).objects;
+      for (const o of objs.filter((x) => x.type === 'text')) {
+        expect(o).not.toHaveProperty('text');
+        expect(typeof o.content).toBe('string');
+        expect((o.content as string).trim()).not.toBe('');
+      }
+    });
+  }
+});
+
+// Every plotted graph must stay inside its axes' y range over the plotted x
+// range, or the curve (and any area/Riemann rectangles) leaves the axes.
+describe('template graphs fit their axes', () => {
+  for (const t of TEMPLATES) {
+    if (!t.project) continue;
+    const objs = (t.project() as unknown as { objects: Array<Record<string, unknown>> }).objects;
+    for (const ax of objs.filter((o) => o.type === 'axes')) {
+      for (const g of (ax.graphs as Array<Record<string, unknown>> | undefined) ?? []) {
+        it(`${t.id}: ${String(g.expression)} stays within y ${JSON.stringify(ax.yRange)}`, () => {
+          const [y0, y1] = ax.yRange as number[];
+          const fn = compileExpr(String(g.expression), 'x')!;
+          expect(fn).toBeTruthy();
+          const lo = g.xMin as number;
+          const hi = g.xMax as number;
+          for (let i = 0; i <= 50; i++) {
+            const y = fn(lo + ((hi - lo) * i) / 50);
+            expect(y).toBeGreaterThanOrEqual(y0 - 1e-9);
+            expect(y).toBeLessThanOrEqual(y1 + 1e-9);
+          }
+        });
+      }
+    }
+  }
+});
+
+// Head-to-tail addition: the resultant arrow runs from u's tail to v's tip.
+// Arrows are centred on x/y, `width` long, rotated clockwise by `rotation`°.
+describe('vector_addition template geometry', () => {
+  const objs = (
+    TEMPLATES.find((t) => t.id === 'vector_addition')!.project!() as unknown as {
+      objects: Array<Record<string, number> & { name: string }>;
+    }
+  ).objects;
+  const by = (name: string) => objs.find((o) => o.name === name)!;
+  it('draws the resultant from the tail of u to the tip of v', () => {
+    const u = by('u vektörü');
+    const v = by('v vektörü');
+    const w = by('Bileşke');
+    const r = (w.rotation * Math.PI) / 180;
+    const half = [(w.width / 2) * Math.cos(r), (w.width / 2) * Math.sin(r)];
+    expect(w.x - half[0]).toBeCloseTo(u.x, 0);
+    expect(w.y - half[1]).toBeCloseTo(u.y, 0);
+    expect(w.x + half[0]).toBeCloseTo(v.x + v.vx, 0);
+    expect(w.y + half[1]).toBeCloseTo(v.y + v.vy, 0);
+    // v starts where u ends
+    expect([v.x, v.y]).toEqual([u.x + u.vx, u.y + u.vy]);
+  });
+
+  it('uses clearly different directions so the parallelogram is visible', () => {
+    const u = by('u vektörü');
+    const v = by('v vektörü');
+    const deg = (o: Record<string, number>) => (Math.atan2(-o.vy, o.vx) * 180) / Math.PI;
+    expect(Math.abs(deg(u) - deg(v))).toBeGreaterThan(30);
+  });
+});
+
+// Flow arrows must sit in the gaps between the step boxes, not start inside a
+// box (where they cross the step's label).
+describe('algo_steps template layout', () => {
+  const objs = (
+    TEMPLATES.find((t) => t.id === 'algo_steps')!.project!() as unknown as {
+      objects: Array<Record<string, number> & { type: string }>;
+    }
+  ).objects;
+  const boxes = objs.filter((o) => o.type === 'rectangle').sort((a, b) => a.x - b.x);
+  const arrows = objs.filter((o) => o.type === 'arrow').sort((a, b) => a.x - b.x);
+  it('puts each arrow between two boxes with a margin', () => {
+    expect(arrows).toHaveLength(boxes.length - 1);
+    arrows.forEach((a, i) => {
+      const gapStart = boxes[i]!.x + boxes[i]!.width / 2;
+      const gapEnd = boxes[i + 1]!.x - boxes[i + 1]!.width / 2;
+      expect(a.x - a.width / 2).toBeGreaterThanOrEqual(gapStart + 10);
+      expect(a.x + a.width / 2).toBeLessThanOrEqual(gapEnd - 10);
+    });
   });
 });

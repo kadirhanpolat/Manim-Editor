@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { RIEMANN_FILL_OPACITY } from '@manim/codegen';
 import { generateManimScript, parseManimScript } from '../../src/export/manim.js';
+import * as axesCfgs from '../../src/components/stage/configs/axes.js';
+import { makeCtx } from './stage/fixtures.js';
 
 const SW = 1920,
   SH = 1080;
@@ -72,7 +75,20 @@ describe('area + riemann codegen', () => {
       ])
     );
     expect(s).toMatch(
-      /= \w+\.get_riemann_rectangles\(\w+, x_range=\[-2, 2\], dx=0\.5, input_sample_type="left", color="#f59e0b"\)/
+      /= \w+\.get_riemann_rectangles\(\w+, x_range=\[-2, 2\], dx=0\.5, input_sample_type="left", color="#f59e0b", fill_opacity=0\.45\)/
+    );
+  });
+  it('renders the rectangles as translucent as the preview draws them', () => {
+    // Manim's default fill_opacity=1 hid the curve and the area under them.
+    const ctx = makeCtx({ vs: 1 });
+    const obj = axesObj([
+      graph({ riemann: { enabled: true, xMin: -2, xMax: 2, dx: 0.5, type: 'left' } }),
+    ]);
+    const { rects } = axesCfgs.axesAreaRiemann(obj as never, ctx as never);
+    expect(rects.length).toBeGreaterThan(0);
+    expect(rects[0]!.opacity).toBe(RIEMANN_FILL_OPACITY);
+    expect(generateManimScript(makeProject([obj]))).toContain(
+      `fill_opacity=${RIEMANN_FILL_OPACITY})`
     );
   });
   it('round-trips area + riemann onto the graph', () => {

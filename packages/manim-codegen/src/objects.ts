@@ -29,6 +29,7 @@ import {
   GRADIENT_TYPES,
   ANNOTATION_TYPES,
   ORIGIN_ANCHORED_TYPES,
+  RIEMANN_FILL_OPACITY,
   CODE_LANGUAGES,
 } from './constants.js';
 import type { SceneObject, GenerateOptions } from './types.js';
@@ -563,25 +564,25 @@ export function objectCode(
               : 'left';
             const rcol = hex(g.riemann.color) || col;
             lines.push(
-              `${rn} = ${n}.get_riemann_rectangles(${gn}, x_range=[${rxMin}, ${rxMax}], dx=${rdx}, input_sample_type="${rtype}", color=${rcol})`
+              `${rn} = ${n}.get_riemann_rectangles(${gn}, x_range=[${rxMin}, ${rxMax}], dx=${rdx}, input_sample_type="${rtype}", color=${rcol}, fill_opacity=${RIEMANN_FILL_OPACITY})`
             );
             lines.push(`${n}.add(${rn})`);
           }
           if (g.tangent && g.tangent.enabled) {
             const tn = `${gn}_tangent`;
-            const tx = Number.isFinite(g.tangent.x) ? g.tangent.x : ((xMin ?? 0) + (xMax ?? 0)) / 2;
-            const alpha =
-              (xMax ?? 0) > (xMin ?? 0)
-                ? Math.max(0, Math.min(1, ((tx ?? 0) - (xMin ?? 0)) / ((xMax ?? 0) - (xMin ?? 0))))
-                : 0.5;
+            const lo = Math.min(xMin ?? 0, xMax ?? 0);
+            const hi = Math.max(xMin ?? 0, xMax ?? 0);
+            const rawX = Number.isFinite(g.tangent.x) ? (g.tangent.x as number) : (lo + hi) / 2;
+            const tx = Math.max(lo, Math.min(hi, rawX));
+            // TangentLine's alpha is a proportion of ARC LENGTH, not of x, so
+            // locate the graph point for x and convert it to that proportion.
+            const alpha = `${gn}.proportion_from_point(${n}.i2gp(${tx}, ${gn}))`;
             const tlen =
               Number.isFinite(g.tangent.length) && (g.tangent.length ?? 0) > 0
                 ? g.tangent.length
                 : 2;
             const tcol = hex(g.tangent.color) || col;
-            lines.push(
-              `${tn} = TangentLine(${gn}, alpha=${alpha.toFixed(3)}, length=${tlen}, color=${tcol})`
-            );
+            lines.push(`${tn} = TangentLine(${gn}, alpha=${alpha}, length=${tlen}, color=${tcol})`);
             lines.push(`${n}.add(${tn})`);
           }
         }

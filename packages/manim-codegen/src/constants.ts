@@ -77,6 +77,10 @@ export const SHADOW_TYPES: Set<string> = new Set([
 ]);
 export const ANNOTATION_TYPES: Set<string> = new Set(['surrounding_rect', 'underline', 'cross']);
 
+// Riemann rectangles are translucent so the curve and the area stay visible;
+// the canvas preview draws them with the same opacity.
+export const RIEMANN_FILL_OPACITY = 0.45;
+
 // Types built from points relative to the object's origin (x/y). The preview
 // draws them around that origin, but Manim's move_to/set_x/MoveAlongPath/
 // rotate/scale use the bounding-box center, so codegen mirrors the bounding
