@@ -65,7 +65,7 @@ describe('angle codegen', () => {
     const s = generateManimScript(makeProject([makeObj({ label: '\\theta' })]));
     expect(s).toMatch(/_arc = Angle\(/);
     expect(s).toMatch(
-      /= VGroup\((\w+)_arc, MathTex\("\\\\theta"\)\.move_to\(\1_l1\.get_start\(\) \+ 1\.6 \* \(\1_arc\.point_from_proportion\(0\.5\) - \1_l1\.get_start\(\)\)\)\)/
+      /= VGroup\((\w+)_l1, \1_l2, \1_arc, MathTex\("\\\\theta"\)\.move_to\(\1_l1\.get_start\(\) \+ 1\.6 \* \(\1_arc\.point_from_proportion\(0\.5\) - \1_l1\.get_start\(\)\)\)\)/
     );
     expect(s).not.toContain('_arc.get_tex(');
   });
@@ -88,6 +88,19 @@ describe('angle round-trip', () => {
       SH
     ).objects[0];
     expect(o.rightAngle).toBe(true);
+  });
+  it('round-trips position and the rays form without parser warnings', () => {
+    for (const extra of [{}, { label: '\\theta' }, { rightAngle: true }]) {
+      const obj = makeObj({ x: 700, y: 400, ...extra });
+      const parsed = parseManimScript(generateManimScript(makeProject([obj])), SW, SH);
+      // (the module docstring always yields generic warnings; ignore those)
+      expect(parsed.warnings.filter((w) => /VGroup|VectorizedPoint|_l[12]|_arc/.test(w))).toEqual(
+        []
+      );
+      expect(parsed.objects).toHaveLength(1);
+      expect(parsed.objects[0].x).toBeCloseTo(700, 0);
+      expect(parsed.objects[0].y).toBeCloseTo(400, 0);
+    }
   });
   it('round-trips a labeled angle', () => {
     const o = parseManimScript(

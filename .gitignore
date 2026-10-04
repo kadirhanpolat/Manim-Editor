@@ -19,3 +19,5 @@ coverage/
 # Python caches (renderer/audio workers + test helpers)
 __pycache__/
 *.pyc
+# Manim LaTeX cache written when manim runs with services/web as cwd
+services/web/media/

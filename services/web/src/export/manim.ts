@@ -14,7 +14,6 @@ import {
   EASING_MAP,
   FRAME_WIDTH,
   FRAME_HEIGHT,
-  FRAME_X_RADIUS,
   generateScene,
   renderFontFor,
 } from '@manim/codegen';
@@ -1517,6 +1516,31 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       continue;
     }
 
+    // Origin anchor (ORIGIN_ANCHORED_TYPES): two invisible points that center the
+    // bounding box on the object's origin. Pure codegen plumbing — nothing to restore.
+    m = line.match(
+      /^(\w+)\.add\(VectorizedPoint\(-\1\.get_corner\(DL\)\), VectorizedPoint\(-\1\.get_corner\(UR\)\)\)$/
+    );
+    if (m) continue;
+
+    // Angle with its rays: `<n> = VGroup(<n>_l1, <n>_l2, <n>_arc[, MathTex("…").move_to(…)])`
+    // — renames the `<n>_arc` object to the VGroup var and restores the label.
+    m = line.match(
+      /^(\w+)\s*=\s*VGroup\((\w+)_l1, \2_l2, (\2_arc)(?:, MathTex\("(.*?)"\)\.move_to\(.*)?\)$/
+    );
+    if (m) {
+      const [, vg, , base, tex] = m;
+      const baseId = varMap[base];
+      const target = baseId ? objById[baseId] : null;
+      if (target && target.type === 'angle') {
+        target.name = vg;
+        if (tex !== undefined) target.label = tex.replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+        delete varMap[base];
+        varMap[vg] = target.id;
+      }
+      continue;
+    }
+
     // VGroup label wrapper for brace/angle — renames base obj to the VGroup var + sets label.
     // Angles emit `MathTex("…").move_to(…)`; older .py files used `_arc.get_tex("…")`.
     m =
@@ -1755,11 +1779,11 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       continue;
     }
 
-    // Dot (radius in export uses FRAME_X_RADIUS: radius = obj.width/2/sw * FRAME_X_RADIUS)
+    // Dot (radius = obj.width/2/sw * FRAME_WIDTH, the radius the preview draws)
     m = line.match(/^(\w+)\s*=\s*Dot\((?:radius=([\d.]+))?[^)]*(?:color=["']([^"']+)["'])?\)/);
     if (m) {
       const [, name, r, color] = m;
-      const size = r ? Math.round(((parseFloat(r) * 2) / FRAME_X_RADIUS) * sw) : 20;
+      const size = r ? Math.round(((parseFloat(r) * 2) / FRAME_WIDTH) * sw) : 20;
       const id = uid('obj');
       const obj: SceneObject = {
         id,

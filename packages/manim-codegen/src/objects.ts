@@ -28,6 +28,7 @@ import {
   FRAME_Y_RADIUS,
   GRADIENT_TYPES,
   ANNOTATION_TYPES,
+  ORIGIN_ANCHORED_TYPES,
   CODE_LANGUAGES,
 } from './constants.js';
 import type { SceneObject, GenerateOptions } from './types.js';
@@ -342,6 +343,7 @@ export function objectCode(
         `[${((p[0] / sw) * FRAME_WIDTH).toFixed(3)}, ${((-p[1] / sh) * FRAME_HEIGHT).toFixed(3)}, 0]`;
       lines.push(`${n}_l1 = Line(${pt(V)}, ${pt(P1)})`);
       lines.push(`${n}_l2 = Line(${pt(V)}, ${pt(P2)})`);
+      // The rays are part of the object, as in the preview.
       const ctor = o.rightAngle
         ? `RightAngle(${n}_l1, ${n}_l2)`
         : `Angle(${n}_l1, ${n}_l2, radius=${Number.isFinite(o.radius as number | undefined) ? o.radius : 0.6})`;
@@ -352,10 +354,11 @@ export function objectCode(
         const vtx = `${n}_l1.get_start()`;
         lines.push(`${n}_arc = ${ctor}`);
         lines.push(
-          `${n} = VGroup(${n}_arc, MathTex("${safeLatex(label)}").move_to(${vtx} + 1.6 * (${n}_arc.point_from_proportion(0.5) - ${vtx})))`
+          `${n} = VGroup(${n}_l1, ${n}_l2, ${n}_arc, MathTex("${safeLatex(label)}").move_to(${vtx} + 1.6 * (${n}_arc.point_from_proportion(0.5) - ${vtx})))`
         );
       } else {
-        lines.push(`${n} = ${ctor}`);
+        lines.push(`${n}_arc = ${ctor}`);
+        lines.push(`${n} = VGroup(${n}_l1, ${n}_l2, ${n}_arc)`);
       }
       if (hasFill) lines.push(`${n}.set_color(${fill})`);
       break;
@@ -474,7 +477,7 @@ export function objectCode(
     }
     case 'dot':
       lines.push(
-        `${n} = Dot(radius=${(((o.width as number) / 2 / sw) * FRAME_X_RADIUS).toFixed(3)}, color=${fill})`
+        `${n} = Dot(radius=${(((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3)}, color=${fill})`
       );
       break;
     case 'dot_grid': {
@@ -660,6 +663,10 @@ export function objectCode(
     if (gl && GRADIENT_TYPES.has(o.type)) lines.push(gl);
     for (const dl of dashedLines(n, o)) lines.push(dl);
     for (const sl of shadowLines(n, o, sw, sh)) lines.push(sl);
+    if (ORIGIN_ANCHORED_TYPES.has(o.type))
+      lines.push(
+        `${n}.add(VectorizedPoint(-${n}.get_corner(DL)), VectorizedPoint(-${n}.get_corner(UR)))`
+      );
     lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
     // Editor rotation is Konva's (clockwise-positive on the y-down canvas);
     // Manim's rotate() is counter-clockwise-positive, hence the minus.

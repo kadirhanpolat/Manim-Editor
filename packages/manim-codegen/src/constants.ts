@@ -77,6 +77,21 @@ export const SHADOW_TYPES: Set<string> = new Set([
 ]);
 export const ANNOTATION_TYPES: Set<string> = new Set(['surrounding_rect', 'underline', 'cross']);
 
+// Types built from points relative to the object's origin (x/y). The preview
+// draws them around that origin, but Manim's move_to/set_x/MoveAlongPath/
+// rotate/scale use the bounding-box center, so codegen mirrors the bounding
+// box through the origin with two invisible VectorizedPoints (see objects.ts).
+// `graph` is left out: Graph.add has graph-specific semantics.
+export const ORIGIN_ANCHORED_TYPES: Set<string> = new Set([
+  'polygon_free',
+  'bezier',
+  'brace',
+  'angle',
+  'vector_components',
+  'ray',
+  'coord_point',
+]);
+
 // Pygments language allowlist for the `code` object (inspector dropdown + codegen guard).
 // Invalid/missing language falls back to 'python' in objectCode.
 export const CODE_LANGUAGES: readonly string[] = [

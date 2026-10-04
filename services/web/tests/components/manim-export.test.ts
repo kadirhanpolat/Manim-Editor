@@ -143,6 +143,18 @@ describe('generator/parser — rotation direction', () => {
   });
 });
 
+describe('generator/parser — dot size', () => {
+  // The preview draws a dot of radius width/2 px; px → Manim units is
+  // /sw * FRAME_WIDTH (FRAME_X_RADIUS drew it at half size).
+  it('emits the radius the preview draws and round-trips the width', () => {
+    const project = makeProject([makeObj('obj1', 'dot', { width: 22, height: 22 })], []);
+    const script = generateManimScript(project);
+    expect(script).toContain(`Dot(radius=${((11 / SW) * (14 + 2 / 9)).toFixed(3)}`);
+    const parsed = parseManimScript(script, SW, SH);
+    expect(parsed.objects[0].width).toBe(22);
+  });
+});
+
 describe('generator/parser — image', () => {
   it('round-trips a raster image as image with its width preserved', () => {
     const project = makeProject(
