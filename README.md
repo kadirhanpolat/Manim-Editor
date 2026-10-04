@@ -153,7 +153,7 @@ The marketing site in `website/` deploys to Netlify via `netlify.toml`. Connect 
 
 ## Roadmap
 
-The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-8 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI) are implemented, and all CI jobs are green. The remaining work is render isolation limits (section 9), startup log collection and repair commands (section 10), the last localization leftovers (section 11), and template/education quality (section 12). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
+The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-9 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI, render isolation) are implemented, and all CI jobs are green. The remaining work is startup log collection and repair commands (section 10), the last localization leftovers (section 11), and template/education quality (section 12). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
 
 ---
 
@@ -403,6 +403,10 @@ All Docker containers run with **least-privilege non-root users**:
 
 **API hardening**: Helmet.js security headers, rate limiting on render endpoints (5 req/min/IP), input sanitization against injection. If Redis is unreachable, requests fail within about 3 s (`REDIS_CONNECT_TIMEOUT_MS`) with HTTP 503 instead of hanging.
 
+**Render isolation**: each render runs in its own process session under kernel limits (`services/renderer/isolation.py`): a wall clock, memory (`RLIMIT_DATA`), CPU time and output file size. The renderer containers also cap processes and threads (`pids: 512`), which stops fork and thread bombs from code-only scenes. Render output goes to temp files, and only the last 8 KB is kept, so a scene that prints without end cannot grow the worker's memory. When a limit stops a render, the dialog says which one, and the job stores a `failureReason` (`timeout`, `memory_limit`, `cpu_limit`, `file_size_limit`, `process_limit`, `crashed`, `killed`). Native thread pools (OpenMP/OpenBLAS/MKL) are capped at 2 threads per render, which matches the container's CPU quota and keeps their per-thread memory out of the limit on many-core hosts.
+
+Code-only mode runs your own Python inside the renderer container. That is expected for a local, single-user tool, and the container is not a sandbox against hostile code. The limits above make sure a buggy scene fails with a clear reason instead of hanging the worker or filling the disk.
+
 ### Render Export Options
 
 The render dialog offers **format** (MP4 / GIF / WebM / PNG Frames / WebM α), **resolution**, and **frame rate** selectors. Defaults (MP4 · 1920×1080 · 60 fps) produce the exact legacy `-qh` render. Values are enum-allowlisted in the API and mapped to manim flags via a fixed lookup (`services/renderer/render_args.py`) — never interpolated into argv.
@@ -423,6 +427,12 @@ GIF/WebM append `--format gif|webm`; PNG Frames uses `--format png` and the rend
 - `DATA_DIR` -- Shared volume path (default: `/data`)
 - `REDIS_URL` -- Redis connection (default: `redis://redis:6379`)
 - `PORT` -- API port (default: `3000`)
+- `RENDER_TIMEOUT_SECONDS` -- Wall-clock limit per render (default: `600`; `0` keeps the default, so a render can never run forever)
+- `RENDER_MEMORY_MB` -- Memory limit per render (default: `3072`; `0` disables)
+- `RENDER_CPU_SECONDS` -- CPU-time limit per render, a backstop if the worker dies (default: `1800`; `0` disables)
+- `RENDER_MAX_FILE_MB` -- Largest file a render may write (default: `4096`; `0` disables)
+
+Set them in the shell or a `.env` file before `docker compose up`; compose passes them to both renderer services.
 
 ---
 
@@ -479,7 +489,7 @@ a **non-blocking** job (a flaky browser run reports but doesn't gate every push)
 ### Renderer (Python)
 
 ```bash
-python -m pytest services/renderer/tests -q   # 7 tests: render args, history rotation, path safety, Dockerfile COPYs every worker import
+python -m pytest services/renderer/tests -q   # 44 tests: render args, history rotation, path safety, render limits (the 3 kernel-enforcement tests run on Linux only), Dockerfile COPYs every worker import
 ```
 
 CI runs these in the `python` job alongside ruff and black.
@@ -518,7 +528,17 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.28.0 (current)
+### v3.29.0 (current)
+
+Render isolation (roadmap section 9).
+
+- **Per-render limits**: every render now runs under a wall clock, a memory limit, a CPU-time limit and a maximum output file size. All four can be set through `RENDER_*` environment variables (see *Environment Variables*). Before this, only a fixed 10-minute timeout existed.
+- **Clear failure reasons**: a render stopped by a limit reports which limit it hit and how to raise it ("Render ran out of memory (limit 3072 MB)…"), and the job stores a `failureReason` code. Plain Manim errors still show the traceback.
+- **Bounded logs**: render stdout/stderr go to temp files instead of pipes, and only the last 8 KB is kept. A scene that prints in a loop no longer grows the worker's memory.
+- **Thread and fork bombs**: the renderer containers cap processes and threads at 512.
+- **Tests**: renderer pytest 7 → 44. The kernel-enforcement tests (memory, CPU, file size actually stop a child process) run in the Linux CI job. Verified end to end against the Docker stack with four runaway code-only scenes (memory hog, endless print, sleep, 2000 threads).
+
+### v3.28.0
 
 Fixes from real production use (a documentary built through the API). Every item was reproduced first, and the generated scenes were checked by rendering them in real Manim CE.
 

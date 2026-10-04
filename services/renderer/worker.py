@@ -8,15 +8,15 @@ import glob
 import json
 import os
 import shutil
-import subprocess
 import time
 import uuid
 import zipfile
 
 import redis
 from history import rotate_render_history
+from isolation import child_env, describe_failure, load_limits, run_limited, timeout_message
 from render_args import FORMAT_EXT, build_render_args, output_ext
-from safety import resolve_scene_file, terminate_process_tree
+from safety import resolve_scene_file
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
@@ -25,7 +25,9 @@ WORKER_ID = (
 )
 WORKER_KEY = f"render:worker:{WORKER_ID}"
 HEARTBEAT_INTERVAL = 5
-MAX_RENDER_SECONDS = 600
+# Per-render wall clock + kernel limits (RENDER_TIMEOUT_SECONDS, RENDER_MEMORY_MB,
+# RENDER_CPU_SECONDS, RENDER_MAX_FILE_MB); see isolation.py.
+LIMITS = load_limits(os.environ)
 
 # The renderer runs as root and writes render output to the shared /data volume.
 # Default umask (022) makes new dirs root:755, so the API container (runs as the
@@ -173,52 +175,51 @@ def render_job(payload: dict, job_id: str | None = None) -> dict:
 
     print(f"[render] Running: {' '.join(cmd)}")
 
-    process: subprocess.Popen[str] | None = None
     stdout_text = ""
-    stderr_text = ""
-    start_time = time.monotonic()
-
     try:
-        process = subprocess.Popen(
+        run = run_limited(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
             cwd=os.path.dirname(scene_file),
-            start_new_session=True,
+            limits=LIMITS,
+            should_cancel=lambda: cancel_requested(job_id),
+            on_tick=lambda: heartbeat(
+                "running", job_id, phase="rendering", projectId=project_id, sceneName=scene_name
+            ),
+            tick_seconds=HEARTBEAT_INTERVAL,
+            env=child_env(os.environ),
         )
-
-        while True:
-            try:
-                stdout_text, stderr_text = process.communicate(timeout=HEARTBEAT_INTERVAL)
-                break
-            except subprocess.TimeoutExpired:
-                if cancel_requested(job_id):
-                    terminate_process_tree(process)
-                    stdout_text, stderr_text = process.communicate()
-                    return {
-                        "ok": False,
-                        "canceled": True,
-                        "error": "Render canceled",
-                        "stdout": stdout_text[-8000:] if stdout_text else "",
-                        "stderr": stderr_text[-8000:] if stderr_text else "Render canceled",
-                    }
-                heartbeat(
-                    "running", job_id, phase="rendering", projectId=project_id, sceneName=scene_name
-                )
-                if time.monotonic() - start_time >= MAX_RENDER_SECONDS:
-                    terminate_process_tree(process)
-                    stdout_text, stderr_text = process.communicate()
-                    return {
-                        "ok": False,
-                        "error": "Render timeout (10 minutes exceeded)",
-                        "stdout": stdout_text[-8000:] if stdout_text else "",
-                        "stderr": (
-                            stderr_text[-8000:]
-                            if stderr_text
-                            else "Render timeout (10 minutes exceeded)"
-                        ),
-                    }
+        stdout_text, stderr_text = run.stdout, run.stderr
+        if run.stopped == "canceled":
+            return {
+                "ok": False,
+                "canceled": True,
+                "error": "Render canceled",
+                "stdout": stdout_text,
+                "stderr": stderr_text or "Render canceled",
+            }
+        if run.stopped == "timeout":
+            message = timeout_message(LIMITS)
+            return {
+                "ok": False,
+                "error": message,
+                "failureReason": "timeout",
+                "stdout": stdout_text,
+                "stderr": stderr_text or message,
+            }
+        failure = describe_failure(run.returncode, stderr_text, LIMITS)
+        if failure and failure[0] != "render_error":
+            # A resource limit stopped the render: say which one. A plain
+            # manim error keeps error="" so the dialog shows the traceback.
+            reason, message = failure
+            print(f"[render] {reason}: {message}")
+            return {
+                "ok": False,
+                "error": message,
+                "failureReason": reason,
+                "stdout": stdout_text,
+                "stderr": stderr_text,
+                "exitCode": run.returncode,
+            }
 
         # PNG sequence: zip the frame directory and return early
         if ext == "zip":
@@ -235,19 +236,19 @@ def render_job(payload: dict, job_id: str | None = None) -> dict:
                         zf.write(png, os.path.basename(png))
                 print(f"[render] PNG frames zipped to: {latest_link}")
                 return {
-                    "ok": process.returncode == 0,
-                    "stdout": stdout_text[-8000:] if stdout_text else "",
-                    "stderr": stderr_text[-8000:] if stderr_text else "",
+                    "ok": run.returncode == 0,
+                    "stdout": stdout_text,
+                    "stderr": stderr_text,
                     "outputPath": latest_link,
-                    "exitCode": process.returncode,
+                    "exitCode": run.returncode,
                 }
             # No PNG dir found - fall through to error path
             return {
                 "ok": False,
                 "error": f"PNG output directory not found in {media_dir}",
-                "stdout": stdout_text[-8000:] if stdout_text else "",
-                "stderr": stderr_text[-8000:] if stderr_text else "",
-                "exitCode": process.returncode,
+                "stdout": stdout_text,
+                "stderr": stderr_text,
+                "exitCode": run.returncode,
             }
 
         # Find the output video
@@ -271,20 +272,18 @@ def render_job(payload: dict, job_id: str | None = None) -> dict:
             rotate_render_history(media_dir, latest_link, ext)
 
         return {
-            "ok": process.returncode == 0,
-            "stdout": stdout_text[-8000:] if stdout_text else "",
-            "stderr": stderr_text[-8000:] if stderr_text else "",
+            "ok": run.returncode == 0,
+            "stdout": stdout_text,
+            "stderr": stderr_text,
             "outputPath": latest_link if output_video else None,
-            "exitCode": process.returncode,
+            "exitCode": run.returncode,
         }
 
     except Exception as e:
-        if process and process.poll() is None:
-            terminate_process_tree(process)
         return {
             "ok": False,
             "error": str(e),
-            "stdout": stdout_text[-8000:] if stdout_text else "",
+            "stdout": stdout_text,
             "stderr": str(e),
         }
 
@@ -295,6 +294,7 @@ def main():
     print(f"[renderer] Redis: {REDIS_URL}")
     print(f"[renderer] Data dir: {DATA_DIR}")
     print(f"[renderer] Worker id: {WORKER_ID}")
+    print(f"[renderer] Render limits: {LIMITS}")
 
     # Ensure base directories exist
     os.makedirs(os.path.join(DATA_DIR, "projects"), exist_ok=True)
@@ -366,6 +366,7 @@ def main():
                     "stderr": str(result.get("stderr") or ""),
                     "outputPath": str(result.get("outputPath") or ""),
                     "error": str(result.get("error") or ""),
+                    "failureReason": str(result.get("failureReason") or ""),
                     "workerId": WORKER_ID,
                 },
             )

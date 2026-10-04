@@ -109,6 +109,6 @@ jobs:
         # safety, and every worker import being COPY'd into the image
         run: python -m pytest services/renderer/tests -q
       - name: Ruff
-        run: ruff check services/renderer/worker.py services/audio/worker.py services/web/tests/helpers/ast_check.py
+        run: ruff check services/renderer/worker.py services/renderer/isolation.py services/audio/worker.py services/web/tests/helpers/ast_check.py
       - name: Black
-        run: black --check services/renderer/worker.py services/audio/worker.py services/web/tests/helpers/ast_check.py
+        run: black --check services/renderer/worker.py services/renderer/isolation.py services/audio/worker.py services/web/tests/helpers/ast_check.py

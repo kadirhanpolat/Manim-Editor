@@ -12,7 +12,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 packages/manim-codegen/  # Shared Manim Python codegen (single source of truth)
 ```
 
-**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-8 done; 9 render isolation, 10 startup/log tooling, 11 localization leftovers, 12 template quality open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
+**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-9 done; 10 startup/log tooling, 11 localization leftovers, 12 template quality open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
 
 ## Running
 
@@ -31,7 +31,7 @@ cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 72 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
 npm test --workspace packages/manim-codegen  # 43 codegen tests
-python -m pytest services/renderer/tests -q   # 7 renderer tests (render args, history, path safety, Dockerfile COPYs every worker import) — CI python job
+python -m pytest services/renderer/tests -q   # 44 renderer tests (render args, history, path safety, render limits — 3 kernel-enforcement tests Linux-only, Dockerfile COPYs every worker import) — CI python job
 # All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
@@ -77,7 +77,7 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `services/api/src/routes/audio.ts` + `services/api/src/ws.ts` | Audio upload/TTS/callback/delete endpoints; WebSocket push for render+audio events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
 | `services/api/src/queue.ts` | Redis client (`getRedisClient` bounded by `REDIS_CONNECT_TIMEOUT_MS`, offline queue off), `RedisUnavailableError` → 503, `getHealthReport` for `/health`, render/audio job queue helpers |
-| `services/renderer/{worker,safety,history,render_args}.py` | Render worker + path clamping/process-tree kill, render-history rotation, argv mapping. **Every sibling module needs a `COPY` in `services/renderer/Dockerfile`** (`tests/test_dockerfile.py`) |
+| `services/renderer/{worker,safety,history,render_args,isolation}.py` | Render worker + path clamping/process-tree kill, render-history rotation, argv mapping, per-render limits (`run_limited`, `describe_failure` → job `failureReason`). **Every sibling module needs a `COPY` in `services/renderer/Dockerfile`** (`tests/test_dockerfile.py`) |
 | `services/web/src/components/RenderOptionsDialog.vue` + `services/renderer/render_args.py` | Render export options (format/resolution/fps) — zod allowlist in `compiler/validator.ts` (`parseRenderOptions`), fixed-dict argv mapping |
 | `services/web/src/components/stage/ContextMenu.vue` | Canvas right-click menu (object + empty-canvas variants), calls store actions |
 
@@ -306,6 +306,7 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 - **Path traversal:** every route param interpolated into a filesystem path (`id`/`projectId`/`filename`/`audioId`) is validated by `isSafeSegment` (`services/api/src/util/paths.ts`) via `router.param` guards on each router → a `..`/separator/NUL/over-long value gets a 400 before any fs access (param callbacks run before route middleware incl. multer). Unit-tested in `services/api/tests/paths.test.ts`.
 - **Redis availability:** a down/unreachable Redis makes requests fail fast with HTTP 503 (never hang); `/health` returns `{status, redis}` and 503 when degraded; the compose `redis` service has `restart: unless-stopped`.
 - **Input validation:** project payloads go through the zod schema (`compiler/validator.ts`, tested in `compiler.test.ts`); asset upload enforces a mime allowlist; TTS checks required fields. Error responses are `{ error: '<message>' }` (no stack traces).
+- **Render isolation:** each render runs via `run_limited` (`services/renderer/isolation.py`): own session, wall clock + `RLIMIT_DATA`/`RLIMIT_CPU`/`RLIMIT_FSIZE` from `RENDER_TIMEOUT_SECONDS`/`RENDER_MEMORY_MB`/`RENDER_CPU_SECONDS`/`RENDER_MAX_FILE_MB` (defaults 600 s/3072 MB/1800 s/4096 MB), output to temp files with an 8 KB tail, `child_env` caps OMP/OPENBLAS/MKL threads at 2 (host-core-sized pools would eat `RLIMIT_DATA`), `describe_failure` reads only the last 3 stderr lines; renderer containers have `pids: 512` (root ignores `RLIMIT_NPROC`). CPython ignores SIGXFSZ → a file-size hit shows as `OSError: File too large`, not a signal. Limits protect availability, not confidentiality — code mode is not a sandbox (see roadmap §9 threat model).
 - **Argument injection:** `render-code` validates `sceneName` with `isSafeSceneName` (a Python class identifier) before it's forwarded to the `manim` CLI as an argv — list-form `subprocess.run` blocks shell injection, but an unvalidated value (e.g. `--config_file=…`) would be read as a manim flag.
 - **Intentionally NOT added (YAGNI for a local app):** endpoint auth, CSP, CORS origin restriction (`cors()` stays open), per-route limits beyond the existing render rate-limit. Code-mode runs the user's own Python via the renderer — expected for a single-user local tool, not a sandbox-escape vuln in this model.
 - Containers run non-root (web=nginx, api=node); Helmet headers + render rate-limit are applied in `services/api`.

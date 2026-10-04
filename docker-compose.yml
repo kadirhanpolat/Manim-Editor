@@ -68,6 +68,12 @@ services:
     environment:
       - DATA_DIR=/data
       - REDIS_URL=redis://redis:6379
+      # Per-render limits (services/renderer/isolation.py). 0 disables a
+      # kernel limit; the wall clock can't be disabled.
+      - RENDER_TIMEOUT_SECONDS=${RENDER_TIMEOUT_SECONDS:-600}
+      - RENDER_MEMORY_MB=${RENDER_MEMORY_MB:-3072}
+      - RENDER_CPU_SECONDS=${RENDER_CPU_SECONDS:-1800}
+      - RENDER_MAX_FILE_MB=${RENDER_MAX_FILE_MB:-4096}
     volumes:
       - manim_motion_data:/data
     depends_on:
@@ -86,6 +92,9 @@ services:
         limits:
           cpus: '2'
           memory: 4G
+          # Caps processes+threads in the container (fork bombs from code-only
+          # scenes). RLIMIT_NPROC can't do this: the worker runs as root.
+          pids: 512
       restart_policy:
         condition: on-failure
         delay: 10s
@@ -96,6 +105,12 @@ services:
     environment:
       - DATA_DIR=/data
       - REDIS_URL=redis://redis:6379
+      # Per-render limits (services/renderer/isolation.py). 0 disables a
+      # kernel limit; the wall clock can't be disabled.
+      - RENDER_TIMEOUT_SECONDS=${RENDER_TIMEOUT_SECONDS:-600}
+      - RENDER_MEMORY_MB=${RENDER_MEMORY_MB:-3072}
+      - RENDER_CPU_SECONDS=${RENDER_CPU_SECONDS:-1800}
+      - RENDER_MAX_FILE_MB=${RENDER_MAX_FILE_MB:-4096}
     volumes:
       - manim_motion_data:/data
     depends_on:
@@ -114,6 +129,9 @@ services:
         limits:
           cpus: '2'
           memory: 4G
+          # Caps processes+threads in the container (fork bombs from code-only
+          # scenes). RLIMIT_NPROC can't do this: the worker runs as root.
+          pids: 512
       restart_policy:
         condition: on-failure
         delay: 10s

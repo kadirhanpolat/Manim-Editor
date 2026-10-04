@@ -26,6 +26,7 @@ RUN python -c "from manim_fonts import RegisterFont; [RegisterFont(f).__enter__(
 # Copy worker script
 COPY render_args.py /app/render_args.py
 COPY history.py /app/history.py
+COPY isolation.py /app/isolation.py
 COPY safety.py /app/safety.py
 COPY worker.py /app/worker.py
 

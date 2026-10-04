@@ -1,6 +1,6 @@
 # Manim Motion Editor Production Readiness Roadmap
 
-**Date:** 2026-06-29 (last updated 2026-10-04)
+**Date:** 2026-06-29 (last updated 2026-10-04, section 9 done)
 **Status:** Active
 **Purpose:** Turn the current feature-rich editor into a more reliable production tool.
 
@@ -8,7 +8,7 @@
 
 The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
 
-Sections 1-8 below already have implementation notes or shipped work. The remaining planned work is concentrated in sections 9-12.
+Sections 1-9 below already have implementation notes or shipped work. The remaining planned work is concentrated in sections 10-12.
 
 **2026-10-04 update:** a bug report from real production use (a documentary built through the API) was worked through: seven render-correctness bugs were fixed (see the notes tagged *EDITOR_FINDINGS* below and the README v3.28.0 changelog), the renderer image was repaired, and every CI job on `main` is green again for the first time since June.
 
@@ -215,6 +215,11 @@ The next development stage should not primarily add more object types. The highe
 - Render worker timeouts kill the whole spawned process group, not just the top-level process.
 - The renderer image now actually ships `safety.py` (the worker crashed at startup with `ModuleNotFoundError` after a rebuild); `services/renderer/tests/test_dockerfile.py` asserts every module the worker imports is COPY'd, and CI now runs the renderer pytest suite.
 - A Redis outage now degrades to HTTP 503 instead of tying up request handlers indefinitely.
+- **Resource limits (2026-10-04):** `services/renderer/isolation.py` runs each render under a wall clock plus kernel rlimits: `RLIMIT_DATA` for memory (not `RLIMIT_AS`, which numpy and cairo address-space reservations trip early), `RLIMIT_CPU` (soft limit, then a hard limit 5 s later) and `RLIMIT_FSIZE`. All four come from `RENDER_TIMEOUT_SECONDS` / `RENDER_MEMORY_MB` / `RENDER_CPU_SECONDS` / `RENDER_MAX_FILE_MB`, with defaults of 600 s, 3072 MB, 1800 s and 4096 MB. OpenMP/OpenBLAS/MKL pools are capped at 2 threads, because they size themselves from the host's cores, not the container quota, and their stacks would count against `RLIMIT_DATA`. The renderer containers add `pids: 512`; `RLIMIT_NPROC` would not work because the worker runs as root.
+- Output goes to temp files and only an 8 KB tail is kept, so the worker's memory no longer grows with the scene's output.
+- A limit hit is classified by `describe_failure` into a `failureReason` code on the job, with a message that names the limit. A plain Manim error keeps `error=""` so the dialog still shows the traceback.
+- Verified end to end on the Docker stack: a 10 GB allocation gives `memory_limit` in 4 s; an endless print gives `file_size_limit` with the worker at 20 MB RSS; `sleep(600)` gives `timeout`; 2000 threads are refused by the pids cap.
+- **Code-only threat model (reviewed):** code mode executes the user's own Python as root inside the renderer container, with the shared `/data` volume mounted read-write. Under the local, single-user model this is accepted: the user already controls the machine. The limits above protect availability (no hung worker, no full disk, no OOM of the whole renderer). They do not protect confidentiality against hostile code. Running untrusted scenes would need a per-job throwaway container (no network, read-only project mount, non-root user), which is out of scope for a local tool.
 
 ### 10. Startup and Support Experience
 
