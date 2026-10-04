@@ -1,6 +1,6 @@
 # Manim Motion Editor Production Readiness Roadmap
 
-**Date:** 2026-06-29 (last updated 2026-10-04, section 9 done)
+**Date:** 2026-06-29 (last updated 2026-10-04: sections 9-10 done, 12 partly)
 **Status:** Active
 **Purpose:** Turn the current feature-rich editor into a more reliable production tool.
 
@@ -8,7 +8,7 @@
 
 The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
 
-Sections 1-9 below already have implementation notes or shipped work. The remaining planned work is concentrated in sections 10-12.
+Sections 1-10 below already have implementation notes or shipped work; section 12 is partly done. The remaining planned work is section 11 (localization) and the rest of section 12.
 
 **2026-10-04 update:** a bug report from real production use (a documentary built through the API) was worked through: seven render-correctness bugs were fixed (see the notes tagged *EDITOR_FINDINGS* below and the README v3.28.0 changelog), the renderer image was repaired, and every CI job on `main` is green again for the first time since June.
 
@@ -246,6 +246,18 @@ The next development stage should not primarily add more object types. The highe
 **Implemented so far:**
 - `start.bat` checks the relevant launch port before opening the browser.
 - `start.bat` falls back to editor-only mode when Docker is unavailable.
+- **Support tooling (2026-10-04):** `scripts/support.mjs` (`npm run support -- …`, or `start.bat doctor|logs|repair`).
+  - `doctor` checks Docker CLI/engine, the 8758/3000 ports (published by the stack vs. another program), every service's state and health, API → Redis, and the render workers online/stale. It also scans the recent logs for known signatures (`ERR_MODULE_NOT_FOUND`, missing `tsconfig.base.json`, renderer `ModuleNotFoundError`/`pkg_resources`, port binding). Every finding comes with its fix command, and the exit code is 1 on a problem.
+  - `logs` writes one redacted bundle to `support-logs/`: the doctor report, docker version, compose ps, `/health`, the render queue, and the last 300 lines per service.
+  - `repair node-modules|workers|redis` runs fixed argv lists. A test guarantees that no repair removes the data or redis volumes. `node-modules` asks before stopping the stack.
+  - The decision logic is pure (`scripts/lib/support.mjs`, 23 `node --test` cases, new CI step). All three repairs and the failure diagnoses were exercised against the live stack.
+- `start.bat` fixes:
+  - The "engine not running" branch never ran: `%errorlevel%` was expanded inside a parenthesised block, so it was stale.
+  - It now also checks the API port and names the program/PID holding a busy port.
+  - It opens the editor when the stack is already up, instead of failing on the stack's own ports.
+  - It points to `doctor`/`logs` when compose exits with an error. `*.bat` files are now checked out CRLF.
+- Render-queue stats no longer count idle workers whose heartbeat stopped (keys of removed containers live until their 300 s TTL). After a rebuild the dialog showed 6 workers instead of 2.
+- CI now also runs the codegen tests (they were not in any job).
 
 ### 11. Encoding and Language Consistency
 

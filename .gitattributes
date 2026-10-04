@@ -20,3 +20,6 @@
 *.woff2 binary
 *.ttf   binary
 *.otf   binary
+
+# cmd.exe mis-handles goto/call labels in LF-only batch files
+*.bat text eol=crlf

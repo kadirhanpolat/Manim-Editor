@@ -10,7 +10,9 @@
     "format:check": "prettier --check \"services/**/*.{js,ts,vue,json,css}\" \"packages/**/*.{js,ts,json}\" \"e2e/**/*.{js,ts,json}\"",
     "typecheck": "npm run build:codegen && vue-tsc -p services/web/tsconfig.json --noEmit && tsc -p services/api/tsconfig.json --noEmit",
     "build:codegen": "tsc -p packages/manim-codegen/tsconfig.json",
-    "smoke:fullstack": "node scripts/full-stack-smoke.mjs"
+    "smoke:fullstack": "node scripts/full-stack-smoke.mjs",
+    "support": "node scripts/support.mjs",
+    "test:scripts": "node --test scripts/tests/support.test.mjs"
   },
   "workspaces": [
     "packages/*",

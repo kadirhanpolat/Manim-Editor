@@ -30,6 +30,10 @@ jobs:
         run: npm test --workspace services/web
       - name: API tests
         run: npm test --workspace services/api
+      - name: Codegen tests
+        run: npm test --workspace packages/manim-codegen
+      - name: Support script tests
+        run: npm run test:scripts
 
   docker-smoke:
     runs-on: ubuntu-latest

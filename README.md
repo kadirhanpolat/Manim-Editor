@@ -131,7 +131,17 @@ Open **http://localhost:8758** in your browser. Everything works out of the box 
 
 ### Windows Launcher
 
-Run `start.bat` from the repo root on Windows. It checks Docker availability and port `8758`, then launches either the full Docker stack or editor-only mode.
+Run `start.bat` from the repo root on Windows. It checks that Docker is installed and its engine is running, and that ports `8758` (editor) and `3000` (API) are free. A busy port is reported with the program holding it. Then it launches the full Docker stack, or the editor-only mode when Docker is unavailable. If the stack is already running, it just opens the editor.
+
+The same launcher runs the support tools (they need Node.js):
+
+```bat
+start.bat doctor          :: what is wrong, and the command that fixes it
+start.bat logs            :: one shareable log file in support-logs\
+start.bat repair workers  :: known fixes: node-modules | workers | redis
+```
+
+On any OS: `npm run support -- doctor|logs|repair <name>`.
 
 ### Editor Only (No Docker)
 
@@ -153,7 +163,7 @@ The marketing site in `website/` deploys to Netlify via `netlify.toml`. Connect 
 
 ## Roadmap
 
-The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-9 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI, render isolation) are implemented, and all CI jobs are green. The remaining work is startup log collection and repair commands (section 10), the last localization leftovers (section 11), and template/education quality (section 12). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
+The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-10 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI, render isolation, startup/support tooling) are implemented, and all CI jobs are green. The remaining work is the last localization leftovers (section 11) and the rest of template/education quality (section 12: narrative timing, camera polish, a science-documentary pack). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
 
 ---
 
@@ -498,13 +508,48 @@ CI runs these in the `python` job alongside ruff and black.
 
 ## Troubleshooting
 
+**Start with `npm run support -- doctor`** (Windows: `start.bat doctor`). It checks:
+- that Docker is installed and its engine is running;
+- the editor and API ports (and who holds them);
+- every service's state and health;
+- that the API can reach Redis, and how many render workers are online;
+- the recent logs, for known failure signatures.
+
+Every problem it finds comes with the command that fixes it. Typical output:
+
+```
+OK    Docker engine is running
+OK    Port 8758 is served by the stack (the editor)
+FAIL  renderer-2 is not running (exited)
+       → docker compose up -d renderer-2   (then: docker compose logs renderer-2)
+FAIL  The API cannot reach Redis (renders will fail with 503)
+       → npm run support -- repair redis
+```
+
+**Known fixes** (`npm run support -- repair <name>`). None of them touch your projects, renders, assets or queued jobs:
+
+| Repair | Fixes |
+|--------|-------|
+| `node-modules` | api crashes with `ERR_MODULE_NOT_FOUND` after a dependency change (stale `root_node_modules` volume). Asks before it stops the stack. |
+| `workers` | a render worker crashed or hangs (e.g. `ModuleNotFoundError` after an update) — rebuilds and recreates both renderers |
+| `redis` | renders fail with HTTP 503 / `/health` says `degraded` |
+
+**Asking for help:** `npm run support -- logs` writes a single file to `support-logs/`. It contains:
+- the doctor report;
+- the Docker version and the services' state;
+- the API health and queue state;
+- the last 300 lines of every service's log.
+
+Values that look like secrets are redacted. Attach that file.
+
 | Problem | Solution |
 |---------|----------|
 | **Render fails** | Check `docker compose logs renderer` for Manim errors. Ensure all services are running: `docker compose ps` |
 | **API not reachable** | Run `curl http://localhost:3000/health` -- should return `{"status":"ok","redis":"ok"}`. Check `docker compose logs api` |
 | **Render returns 503 / `/health` says `degraded`** | Redis is down: `docker compose up -d redis` (it restarts with Docker from now on) |
 | **Renderer exits at startup with `ModuleNotFoundError`** | The image is missing a worker module. Rebuild with `docker compose up -d --build renderer renderer-2`; `python -m pytest services/renderer/tests` checks the Dockerfile copies every import |
-| **`start.bat` says a port is busy** | Stop the process using the reported port (`8758` for Docker, `5173` for editor-only) and run `start.bat` again |
+| **`start.bat` says a port is busy** | It names the program and PID holding the port (`8758` editor, `3000` API, `5173` editor-only). Stop it (Task Manager → Details) and run `start.bat` again |
+| **Render limits** (`timeout`, `memory_limit`, …) | The render dialog says which limit stopped the render; raise it with the `RENDER_*` variables (see *Environment Variables*) |
 | **Images not loading** | Upload via the sidebar (stored as base64). Assets auto-sync to server on render |
 | **Playback stutters** | Reduce morph quality in clip properties. Close DevTools. Use Chrome/Edge for best performance |
 
@@ -530,7 +575,7 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ### v3.29.0 (current)
 
-Render isolation (roadmap section 9) and a template-quality pass (section 12) that rendered every template and compared it with the preview.
+Render isolation (roadmap section 9), support tooling (section 10) and a template-quality pass (section 12) that rendered every template and compared it with the preview.
 
 **Preview and render now agree on:**
 - **Rotation direction**: rotated objects, Rotate clips and rotation keyframes used to render mirrored. The editor's rotation turns clockwise and Manim's turns counter-clockwise, so codegen now negates the angle.
@@ -556,7 +601,18 @@ Render isolation (roadmap section 9) and a template-quality pass (section 12) th
 - **Thread and fork bombs**: the renderer containers cap processes and threads at 512.
 - **Verified**: the kernel-enforcement tests (memory, CPU, file size actually stop a child process) run in the Linux CI job. Verified end to end against the Docker stack with four runaway code-only scenes (memory hog, endless print, sleep, 2000 threads).
 
-**Tests**: web unit 800 → 839, codegen 43 → 57, renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
+**Support tooling:**
+- **`doctor`**: `npm run support -- doctor` (`start.bat doctor`) tells you what is wrong and the command that fixes it. It checks Docker, the ports, every service, Redis, the render workers and known log signatures.
+- **`logs`**: writes one shareable log bundle, with secrets redacted.
+- **`repair node-modules|workers|redis`**: runs a known fix. Your projects, renders and assets are never touched.
+- **`start.bat`**:
+  - It now really detects a stopped Docker engine. A batch `%errorlevel%` bug had hidden that branch.
+  - It also checks the API port, and names the program holding a busy port.
+  - When the stack is already running, it just opens the editor.
+- **Worker count**: the render dialog no longer counts workers from removed containers. After a rebuild it showed 6 workers instead of 2.
+- **CI**: now also runs the codegen tests and the support-tool tests.
+
+**Tests**: web unit 800 → 839, codegen 43 → 57, api 72 → 73, support tools 23 (new), renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
 
 ### v3.28.0
 

@@ -302,6 +302,8 @@ export async function cancelRenderJob(jobId: string): Promise<CancelRenderJobRes
   };
 }
 
+const IDLE_WORKER_GONE_MS = 30_000;
+
 /**
  * Get render queue stats for observability in the UI.
  */
@@ -319,11 +321,14 @@ export async function getRenderQueueStats(): Promise<RenderQueueStats> {
     const worker = await redis.hGetAll(key);
     if (!worker || Object.keys(worker).length === 0) continue;
 
-    workersOnline++;
-    if (worker.status === 'running') busyWorkers++;
-
     const heartbeatMs = Number(worker.heartbeatMs ?? 0);
     const ageMs = heartbeatMs > 0 ? now - heartbeatMs : Number.POSITIVE_INFINITY;
+    // An idle worker heartbeats every ~5 s; a silent idle key is a removed
+    // container whose key has not expired yet (300 s TTL), not a worker.
+    if (worker.status === 'idle' && ageMs > IDLE_WORKER_GONE_MS) continue;
+
+    workersOnline++;
+    if (worker.status === 'running') busyWorkers++;
     if (ageMs > 90_000 && worker.status !== 'idle') staleWorkers++;
   }
 

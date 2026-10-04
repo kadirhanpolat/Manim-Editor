@@ -21,3 +21,6 @@ __pycache__/
 *.pyc
 # Manim LaTeX cache written when manim runs with services/web as cwd
 services/web/media/
+
+# Support bundles written by `npm run support -- logs`
+support-logs/

@@ -48,4 +48,21 @@ describe('render queue stats', () => {
       staleWorkers: 1,
     });
   });
+
+  it('does not count idle workers whose heartbeat stopped (removed containers)', async () => {
+    // A recreated renderer container gets a new hostname/worker id; the old
+    // idle key lingers until its 300 s TTL. Idle workers heartbeat every ~5 s.
+    keys.mockResolvedValue(['render:worker:live', 'render:worker:gone']);
+    hGetAll.mockImplementation(async (key: string) => ({
+      workerId: key,
+      status: 'idle',
+      heartbeatMs: String(Date.now() - (key.endsWith('gone') ? 60_000 : 1_000)),
+    }));
+    const { getRenderQueueStats } = await import('../src/queue.js');
+    await expect(getRenderQueueStats()).resolves.toMatchObject({
+      workersOnline: 1,
+      busyWorkers: 0,
+      staleWorkers: 0,
+    });
+  });
 });

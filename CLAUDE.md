@@ -12,7 +12,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 packages/manim-codegen/  # Shared Manim Python codegen (single source of truth)
 ```
 
-**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-9 done; 10 startup/log tooling, 11 localization leftovers, 12 template quality partly done — visual pass + parity fixes landed, narrative/camera polish open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
+**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-10 done; 11 localization leftovers open, 12 template quality partly done — visual pass + parity fixes landed, narrative/camera polish open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
 
 ## Running
 
@@ -29,8 +29,9 @@ docker compose --profile coqui up      # + Coqui TTS service
 cd services/web && npm run test:unit    # 839 unit tests (store, components, export, template geometry, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
-npm test --workspace services/api       # 72 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
+npm test --workspace services/api       # 73 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
 npm test --workspace packages/manim-codegen  # 57 codegen tests
+npm run test:scripts                    # 23 support-tool tests (node --test scripts/tests/) — CI node job
 python -m pytest services/renderer/tests -q   # 44 renderer tests (render args, history, path safety, render limits — 3 kernel-enforcement tests Linux-only, Dockerfile COPYs every worker import) — CI python job
 # All must pass before any commit.
 
@@ -316,6 +317,10 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 - Containers run non-root (web=nginx, api=node); Helmet headers + render rate-limit are applied in `services/api`.
 
 ## Build / Environment Gotchas
+
+- **Support tooling first**: `npm run support -- doctor` (or `start.bat doctor`) diagnoses Docker/ports/services/Redis/workers + known log signatures; `npm run support -- logs` → redacted bundle in `support-logs/` (gitignored); `npm run support -- repair node-modules|workers|redis` (fixed argv, never touches `*_data` volumes — tested). Pure logic in `scripts/lib/support.mjs`; add new known log signatures to `KNOWN_ISSUES` there.
+- **`tsx watch` does not reload the api on Windows bind mounts** (Docker Desktop forwards no file events): after editing `services/api/src`, run `docker compose restart api`.
+- **`*.bat` are checked out CRLF** (`.gitattributes`): cmd.exe mis-handles `goto`/`call :label` in LF-only batch files. In batch, never read `%errorlevel%` inside a `( … )` block (expanded at parse time) — use `if errorlevel 1`.
 
 - **Vue 3 `<template v-for>` keys** must sit on the `<template>` tag, not child elements — a pure prod build (`npm run build`) errors otherwise. Watch in `MenuBar.vue` / `StageCanvas.vue`.
 - **Renderer Dockerfile COPYs each module explicitly**: adding a sibling import to `services/renderer/worker.py` (e.g. `history.py`, `safety.py`) needs a matching `COPY` line, or the rebuilt image dies at startup with `ModuleNotFoundError` and renders hang "waiting for worker". Guarded by `services/renderer/tests/test_dockerfile.py`.
