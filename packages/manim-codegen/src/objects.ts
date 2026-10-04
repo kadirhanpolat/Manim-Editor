@@ -573,7 +573,8 @@ export function objectCode(
             const lo = Math.min(xMin ?? 0, xMax ?? 0);
             const hi = Math.max(xMin ?? 0, xMax ?? 0);
             const rawX = Number.isFinite(g.tangent.x) ? (g.tangent.x as number) : (lo + hi) / 2;
-            const tx = Math.max(lo, Math.min(hi, rawX));
+            // Number(toFixed): no exponent notation (1e-7) the parser can't read.
+            const tx = Number(Math.max(lo, Math.min(hi, rawX)).toFixed(4));
             // TangentLine's alpha is a proportion of ARC LENGTH, not of x, so
             // locate the graph point for x and convert it to that proportion.
             const alpha = `${gn}.proportion_from_point(${n}.i2gp(${tx}, ${gn}))`;

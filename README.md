@@ -581,7 +581,7 @@ Render isolation (roadmap section 9), support tooling (section 10) and a templat
 - **Rotation direction**: rotated objects, Rotate clips and rotation keyframes used to render mirrored. The editor's rotation turns clockwise and Manim's turns counter-clockwise, so codegen now negates the angle.
 - **Where point-built objects sit**: angles, braces, free polygons, bezier curves, rays, coordinate points and vector components rendered 40–155 px away from where the canvas drew them. They are now anchored at their origin (< 0.1 px, measured in Manim).
 - **Angles**: the canvas drew a half-size arc going the long way round. It now shows the arc Manim renders, and the render now includes the two rays the canvas always showed.
-- **Dots** render at the size the canvas shows (they were half size).
+- **Dots** render at the size the canvas shows (they were half size). A `.py` exported before this release re-imports its dots at half size; adjust their width once.
 - **Graph tangents** touch the curve at the x you choose: tangent at x = 1 on x² now has slope 2, where it used to sit at x ≈ 1.39.
 - **Riemann rectangles** are translucent in the render too, so the curve and the area stay visible.
 - **NumberPlane step** edits reach the render.
