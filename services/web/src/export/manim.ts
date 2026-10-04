@@ -368,7 +368,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       return {
         type: 'rotate',
         sourceId: id,
-        params: { targetRotation: Math.round((parseFloat(m2[2]) * 180) / Math.PI) },
+        params: { targetRotation: Math.round((-parseFloat(m2[2]) * 180) / Math.PI) || 0 },
       };
     }
     // Indicate(obj, color="#hex", scale_factor=f)
@@ -2574,7 +2574,8 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     if (m) {
       const id = varMap[m[1]];
       if (id && objById[id])
-        objById[id].rotation = Math.round(((parseFloat(m[2]) * 180) / Math.PI) * 10) / 10;
+        // Manim rotate() is counter-clockwise-positive; editor rotation is clockwise.
+        objById[id].rotation = Math.round(((-parseFloat(m[2]) * 180) / Math.PI) * 10) / 10 || 0;
       continue;
     }
 
@@ -2780,7 +2781,7 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
           startTime: ct,
           duration: dur,
           easing: 'ease_in_out',
-          params: { targetRotation: Math.round((parseFloat(m[2]) * 180) / Math.PI) },
+          params: { targetRotation: Math.round((-parseFloat(m[2]) * 180) / Math.PI) || 0 },
         });
         ct += dur;
       }

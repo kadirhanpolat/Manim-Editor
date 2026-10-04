@@ -23,7 +23,8 @@ export function _kfPropSet(
     case 'opacity':
       return `${n}.animate.set_opacity(${Math.max(0, Math.min(1, value)).toFixed(4)})`;
     case 'rotation':
-      return `${n}.animate.rotate(${((value * Math.PI) / 180).toFixed(4)})`;
+      // Editor degrees are clockwise-positive; Manim's rotate() is not.
+      return `${n}.animate.rotate(${((-value * Math.PI) / 180).toFixed(4)})`;
     case 'scaleX':
       return `${n}.animate.stretch_to_fit_width(${value.toFixed(4)})`;
     case 'scaleY':

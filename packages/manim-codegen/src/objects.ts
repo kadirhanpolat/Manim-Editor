@@ -588,8 +588,10 @@ export function objectCode(
     case 'numberplane': {
       const xr = (o.xRange as number[] | undefined) || [-5, 5, 1];
       const yr = (o.yRange as number[] | undefined) || [-3, 3, 1];
-      const xs = (o.xStep as number | undefined) || 1;
-      const ys = (o.yStep as number | undefined) || 1;
+      // The inspector edits xRange[2]/yRange[2]; xStep/yStep are the legacy
+      // fields (store default 1), kept only as a fallback.
+      const xs = xr[2] || (o.xStep as number | undefined) || 1;
+      const ys = yr[2] || (o.yStep as number | undefined) || 1;
       lines.push(
         `${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)})`
       );
@@ -659,7 +661,9 @@ export function objectCode(
     for (const dl of dashedLines(n, o)) lines.push(dl);
     for (const sl of shadowLines(n, o, sw, sh)) lines.push(sl);
     lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
-    if (o.rotation) lines.push(`${n}.rotate(${((o.rotation * Math.PI) / 180).toFixed(4)})`);
+    // Editor rotation is Konva's (clockwise-positive on the y-down canvas);
+    // Manim's rotate() is counter-clockwise-positive, hence the minus.
+    if (o.rotation) lines.push(`${n}.rotate(${((-o.rotation * Math.PI) / 180).toFixed(4)})`);
   }
   return lines;
 }

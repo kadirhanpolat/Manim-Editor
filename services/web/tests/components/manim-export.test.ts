@@ -57,6 +57,24 @@ describe('generator — numberplane', () => {
     const script = generateManimScript(project);
     expect(script).toContain('NumberPlane(x_range=[-6, 6, 1], y_range=[-4, 4, 1]');
   });
+
+  it('takes the grid step from xRange/yRange[2], which the inspector edits', () => {
+    // The inspector's "X Step" writes xRange[2]; the legacy xStep field (store
+    // default 1) must not override it.
+    const project = makeProject(
+      [
+        makeObj('obj1', 'numberplane', {
+          xRange: [-1.5, 1.5, 0.5],
+          yRange: [-1, 1, 0.25],
+          xStep: 1,
+          yStep: 1,
+        }),
+      ],
+      []
+    );
+    const script = generateManimScript(project);
+    expect(script).toContain('NumberPlane(x_range=[-1.5, 1.5, 0.5], y_range=[-1, 1, 0.25]');
+  });
 });
 
 describe('generator/parser — latex', () => {
@@ -92,6 +110,36 @@ describe('generator/parser — svg_asset', () => {
     expect(parsed.objects).toHaveLength(1);
     expect(parsed.objects[0].type).toBe('svg_asset');
     expect(parsed.objects[0].width).toBe(480);
+  });
+});
+
+describe('generator/parser — rotation direction', () => {
+  // Editor rotation is clockwise-positive (Konva); Manim rotate() is
+  // counter-clockwise-positive, so the script carries the negated angle.
+  it('round-trips a clockwise object rotation', () => {
+    const project = makeProject([makeObj('obj1', 'rectangle', { rotation: 30 })], []);
+    const script = generateManimScript(project);
+    expect(script).toContain('.rotate(-0.5236)');
+    const parsed = parseManimScript(script, SW, SH);
+    expect(parsed.objects[0].rotation).toBe(30);
+  });
+
+  it('round-trips a clockwise rotate clip', () => {
+    const clip = {
+      id: 'c1',
+      type: 'rotate',
+      objectId: 'obj1',
+      startTime: 0,
+      duration: 1,
+      easing: 'linear',
+      params: { targetRotation: 90 },
+    };
+    const project = makeProject([makeObj('obj1', 'rectangle')], [clip]);
+    const script = generateManimScript(project);
+    expect(script).toMatch(/Rotate\(\w+, angle=-1\.57\)/);
+    const parsed = parseManimScript(script, SW, SH);
+    const rot = parsed.tracks[0].clips.find((c) => c.type === 'rotate');
+    expect(rot.params.targetRotation).toBe(90);
   });
 });
 

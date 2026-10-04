@@ -278,8 +278,9 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
             dur,
           };
         }
+        // Clockwise-positive editor degrees → counter-clockwise-positive Manim radians.
         const ang =
-          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) /
+          (-((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) /
           180;
         return { code: `self.play(Rotate(${sn}, angle=${ang.toFixed(2)})${rtStr}${rfStr})`, dur };
       }
@@ -343,8 +344,9 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
           const angleRad = (((c.angle ?? 90) * Math.PI) / 180).toFixed(4);
           return `Rotate(${sn}, angle=${angleRad}, axis=${axis})`;
         }
+        // Clockwise-positive editor degrees → counter-clockwise-positive Manim radians.
         const ang =
-          (((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) /
+          (-((c.params?.targetRotation || 360) - (oMap[objId ?? '']?.rotation || 0)) * Math.PI) /
           180;
         return `Rotate(${sn}, angle=${ang.toFixed(2)})`;
       }

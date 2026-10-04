@@ -1,6 +1,7 @@
 // Pure relational (brace / angle) Konva config builders.
 // Each function takes (obj[, extra], ctx) where ctx is a StageCtx resolved-value object.
 // No Vue refs, no reactive imports — all live values come through ctx.
+import { FRAME_WIDTH } from '@manim/codegen';
 import type { SceneObject } from '@manim/codegen';
 import type { StageCtx } from './context.js';
 
@@ -103,23 +104,58 @@ export function angleRayCfgs(obj: SceneObject, ctx: StageCtx): Record<string, un
   ];
 }
 
-export function angleArcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+// Shared angle geometry, matching Manim's Angle/RightAngle (codegen emits
+// `Angle(l1, l2, radius=r)` or `RightAngle(l1, l2)` from the same rays):
+// the arc sweeps counter-clockwise on screen from ray 1 to ray 2 — on the
+// y-down canvas that is a *decreasing* atan2 — and lengths are Manim units.
+const TAU = Math.PI * 2;
+const DEFAULT_ANGLE_RADIUS = 0.6;
+// Codegen places the label at vertex + 1.6 * (arc midpoint - vertex).
+const ANGLE_LABEL_FACTOR = 1.6;
+
+function angleGeometry(obj: SceneObject, ctx: StageCtx) {
   const z = ctx.vs;
   const v = (obj.vertex as [number, number] | undefined) || [-40, 40],
     p1 = (obj.point1 as [number, number] | undefined) || [80, 40],
     p2 = (obj.point2 as [number, number] | undefined) || [-40, -60];
+  const pxPerUnit = (ctx.stg.width as number) / FRAME_WIDTH;
   const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
   const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const r =
-    (((obj.radius as number | undefined) || 0.6) / 14.222) * (ctx.stg.width as number) * z * 0.5;
+  // Screen sweep in [-2π, 0): equal rays give Manim's full turn.
+  let sweep = (a2 - a1) % TAU;
+  if (sweep >= 0) sweep -= TAU;
+  const radius = Number.isFinite(obj.radius as number | undefined)
+    ? (obj.radius as number)
+    : DEFAULT_ANGLE_RADIUS;
+  // RightAngle without a length: 0.4 units, or 2/3 of the shorter ray if under 0.6.
+  const shorter =
+    Math.min(Math.hypot(p1[0] - v[0], p1[1] - v[1]), Math.hypot(p2[0] - v[0], p2[1] - v[1])) /
+    pxPerUnit;
+  const arm = shorter < 0.6 ? (2 / 3) * shorter : 0.4;
+  return {
+    cx: v[0] * z,
+    cy: v[1] * z,
+    a1,
+    a2,
+    sweep,
+    rPx: radius * pxPerUnit * z,
+    armPx: arm * pxPerUnit * z,
+  };
+}
+
+function elbowPoints(g: ReturnType<typeof angleGeometry>): [number, number][] {
+  const c1: [number, number] = [g.cx + Math.cos(g.a1) * g.armPx, g.cy + Math.sin(g.a1) * g.armPx];
+  const c2: [number, number] = [g.cx + Math.cos(g.a2) * g.armPx, g.cy + Math.sin(g.a2) * g.armPx];
+  return [c1, [c1[0] + c2[0] - g.cx, c1[1] + c2[1] - g.cy], c2];
+}
+
+export function angleArcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+  const g = angleGeometry(obj, ctx);
   const pts: number[] = [];
-  const start = a1;
-  let end = a2;
-  if (end < start) end += Math.PI * 2;
   const steps = 24;
   for (let i = 0; i <= steps; i++) {
-    const a = start + (end - start) * (i / steps);
-    pts.push(v[0] * z + Math.cos(a) * r, v[1] * z + Math.sin(a) * r);
+    const a = g.a1 + g.sweep * (i / steps);
+    pts.push(g.cx + Math.cos(a) * g.rPx, g.cy + Math.sin(a) * g.rPx);
   }
   return {
     points: pts,
@@ -130,18 +166,8 @@ export function angleArcCfg(obj: SceneObject, ctx: StageCtx): Record<string, unk
 }
 
 export function angleSquareCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
-  const z = ctx.vs;
-  const v = (obj.vertex as [number, number] | undefined) || [-40, 40],
-    p1 = (obj.point1 as [number, number] | undefined) || [80, 40],
-    p2 = (obj.point2 as [number, number] | undefined) || [-40, -60];
-  const u1a = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
-  const u2a = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const r = 16 * z;
-  const c1 = [v[0] * z + Math.cos(u1a) * r, v[1] * z + Math.sin(u1a) * r];
-  const c2 = [v[0] * z + Math.cos(u2a) * r, v[1] * z + Math.sin(u2a) * r];
-  const corner = [c1[0] + (c2[0] - v[0] * z), c1[1] + (c2[1] - v[1] * z)];
   return {
-    points: [c1[0], c1[1], corner[0], corner[1], c2[0], c2[1]],
+    points: elbowPoints(angleGeometry(obj, ctx)).flat(),
     stroke: (obj.stroke as string | undefined) || '#fbbf24',
     strokeWidth: 2,
     listening: false,
@@ -149,15 +175,16 @@ export function angleSquareCfg(obj: SceneObject, ctx: StageCtx): Record<string, 
 }
 
 export function angleLabelAnchor(obj: SceneObject, ctx: StageCtx): [number, number] {
-  const z = ctx.vs;
-  const v = (obj.vertex as [number, number] | undefined) || [-40, 40],
-    p1 = (obj.point1 as [number, number] | undefined) || [80, 40],
-    p2 = (obj.point2 as [number, number] | undefined) || [-40, -60];
-  const a1 = Math.atan2(p1[1] - v[1], p1[0] - v[0]);
-  const a2 = Math.atan2(p2[1] - v[1], p2[0] - v[0]);
-  const mid = (a1 + a2) / 2;
-  const r = 34 * z;
-  return [v[0] * z + Math.cos(mid) * r, v[1] * z + Math.sin(mid) * r];
+  const g = angleGeometry(obj, ctx);
+  // The path midpoint: the arc's middle, or the elbow's corner.
+  let mid: [number, number];
+  if (obj.rightAngle) {
+    mid = elbowPoints(g)[1];
+  } else {
+    const a = g.a1 + g.sweep / 2;
+    mid = [g.cx + Math.cos(a) * g.rPx, g.cy + Math.sin(a) * g.rPx];
+  }
+  return [g.cx + ANGLE_LABEL_FACTOR * (mid[0] - g.cx), g.cy + ANGLE_LABEL_FACTOR * (mid[1] - g.cy)];
 }
 
 // vector_components: main vector + x/y component arrows + two dashed projection guides.
