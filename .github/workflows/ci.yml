@@ -103,7 +103,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m pip install ruff black
+      - run: python -m pip install ruff black pytest
+      - name: Renderer unit tests
+        # pure-Python (no manim/redis): render args, history rotation, path
+        # safety, and every worker import being COPY'd into the image
+        run: python -m pytest services/renderer/tests -q
       - name: Ruff
         run: ruff check services/renderer/worker.py services/audio/worker.py services/web/tests/helpers/ast_check.py
       - name: Black
