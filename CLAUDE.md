@@ -12,6 +12,8 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 packages/manim-codegen/  # Shared Manim Python codegen (single source of truth)
 ```
 
+**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-8 done; 9 render isolation, 10 startup/log tooling, 11 localization leftovers, 12 template quality open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
+
 ## Running
 
 ```bash
@@ -74,6 +76,8 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `services/web/src/engine/keyframe.ts` | `interpolateKeyframes`, `getKeyframeRange`, Bezier solver |
 | `services/api/src/routes/audio.ts` + `services/api/src/ws.ts` | Audio upload/TTS/callback/delete endpoints; WebSocket push for render+audio events |
 | `services/audio/worker.py` | gTTS / Coqui TTS Redis consumer; POSTs completion to API |
+| `services/api/src/queue.ts` | Redis client (`getRedisClient` bounded by `REDIS_CONNECT_TIMEOUT_MS`, offline queue off), `RedisUnavailableError` → 503, `getHealthReport` for `/health`, render/audio job queue helpers |
+| `services/renderer/{worker,safety,history,render_args}.py` | Render worker + path clamping/process-tree kill, render-history rotation, argv mapping. **Every sibling module needs a `COPY` in `services/renderer/Dockerfile`** (`tests/test_dockerfile.py`) |
 | `services/web/src/components/RenderOptionsDialog.vue` + `services/renderer/render_args.py` | Render export options (format/resolution/fps) — zod allowlist in `compiler/validator.ts` (`parseRenderOptions`), fixed-dict argv mapping |
 | `services/web/src/components/stage/ContextMenu.vue` | Canvas right-click menu (object + empty-canvas variants), calls store actions |
 
@@ -293,9 +297,6 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 ## Stack Notes (history)
 
 - **Strict TypeScript migration**: complete (whole codebase `.ts`/`lang=ts`; lint+typecheck CI gates; `allowJs:false`). See the TypeScript section above. Spec: `docs/superpowers/specs/2026-06-08-tooling-strict-ts-migration-design.md`.
-
-## Stack Notes (history)
-
 - **Vue 3 + Pinia**: migration complete (Options API → `<script setup>`, `Vue.observable`/`Vue.set` → Pinia/direct assignment, `@vue/test-utils@2`, `@vue/compat` removed). Spec: `docs/superpowers/specs/2026-06-03-vue3-migration-design.md`.
 
 ## Security posture
@@ -303,6 +304,7 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 **Threat model: local, single-user, internet-closed.** Hardening is scoped to what protects a localhost app from malformed input/bugs — not multi-tenant concerns.
 
 - **Path traversal:** every route param interpolated into a filesystem path (`id`/`projectId`/`filename`/`audioId`) is validated by `isSafeSegment` (`services/api/src/util/paths.ts`) via `router.param` guards on each router → a `..`/separator/NUL/over-long value gets a 400 before any fs access (param callbacks run before route middleware incl. multer). Unit-tested in `services/api/tests/paths.test.ts`.
+- **Redis availability:** a down/unreachable Redis makes requests fail fast with HTTP 503 (never hang); `/health` returns `{status, redis}` and 503 when degraded; the compose `redis` service has `restart: unless-stopped`.
 - **Input validation:** project payloads go through the zod schema (`compiler/validator.ts`, tested in `compiler.test.ts`); asset upload enforces a mime allowlist; TTS checks required fields. Error responses are `{ error: '<message>' }` (no stack traces).
 - **Argument injection:** `render-code` validates `sceneName` with `isSafeSceneName` (a Python class identifier) before it's forwarded to the `manim` CLI as an argv — list-form `subprocess.run` blocks shell injection, but an unvalidated value (e.g. `--config_file=…`) would be read as a manim flag.
 - **Intentionally NOT added (YAGNI for a local app):** endpoint auth, CSP, CORS origin restriction (`cors()` stays open), per-route limits beyond the existing render rate-limit. Code-mode runs the user's own Python via the renderer — expected for a single-user local tool, not a sandbox-escape vuln in this model.

@@ -153,7 +153,7 @@ The marketing site in `website/` deploys to Netlify via `netlify.toml`. Connect 
 
 ## Roadmap
 
-The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). The remaining planned work is concentrated on render reliability, preview/render parity, large-scene performance, security and isolation, startup/support, encoding hygiene, and template quality.
+The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-8 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI) are implemented, and all CI jobs are green. The remaining work is render isolation limits (section 9), startup log collection and repair commands (section 10), the last localization leftovers (section 11), and template/education quality (section 12). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
 
 ---
 
@@ -386,7 +386,7 @@ Manim-docker/
 | **renderer** | manimcommunity/manim | -- | Render worker + manim-voiceover |
 | **audio** | python:3.11-slim | -- | gTTS worker (always on) |
 | **audio-coqui** | python:3.11-slim | -- | Coqui TTS worker (`--profile coqui`) |
-| **redis** | redis:7-alpine | 6379 | Job queue |
+| **redis** | redis:7-alpine | -- (internal) | Job queue; not published on the host, restarts with Docker (`restart: unless-stopped`) |
 | **init** | alpine:3.19 | -- | Creates /data dirs |
 
 Start with Coqui TTS enabled (~1.5 GB model download on first run):
@@ -401,7 +401,7 @@ All Docker containers run with **least-privilege non-root users**:
 - **api** runs as `node` user (UID 1000)
 - File permissions set with `--chown` flags during build
 
-**API hardening**: Helmet.js security headers, rate limiting on render endpoints (5 req/min/IP), input sanitization against injection.
+**API hardening**: Helmet.js security headers, rate limiting on render endpoints (5 req/min/IP), input sanitization against injection. If Redis is unreachable, requests fail within about 3 s (`REDIS_CONNECT_TIMEOUT_MS`) with HTTP 503 instead of hanging.
 
 ### Render Export Options
 
@@ -454,7 +454,7 @@ npm --workspace packages/manim-codegen test   # 43 @manim/codegen tests (arrow t
 
 ```bash
 cd services/web
-RUN_MANIM_RENDER=1 npm run test:render                          # render-truth (6 scenes) + golden-frame regression (3 scenes)
+RUN_MANIM_RENDER=1 npm run test:render                          # render-truth (7 scenes + every palette template) + golden-frame regression (3 scenes)
 RUN_MANIM_RENDER=1 UPDATE_RENDER_BASELINE=1 npm run test:render # re-baseline after an intentional render change
 # Skips unless RUN_MANIM_RENDER=1 AND `manim` is on PATH (+ a Pillow-capable python); needs the renderer's Python deps (manim + manim-fonts). Verified against Manim CE v0.20.1.
 ```
@@ -472,8 +472,17 @@ npm test                         # auto-boots the web dev server on a free local
 ```
 
 It clicks every palette/clip/tool surface (add objects, MotionPicker clips,
-keyboard tools, transform gating, Wave 2: sections/guides/splitClip/recentColors) against the running app. CI runs this suite as
+keyboard tools, transform gating, Wave 2: sections/guides/splitClip/recentColors,
+inspector edits, render history and queue stats) against the running app (24 tests). CI runs this suite as
 a **non-blocking** job (a flaky browser run reports but doesn't gate every push).
+
+### Renderer (Python)
+
+```bash
+python -m pytest services/renderer/tests -q   # 7 tests: render args, history rotation, path safety, Dockerfile COPYs every worker import
+```
+
+CI runs these in the `python` job alongside ruff and black.
 
 ---
 
@@ -482,7 +491,9 @@ a **non-blocking** job (a flaky browser run reports but doesn't gate every push)
 | Problem | Solution |
 |---------|----------|
 | **Render fails** | Check `docker compose logs renderer` for Manim errors. Ensure all services are running: `docker compose ps` |
-| **API not reachable** | Run `curl http://localhost:3000/health` -- should return `{"status":"ok"}`. Check `docker compose logs api` |
+| **API not reachable** | Run `curl http://localhost:3000/health` -- should return `{"status":"ok","redis":"ok"}`. Check `docker compose logs api` |
+| **Render returns 503 / `/health` says `degraded`** | Redis is down: `docker compose up -d redis` (it restarts with Docker from now on) |
+| **Renderer exits at startup with `ModuleNotFoundError`** | The image is missing a worker module. Rebuild with `docker compose up -d --build renderer renderer-2`; `python -m pytest services/renderer/tests` checks the Dockerfile copies every import |
 | **`start.bat` says a port is busy** | Stop the process using the reported port (`8758` for Docker, `5173` for editor-only) and run `start.bat` again |
 | **Images not loading** | Upload via the sidebar (stored as base64). Assets auto-sync to server on render |
 | **Playback stutters** | Reduce morph quality in clip properties. Close DevTools. Use Chrome/Edge for best performance |

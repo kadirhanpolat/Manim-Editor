@@ -1,6 +1,6 @@
 # Manim Motion Editor Production Readiness Roadmap
 
-**Date:** 2026-06-29
+**Date:** 2026-06-29 (last updated 2026-10-04)
 **Status:** Active
 **Purpose:** Turn the current feature-rich editor into a more reliable production tool.
 
@@ -9,6 +9,8 @@
 The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
 
 Sections 1-8 below already have implementation notes or shipped work. The remaining planned work is concentrated in sections 9-12.
+
+**2026-10-04 update:** a bug report from real production use (a documentary built through the API) was worked through: seven render-correctness bugs were fixed (see the notes tagged *EDITOR_FINDINGS* below and the README v3.28.0 changelog), the renderer image was repaired, and every CI job on `main` is green again for the first time since June.
 
 The next development stage should not primarily add more object types. The highest-value work is reliability, preview/render trust, large-scene performance, maintainability, startup/support, security, and content quality.
 
@@ -36,6 +38,8 @@ The next development stage should not primarily add more object types. The highe
 - The render dialog now shows queue depth, worker count, and stale-worker count.
 - Render jobs can be canceled from the API and the worker honors cancel requests.
 - Job status responses now include queue position and stalled-worker detection.
+- *EDITOR_FINDINGS #2:* with Redis down, render requests used to hang forever. Now they fail in about 3 s with HTTP 503 (`REDIS_CONNECT_TIMEOUT_MS`, offline queue disabled). `/health` reports Redis (`503 degraded` when down), and the `redis` service has `restart: unless-stopped`.
+- The renderer image was missing `safety.py`, so a rebuilt worker crashed at startup. It is now COPY'd, and a test guards every worker import.
 
 ### 2. Preview / Render Parity
 
@@ -56,6 +60,12 @@ The next development stage should not primarily add more object types. The highe
 - `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md` records the accepted preview-only differences.
 - The render dialog now surfaces preview notes for text, LaTeX, 3D framing, and styled-object approximations.
 - Render-truth coverage now includes a styled triangle case that exercises gradient, rounded-corner, and shadow rendering.
+- *EDITOR_FINDINGS #1, #3-#7:*
+  - Math expressions are normalized identically for the preview and the render (bare `exp`/`sin` → `np.*`, `^` → `**`).
+  - Enters and exits that start together play together, waits follow the real elapsed time, and the render honors `sceneDuration`.
+  - Arrow tips and LaTeX sizing share one rule between the preview and the render.
+  - Microsoft core fonts render through metric-compatible clones. The divergence matrix lists all of this.
+- Every palette template now renders in the real-Manim harness. This caught two broken templates: `sin_cos_wave` (NameError) and `unit_circle` (`Angle.get_tex` does not exist).
 
 ### 3. Code / Visual Round-Trip Robustness
 
@@ -75,6 +85,7 @@ The next development stage should not primarily add more object types. The highe
 **Implemented so far:**
 - The parser already reports unsupported imports/custom code as warnings instead of silently dropping them.
 - `services/web/tests/components/manim-export.test.ts` now round-trips `image` and `svg_asset` objects through generate → parse coverage.
+- Merged `self.play(A, B, ...)` enters and exits, the LaTeX box size and `font_size`, render-font substitutions (`# Font:` comment) and the new labeled-angle form all parse back. Older `.py` forms are still accepted.
 
 ### 4. Large-Scene Performance
 
@@ -181,6 +192,9 @@ The next development stage should not primarily add more object types. The highe
 - `scripts/full-stack-smoke.mjs` exercises web, API, Redis-backed job creation, and renderer-backed job completion.
 - `.github/workflows/ci.yml` includes a dedicated `docker-smoke` job that boots the compose stack and runs the smoke script.
 - `e2e/scripts/run-tests.mjs` now selects a free local dev port once, starts the Vite dev server, and exports the chosen port into Playwright so browser smoke tests stay on one consistent URL.
+- All five CI jobs (node, python, e2e, docker-smoke, render-harness) are green on `main` (run 37205745017). What was fixed:
+  - ESLint parse errors from mojibake, missing Node globals for the `.mjs` scripts, Prettier drift, 36 stale characterization snapshots, and ruff/black issues in `worker.py`.
+- The CI python job now runs the renderer pytest suite.
 
 ### 9. Security and Render Isolation
 
@@ -200,6 +214,7 @@ The next development stage should not primarily add more object types. The highe
 - Render worker project ids and scene-file resolution are clamped to the shared data directory.
 - Render worker timeouts kill the whole spawned process group, not just the top-level process.
 - The renderer image now actually ships `safety.py` (the worker crashed at startup with `ModuleNotFoundError` after a rebuild); `services/renderer/tests/test_dockerfile.py` asserts every module the worker imports is COPY'd, and CI now runs the renderer pytest suite.
+- A Redis outage now degrades to HTTP 503 instead of tying up request handlers indefinitely.
 
 ### 10. Startup and Support Experience
 
@@ -250,6 +265,22 @@ The next development stage should not primarily add more object types. The highe
 **Acceptance criteria:**
 - Top templates render successfully and look intentional.
 - A new user can start from a template and get a useful educational animation quickly.
+
+**Implemented so far:**
+- Render smoke coverage for **every** template in the opt-in real-Manim harness (`render-truth: every template renders in real Manim`); two previously crashing templates (`sin_cos_wave`, `unit_circle`) fixed.
+- Still open: visual/narrative quality pass (e.g. `unit_circle`'s angle `radius=40` is in Manim units and draws an oversized arc), camera polish, and a "science documentary" template pack suggested by the production bug report.
+
+## Backlog: Feature Requests from Production Use
+
+These requests came from the same documentary production as the 2026-10 bug report. They are not scheduled: each one adds a new object type or workflow, which the non-goals below defer until sections 9-12 land.
+
+- **Data point on axes:** a point plus label positioned by its (x, y) value on an `axes` object (Manim `axes.c2p`). Today the points are placed by hand in pixels, and the axis arrows shift them by about 12 px.
+- **Scene parameters / language variables:** a text table for TR/EN versions of the same scene, plus the decimal separator (`4{,}55` / `4.55`).
+- **Ken Burns preset** for image objects: slow zoom and pan.
+- **Timeline object:** an axis generated automatically from a list of years and labels.
+- **SRT export** built from the text of voiceover clips.
+- **Batch render:** render a list of projects in sequence and report the results.
+- **"Science documentary" template pack:** decay curve, isochron, isotope chain, comparison scale.
 
 ## Recommended Execution Order
 
