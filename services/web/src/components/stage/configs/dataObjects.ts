@@ -1,7 +1,7 @@
 // Pure data/coordinate object Konva config builders.
 // Each exported function takes (obj, ctx) where ctx is a StageCtx resolved-value object.
 // No Vue refs, no reactive imports — all live values come through ctx.
-import { isSafeExpr } from '../../../engine/mathExpr.js';
+import { isSafeExpr, compileExpr } from '../../../engine/mathExpr.js';
 import { generateDotGridPositions } from '../../../engine/geometry.js';
 import type { SceneObject } from '@manim/codegen';
 import type { StageCtx } from './context.js';
@@ -565,23 +565,8 @@ export function vectorFieldHitCfg(obj: SceneObject, ctx: StageCtx): Record<strin
 }
 
 function _compileField2(expr: string): ((x: number, y: number) => number) | null {
-  // compile expr(x,y) using the same SCOPE as compileExpr but with two variables
-  const SCOPE2 =
-    'const np={sin:Math.sin,cos:Math.cos,tan:Math.tan,arcsin:Math.asin,arccos:Math.acos,' +
-    'arctan:Math.atan,sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp,log:Math.log,sign:Math.sign,' +
-    'power:Math.pow,floor:Math.floor,ceil:Math.ceil,pi:Math.PI,e:Math.E};' +
-    'const PI=Math.PI,TAU=2*Math.PI,E=Math.E;';
-  try {
-    const fn = new Function('x', 'y', '"use strict";' + SCOPE2 + 'return (' + expr + ');') as (
-      x: number,
-      y: number
-    ) => unknown;
-    const probe = fn(1, 1);
-    if (typeof probe !== 'number') return null;
-    return fn as (x: number, y: number) => number;
-  } catch {
-    return null;
-  }
+  // compile expr(x,y) with the shared preview math scope + normalization
+  return compileExpr(expr, ['x', 'y']);
 }
 
 export function vectorFieldArrows(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {

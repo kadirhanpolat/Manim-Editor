@@ -446,8 +446,8 @@ npm run format:check  # Prettier (.js/.ts/.vue/.json/.css)
 The backend services and shared package have their own suites (from the repo root):
 
 ```bash
-npm test --workspace services/api             # 55 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety)
-npm --workspace packages/manim-codegen test   # 15 @manim/codegen tests (generateScene, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
+npm test --workspace services/api             # 72 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety + Redis availability → 503)
+npm --workspace packages/manim-codegen test   # 34 @manim/codegen tests (generateScene, math-expr normalization, simultaneous enter/exit merge, sceneDuration tail, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
 ```
 
 **Render-truth + golden-frame (opt-in).** A real Manim CE process renders a representative scene corpus — proving the generated Python actually _runs_, not merely that it parses (the AST check above). A companion **golden-frame** check perceptually hashes (dHash) a stable geometric corpus's last frame and compares it to a committed baseline (Hamming-tolerant), catching unintended render drift an exit-code check cannot see. Heavy, so both stay off the default suite:
@@ -507,7 +507,19 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ## Changelog
 
-### v3.27.0 (current)
+### v3.28.0 (current)
+
+Fixes from real production use (a documentary built through the API). Every item was reproduced first, and the generated scenes were checked by rendering them in real Manim CE.
+
+- **Math expressions render**: bare `exp(x)`, `sin(x)`, `log(x)`, `pi`, `e` in graph / parametric / vector-field / surface expressions used to raise `NameError` at render (the scene imports only `manim` + `numpy as np`); `x^2` silently meant XOR. `normalizeMathExpr` now rewrites them to `np.*` / `**` in codegen and in the canvas preview, so both agree. This also fixes the `sin_cos_wave` template, which failed to render.
+- **Labeled angles render**: a labeled `angle` emitted `Angle.get_tex(...)`, which Manim's `Angle` does not have (TypeError). The label is now a `MathTex` placed outside the arc midpoint; old `.py` files still parse. This fixes the `unit_circle` template.
+- **Simultaneous enters/exits**: objects that enter or exit at the same time are now one `self.play(A, B, ...)` instead of a chain of plays, so a 30 s scene no longer stretches to 40 s. Waits are measured from the real elapsed time, so overlaps no longer push every later step back. The code parser reads the merged form back.
+- **`sceneDuration` is honored**: the render holds until the scene duration (and at least 1 s after the last animation), so narration-timed scenes keep their length.
+- **No hang without Redis**: render and job requests now fail in about 3 s with HTTP 503 and a clear message instead of hanging when Redis is unreachable. `/health` reports Redis (`503 degraded` when down), and the `redis` service restarts with Docker (`restart: unless-stopped`).
+- **Render harness covers every template**: the opt-in real-Manim harness (`RUN_MANIM_RENDER=1 npm run test:render`) now renders all palette templates (26 cases).
+- **Tests**: 34 codegen (+19), 72 api (+7 Redis availability), web unit +8 (math preview incl. Python-style unary minus, merged-play round-trip, angle label); 122 engine unchanged.
+
+### v3.27.0
 
 Workflow & scale follow-up to close the remaining low-risk backlog items from the roadmap.
 

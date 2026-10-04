@@ -37,13 +37,64 @@ export function safeOpacity(val: unknown): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
 }
 
+/** Bare function names users type that only exist in the scene as `np.<name>`. */
+export const NP_FUNCTIONS = [
+  'sin',
+  'cos',
+  'tan',
+  'arcsin',
+  'arccos',
+  'arctan',
+  'sinh',
+  'cosh',
+  'tanh',
+  'sqrt',
+  'exp',
+  'log',
+  'log10',
+  'log2',
+  'abs',
+  'sign',
+  'floor',
+  'ceil',
+  'power',
+] as const;
+
+/** Common spellings that numpy names differently. */
+const NP_ALIASES: Record<string, string> = {
+  ln: 'log',
+  asin: 'arcsin',
+  acos: 'arccos',
+  atan: 'arctan',
+};
+
+const NP_FN_RE = new RegExp(
+  `(?<![\\w.])(${[...NP_FUNCTIONS, ...Object.keys(NP_ALIASES)].join('|')})(?=\\s*\\()`,
+  'g'
+);
+const NP_CONST_RE = /(?<![\w.])(pi|e|E)(?![\w(])/g;
+
+/**
+ * Rewrite a math expression into the form the generated scene can evaluate:
+ * the scene only imports `manim` + `numpy as np`, so bare `exp(x)` / `pi`
+ * would raise NameError, and `^` is XOR in Python. Already-prefixed `np.*`
+ * calls and manim constants (PI, TAU) are left as-is, so this is idempotent.
+ * The preview compiler (engine/mathExpr.ts) applies the same rewrite.
+ */
+export function normalizeMathExpr(expr: string): string {
+  return expr
+    .replace(/\^/g, '**')
+    .replace(NP_FN_RE, (_m, fn: string) => `np.${NP_ALIASES[fn] ?? fn}`)
+    .replace(NP_CONST_RE, (c) => (c === 'pi' ? 'np.pi' : 'np.e'));
+}
+
 export function safeMathExpr(expr: unknown, fallback = 'x**2'): string {
   if (!expr || typeof expr !== 'string') return fallback;
   const t = expr.trim();
   if (!t) return fallback;
   if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(t)) return fallback;
   if (/import|eval|exec|open|__/.test(t)) return fallback;
-  return t;
+  return normalizeMathExpr(t);
 }
 
 /** Sanitise text for Python string literals. */

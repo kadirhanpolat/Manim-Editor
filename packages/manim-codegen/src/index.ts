@@ -197,67 +197,12 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     const t = o.enterTime || 0;
     const n = vn(o.id);
     const dur = o.enterAnimDur || 0.5;
-    const rt = rtOpt(dur);
-    const enterAnim = o.enterAnim || 'fade_in';
-
-    let enterCode: string;
-    switch (enterAnim) {
-      case 'none':
-        enterCode = `self.add(${n})`;
-        break;
-      case 'fade_in':
-        enterCode = `self.play(FadeIn(${n})${rt})`;
-        break;
-      case 'grow_in':
-        enterCode = `self.play(GrowFromCenter(${n})${rt})`;
-        break;
-      case 'fly_in_left':
-        enterCode = `self.play(FadeIn(${n}, shift=RIGHT)${rt})`;
-        break;
-      case 'fly_in_right':
-        enterCode = `self.play(FadeIn(${n}, shift=LEFT)${rt})`;
-        break;
-      case 'fly_in_top':
-        enterCode = `self.play(FadeIn(${n}, shift=DOWN)${rt})`;
-        break;
-      case 'fly_in_bottom':
-        enterCode = `self.play(FadeIn(${n}, shift=UP)${rt})`;
-        break;
-      case 'draw':
-        enterCode = `self.play(Create(${n})${rt})`;
-        break;
-      case 'write':
-        enterCode = `self.play(Write(${n})${rt})`;
-        break;
-      case 'spin_in':
-        enterCode = `self.play(SpinInFromNothing(${n})${rt})`;
-        break;
-      case 'bounce_in':
-        enterCode = `self.play(GrowFromCenter(${n}, rate_func=rate_functions.ease_out_bounce)${rt})`;
-        break;
-      case 'typewriter':
-        enterCode = `self.play(AddTextLetterByLetter(${n})${rt})`;
-        break;
-      case 'draw_border_fill':
-        enterCode = `self.play(DrawBorderThenFill(${n})${rt})`;
-        break;
-      case 'grow_arrow':
-        enterCode = `self.play(GrowArrow(${n})${rt})`;
-        break;
-      case 'grow_from_edge': {
-        const dir = (o.enterAnimDir ?? 'LEFT') as string;
-        enterCode = `self.play(GrowFromEdge(${n}, edge=${dir})${rt})`;
-        break;
-      }
-      case 'fade_in_large': {
-        const sc = (o.enterAnimScale ?? 1.5).toFixed(1);
-        enterCode = `self.play(FadeIn(${n}, scale=${sc})${rt})`;
-        break;
-      }
-      default:
-        enterCode = `self.play(FadeIn(${n})${rt})`;
+    const anim = enterAnimExpr(o, n);
+    if (anim === null) {
+      steps.push({ time: t, order: 0, code: `self.add(${n})`, dur: 0 });
+    } else {
+      steps.push({ time: t, order: 0, code: `self.play(${anim}${rtOpt(dur)})`, dur, anim });
     }
-    steps.push({ time: t, order: 0, code: enterCode, dur: enterAnim === 'none' ? 0 : dur });
   }
 
   // ── Group parallel clips ──
@@ -507,58 +452,16 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       const end = c.startTime + c.duration;
       if ((c.sourceId === o.id || c.targetId === o.id) && end > exitTime) exitTime = end + 0.1;
     }
-    const n = vn(o.id);
-    const exitAnim = o.exitAnim || 'none';
+    const anim = exitAnimExpr(o, vn(o.id));
+    if (anim === null) continue; // exitAnim 'none' → stays on screen
     const dur = o.exitAnimDur || 0.5;
-    const rt = rtOpt(dur);
-
-    let exitCode: string;
-    switch (exitAnim) {
-      case 'none':
-        continue; // Skip entirely
-      case 'fade_out':
-        exitCode = `self.play(FadeOut(${n})${rt})`;
-        break;
-      case 'shrink_out':
-        exitCode = `self.play(ShrinkToCenter(${n})${rt})`;
-        break;
-      case 'fly_out_left':
-        exitCode = `self.play(FadeOut(${n}, shift=LEFT)${rt})`;
-        break;
-      case 'fly_out_right':
-        exitCode = `self.play(FadeOut(${n}, shift=RIGHT)${rt})`;
-        break;
-      case 'fly_out_top':
-        exitCode = `self.play(FadeOut(${n}, shift=UP)${rt})`;
-        break;
-      case 'fly_out_bottom':
-        exitCode = `self.play(FadeOut(${n}, shift=DOWN)${rt})`;
-        break;
-      case 'uncreate':
-        exitCode = `self.play(Uncreate(${n})${rt})`;
-        break;
-      case 'spin_out':
-        exitCode = `self.play(FadeOut(${n}, shift=OUT, scale=0.5)${rt})`;
-        break;
-      case 'typewriter_out':
-        exitCode = `self.play(RemoveTextLetterByLetter(${n})${rt})`;
-        break;
-      case 'unwrite':
-        exitCode = `self.play(Unwrite(${n})${rt})`;
-        break;
-      case 'fade_out_large': {
-        const sc = (o.exitAnimScale ?? 1.5).toFixed(1);
-        exitCode = `self.play(FadeOut(${n}, scale=${sc})${rt})`;
-        break;
-      }
-      default:
-        exitCode = `self.play(FadeOut(${n})${rt})`;
-    }
-    steps.push({ time: exitTime, order: 2, code: exitCode, dur });
+    steps.push({ time: exitTime, order: 2, code: `self.play(${anim}${rtOpt(dur)})`, dur, anim });
   }
 
-  // Sort: by time, then enter → clip → exit
+  // Sort: by time, then enter → clip → exit; then fold enters/exits that
+  // start together into one self.play so they really play simultaneously.
   steps.sort((a, b) => a.time - b.time || a.order - b.order);
+  const playSteps = mergeSimultaneousSteps(steps);
 
   // ── Emit animation code ──
   L.push(`${indent}# Animation`);
@@ -569,8 +472,12 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     .sort((a, b) => a.time - b.time);
   let nextSectionIdx = 0;
 
-  let t = 0;
-  for (const step of steps) {
+  // `elapsed` is the real playback clock of the emitted script (sum of waits
+  // + run_times, exactly what Manim — and the .py parser — accumulate). Waits
+  // are measured from it, so an overlap earlier in the timeline cannot push
+  // every later step back (timing drift).
+  let elapsed = 0;
+  for (const step of playSteps) {
     // Emit any pending sections whose time <= this step's start time
     while (
       nextSectionIdx < sectionQueue.length &&
@@ -579,16 +486,21 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       L.push(`${indent}self.next_section("${safeText(sectionQueue[nextSectionIdx]!.title)}")`);
       nextSectionIdx++;
     }
-    const wait = step.time - t;
-    if (wait > 0.05) L.push(`${indent}self.wait(${wait.toFixed(1)})`);
+    const wait = step.time - elapsed;
+    if (wait > 0.05) {
+      L.push(`${indent}self.wait(${wait.toFixed(1)})`);
+      elapsed += parseFloat(wait.toFixed(1));
+    }
     const a = step.audio;
+    let stepTime = step.dur;
     if (a && a.status === 'ready' && a.src) {
       const trackerId = step._clipId
         ? `tracker_${step._clipId.replace(/[^a-zA-Z0-9]/g, '_')}`
-        : `tracker_${steps.indexOf(step)}`;
+        : `tracker_${playSteps.indexOf(step)}`;
       L.push(`${indent}with self.voiceover(audio="${a.src}") as ${trackerId}:`);
       if (a.syncMode === 'manual' && (a.offset ?? 0) > 0) {
         L.push(`${indent}    self.wait(${parseFloat(String(a.offset)).toFixed(1)})`);
+        stepTime += parseFloat(parseFloat(String(a.offset)).toFixed(1));
       }
       const innerLines = step.code.split('\n');
       for (const line of innerLines) {
@@ -597,6 +509,8 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
       if (a.syncMode === 'auto') {
         const dur = parseFloat(String(step.dur || 1)).toFixed(1);
         L.push(`${indent}    self.wait(max(0, ${trackerId}.duration - ${dur}))`);
+        // the block lasts as long as the narration when that is known
+        if (typeof a.duration === 'number' && a.duration > stepTime) stepTime = a.duration;
       }
     } else {
       // step.code may be a multi-line block (e.g. UpdateFromAlphaFunc def +
@@ -606,7 +520,7 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
         L.push(line ? `${indent}${line}` : '');
       }
     }
-    t = step.time + (step.dur || 0.5);
+    elapsed += stepTime;
   }
 
   // Emit any sections that come after all animation steps
@@ -615,9 +529,124 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     nextSectionIdx++;
   }
 
+  // Tail: hold until sceneDuration (voiceover-timed scenes rely on it), and
+  // always at least 1 s after the last animation — the preview's rule
+  // (computedDuration = max(sceneDuration, end + 1)). Without sceneDuration
+  // this is the legacy trailing self.wait(1).
   L.push('');
-  L.push(`${indent}self.wait(1)`);
+  const tail = Math.max(1, (project.sceneDuration ?? 0) - elapsed);
+  L.push(`${indent}self.wait(${tail === 1 ? '1' : tail.toFixed(1)})`);
   return L.join('\n');
+}
+
+/** Bare enter animation for an object, or null for an instant `self.add`. */
+function enterAnimExpr(o: SceneObject, n: string): string | null {
+  switch (o.enterAnim || 'fade_in') {
+    case 'none':
+      return null;
+    case 'grow_in':
+      return `GrowFromCenter(${n})`;
+    case 'fly_in_left':
+      return `FadeIn(${n}, shift=RIGHT)`;
+    case 'fly_in_right':
+      return `FadeIn(${n}, shift=LEFT)`;
+    case 'fly_in_top':
+      return `FadeIn(${n}, shift=DOWN)`;
+    case 'fly_in_bottom':
+      return `FadeIn(${n}, shift=UP)`;
+    case 'draw':
+      return `Create(${n})`;
+    case 'write':
+      return `Write(${n})`;
+    case 'spin_in':
+      return `SpinInFromNothing(${n})`;
+    case 'bounce_in':
+      return `GrowFromCenter(${n}, rate_func=rate_functions.ease_out_bounce)`;
+    case 'typewriter':
+      return `AddTextLetterByLetter(${n})`;
+    case 'draw_border_fill':
+      return `DrawBorderThenFill(${n})`;
+    case 'grow_arrow':
+      return `GrowArrow(${n})`;
+    case 'grow_from_edge':
+      return `GrowFromEdge(${n}, edge=${(o.enterAnimDir ?? 'LEFT') as string})`;
+    case 'fade_in_large':
+      return `FadeIn(${n}, scale=${(o.enterAnimScale ?? 1.5).toFixed(1)})`;
+    default: // 'fade_in' + unknown presets
+      return `FadeIn(${n})`;
+  }
+}
+
+/** Bare exit animation for an object, or null when it stays on screen. */
+function exitAnimExpr(o: SceneObject, n: string): string | null {
+  switch (o.exitAnim || 'none') {
+    case 'none':
+      return null;
+    case 'shrink_out':
+      return `ShrinkToCenter(${n})`;
+    case 'fly_out_left':
+      return `FadeOut(${n}, shift=LEFT)`;
+    case 'fly_out_right':
+      return `FadeOut(${n}, shift=RIGHT)`;
+    case 'fly_out_top':
+      return `FadeOut(${n}, shift=UP)`;
+    case 'fly_out_bottom':
+      return `FadeOut(${n}, shift=DOWN)`;
+    case 'uncreate':
+      return `Uncreate(${n})`;
+    case 'spin_out':
+      return `FadeOut(${n}, shift=OUT, scale=0.5)`;
+    case 'typewriter_out':
+      return `RemoveTextLetterByLetter(${n})`;
+    case 'unwrite':
+      return `Unwrite(${n})`;
+    case 'fade_out_large':
+      return `FadeOut(${n}, scale=${(o.exitAnimScale ?? 1.5).toFixed(1)})`;
+    default: // 'fade_out' + unknown presets
+      return `FadeOut(${n})`;
+  }
+}
+
+const SAME_TIME_EPS = 0.01;
+
+/**
+ * Fold runs of enter (order 0) or exit (order 2) steps that start at the same
+ * time into a single `self.play(A, B, …)`. Instant `self.add` enters in the
+ * run are emitted first. Equal durations share one trailing run_time; mixed
+ * durations carry a run_time per animation (Manim plays them in parallel and
+ * the play lasts as long as the longest). Steps are assumed sorted.
+ */
+function mergeSimultaneousSteps(steps: GeneratedStep[]): GeneratedStep[] {
+  const out: GeneratedStep[] = [];
+  let i = 0;
+  while (i < steps.length) {
+    const head = steps[i]!;
+    let j = i + 1;
+    if (head.order !== 1) {
+      while (
+        j < steps.length &&
+        steps[j]!.order === head.order &&
+        Math.abs(steps[j]!.time - head.time) < SAME_TIME_EPS
+      )
+        j++;
+    }
+    const run = steps.slice(i, j);
+    const anims = run.filter((s) => s.anim !== undefined);
+    out.push(...run.filter((s) => s.anim === undefined));
+    if (anims.length === 1) out.push(anims[0]!);
+    else if (anims.length > 1) out.push(mergedPlayStep(anims));
+    i = j;
+  }
+  return out;
+}
+
+function mergedPlayStep(anims: GeneratedStep[]): GeneratedStep {
+  const dur = Math.max(...anims.map((s) => s.dur));
+  const sameDur = anims.every((s) => Math.abs(s.dur - dur) < 0.001);
+  const code = sameDur
+    ? `self.play(${anims.map((s) => s.anim).join(', ')}${rtOpt(dur)})`
+    : `self.play(${anims.map((s) => `${s.anim!.slice(0, -1)}${rtOpt(s.dur)})`).join(', ')})`;
+  return { time: anims[0]!.time, order: anims[0]!.order, code, dur };
 }
 
 export { objectCode } from './objects.js';

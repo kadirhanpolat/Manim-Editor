@@ -21,6 +21,8 @@ import path from 'node:path';
 import { setActivePinia, createPinia } from 'pinia';
 import { useProjectStore } from '../../src/store/project.js';
 import { generateManimScript } from '../../src/export/manim.js';
+import { TEMPLATES } from '../../src/templates/index.js';
+import type { Project } from '@manim/codegen';
 
 const OPT_IN = process.env.RUN_MANIM_RENDER === '1';
 
@@ -161,6 +163,27 @@ describe.skipIf(!RUN)('render-truth: generated Python renders in real Manim', ()
       if (r.status !== 0) {
         throw new Error(
           `manim exited ${r.status} for "${c.name}". Last stderr:\n${r.stderr.slice(-2000)}`
+        );
+      }
+      expect(r.status).toBe(0);
+    });
+  }
+});
+
+// Every palette template must render, not just be AST-valid. Guards the
+// EDITOR_FINDINGS #1 class of bug: the trigonometry template's `sin(x)` /
+// `cos(x)` graphs raised NameError at render time while every static check
+// passed.
+describe.skipIf(!RUN)('render-truth: every template renders in real Manim', () => {
+  for (const tpl of TEMPLATES) {
+    if (!tpl.project) continue;
+    const build = tpl.project;
+    it(`renders template: ${tpl.id}`, () => {
+      const py = generateManimScript(build() as unknown as Project);
+      const r = render(`tpl_${tpl.id.replace(/\W/g, '_')}`, py);
+      if (r.status !== 0) {
+        throw new Error(
+          `manim exited ${r.status} for template "${tpl.id}". Last stderr:\n${r.stderr.slice(-2000)}`
         );
       }
       expect(r.status).toBe(0);

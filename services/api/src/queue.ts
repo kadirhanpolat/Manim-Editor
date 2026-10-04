@@ -6,21 +6,110 @@ import { createClient } from 'redis';
 import type { RenderOptions } from './compiler/validator.js';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
+/** How long a request waits for Redis before failing with 503. */
+const connectTimeoutMs = (): number => Number(process.env.REDIS_CONNECT_TIMEOUT_MS) || 3000;
 
 type RedisClient = ReturnType<typeof createClient>;
 let client: RedisClient | null = null;
+/** Pending initial connect; node-redis keeps retrying it in the background. */
+let connecting: Promise<void> | null = null;
+
+/** Redis is unreachable — surfaced to clients as HTTP 503 by the error handler. */
+export class RedisUnavailableError extends Error {
+  readonly status = 503;
+  constructor(message = 'Render queue unavailable: cannot reach Redis') {
+    super(message);
+    this.name = 'RedisUnavailableError';
+  }
+}
+
+/** node-redis error classes that mean the server is unreachable. */
+const REDIS_DOWN_ERRORS = new Set([
+  'ClientOfflineError',
+  'ClientClosedError',
+  'SocketClosedUnexpectedlyError',
+  'ConnectionTimeoutError',
+  'ReconnectStrategyError',
+]);
+/** Socket-level codes surfaced when the Redis host is unreachable. */
+const REDIS_DOWN_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN']);
 
 /**
- * Get or create Redis client.
+ * True for errors meaning "Redis is down" rather than a bug: our own timeout,
+ * or node-redis rejecting a command while disconnected (offline queue off).
+ */
+export function isRedisUnavailableError(err: unknown): boolean {
+  if (err instanceof RedisUnavailableError) return true;
+  if (!(err instanceof Error)) return false;
+  const code = (err as Error & { code?: unknown }).code;
+  if (typeof code === 'string' && REDIS_DOWN_CODES.has(code)) return true;
+  return REDIS_DOWN_ERRORS.has(err.constructor.name) || REDIS_DOWN_ERRORS.has(err.name);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new RedisUnavailableError()), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Get or create the Redis client. The first connect is started once and
+ * retried by node-redis in the background; each caller waits at most
+ * REDIS_CONNECT_TIMEOUT_MS for it and otherwise gets RedisUnavailableError,
+ * so a missing Redis can never hang a request. The offline queue is disabled
+ * for the same reason: after a later disconnect, commands fail immediately
+ * instead of waiting for a reconnect that may never come.
  */
 export async function getRedisClient(): Promise<RedisClient> {
   if (!client) {
-    client = createClient({ url: REDIS_URL });
-    client.on('error', (err: unknown) => console.error('[Redis Error]', err));
-    await client.connect();
-    console.log('[Redis] Connected to', REDIS_URL);
+    const c = createClient({ url: REDIS_URL, disableOfflineQueue: true });
+    c.on('error', (err: unknown) => console.error('[Redis Error]', err));
+    client = c;
+    connecting = c.connect().then(
+      () => console.log('[Redis] Connected to', REDIS_URL),
+      (err: unknown) => {
+        // connect gave up for good — let the next call build a fresh client
+        client = null;
+        connecting = null;
+        throw err;
+      }
+    );
+    connecting.catch(() => {}); // rejection is observed via withTimeout below
   }
-  return client;
+  const current = client;
+  if (connecting) {
+    try {
+      await withTimeout(connecting, connectTimeoutMs());
+    } catch (err) {
+      throw err instanceof RedisUnavailableError ? err : new RedisUnavailableError();
+    }
+    connecting = null;
+  }
+  return current;
+}
+
+export interface HealthReport {
+  status: 'ok' | 'degraded';
+  redis: 'ok' | 'unavailable';
+  timestamp: string;
+}
+
+/** Liveness + Redis reachability (bounded by the connect timeout). */
+export async function getHealthReport(): Promise<HealthReport> {
+  let redis: HealthReport['redis'] = 'ok';
+  try {
+    const c = await getRedisClient();
+    await withTimeout(c.ping(), connectTimeoutMs());
+  } catch {
+    redis = 'unavailable';
+  }
+  return {
+    status: redis === 'ok' ? 'ok' : 'degraded',
+    redis,
+    timestamp: new Date().toISOString(),
+  };
 }
 
 export interface RenderJob {

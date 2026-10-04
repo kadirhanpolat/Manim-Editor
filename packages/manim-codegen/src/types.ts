@@ -407,6 +407,9 @@ export interface GeneratedStep {
   dur: number;
   audio?: AudioConfig;
   _clipId?: string;
+  /** Bare animation expression (e.g. `FadeIn(a)`) for enter/exit steps that
+   *  may be merged with others starting at the same time into one self.play. */
+  anim?: string;
 }
 
 export interface GenerateOptions {

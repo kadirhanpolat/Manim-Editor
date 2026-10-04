@@ -6,7 +6,7 @@ const hGetAll = vi.fn();
 vi.mock('redis', () => ({
   createClient: () => ({
     on: vi.fn(),
-    connect: vi.fn(),
+    connect: vi.fn().mockResolvedValue(undefined),
     keys,
     hGetAll,
     hSet: vi.fn(),

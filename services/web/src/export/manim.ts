@@ -210,11 +210,81 @@ function joinLogicalLines(rawLines: string[]): string[] {
   return out;
 }
 
+/** Split a call's argument list on top-level commas (string/bracket aware). */
+function splitTopLevelArgs(body: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let start = 0;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '(' || ch === '[' || ch === '{') depth++;
+    else if (ch === ')' || ch === ']' || ch === '}') depth--;
+    else if (ch === ',' && depth === 0) {
+      out.push(body.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  out.push(body.slice(start).trim());
+  return out.filter(Boolean);
+}
+
+// Synthetic marker lines (NUL-prefixed, so user code can never produce them)
+// that bracket the sub-plays of one simultaneous self.play(A, B, …).
+const SIM_BEGIN = '\u0000sim:begin';
+const SIM_NEXT = '\u0000sim:next';
+const SIM_END = '\u0000sim:end';
+
+/**
+ * Codegen folds enters/exits that start together into one
+ * `self.play(A, B, …[, run_time=d])` (per-animation run_times when durations
+ * differ). The per-animation regexes only know the one-animation form, so
+ * expand such a line into one `self.play(X, run_time=…)` per animation,
+ * bracketed by SIM_* markers that make the parser rewind its clock: every
+ * sub-play starts at the same time and the group lasts as long as its longest
+ * member. Single-animation plays and AnimationGroup/LaggedStart lines pass
+ * through untouched.
+ */
+function expandSimultaneousPlays(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    const m = line.match(/^self\.play\((.*)\)$/);
+    if (!m || /^(AnimationGroup|LaggedStart)\(/.test(m[1])) {
+      out.push(line);
+      continue;
+    }
+    const args = splitTopLevelArgs(m[1]);
+    const anims = args.filter((a) => !/^\w+\s*=/.test(a));
+    if (anims.length < 2) {
+      out.push(line);
+      continue;
+    }
+    const kwargs = args.filter((a) => /^\w+\s*=/.test(a) && !/^run_time\s*=/.test(a));
+    const sharedRt = args.find((a) => /^run_time\s*=/.test(a))?.replace(/^run_time\s*=\s*/, '');
+    out.push(SIM_BEGIN);
+    anims.forEach((anim, i) => {
+      if (i > 0) out.push(SIM_NEXT);
+      const own = anim.match(/^(.*),\s*run_time=([\d.]+)\)$/);
+      const expr = own ? `${own[1]})` : anim;
+      const rt = own ? own[2] : (sharedRt ?? '1'); // Manim's default run_time is 1
+      out.push(`self.play(${[expr, `run_time=${rt}`, ...kwargs].join(', ')})`);
+    });
+    out.push(SIM_END);
+  }
+  return out;
+}
+
 /**
  * Parse Manim Python code back into project objects, tracks, and stage.
  */
 export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProject {
-  const lines = joinLogicalLines(code.split('\n'));
+  const lines = expandSimultaneousPlays(joinLogicalLines(code.split('\n')));
   const objects: SceneObject[] = [];
   const clips: Clip[] = [];
   const warnings: string[] = [];
@@ -392,8 +462,25 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     return null;
   }
 
+  let simStart = 0;
+  let simEnd = 0;
   for (const line of lines) {
     let m: RegExpMatchArray | null;
+
+    // Simultaneous-play markers (see expandSimultaneousPlays)
+    if (line === SIM_BEGIN) {
+      simStart = simEnd = ct;
+      continue;
+    }
+    if (line === SIM_NEXT) {
+      simEnd = Math.max(simEnd, ct);
+      ct = simStart;
+      continue;
+    }
+    if (line === SIM_END) {
+      ct = Math.max(simEnd, ct);
+      continue;
+    }
 
     // MovingCameraScene
     m = line.match(/^class\s+\w+\(MovingCameraScene\)/);
@@ -1419,8 +1506,11 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       continue;
     }
 
-    // VGroup label wrapper for brace/angle — renames base obj to the VGroup var + sets label
-    m = line.match(/^(\w+)\s*=\s*VGroup\((\w+(?:_brace|_arc)), \2\.get_tex\("(.*)"\)\)/);
+    // VGroup label wrapper for brace/angle — renames base obj to the VGroup var + sets label.
+    // Angles emit `MathTex("…").move_to(…)`; older .py files used `_arc.get_tex("…")`.
+    m =
+      line.match(/^(\w+)\s*=\s*VGroup\((\w+(?:_brace|_arc)), \2\.get_tex\("(.*)"\)\)/) ||
+      line.match(/^(\w+)\s*=\s*VGroup\((\w+_arc), MathTex\("(.*?)"\)\.move_to\(/);
     if (m) {
       const [, vg, base, tex] = m;
       const baseId = varMap[base];

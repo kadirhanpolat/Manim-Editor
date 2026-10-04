@@ -343,8 +343,13 @@ export function objectCode(
         : `Angle(${n}_l1, ${n}_l2, radius=${Number.isFinite(o.radius as number | undefined) ? o.radius : 0.6})`;
       const label = ((o.label as string | undefined) || '').trim();
       if (label) {
+        // Angle/RightAngle have no get_tex (unlike Brace): place a MathTex just
+        // outside the arc midpoint, pushed away from the vertex.
+        const vtx = `${n}_l1.get_start()`;
         lines.push(`${n}_arc = ${ctor}`);
-        lines.push(`${n} = VGroup(${n}_arc, ${n}_arc.get_tex("${safeLatex(label)}"))`);
+        lines.push(
+          `${n} = VGroup(${n}_arc, MathTex("${safeLatex(label)}").move_to(${vtx} + 1.6 * (${n}_arc.point_from_proportion(0.5) - ${vtx})))`
+        );
       } else {
         lines.push(`${n} = ${ctor}`);
       }

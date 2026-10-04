@@ -59,10 +59,15 @@ describe('angle codegen', () => {
     expect(s).not.toMatch(/radius=/);
   });
 
-  it('wraps in VGroup with get_tex for a labeled angle', () => {
+  // Manim's Angle has no get_tex (only Brace does) — it raised TypeError at
+  // render time. The label is a MathTex placed just outside the arc midpoint.
+  it('wraps a labeled angle in a VGroup with a MathTex placed at the arc', () => {
     const s = generateManimScript(makeProject([makeObj({ label: '\\theta' })]));
     expect(s).toMatch(/_arc = Angle\(/);
-    expect(s).toMatch(/= VGroup\(\w+_arc, \w+_arc\.get_tex\("\\\\theta"\)\)/);
+    expect(s).toMatch(
+      /= VGroup\((\w+)_arc, MathTex\("\\\\theta"\)\.move_to\(\1_l1\.get_start\(\) \+ 1\.6 \* \(\1_arc\.point_from_proportion\(0\.5\) - \1_l1\.get_start\(\)\)\)\)/
+    );
+    expect(s).not.toContain('_arc.get_tex(');
   });
 });
 
@@ -91,5 +96,19 @@ describe('angle round-trip', () => {
       SH
     ).objects[0];
     expect(o.label).toBe('\\theta');
+  });
+  it('still parses the legacy get_tex label form from older .py files', () => {
+    const py = [
+      'from manim import *',
+      'class MainScene(Scene):',
+      '    def construct(self):',
+      '        a_l1 = Line([-0.296, -0.296, 0], [0.593, -0.296, 0])',
+      '        a_l2 = Line([-0.296, -0.296, 0], [-0.296, 0.444, 0])',
+      '        a_arc = Angle(a_l1, a_l2, radius=0.6)',
+      '        a = VGroup(a_arc, a_arc.get_tex("\\\\alpha"))',
+    ].join('\n');
+    const o = parseManimScript(py, SW, SH).objects[0];
+    expect(o.type).toBe('angle');
+    expect(o.label).toBe('\\alpha');
   });
 });

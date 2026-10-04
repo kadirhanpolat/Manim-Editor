@@ -18,6 +18,10 @@ services:
     # network (REDIS_URL=redis://redis:6379). Publishing 6379 only invited host
     # port clashes with other local projects. Add a `ports` mapping back if you
     # need redis-cli from the host.
+    # Come back after a Docker daemon / machine restart: the api only checks
+    # redis health at startup (depends_on), so a redis left stopped silently
+    # breaks every render (EDITOR_FINDINGS #2).
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     healthcheck:

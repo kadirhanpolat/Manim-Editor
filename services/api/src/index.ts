@@ -14,6 +14,7 @@ import jobsRouter from './routes/jobs.js';
 import fontsRouter from './routes/fonts.js';
 import audioRouter from './routes/audio.js';
 import { attachWebSocket } from './ws.js';
+import { getHealthReport, isRedisUnavailableError } from './queue.js';
 
 // Augment Express Request with our dataDir field (shared across all route files)
 declare global {
@@ -39,9 +40,12 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-app.get('/health', (_req: Request, res: Response) =>
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
-);
+// 200 only when Redis answers: a running API without its queue cannot render,
+// so it must not report healthy (EDITOR_FINDINGS #2).
+app.get('/health', async (_req: Request, res: Response) => {
+  const report = await getHealthReport();
+  res.status(report.status === 'ok' ? 200 : 503).json(report);
+});
 
 app.use('/api/projects', projectsRouter);
 app.use('/api/assets', assetsRouter);
@@ -59,6 +63,11 @@ app.use(
     _next: NextFunction
   ) => {
     console.error('[API Error]', err);
+    if (isRedisUnavailableError(err)) {
+      return void res.status(503).json({
+        error: 'Render queue unavailable: cannot reach Redis. Is the redis service running?',
+      });
+    }
     res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
   }
 );

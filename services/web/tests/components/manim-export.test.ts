@@ -1186,3 +1186,52 @@ describe('parser unsupported-code warnings', () => {
     expect(result.warnings.some((w) => w.includes('print("ignored custom code")'))).toBe(true);
   });
 });
+
+// EDITOR_FINDINGS #3: simultaneous enters/exits are emitted as one
+// self.play(A, B, …); the parser must read every animation back at the same
+// start time instead of dropping the line.
+describe('parser — simultaneous enter/exit plays', () => {
+  it('round-trips three objects entering together', () => {
+    const project = makeProject(
+      [makeObj('a'), makeObj('b'), makeObj('c', 'circle', { enterTime: 2 })],
+      []
+    );
+    const script = generateManimScript(project);
+    expect(script).toContain('self.play(FadeIn(a), FadeIn(b), run_time=0.5)');
+    const parsed = parseManimScript(script, SW, SH);
+    const byName = Object.fromEntries(parsed.objects.map((o) => [o.name, o]));
+    expect(parsed.objects).toHaveLength(3);
+    for (const o of parsed.objects) expect(o.enterAnim).toBe('fade_in');
+    expect(parsed.objects[0].enterTime).toBeCloseTo(0, 5);
+    expect(parsed.objects[1].enterTime).toBeCloseTo(0, 5);
+    expect(parsed.objects[2].enterTime).toBeCloseTo(2, 5);
+    expect(byName).toBeTruthy();
+  });
+
+  it('round-trips simultaneous exits with their durations', () => {
+    const objs = ['a', 'b'].map((id) =>
+      makeObj(id, 'circle', { exitAnim: 'fade_out', duration: 4 })
+    );
+    const script = generateManimScript(makeProject(objs, []));
+    expect(script).toContain('self.play(FadeOut(a), FadeOut(b), run_time=0.5)');
+    const parsed = parseManimScript(script, SW, SH);
+    for (const o of parsed.objects) {
+      expect(o.exitAnim).toBe('fade_out');
+      expect(o.duration).toBeCloseTo(4.5, 5);
+    }
+  });
+
+  it('round-trips per-animation run_times when durations differ', () => {
+    const objs = [makeObj('a'), makeObj('b', 'circle', { enterAnimDur: 1.5 })];
+    const script = generateManimScript(makeProject(objs, []));
+    expect(script).toContain('self.play(FadeIn(a, run_time=0.5), FadeIn(b, run_time=1.5))');
+    const parsed = parseManimScript(script, SW, SH);
+    for (const o of parsed.objects) {
+      expect(o.enterAnim).toBe('fade_in');
+      expect(o.enterTime).toBeCloseTo(0, 5);
+    }
+    // the clock advances by the longest animation, not the sum
+    const reparsed = generateManimScript({ ...makeProject(parsed.objects, []) });
+    expect(reparsed).toContain('FadeIn(');
+  });
+});

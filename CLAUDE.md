@@ -24,17 +24,17 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 746 unit tests (store, components, export)
+cd services/web && npm run test:unit    # 754 unit tests (store, components, export); 36 Topbar/PropertiesPanel characterization snapshots are stale on main (pre-existing)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
-npm test --workspace services/api       # 55 api tests (compiler pipeline + path/scene-name/render-options safety)
-npm test --workspace packages/manim-codegen  # 15 codegen tests
+npm test --workspace services/api       # 72 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
+npm test --workspace packages/manim-codegen  # 34 codegen tests
 # All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
 cd e2e && npm test                      # 17 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
 
-cd services/web && RUN_MANIM_RENDER=1 npm run test:render  # OPT-IN, real Manim CE. Two harnesses: (1) render-truth (render-integration.test.ts) — a 6-scene corpus + self-check proves generated Python RUNS, not just that it's AST-valid; (2) golden-frame regression (render-golden.test.ts) — dHashes a stable geometric corpus's last frame vs a committed baseline (tests/components/__render_baselines__/dhash.json), Hamming-tolerant (≤8/256). Re-baseline after an intentional render change: RUN_MANIM_RENDER=1 UPDATE_RENDER_BASELINE=1 npm run test:render. Skips unless RUN_MANIM_RENDER=1 + `manim` on PATH + a Pillow-capable python; needs renderer deps (manim-fonts). Manim v0.20.1. CI runs this as a non-blocking `render-harness` job. NOTE: render-truth only checks exit 0 (a frame can be blank — addObject's default FadeOut exit blanks the last frame; golden corpus sets exitAnim='none').
+cd services/web && RUN_MANIM_RENDER=1 npm run test:render  # OPT-IN, real Manim CE. Two harnesses: (1) render-truth (render-integration.test.ts) — a 7-scene corpus + self-check + **every palette template** proves generated Python RUNS, not just that it's AST-valid; (2) golden-frame regression (render-golden.test.ts) — dHashes a stable geometric corpus's last frame vs a committed baseline (tests/components/__render_baselines__/dhash.json), Hamming-tolerant (≤8/256). Re-baseline after an intentional render change: RUN_MANIM_RENDER=1 UPDATE_RENDER_BASELINE=1 npm run test:render. Skips unless RUN_MANIM_RENDER=1 + `manim` on PATH + a Pillow-capable python; needs renderer deps (manim-fonts). Manim v0.20.1. CI runs this as a non-blocking `render-harness` job. NOTE: render-truth only checks exit 0 (a frame can be blank — addObject's default FadeOut exit blanks the last frame; golden corpus sets exitAnim='none').
 ```
 
 Tooling (run from repo root) — all are CI gates:
@@ -86,10 +86,13 @@ Both services are **thin wrappers** calling `generateScene(project, { resolveAss
 
 `Project` type carries `sections?: Array<{ id: string; time: number; title: string }>` and `sceneDuration?: number` — used by `generateScene` to emit `self.next_section(…)` calls interleaved with animation steps.
 
+**Scene timing (generateScene emit loop):** enter/exit steps that start at the same time (±0.01 s) are folded by `mergeSimultaneousSteps` into ONE `self.play(A, B, …, run_time=d)` (mixed durations → a `run_time` inside each animation; instant `self.add` enters stay separate). Waits are measured from the real `elapsed` clock (Σ waits + run_times — exactly what Manim and the parser accumulate), not the nominal step end, so overlaps don't push later steps back. Voiceover blocks count as `max(clip dur, audio.duration)` (+ manual offset). The tail is `self.wait(max(1, sceneDuration − elapsed))`: it reaches `sceneDuration` when there is room and always holds ≥1 s after the last animation (mirrors the preview's `computedDuration = max(sceneDuration, end + 1)`); without `sceneDuration` it is the legacy `self.wait(1)`. The parser's `expandSimultaneousPlays` splits a multi-animation `self.play(…)` into one sub-play per animation bracketed by NUL-prefixed `SIM_*` marker lines that rewind its clock.
+
 ### Parity invariants (regression-guarded)
 
 The codegen test suite asserts the generated Python is stable. When touching codegen, keep these consistent and re-run `manim-export.test.ts`, `effects-codegen.test.ts`, `phase26-effects-codegen.test.ts`:
 - Generator helpers that historically had byte-identical copies (`emphasisExpr`, `transformExpr`, the `count`/`counter`/`matrix`/`brace`/`angle`/`table`/`graph`/`vector_field` cases, `safeMatrixEntry`, `safeLatex`, `fillOpacityExpr`, `strokeOpacityArg`, `gradientLine`, `dashedLines`, `shadowLines`, `roundCornersLine`, `SHADOW_TYPES`) now live **once** in `@manim/codegen`; the parity/round-trip tests remain as regression guards.
+- **Math expressions are normalized** by `normalizeMathExpr` (`@manim/codegen/helpers.ts`; applied inside `safeMathExpr` and by the preview `compileExpr`): bare numpy names (`exp`, `sin`, `log`, `sqrt`, `pi`, `e`, …) → `np.*`, `^` → `**`. The scene only imports `from manim import *` + `numpy as np`, so a bare `exp(x)` used to NameError at render. Idempotent on `np.*` input.
 - The math whitelist exists in two places that must stay in sync: `safeMathExpr` (`@manim/codegen/helpers.ts`, used by codegen) and `engine/mathExpr.ts` `isSafeExpr`/`compileExpr` (preview). Whitelist:
   ```js
   if (!/^[0-9a-zA-Z()+\-*/.%^, ]*$/.test(expr)) return 'x**2';
@@ -166,7 +169,7 @@ clip.audio = {
 - **`parametric`** (`ParametricFunction`): `xExpr`/`yExpr` (t-based), `tMin`/`tMax`; `safeMathExpr`-guarded.
 - **`matrix`** (`Matrix`): source of truth `matrixData` (2D string array) + `bracket` (`[`|`(`|`|`); rows/cols derived. Single-line `Matrix([[…]])` (+ `left/right_bracket` for non-default) then `.set_color`. Entries sanitized by `safeMatrixEntry` (no eval). Actions: `setMatrixCell`, `add/removeMatrixRow/Column`, `setMatrixBracket` (guards at 1×1).
 - **`brace`** (`BraceBetweenPoints`): `p1`/`p2` (object-relative px), `label`. Labeled → `VGroup(_brace, _brace.get_tex(…))`.
-- **`angle`** (`Angle`/`RightAngle`): `vertex`/`point1`/`point2`, `rightAngle`, `radius`, `label`. Emitted via two helper `Line`s (`_l1`/`_l2`); parser captures them into `relLineMap`. Labels use `get_tex(…)` with `safeLatex` (non-raw, doubled-backslash). Both brace+angle: draggable point handles reuse `polygonHandles` (`kind:'relational'`).
+- **`angle`** (`Angle`/`RightAngle`): `vertex`/`point1`/`point2`, `rightAngle`, `radius`, `label`. Emitted via two helper `Line`s (`_l1`/`_l2`); parser captures them into `relLineMap`. Labels are a `MathTex(…)` (`safeLatex`, non-raw, doubled-backslash) `move_to`'d just outside the arc midpoint — Manim's `Angle` has **no** `get_tex` (only `Brace` does); the parser still reads the legacy `_arc.get_tex(…)` form. Both brace+angle: draggable point handles reuse `polygonHandles` (`kind:'relational'`).
 - **`counter`** (`DecimalNumber`/`Integer`): `value`, `numDecimals`, `suffix`, `useInteger`. Emits `DecimalNumber(<v>, num_decimal_places=<d>[, unit="<s>"])`, or `Integer(<trunc v>[, unit])` when `useInteger`. `unit=` only when suffix non-empty. `value` keyframable (`set_value`). Actions: `setCounterValue/Decimals/Suffix/Integer`.
 - **`table`** (`Table`/`MathTable`): `cellData`, `mathMode`, `rowLabels`/`colLabels`. Math mode emits `MathTable(…, row_labels=[MathTex(…)], col_labels=[…])` (labels omitted when empty). Reuses `safeMatrixEntry` + matrix grid editor. Actions: `setTableCell`, `add/removeTableRow/Column`, `setTableMathMode/RowLabels/ColLabels`.
 - **`complex_plane`** / **`polar_plane`**: mirror `numberplane`; `xRange`/`yRange` + `width`/`height` → `x_length`/`y_length`. `polar_plane` → `PolarPlane(radius_max, radius_step, azimuth_units, size)` (`size = min(w,h)/sw*FRAME_WIDTH`). Actions: `setPolarRadiusMax/Step` (clamp ≥0.1), `setPolarAzimuth`.
