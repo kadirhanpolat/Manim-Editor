@@ -24,11 +24,11 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 754 unit tests (store, components, export); 36 Topbar/PropertiesPanel characterization snapshots are stale on main (pre-existing)
+cd services/web && npm run test:unit    # 764 unit tests (store, components, export); 36 Topbar/PropertiesPanel characterization snapshots are stale on main (pre-existing)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 72 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
-npm test --workspace packages/manim-codegen  # 34 codegen tests
+npm test --workspace packages/manim-codegen  # 43 codegen tests
 # All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
@@ -164,6 +164,7 @@ clip.audio = {
 
 - **`axes`**: `graphs: []` array, each `{ id, expression, color, xMin, xMax, strokeWidth }`. Each graph also has optional `area` (`get_area`), `riemann` (`get_riemann_rectangles`), `tangent` (`TangentLine`, alpha from `x`).
 - **Geometry**: `annulus`/`arc`/`sector`/`double_arrow` → `Annulus`/`Arc`/`Sector`/`DoubleArrow`; radii in px (via `FRAME_WIDTH`), angles in deg → `<deg> * DEGREES`.
+- **Arrow tips** (`arrow`, `double_arrow`): `arrowTipPx(length, strokeWidth)` (helpers.ts) = min(max(28, 6·stroke), 0.25·length) px → `tip_length` + `max_tip_length_to_length_ratio=0.25`; the Konva preview uses the same helper for `pointerLength`/`pointerWidth` (Manim tip width == length).
 - **`polygon_free`** (`Polygon`): `obj.vertices` (object-relative px) + draggable canvas handles; presets in `engine/polygonVertices.ts`.
 - **`bezier`**: smooth open curve through draggable anchor `vertices`. Emits `VMobject()` + `set_points_smoothly([…])` + `set_stroke`. **Parser builds from the `set_points_smoothly` line, not `VMobject()`** (shared with `path_move` path).
 - **`parametric`** (`ParametricFunction`): `xExpr`/`yExpr` (t-based), `tMin`/`tMax`; `safeMathExpr`-guarded.
@@ -258,6 +259,8 @@ Optional fields; absent ⇒ byte-identical legacy output. Delete the field on nu
 
 - **Typewriter presets**: `enterAnim:'typewriter'` → `AddTextLetterByLetter`, `exitAnim:'typewriter_out'` → `RemoveTextLetterByLetter` (round-trip via enter/exit anim parsers).
 - Tex term-matching morph shows a generic crossfade in preview (Manim does real term alignment); typewriter timing is approximate in preview.
+- **LaTeX sizing**: default = contain-fit into the box → `m.scale(min(W / m.width, H / m.height))` (W/H = box in Manim units; parser restores width/height from this line). Optional `fontSize` → `MathTex(…, font_size=N)` and no scale line (inspector "Fit to box" toggle; absent field = fit). Preview `latexPreviewFontSize` (configs/text.ts) mirrors both.
+- **Render fonts** (`renderFontFor` in helpers.ts): Arial/Helvetica→Arimo, Times(/New Roman)→Tinos, Courier(/New)→Cousine, Georgia→Gelasio (metric-compatible Google Fonts, RegisterFont'ed); other `isSystemFont` families emit `warn_missing_font=False`; Google fonts unchanged. The `# Font: <chosen>` comment before `Text(` lets the parser restore the user's family. Renderer Dockerfile pre-fetches Roboto + the clones into `$HOME/.cache/Manim-Fonts` (offline renders).
 - **Math → use the `latex` object, not `text`.** A `latex` object emits `MathTex(...)` (proper math typesetting: italic variables, real superscripts); a `text` object emits `Text(..., font=…)` (plain font). Authoring a math expression as a `text` object renders it in the wrong font (regression source — fixed in the `axes_intro` template).
 
 ## 3D Scene Support

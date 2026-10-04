@@ -37,6 +37,18 @@ export function safeOpacity(val: unknown): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
 }
 
+/**
+ * Arrow tip length in project px, shared by the canvas preview and codegen so
+ * both draw the same tip: scales with the stroke (6×, 28 px floor) and is
+ * capped at a quarter of the arrow length (Manim's own default ratio). The
+ * old constant ≈ 7 px tip was nearly invisible in renders.
+ */
+export const ARROW_TIP_LENGTH_RATIO = 0.25;
+export function arrowTipPx(lengthPx: number, strokeWidth: number): number {
+  const base = Math.max(28, 6 * (Number.isFinite(strokeWidth) ? strokeWidth : 0));
+  return Math.min(base, ARROW_TIP_LENGTH_RATIO * Math.max(0, lengthPx || 0));
+}
+
 /** Bare function names users type that only exist in the scene as `np.<name>`. */
 export const NP_FUNCTIONS = [
   'sin',
@@ -252,6 +264,39 @@ export function isSystemFont(fontFamily: string): boolean {
     'fantasy',
   ];
   return systemFonts.some((f) => f.toLowerCase() === fontFamily.toLowerCase());
+}
+
+/**
+ * Microsoft core fonts are absent from the Linux render container, where
+ * Manim dumps its whole font list and falls back to an arbitrary face. These
+ * open Google Fonts are metric-compatible clones, so the render keeps the
+ * layout the browser preview (which has the original) shows.
+ */
+export const RENDER_FONT_SUBSTITUTES: Readonly<Record<string, string>> = {
+  arial: 'Arimo',
+  helvetica: 'Arimo',
+  'times new roman': 'Tinos',
+  times: 'Tinos',
+  'courier new': 'Cousine',
+  courier: 'Cousine',
+  georgia: 'Gelasio',
+};
+
+export interface RenderFont {
+  /** Family name passed to Manim's Text(font=…). */
+  font: string;
+  /** Download + register it via manim-fonts' RegisterFont. */
+  register: boolean;
+  /** A system font with no clone: silence Manim's missing-font dump. */
+  quiet: boolean;
+}
+
+/** How a text object's chosen family is rendered by Manim. */
+export function renderFontFor(fontFamily: string): RenderFont {
+  const clone = RENDER_FONT_SUBSTITUTES[fontFamily.toLowerCase()];
+  if (clone) return { font: clone, register: true, quiet: false };
+  if (isSystemFont(fontFamily)) return { font: fontFamily, register: false, quiet: true };
+  return { font: fontFamily, register: true, quiet: false };
 }
 
 export function fmt3d(n: number): string {

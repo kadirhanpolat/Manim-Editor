@@ -55,3 +55,25 @@ describe('BarChartSettings', () => {
     expect(obj.values.length).toBe(4);
   });
 });
+
+// EDITOR_FINDINGS #6: LaTeX defaults to fitting its box; an explicit font size
+// can be set (and cleared back to box fit).
+describe('LatexSettings sizing', () => {
+  it('defaults to "fit to box" and switches to an explicit font size', async () => {
+    const { default: LatexSettings } =
+      await import('../../src/components/inspector/object-settings/LatexSettings.vue');
+    const obj = store.addObject('latex', 960, 540);
+    const w = mount(LatexSettings, { props: { obj } });
+    const fit = w.find('[data-test="latex-fit-box"]');
+    expect((fit.element as HTMLInputElement).checked).toBe(true);
+    expect(w.find('[data-test="latex-fontsize"]').exists()).toBe(false);
+
+    await fit.setValue(false);
+    expect(obj.fontSize).toBe(48);
+    await w.find('[data-test="latex-fontsize"]').setValue('36');
+    expect(obj.fontSize).toBe(36);
+
+    await w.find('[data-test="latex-fit-box"]').setValue(true);
+    expect('fontSize' in obj).toBe(false); // field removed, not left as undefined
+  });
+});

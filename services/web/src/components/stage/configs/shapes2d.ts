@@ -2,6 +2,7 @@
 // Each function takes (obj, ctx) where ctx is a StageCtx resolved-value object.
 // No Vue refs, no reactive imports — all live values come through ctx.
 import { compileExpr } from '../../../engine/mathExpr.js';
+import { arrowTipPx } from '@manim/codegen';
 import type { SceneObject } from '@manim/codegen';
 import type { StageCtx } from './context.js';
 
@@ -386,8 +387,9 @@ export function arrowCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknow
     strokeWidth: Math.max(2, (((e.strokeWidth as number | undefined) || 2) * ctx.vs) / 2),
     opacity: e.opacity ?? 1,
     rotation: rot,
-    pointerLength: (14 * ctx.vs) / 2,
-    pointerWidth: (12 * ctx.vs) / 2,
+    // same tip as the rendered Arrow (tip width == length in Manim)
+    pointerLength: arrowTipPx(ew, (e.strokeWidth as number | undefined) || 2) * ctx.vs,
+    pointerWidth: arrowTipPx(ew, (e.strokeWidth as number | undefined) || 2) * ctx.vs,
     draggable: ctx.activeTool === 'select',
     id: obj.id,
     name: 'stageObject',
@@ -486,8 +488,8 @@ export function doubleArrowCfg(obj: SceneObject, ctx: StageCtx): Record<string, 
     points: [-half, 0, half, 0],
     pointerAtBeginning: true,
     pointerAtEnding: true,
-    pointerLength: (14 * ctx.vs) / 2,
-    pointerWidth: (12 * ctx.vs) / 2,
+    pointerLength: arrowTipPx(ew, (e.strokeWidth as number | undefined) || 2) * ctx.vs,
+    pointerWidth: arrowTipPx(ew, (e.strokeWidth as number | undefined) || 2) * ctx.vs,
     fill: e.fill || '#ef4444',
     stroke: e.stroke || e.fill || '#ef4444',
     strokeWidth: (((e.strokeWidth as number | undefined) || 2) * ctx.vs) / 2 + 2,

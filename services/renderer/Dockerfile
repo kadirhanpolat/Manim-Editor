@@ -14,8 +14,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends sox libsox-fmt-
     && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir "setuptools<81" redis==5.0.8 manim-fonts==0.5.0 "manim-voiceover[gtts]>=0.3.4"
 
-# Create fonts cache directory (use $HOME since container may not run as root)
-RUN mkdir -p $HOME/.cache/manim-fonts
+# Pre-fetch the fonts codegen registers most often into manim-fonts' cache
+# ($HOME/.cache/Manim-Fonts): Roboto (the text default) plus Arimo/Tinos/
+# Cousine/Gelasio, the metric-compatible clones Arial/Times/Courier/Georgia
+# render through (renderFontFor in @manim/codegen). Renders using them then
+# work offline and skip a per-job download. Best effort: a build without
+# network still succeeds and those fonts are downloaded at render time.
+RUN python -c "from manim_fonts import RegisterFont; [RegisterFont(f).__enter__() for f in ('Roboto', 'Arimo', 'Tinos', 'Cousine', 'Gelasio')]" \
+    || echo "WARNING: font prefetch failed (offline build?) - fonts will download at render time"
 
 # Copy worker script
 COPY render_args.py /app/render_args.py

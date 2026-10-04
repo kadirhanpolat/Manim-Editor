@@ -175,6 +175,31 @@ export function latexBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkn
   };
 }
 
+const LATEX_PAD = 8;
+
+/**
+ * Preview font size mirroring the codegen: an explicit `fontSize` maps like a
+ * text object's (font_size N ≈ N project px); otherwise the formula is
+ * contain-fit into its box, like `.scale(min(W / m.width, H / m.height))`.
+ */
+function latexPreviewFontSize(
+  obj: SceneObject,
+  text: string,
+  w: number,
+  h: number,
+  vs: number
+): number {
+  const fs = obj.fontSize as number | undefined;
+  if (typeof fs === 'number' && Number.isFinite(fs) && fs > 0) return fs * vs;
+  const lines = text.split('\n');
+  // no canvas (tests/SSR) → ~0.55 em per character
+  const width100 = (l: string) => measureTextWidth(l, 100, 'serif', 'italic ') || l.length * 55;
+  const widest = Math.max(...lines.map(width100), 1);
+  const byWidth = (100 * Math.max(w - 2 * LATEX_PAD, 1)) / widest;
+  const byHeight = Math.max(h - 2 * LATEX_PAD, 1) / (lines.length * 1.2);
+  return Math.max(6, Math.min(byWidth, byHeight));
+}
+
 // ── latexTextCfg ──────────────────────────────────────────────────────────────
 export function latexTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const L = ctx.live(obj);
@@ -183,19 +208,20 @@ export function latexTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, un
   const w = L ? L.w : ow * ctx.vs,
     h = L ? L.h : oh * ctx.vs;
   // Approximate Unicode preview of the raw LaTeX (Manim does the real MathTex).
+  const text = latexToUnicode((obj.latex as string | undefined) || 'E = mc^2');
   return {
     x: -w / 2,
     y: -h / 2,
     width: w,
     height: h,
-    text: latexToUnicode((obj.latex as string | undefined) || 'E = mc^2'),
-    fontSize: Math.max(12, 18 * ctx.vs),
+    text,
+    fontSize: latexPreviewFontSize(obj, text, w, h, ctx.vs),
     fontFamily: 'serif',
     fontStyle: 'italic',
     fill: (obj.fill as string | undefined) || '#ffffff',
     align: 'center',
     verticalAlign: 'middle',
-    padding: 8,
+    padding: LATEX_PAD,
     listening: false,
   };
 }

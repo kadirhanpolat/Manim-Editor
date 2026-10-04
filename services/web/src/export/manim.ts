@@ -16,6 +16,7 @@ import {
   FRAME_HEIGHT,
   FRAME_X_RADIUS,
   generateScene,
+  renderFontFor,
 } from '@manim/codegen';
 import type { Project, SceneObject, Clip } from '@manim/codegen';
 
@@ -464,8 +465,12 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
 
   let simStart = 0;
   let simEnd = 0;
+  let lastFontComment: string | null = null; // `# Font: <family>` from the previous line
   for (const line of lines) {
     let m: RegExpMatchArray | null;
+    // a `# Font:` comment only describes the line right after it
+    const fontComment = lastFontComment;
+    lastFontComment = null;
 
     // Simultaneous-play markers (see expandSimultaneousPlays)
     if (line === SIM_BEGIN) {
@@ -493,6 +498,12 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     m = line.match(/^class\s+\w+\(ThreeDScene/);
     if (m) {
       sceneType = '3d';
+      continue;
+    }
+
+    m = line.match(/^# Font: (.+)$/);
+    if (m) {
+      lastFontComment = m[1].trim();
       continue;
     }
 
@@ -1707,10 +1718,16 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
 
     // Text
     m = line.match(
-      /^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?(?:,\s*font="([^"]*)")?\)/
+      /^(\w+)\s*=\s*Text\("([^"]*)",\s*font_size=(\d+)(?:,\s*color=["']([^"']+)["'])?(?:,\s*font="([^"]*)")?(?:,\s*warn_missing_font=False)?\)/
     );
     if (m) {
-      const [, name, content, fontSize, color, fontFamily] = m;
+      const [, name, content, fontSize, color, renderFont] = m;
+      // A system font renders through its open clone (Arial → Arimo); the
+      // preceding `# Font: <chosen>` comment restores what the user picked.
+      const fontFamily =
+        fontComment && renderFont && renderFontFor(fontComment).font === renderFont
+          ? fontComment
+          : renderFont;
       const id = uid('obj');
       const obj: SceneObject = {
         id,
@@ -1936,9 +1953,11 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
 
     // MathTex (LaTeX) — un-escape the Python string literal (\\ → \, \" → ").
     // Handles both the normal "..." form and the legacy raw r"..." form.
-    m = line.match(/^(\w+)\s*=\s*MathTex\(r?"((?:[^"\\]|\\.)*)"(?:,\s*color=["']([^"']+)["'])?\)/);
+    m = line.match(
+      /^(\w+)\s*=\s*MathTex\(r?"((?:[^"\\]|\\.)*)"(?:,\s*color=["']([^"']+)["'])?(?:,\s*font_size=(\d+))?\)/
+    );
     if (m) {
-      const [, name, rawLatex, color] = m;
+      const [, name, rawLatex, color, fontSize] = m;
       const latex = rawLatex.replace(/\\([\\"])/g, '$1');
       const id = uid('obj');
       const obj: SceneObject = {
@@ -1959,9 +1978,21 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
         exitAnim: 'fade_out',
         zOrder: objects.length,
       };
+      if (fontSize) obj.fontSize = parseInt(fontSize, 10);
       objects.push(obj);
       varMap[name] = id;
       objById[id] = obj;
+      continue;
+    }
+
+    // LaTeX contain-fit → restore the box size (Manim units → project px)
+    m = line.match(/^(\w+)\.scale\(min\(([\d.]+) \/ \1\.width, ([\d.]+) \/ \1\.height\)\)/);
+    if (m) {
+      const t = objById[varMap[m[1]]];
+      if (t && t.type === 'latex') {
+        t.width = Math.round((parseFloat(m[2]) / FRAME_WIDTH) * sw);
+        t.height = Math.round((parseFloat(m[3]) / FRAME_HEIGHT) * sh);
+      }
       continue;
     }
 

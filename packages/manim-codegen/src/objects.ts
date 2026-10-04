@@ -17,6 +17,9 @@ import {
   roundCornersLine,
   shadowLines,
   stageToManim,
+  arrowTipPx,
+  ARROW_TIP_LENGTH_RATIO,
+  renderFontFor,
 } from './helpers.js';
 import {
   FRAME_WIDTH,
@@ -138,8 +141,9 @@ export function objectCode(
     }
     case 'double_arrow': {
       const half = (((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3);
+      const tipLen = ((arrowTipPx(o.width as number, sw2) / sw) * FRAME_WIDTH).toFixed(3);
       lines.push(
-        `${n} = DoubleArrow(start=LEFT * ${half}, end=RIGHT * ${half}, color=${hex(o.fill) || '"#EF4444"'}, buff=0, stroke_width=${sw2})`
+        `${n} = DoubleArrow(start=LEFT * ${half}, end=RIGHT * ${half}, color=${hex(o.fill) || '"#EF4444"'}, buff=0, stroke_width=${sw2}, tip_length=${tipLen}, max_tip_length_to_length_ratio=${ARROW_TIP_LENGTH_RATIO})`
       );
       break;
     }
@@ -406,9 +410,9 @@ export function objectCode(
       break;
     case 'arrow': {
       const halfLen = (((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3);
-      const tipLen = ((FRAME_X_RADIUS / sw) * FRAME_WIDTH).toFixed(3);
+      const tipLen = ((arrowTipPx(o.width as number, sw2) / sw) * FRAME_WIDTH).toFixed(3);
       lines.push(
-        `${n} = Arrow(start=LEFT * ${halfLen}, end=RIGHT * ${halfLen}, color=${hex(o.fill) || '"#EF4444"'}, buff=0, tip_length=${tipLen}, stroke_width=${sw2}, max_tip_length_to_length_ratio=0.15)`
+        `${n} = Arrow(start=LEFT * ${halfLen}, end=RIGHT * ${halfLen}, color=${hex(o.fill) || '"#EF4444"'}, buff=0, tip_length=${tipLen}, stroke_width=${sw2}, max_tip_length_to_length_ratio=${ARROW_TIP_LENGTH_RATIO})`
       );
       break;
     }
@@ -460,9 +464,11 @@ export function objectCode(
     }
     case 'text': {
       const fontFamily = (o.fontFamily as string | undefined) || 'Roboto';
+      const rf = renderFontFor(fontFamily);
+      // the comment keeps the chosen family for the .py parser when rf.font is a clone
       lines.push(`# Font: ${fontFamily}`);
       lines.push(
-        `${n} = Text("${safeText(o.content)}", font_size=${safeNum(o.fontSize, 48)}, color=${fill}, font="${fontFamily}")`
+        `${n} = Text("${safeText(o.content)}", font_size=${safeNum(o.fontSize, 48)}, color=${fill}, font="${rf.font}"${rf.quiet ? ', warn_missing_font=False' : ''})`
       );
       break;
     }
@@ -500,8 +506,18 @@ export function objectCode(
         .replace(/\\/g, '\\\\')
         .replace(/"/g, '\\"')
         .replace(/\r?\n/g, ' ');
-      lines.push(`${n} = MathTex("${texStr}", color=${fill})`);
-      lines.push(`${n}.scale(${(scale * 2).toFixed(3)})`);
+      const fontSize = o.fontSize as number | undefined;
+      if (typeof fontSize === 'number' && Number.isFinite(fontSize) && fontSize > 0) {
+        // explicit size, like Text(font_size=…)
+        lines.push(`${n} = MathTex("${texStr}", color=${fill}, font_size=${Math.round(fontSize)})`);
+      } else {
+        // contain-fit into the object's box (the box the canvas shows)
+        // missing / non-positive size → the parser's default box (never NaN or 0)
+        const bw = ((safeNum(o.width, 200) / sw) * FRAME_WIDTH).toFixed(3);
+        const bh = ((safeNum(o.height, 80) / sh) * FRAME_HEIGHT).toFixed(3);
+        lines.push(`${n} = MathTex("${texStr}", color=${fill})`);
+        lines.push(`${n}.scale(min(${bw} / ${n}.width, ${bh} / ${n}.height))`);
+      }
       break;
     }
     case 'axes': {

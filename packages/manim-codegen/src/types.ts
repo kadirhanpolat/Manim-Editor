@@ -349,6 +349,8 @@ export interface MatrixObject extends SceneObject {
 export interface LatexObject extends SceneObject {
   type: 'latex';
   latex?: string;
+  /** Explicit MathTex font_size; absent → contain-fit into width × height. */
+  fontSize?: number;
 }
 
 export interface DiGraphEdge extends Array<string> {

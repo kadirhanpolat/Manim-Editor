@@ -447,7 +447,7 @@ The backend services and shared package have their own suites (from the repo roo
 
 ```bash
 npm test --workspace services/api             # 72 api tests (compiler validate/normalize/codegen + path/scene-name/render-options safety + Redis availability → 503)
-npm --workspace packages/manim-codegen test   # 34 @manim/codegen tests (generateScene, math-expr normalization, simultaneous enter/exit merge, sceneDuration tail, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
+npm --workspace packages/manim-codegen test   # 43 @manim/codegen tests (arrow tips, LaTeX fit/font_size, render-font substitution, generateScene, math-expr normalization, simultaneous enter/exit merge, sceneDuration tail, camera-only guard, count/path_move indent, counter LaTeX-unit escape, code/bar_chart emission + pyMultiline escaping, sections next_section emission)
 ```
 
 **Render-truth + golden-frame (opt-in).** A real Manim CE process renders a representative scene corpus — proving the generated Python actually _runs_, not merely that it parses (the AST check above). A companion **golden-frame** check perceptually hashes (dHash) a stable geometric corpus's last frame and compares it to a committed baseline (Hamming-tolerant), catching unintended render drift an exit-code check cannot see. Heavy, so both stay off the default suite:
@@ -516,8 +516,11 @@ Fixes from real production use (a documentary built through the API). Every item
 - **Simultaneous enters/exits**: objects that enter or exit at the same time are now one `self.play(A, B, ...)` instead of a chain of plays, so a 30 s scene no longer stretches to 40 s. Waits are measured from the real elapsed time, so overlaps no longer push every later step back. The code parser reads the merged form back.
 - **`sceneDuration` is honored**: the render holds until the scene duration (and at least 1 s after the last animation), so narration-timed scenes keep their length.
 - **No hang without Redis**: render and job requests now fail in about 3 s with HTTP 503 and a clear message instead of hanging when Redis is unreachable. `/health` reports Redis (`503 degraded` when down), and the `redis` service restarts with Docker (`restart: unless-stopped`).
+- **Visible arrow tips**: `arrow` / `double_arrow` tips scale with the stroke (6×, 28 px minimum, at most a quarter of the length) instead of a fixed ~7 px. The canvas and the render use the same `arrowTipPx` helper.
+- **LaTeX fits its box**: a `latex` object scales to fit inside its box (`.scale(min(W / m.width, H / m.height))`) instead of by the box's shorter side, so formulas no longer overflow. An optional **Font size** (inspector → Size, "Fit to box" off) renders it at a fixed `font_size` like a text object. Box size and font size now survive a `.py` round-trip.
+- **Render fonts match the preview**: Arial/Helvetica, Times, Courier and Georgia, which the Linux render container lacks, render through their metric-compatible open clones (Arimo, Tinos, Cousine, Gelasio), so the layout matches the browser preview. Other system fonts no longer make Manim print its whole font list. The renderer image pre-fetches Roboto and these clones, so renders that use them work offline. The project keeps the font you picked.
 - **Render harness covers every template**: the opt-in real-Manim harness (`RUN_MANIM_RENDER=1 npm run test:render`) now renders all palette templates (26 cases).
-- **Tests**: 34 codegen (+19), 72 api (+7 Redis availability), web unit +8 (math preview incl. Python-style unary minus, merged-play round-trip, angle label); 122 engine unchanged.
+- **Tests**: 43 codegen (+28), 72 api (+7 Redis availability), web unit +18 (math preview incl. Python-style unary minus, merged-play round-trip, angle label, arrow/LaTeX preview parity, LaTeX/font round-trip, LaTeX inspector); 122 engine unchanged.
 
 ### v3.27.0
 

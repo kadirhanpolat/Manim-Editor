@@ -7,7 +7,7 @@ import {
   safeText,
   stageToManim,
   pathPointsPy,
-  isSystemFont,
+  renderFontFor,
 } from './helpers.js';
 import { objectCode } from './objects.js';
 import { objectCode3d } from './objects3d.js';
@@ -44,14 +44,12 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     return refs.some((id) => typeof id === 'string' && hiddenIds.has(id));
   };
 
-  // Collect unique Google Fonts used by text objects
+  // Collect unique fonts to register (Google Fonts + open clones of system fonts)
   const usedFonts = new Set<string>();
   for (const obj of visibleObjects) {
     if (obj.type === 'text' && obj.fontFamily) {
-      const font = obj.fontFamily as string;
-      if (font && !isSystemFont(font)) {
-        usedFonts.add(font);
-      }
+      const rf = renderFontFor(obj.fontFamily as string);
+      if (rf.register) usedFonts.add(rf.font);
     }
   }
   const fontsArray = Array.from(usedFonts);

@@ -2,7 +2,13 @@
 // documentary, 2026-10): bare math names in expressions, simultaneous
 // enter/exit animations, and sceneDuration-honouring scene tails.
 import { describe, it, expect } from 'vitest';
-import { generateScene, safeMathExpr, normalizeMathExpr } from '../src/index.js';
+import {
+  generateScene,
+  safeMathExpr,
+  normalizeMathExpr,
+  arrowTipPx,
+  renderFontFor,
+} from '../src/index.js';
 
 const resolveAsset = (obj: { name?: string }, ext: string) => `${obj.name || 'asset'}.${ext}`;
 
@@ -309,5 +315,93 @@ describe('scene timing (finding #4)', () => {
       }
     }
     expect(t).toBeCloseTo(3, 1);
+  });
+});
+
+describe('arrow tips (finding #5)', () => {
+  const arrow = (extra: Record<string, unknown> = {}) =>
+    generateScene(
+      baseProject({
+        objects: [rect('a', { type: 'arrow', width: 400, height: 20, strokeWidth: 4, ...extra })],
+      }) as never,
+      { resolveAsset } as never
+    );
+
+  it('sizes the tip from the stroke width (28 px floor), not a ~7 px constant', () => {
+    // 28 px on a 1920 px stage → 28 / 1920 * 14.222 ≈ 0.207 Manim units
+    expect(arrowTipPx(400, 4)).toBe(28);
+    expect(arrow()).toContain('tip_length=0.207');
+    expect(arrow()).toContain('max_tip_length_to_length_ratio=0.25');
+  });
+
+  it('grows with thick strokes and is capped at a quarter of the length', () => {
+    expect(arrowTipPx(400, 10)).toBe(60);
+    expect(arrowTipPx(60, 4)).toBe(15);
+  });
+
+  it('gives double arrows the same tip size', () => {
+    expect(arrow({ type: 'double_arrow' })).toMatch(/DoubleArrow\(.*tip_length=0\.207/);
+  });
+});
+
+describe('latex sizing (finding #6)', () => {
+  const latex = (extra: Record<string, unknown> = {}) =>
+    generateScene(
+      baseProject({
+        objects: [
+          rect('m', { type: 'latex', latex: 'E = mc^2', width: 260, height: 90, ...extra }),
+        ],
+      }) as never,
+      { resolveAsset } as never
+    );
+
+  it('fits the formula inside its box (contain) instead of scaling by min(w, h)', () => {
+    // 260 px → 1.926 units wide, 90 px → 0.667 units tall
+    expect(latex()).toContain('m.scale(min(1.926 / m.width, 0.667 / m.height))');
+  });
+
+  it('never emits NaN or a zero scale for a missing / zero-size box', () => {
+    const noSize = latex({ width: undefined, height: undefined });
+    expect(noSize).not.toContain('NaN');
+    expect(noSize).toMatch(/m\.scale\(min\([\d.]+ \/ m\.width, [\d.]+ \/ m\.height\)\)/);
+    const zero = latex({ width: 0, height: 0 });
+    expect(zero).not.toMatch(/min\(0\.000 \//);
+  });
+
+  it('uses an explicit fontSize as MathTex font_size and skips the box fit', () => {
+    const code = latex({ fontSize: 36 });
+    expect(code).toContain('m = MathTex("E = mc^2", color="#ff0000", font_size=36)');
+    expect(code).not.toContain('m.scale(');
+  });
+});
+
+describe('render fonts (finding #7)', () => {
+  const text = (fontFamily: string) =>
+    generateScene(
+      baseProject({ objects: [rect('t', { type: 'text', content: 'Hi', fontFamily })] }) as never,
+      { resolveAsset } as never
+    );
+
+  it('renders Microsoft core fonts with their metric-compatible open clone', () => {
+    const code = text('Arial');
+    expect(code).toContain('# Font: Arial');
+    expect(code).toContain('with RegisterFont("Arimo") as fonts_0:');
+    expect(code).toMatch(/t = Text\("Hi", font_size=48, color="#ff0000", font="Arimo"\)/);
+    expect(renderFontFor('Times New Roman').font).toBe('Tinos');
+    expect(renderFontFor('Courier New').font).toBe('Cousine');
+    expect(renderFontFor('Georgia').font).toBe('Gelasio');
+  });
+
+  it('silences Manim’s font-list dump for system fonts without a clone', () => {
+    const code = text('Verdana');
+    expect(code).toContain('font="Verdana", warn_missing_font=False)');
+    expect(code).not.toContain('RegisterFont');
+  });
+
+  it('leaves Google fonts untouched', () => {
+    const code = text('Roboto');
+    expect(code).toContain('with RegisterFont("Roboto") as fonts_0:');
+    expect(code).toContain('font="Roboto")');
+    expect(code).not.toContain('warn_missing_font');
   });
 });

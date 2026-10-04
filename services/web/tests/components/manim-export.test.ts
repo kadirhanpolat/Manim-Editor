@@ -1235,3 +1235,45 @@ describe('parser — simultaneous enter/exit plays', () => {
     expect(reparsed).toContain('FadeIn(');
   });
 });
+
+// EDITOR_FINDINGS #6: LaTeX box size and explicit fontSize survive generate → parse.
+describe('generator/parser — latex sizing', () => {
+  it('round-trips the box size of a contain-fit formula', () => {
+    const obj = makeObj('m', 'latex', { latex: 'a^2+b^2', width: 260, height: 90 });
+    const parsed = parseManimScript(generateManimScript(makeProject([obj], [])), SW, SH);
+    const o = parsed.objects[0];
+    expect(o.type).toBe('latex');
+    expect(o.width).toBeCloseTo(260, 0);
+    expect(o.height).toBeCloseTo(90, 0);
+    expect(o.fontSize).toBeUndefined();
+  });
+
+  it('round-trips an explicit fontSize', () => {
+    const obj = makeObj('m', 'latex', { latex: 'x', fontSize: 36 });
+    const parsed = parseManimScript(generateManimScript(makeProject([obj], [])), SW, SH);
+    expect(parsed.objects[0].fontSize).toBe(36);
+  });
+});
+
+// EDITOR_FINDINGS #7: system fonts render through an open clone but the
+// project keeps the font the user picked.
+describe('generator/parser — render font substitution', () => {
+  it('only applies a # Font: comment to the Text line right after it', () => {
+    const py = [
+      'from manim import *',
+      'class MainScene(Scene):',
+      '    def construct(self):',
+      '        # Font: Arial',
+      '        a = Text("A", font_size=48, color="#ffffff", font="Arimo", weight=BOLD)',
+      '        b = Text("B", font_size=48, color="#ffffff", font="Arimo")',
+    ].join('\n');
+    const b = parseManimScript(py, SW, SH).objects.find((o) => o.name === 'b');
+    expect(b?.fontFamily).toBe('Arimo');
+  });
+
+  it.each(['Arial', 'Verdana', 'Roboto'])('round-trips fontFamily %s', (fontFamily) => {
+    const obj = makeObj('t', 'text', { content: 'Hi', fontFamily, fontSize: 48 });
+    const parsed = parseManimScript(generateManimScript(makeProject([obj], [])), SW, SH);
+    expect(parsed.objects[0].fontFamily).toBe(fontFamily);
+  });
+});

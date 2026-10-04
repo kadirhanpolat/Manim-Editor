@@ -933,7 +933,9 @@ const useProjectStore = defineStore('project', {
       const obj = this.project.objects.find((o) => o.id === id);
       if (!obj) return;
       for (const key of Object.keys(updates)) {
-        obj[key] = updates[key];
+        // undefined removes an optional field (absent ⇒ legacy behavior)
+        if (updates[key] === undefined) delete obj[key];
+        else obj[key] = updates[key];
       }
       this.isDirty = true;
       this._debouncedCommit();
@@ -1913,10 +1915,13 @@ const useProjectStore = defineStore('project', {
         const isPackage =
           data.kind === 'manim-motion-project-package' && data.version === 1 && !!data.project;
         const projectData = (isPackage ? data.project : data) as Record<string, unknown>;
-        const renderData = isPackage ? (data.render as Partial<ProjectPackageRenderMetadata>) : null;
+        const renderData = isPackage
+          ? (data.render as Partial<ProjectPackageRenderMetadata>)
+          : null;
         if (!projectData.stage || !Array.isArray(projectData.objects))
           throw new Error('Invalid project');
-        if (!projectData.tracks) projectData.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
+        if (!projectData.tracks)
+          projectData.tracks = [{ id: 'track_1', name: 'Track 1', clips: [] }];
         if (!projectData.assets) projectData.assets = [];
         if (!projectData.groups) projectData.groups = [];
         if (!projectData.editorMode) projectData.editorMode = 'visual';
