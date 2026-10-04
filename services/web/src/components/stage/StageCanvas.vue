@@ -268,11 +268,7 @@
               <!-- Graph curves preview -->
               <v-line v-for="(ar, ai) in axesPreview(obj).areas" :key="'ar' + ai" :config="ar" />
               <v-rect v-for="(rr, ri) in axesPreview(obj).rects" :key="'rr' + ri" :config="rr" />
-              <v-line
-                v-for="(tg, ti) in axesPreview(obj).tangents"
-                :key="'tg' + ti"
-                :config="tg"
-              />
+              <v-line v-for="(tg, ti) in axesPreview(obj).tangents" :key="'tg' + ti" :config="tg" />
               <v-line v-for="(gc, gi) in axesPreview(obj).curves" :key="'gc' + gi" :config="gc" />
             </v-group>
 

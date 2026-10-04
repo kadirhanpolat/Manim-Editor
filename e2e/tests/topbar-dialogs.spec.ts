@@ -22,12 +22,12 @@ test.describe('Topbar dialogs and menus', () => {
     await page.getByRole('button', { name: 'Code Only' }).click();
     await page.getByRole('button', { name: 'Create Project' }).click();
 
-    await expect.poll(() => page.evaluate(() => window.__projectStore.project.name)).toBe(
-      'Dialog Flow'
-    );
-    await expect.poll(() => page.evaluate(() => window.__projectStore.project.editorMode)).toBe(
-      'code'
-    );
+    await expect
+      .poll(() => page.evaluate(() => window.__projectStore.project.name))
+      .toBe('Dialog Flow');
+    await expect
+      .poll(() => page.evaluate(() => window.__projectStore.project.editorMode))
+      .toBe('code');
   });
 
   test('Export dialog opens and allows code copy', async ({ page }) => {
@@ -81,9 +81,7 @@ test.describe('Topbar dialogs and menus', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          projects: [
-            { id: 'proj-1', name: 'Mock Project', editorMode: 'visual', objectsCount: 2 },
-          ],
+          projects: [{ id: 'proj-1', name: 'Mock Project', editorMode: 'visual', objectsCount: 2 }],
         }),
       });
     });

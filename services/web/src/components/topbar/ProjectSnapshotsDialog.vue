@@ -19,9 +19,7 @@
           @keydown.enter="createSnapshot"
         />
 
-        <div v-if="snapshots.length === 0" class="ps-empty">
-          No snapshots saved yet.
-        </div>
+        <div v-if="snapshots.length === 0" class="ps-empty">No snapshots saved yet.</div>
 
         <div v-else class="ps-list">
           <article v-for="snap in snapshots" :key="snap.id" class="ps-item">
@@ -29,7 +27,8 @@
               <div class="ps-item-title">{{ snap.label }}</div>
               <div class="ps-item-meta">{{ formatDate(snap.createdAt) }}</div>
               <div class="ps-item-meta">
-                {{ snap.projectName }} · {{ snap.objectCount }} objects · {{ snap.assetCount }} assets
+                {{ snap.projectName }} · {{ snap.objectCount }} objects ·
+                {{ snap.assetCount }} assets
               </div>
               <div v-if="snap.renderStatus" class="ps-item-meta">
                 Render {{ snap.renderStatus }} · {{ snap.renderFormat }}

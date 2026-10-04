@@ -199,6 +199,7 @@ The next development stage should not primarily add more object types. The highe
 **Implemented so far:**
 - Render worker project ids and scene-file resolution are clamped to the shared data directory.
 - Render worker timeouts kill the whole spawned process group, not just the top-level process.
+- The renderer image now actually ships `safety.py` (the worker crashed at startup with `ModuleNotFoundError` after a rebuild); `services/renderer/tests/test_dockerfile.py` asserts every module the worker imports is COPY'd, and CI now runs the renderer pytest suite.
 
 ### 10. Startup and Support Experience
 
@@ -235,6 +236,7 @@ The next development stage should not primarily add more object types. The highe
 - The New Project dialog now renders template names/descriptions in English even when the source template data remains localized.
 - The asset sidebar normalizes the remaining localized shape labels into English at render time.
 - README render guidance now uses the same English-only language policy as the editor UI.
+- Repaired double/triple-encoded mojibake in `App.vue` (it broke ESLint parsing: 402 `control-character-in-input-stream` errors) and in the original roadmap spec; a repo-wide scan finds no corrupted characters left.
 
 ### 12. Template and Education Flow Quality
 

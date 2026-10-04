@@ -71,11 +71,33 @@ export const DATA_TYPES = [
 
 export const TEXT_TYPES = ['text', 'latex'] as const;
 
-export const PLANE_TYPES = ['axes', 'numberplane', 'complex_plane', 'polar_plane', 'numberline', 'ray'] as const;
+export const PLANE_TYPES = [
+  'axes',
+  'numberplane',
+  'complex_plane',
+  'polar_plane',
+  'numberline',
+  'ray',
+] as const;
 
-export const ANNOTATION_TYPES = ['brace', 'angle', 'surrounding_rect', 'underline', 'cross'] as const;
+export const ANNOTATION_TYPES = [
+  'brace',
+  'angle',
+  'surrounding_rect',
+  'underline',
+  'cross',
+] as const;
 
-export const THREE_D_TYPES = ['sphere', 'cube', 'prism', 'cone', 'cylinder', 'torus', 'axes3d', 'surface'] as const;
+export const THREE_D_TYPES = [
+  'sphere',
+  'cube',
+  'prism',
+  'cone',
+  'cylinder',
+  'torus',
+  'axes3d',
+  'surface',
+] as const;
 
 export const IMPORT_ONLY_TYPES = ['image', 'svg_asset'] as const;
 
@@ -133,12 +155,7 @@ export const INSPECTOR_CAPABILITY_MATRIX: readonly InspectorCapabilityRow[] = [
     null,
     '3D objects use the shared Position3DPanel for x3d/y3d/z3d and rotation fields.'
   ),
-  row(
-    'prism',
-    '3d',
-    null,
-    'Position3DPanel also exposes the prism dimension inputs.'
-  ),
+  row('prism', '3d', null, 'Position3DPanel also exposes the prism dimension inputs.'),
   row(
     'cone',
     '3d',
@@ -163,12 +180,7 @@ export const INSPECTOR_CAPABILITY_MATRIX: readonly InspectorCapabilityRow[] = [
     null,
     'Position3DPanel also exposes xRange/yRange/zRange for the 3D axes object.'
   ),
-  row(
-    'surface',
-    '3d',
-    null,
-    'Position3DPanel also exposes zExpr plus the surface x/y ranges.'
-  ),
+  row('surface', '3d', null, 'Position3DPanel also exposes zExpr plus the surface x/y ranges.'),
   row('image', 'asset', null, 'Import-only asset type added from the asset sidebar.'),
   row('svg_asset', 'asset', null, 'Import-only asset type added from the asset sidebar.'),
 ] as const;

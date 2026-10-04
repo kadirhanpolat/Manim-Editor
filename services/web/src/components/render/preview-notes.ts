@@ -23,7 +23,9 @@ export function buildPreviewNotes(project: PreviewNoteProject): string[] {
       (o) =>
         !!o.gradient ||
         !!o.shadow ||
-        (typeof o.cornerRadius === 'number' && Number.isFinite(o.cornerRadius) && o.cornerRadius > 0)
+        (typeof o.cornerRadius === 'number' &&
+          Number.isFinite(o.cornerRadius) &&
+          o.cornerRadius > 0)
     )
   ) {
     notes.push('Gradient fills, rounded corners, and shadows are approximate in the preview.');

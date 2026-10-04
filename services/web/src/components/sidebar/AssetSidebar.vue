@@ -623,7 +623,7 @@ const shapes3D = [
 ];
 
 const LABEL_MAP: Record<string, string> = {
-  'Çerçeve': 'Frame',
+  Çerçeve: 'Frame',
   'Altı Çizgi': 'Underline',
   'Üstü Çizili': 'Strikethrough',
 };

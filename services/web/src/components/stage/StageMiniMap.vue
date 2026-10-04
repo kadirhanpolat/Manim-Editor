@@ -54,7 +54,14 @@
 import { computed, ref } from 'vue';
 
 type Bounds = { x: number; y: number; width: number; height: number };
-type StageObjectLike = { id: string; x?: number; y?: number; width?: number; height?: number; hidden?: boolean };
+type StageObjectLike = {
+  id: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  hidden?: boolean;
+};
 
 const props = defineProps<{
   is3d: boolean;

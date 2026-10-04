@@ -24,15 +24,16 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 764 unit tests (store, components, export); 36 Topbar/PropertiesPanel characterization snapshots are stale on main (pre-existing)
+cd services/web && npm run test:unit    # 800 unit tests (store, components, export, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 72 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
 npm test --workspace packages/manim-codegen  # 43 codegen tests
+python -m pytest services/renderer/tests -q   # 7 renderer tests (render args, history, path safety, Dockerfile COPYs every worker import) — CI python job
 # All must pass before any commit.
 
 cd e2e && npm install && npx playwright install chromium   # first time only
-cd e2e && npm test                      # 17 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
+cd e2e && npm test                      # 24 Playwright smoke tests (auto-boots dev server :5188); also a non-blocking CI job
 
 cd services/web && RUN_MANIM_RENDER=1 npm run test:render  # OPT-IN, real Manim CE. Two harnesses: (1) render-truth (render-integration.test.ts) — a 7-scene corpus + self-check + **every palette template** proves generated Python RUNS, not just that it's AST-valid; (2) golden-frame regression (render-golden.test.ts) — dHashes a stable geometric corpus's last frame vs a committed baseline (tests/components/__render_baselines__/dhash.json), Hamming-tolerant (≤8/256). Re-baseline after an intentional render change: RUN_MANIM_RENDER=1 UPDATE_RENDER_BASELINE=1 npm run test:render. Skips unless RUN_MANIM_RENDER=1 + `manim` on PATH + a Pillow-capable python; needs renderer deps (manim-fonts). Manim v0.20.1. CI runs this as a non-blocking `render-harness` job. NOTE: render-truth only checks exit 0 (a frame can be blank — addObject's default FadeOut exit blanks the last frame; golden corpus sets exitAnim='none').
 ```
@@ -310,6 +311,7 @@ The whole codebase is **strict TypeScript** (migration complete — phases 0–7
 ## Build / Environment Gotchas
 
 - **Vue 3 `<template v-for>` keys** must sit on the `<template>` tag, not child elements — a pure prod build (`npm run build`) errors otherwise. Watch in `MenuBar.vue` / `StageCanvas.vue`.
+- **Renderer Dockerfile COPYs each module explicitly**: adding a sibling import to `services/renderer/worker.py` (e.g. `history.py`, `safety.py`) needs a matching `COPY` line, or the rebuilt image dies at startup with `ModuleNotFoundError` and renders hang "waiting for worker". Guarded by `services/renderer/tests/test_dockerfile.py`.
 - **Renderer `setuptools<81` pin**: `manimcommunity/manim:stable` ships setuptools 82 (no `pkg_resources`), but `manim-voiceover` imports it at load and crashes the `manim` CLI. Pinned in `services/renderer/Dockerfile`.
 - **`root_node_modules` named volume**: the api mounts `root_node_modules:/app/node_modules`; it persists across rebuilds and shadows freshly-installed packages. After adding/removing a dep, rebuild with: `docker compose down` → `docker volume rm manim_motion_root_node_modules` → `docker compose up -d --build` (keeps the `*_data` + `redis_data` volumes). Otherwise `ERR_MODULE_NOT_FOUND`.
 - **Docker images must ship `tsconfig.base.json`**: `services/{web,api}/tsconfig.json` `extends ../../tsconfig.base.json`, and the toolchains resolve that `extends` at build/startup — `vite build` (web) and `tsc`/`tsx` (api) fail with "failed to resolve extends" if the root base config isn't in the image. Both Dockerfiles `COPY tsconfig.base.json ./` before install/build. (Surfaces only on a container rebuild, not locally.)

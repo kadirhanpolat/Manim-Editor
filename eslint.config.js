@@ -34,7 +34,8 @@ export default tseslint.config(
     files: [
       'services/api/**/*.{js,ts}',
       'packages/**/*.{js,ts}',
-      'e2e/**/*.{js,ts}',
+      'e2e/**/*.{js,mjs,ts}',
+      'scripts/**/*.{js,mjs}',
       '**/*.config.{js,ts}',
       'eslint.config.js',
     ],

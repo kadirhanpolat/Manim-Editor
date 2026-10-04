@@ -23,12 +23,7 @@ describe('render duration estimate', () => {
   });
 
   it('averages recent completed render durations for a project', async () => {
-    keys.mockResolvedValue([
-      'render:job:a',
-      'render:job:b',
-      'render:job:c',
-      'render:job:other',
-    ]);
+    keys.mockResolvedValue(['render:job:a', 'render:job:b', 'render:job:c', 'render:job:other']);
     hGetAll.mockImplementation(async (key: string) => {
       if (key === 'render:job:a') {
         return {

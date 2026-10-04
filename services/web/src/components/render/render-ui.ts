@@ -10,10 +10,13 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export function renderPhaseLabel(status: string | null): string {
-  return status ? PHASE_LABELS[status] ?? status : 'Idle';
+  return status ? (PHASE_LABELS[status] ?? status) : 'Idle';
 }
 
-export function renderQueuePosition(status: string | null, queueDepth: number | null): string | null {
+export function renderQueuePosition(
+  status: string | null,
+  queueDepth: number | null
+): string | null {
   if (status !== 'queued' || queueDepth === null) return null;
   return `#${queueDepth + 1}`;
 }

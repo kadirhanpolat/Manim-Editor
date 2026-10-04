@@ -8,7 +8,10 @@ function countLayerOpenTags(source: string) {
 
 describe('StageCanvas layers', () => {
   it('keeps a single Konva layer in the source template', () => {
-    const source = readFileSync(resolve(process.cwd(), 'src/components/stage/StageCanvas.vue'), 'utf8');
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/stage/StageCanvas.vue'),
+      'utf8'
+    );
     expect(countLayerOpenTags(source)).toBe(1);
   });
 });

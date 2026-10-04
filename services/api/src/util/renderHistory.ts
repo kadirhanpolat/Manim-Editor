@@ -29,8 +29,9 @@ export async function listRotatedRenderHistory(
   const entries = await fs.readdir(rendersDir).catch(() => []);
   const files = entries
     .map((name) => ({ name, parsed: parseRotatedRenderFilename(name) }))
-    .filter((row): row is { name: string; parsed: { index: number; ext: RenderExt } } =>
-      row.parsed !== null
+    .filter(
+      (row): row is { name: string; parsed: { index: number; ext: RenderExt } } =>
+        row.parsed !== null
     )
     .sort((a, b) => a.parsed.index - b.parsed.index);
 

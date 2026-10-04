@@ -13,3 +13,4 @@ website
 assets
 **/*.snap
 services/web/tests/helpers
+e2e/test-results

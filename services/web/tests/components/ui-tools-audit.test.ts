@@ -99,7 +99,8 @@ describe('codegen validity for every reachable object type', () => {
       setActivePinia(createPinia());
       const s = useProjectStore();
       s.newProject('Gen', 'visual');
-      if (THREE_D_TYPES.includes(type as (typeof THREE_D_TYPES)[number])) s.project.sceneType = '3d';
+      if (THREE_D_TYPES.includes(type as (typeof THREE_D_TYPES)[number]))
+        s.project.sceneType = '3d';
       s.addObject(type, 960, 540);
       const code = generateManimScript(s.project);
       expect(code, type).toContain('class MainScene');
