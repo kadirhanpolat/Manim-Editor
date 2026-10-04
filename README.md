@@ -441,7 +441,7 @@ Set them in the shell or a `.env` file before `docker compose up`; compose passe
 ```bash
 cd services/web
 npm test           # 122 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 800 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
+npm run test:unit  # 839 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -530,13 +530,33 @@ For detailed technical docs of the entire codebase, see **[XTRA-BIG-README.md](X
 
 ### v3.29.0 (current)
 
-Render isolation (roadmap section 9).
+Render isolation (roadmap section 9) and a template-quality pass (section 12) that rendered every template and compared it with the preview.
 
+**Preview and render now agree on:**
+- **Rotation direction**: rotated objects, Rotate clips and rotation keyframes used to render mirrored. The editor's rotation turns clockwise and Manim's turns counter-clockwise, so codegen now negates the angle.
+- **Where point-built objects sit**: angles, braces, free polygons, bezier curves, rays, coordinate points and vector components rendered 40–155 px away from where the canvas drew them. They are now anchored at their origin (< 0.1 px, measured in Manim).
+- **Angles**: the canvas drew a half-size arc going the long way round. It now shows the arc Manim renders, and the render now includes the two rays the canvas always showed.
+- **Dots** render at the size the canvas shows (they were half size).
+- **Graph tangents** touch the curve at the x you choose: tangent at x = 1 on x² now has slope 2, where it used to sit at x ≈ 1.39.
+- **Riemann rectangles** are translucent in the render too, so the curve and the area stay visible.
+- **NumberPlane step** edits reach the render.
+
+**Templates:**
+- **Unit circle**: rebuilt as a true unit circle, with P on the circle, colored cos θ / sin θ projections and the identity cos²θ + sin²θ = 1.
+- **Text placeholders**: the proof and algorithm templates showed "Text" placeholders. They now show their real text.
+- **Curves**: axes intro now plots its x². The derivative and integral templates stay inside their axes.
+- **Vector addition**: the resultant now runs from the tail of u to the tip of v, with distinct u and v directions.
+- **Layout**: the flow arrows sit between the boxes, and the matrix product's dot is normal size.
+- **Tests**: these template properties are now locked by tests.
+
+**Render isolation:**
 - **Per-render limits**: every render now runs under a wall clock, a memory limit, a CPU-time limit and a maximum output file size. All four can be set through `RENDER_*` environment variables (see *Environment Variables*). Before this, only a fixed 10-minute timeout existed.
 - **Clear failure reasons**: a render stopped by a limit reports which limit it hit and how to raise it ("Render ran out of memory (limit 3072 MB)…"), and the job stores a `failureReason` code. Plain Manim errors still show the traceback.
 - **Bounded logs**: render stdout/stderr go to temp files instead of pipes, and only the last 8 KB is kept. A scene that prints in a loop no longer grows the worker's memory.
 - **Thread and fork bombs**: the renderer containers cap processes and threads at 512.
-- **Tests**: renderer pytest 7 → 44. The kernel-enforcement tests (memory, CPU, file size actually stop a child process) run in the Linux CI job. Verified end to end against the Docker stack with four runaway code-only scenes (memory hog, endless print, sleep, 2000 threads).
+- **Verified**: the kernel-enforcement tests (memory, CPU, file size actually stop a child process) run in the Linux CI job. Verified end to end against the Docker stack with four runaway code-only scenes (memory hog, endless print, sleep, 2000 threads).
+
+**Tests**: web unit 800 → 839, codegen 43 → 57, renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
 
 ### v3.28.0
 

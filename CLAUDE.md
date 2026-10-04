@@ -12,7 +12,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 packages/manim-codegen/  # Shared Manim Python codegen (single source of truth)
 ```
 
-**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-9 done; 10 startup/log tooling, 11 localization leftovers, 12 template quality open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
+**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-9 done; 10 startup/log tooling, 11 localization leftovers, 12 template quality partly done — visual pass + parity fixes landed, narrative/camera polish open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
 
 ## Running
 
@@ -26,11 +26,11 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 800 unit tests (store, components, export, characterization snapshots)
+cd services/web && npm run test:unit    # 839 unit tests (store, components, export, template geometry, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 72 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
-npm test --workspace packages/manim-codegen  # 43 codegen tests
+npm test --workspace packages/manim-codegen  # 57 codegen tests
 python -m pytest services/renderer/tests -q   # 44 renderer tests (render args, history, path safety, render limits — 3 kernel-enforcement tests Linux-only, Dockerfile COPYs every worker import) — CI python job
 # All must pass before any commit.
 
@@ -93,6 +93,8 @@ Both services are **thin wrappers** calling `generateScene(project, { resolveAss
 
 **Scene timing (generateScene emit loop):** enter/exit steps that start at the same time (±0.01 s) are folded by `mergeSimultaneousSteps` into ONE `self.play(A, B, …, run_time=d)` (mixed durations → a `run_time` inside each animation; instant `self.add` enters stay separate). Waits are measured from the real `elapsed` clock (Σ waits + run_times — exactly what Manim and the parser accumulate), not the nominal step end, so overlaps don't push later steps back. Voiceover blocks count as `max(clip dur, audio.duration)` (+ manual offset). The tail is `self.wait(max(1, sceneDuration − elapsed))`: it reaches `sceneDuration` when there is room and always holds ≥1 s after the last animation (mirrors the preview's `computedDuration = max(sceneDuration, end + 1)`); without `sceneDuration` it is the legacy `self.wait(1)`. The parser's `expandSimultaneousPlays` splits a multi-animation `self.play(…)` into one sub-play per animation bracketed by NUL-prefixed `SIM_*` marker lines that rewind its clock.
 
+**Origin anchoring (`ORIGIN_ANCHORED_TYPES`: polygon_free, bezier, brace, angle, vector_components, ray, coord_point):** these are built from points relative to the object's origin, which is what the preview draws around, but Manim's `move_to`/`set_x`/`MoveAlongPath`/rotate/scale use the bounding-box center. Right before `move_to`, codegen emits `n.add(VectorizedPoint(-n.get_corner(DL)), VectorizedPoint(-n.get_corner(UR)))` (mirrors the bbox through the origin → center == origin); the parser skips that line. A new point-built type belongs in the set. `graph` is excluded (Graph.add semantics).
+
 ### Parity invariants (regression-guarded)
 
 The codegen test suite asserts the generated Python is stable. When touching codegen, keep these consistent and re-run `manim-export.test.ts`, `effects-codegen.test.ts`, `phase26-effects-codegen.test.ts`:
@@ -110,7 +112,8 @@ The codegen test suite asserts the generated Python is stable. When touching cod
 - **Manim coords**: `stageToManim(px, py, sw, sh)` → ≈ −7..+7 (x), −4..+4 (y).
 - **Canvas coords**: `c2s(cx, cy)` / `s2c(px, py)` in StageCanvas — account for pan (`ox`, `oy`) and zoom (`vs`).
 - **3D coords**: `obj.x3d/y3d/z3d` are direct Manim units (NOT through `stageToManim`). `iso()`/`top()` project 3D→2D for canvas.
-- **Constants** (shared in `@manim/codegen/constants.ts`, so server+client emit identical coords): `FRAME_WIDTH = 14 + 2/9` (14.222), `FRAME_HEIGHT = 8`, `FRAME_X_RADIUS = 7.111`, `FRAME_Y_RADIUS = 4`. Positions + scale-based shape spacing use `FRAME_WIDTH`; radius values (heart `mw`, Dot radius) use `FRAME_X_RADIUS`, heart `mh` uses `FRAME_Y_RADIUS`.
+- **Constants** (shared in `@manim/codegen/constants.ts`, so server+client emit identical coords): `FRAME_WIDTH = 14 + 2/9` (14.222), `FRAME_HEIGHT = 8`, `FRAME_X_RADIUS = 7.111`, `FRAME_Y_RADIUS = 4`. Positions + scale-based shape spacing use `FRAME_WIDTH`; Dot radius uses `FRAME_WIDTH` too (it used `FRAME_X_RADIUS` = half size until 2026-10-04); heart `mw` uses `FRAME_X_RADIUS`, heart `mh` uses `FRAME_Y_RADIUS`.
+- **Rotation sign**: editor `rotation` is Konva's (clockwise-positive on the y-down canvas); Manim `rotate()` is counter-clockwise-positive, so codegen emits **negated** angles (object `.rotate(-a)`, 2D `Rotate(angle=-a)` clips, rotation keyframes) and the parser negates back. 3D `rx/ry/rz` are untouched.
 
 ## Store Patterns
 
@@ -167,7 +170,7 @@ clip.audio = {
 
 ### Per-type notes
 
-- **`axes`**: `graphs: []` array, each `{ id, expression, color, xMin, xMax, strokeWidth }`. Each graph also has optional `area` (`get_area`), `riemann` (`get_riemann_rectangles`), `tangent` (`TangentLine`, alpha from `x`).
+- **`axes`**: `graphs: []` array, each `{ id, expression, color, xMin, xMax, strokeWidth }`. Each graph also has optional `area` (`get_area`), `riemann` (`get_riemann_rectangles`), `tangent` (`TangentLine(G, alpha=G.proportion_from_point(ax.i2gp(x, G)))` — TangentLine's alpha is an ARC-LENGTH proportion, so never map x linearly to alpha; legacy numeric-alpha form still parses). Riemann rectangles use `fill_opacity=RIEMANN_FILL_OPACITY` (0.45, shared with the preview). `numberplane` grid step comes from `xRange[2]`/`yRange[2]` (what the inspector edits); `xStep`/`yStep` are legacy fallbacks.
 - **Geometry**: `annulus`/`arc`/`sector`/`double_arrow` → `Annulus`/`Arc`/`Sector`/`DoubleArrow`; radii in px (via `FRAME_WIDTH`), angles in deg → `<deg> * DEGREES`.
 - **Arrow tips** (`arrow`, `double_arrow`): `arrowTipPx(length, strokeWidth)` (helpers.ts) = min(max(28, 6·stroke), 0.25·length) px → `tip_length` + `max_tip_length_to_length_ratio=0.25`; the Konva preview uses the same helper for `pointerLength`/`pointerWidth` (Manim tip width == length).
 - **`polygon_free`** (`Polygon`): `obj.vertices` (object-relative px) + draggable canvas handles; presets in `engine/polygonVertices.ts`.
@@ -175,7 +178,7 @@ clip.audio = {
 - **`parametric`** (`ParametricFunction`): `xExpr`/`yExpr` (t-based), `tMin`/`tMax`; `safeMathExpr`-guarded.
 - **`matrix`** (`Matrix`): source of truth `matrixData` (2D string array) + `bracket` (`[`|`(`|`|`); rows/cols derived. Single-line `Matrix([[…]])` (+ `left/right_bracket` for non-default) then `.set_color`. Entries sanitized by `safeMatrixEntry` (no eval). Actions: `setMatrixCell`, `add/removeMatrixRow/Column`, `setMatrixBracket` (guards at 1×1).
 - **`brace`** (`BraceBetweenPoints`): `p1`/`p2` (object-relative px), `label`. Labeled → `VGroup(_brace, _brace.get_tex(…))`.
-- **`angle`** (`Angle`/`RightAngle`): `vertex`/`point1`/`point2`, `rightAngle`, `radius`, `label`. Emitted via two helper `Line`s (`_l1`/`_l2`); parser captures them into `relLineMap`. Labels are a `MathTex(…)` (`safeLatex`, non-raw, doubled-backslash) `move_to`'d just outside the arc midpoint — Manim's `Angle` has **no** `get_tex` (only `Brace` does); the parser still reads the legacy `_arc.get_tex(…)` form. Both brace+angle: draggable point handles reuse `polygonHandles` (`kind:'relational'`).
+- **`angle`** (`Angle`/`RightAngle`): `vertex`/`point1`/`point2`, `rightAngle`, `radius`, `label`. Emitted via two helper `Line`s (`_l1`/`_l2`) that are **part of the object** (`<n> = VGroup(<n>_l1, <n>_l2, <n>_arc[, MathTex…])`, like the preview's rays); parser captures them into `relLineMap`. `radius` is in Manim units; the preview arc sweeps counter-clockwise on screen from ray 1 (decreasing atan2 on the y-down canvas), RightAngle arms 0.4 units (2/3 of the shorter ray if < 0.6) — `angleGeometry` in `configs/relational.ts`. Labels are a `MathTex(…)` (`safeLatex`, non-raw, doubled-backslash) `move_to`'d just outside the arc midpoint — Manim's `Angle` has **no** `get_tex` (only `Brace` does); the parser still reads the legacy `_arc.get_tex(…)` form. Both brace+angle: draggable point handles reuse `polygonHandles` (`kind:'relational'`).
 - **`counter`** (`DecimalNumber`/`Integer`): `value`, `numDecimals`, `suffix`, `useInteger`. Emits `DecimalNumber(<v>, num_decimal_places=<d>[, unit="<s>"])`, or `Integer(<trunc v>[, unit])` when `useInteger`. `unit=` only when suffix non-empty. `value` keyframable (`set_value`). Actions: `setCounterValue/Decimals/Suffix/Integer`.
 - **`table`** (`Table`/`MathTable`): `cellData`, `mathMode`, `rowLabels`/`colLabels`. Math mode emits `MathTable(…, row_labels=[MathTex(…)], col_labels=[…])` (labels omitted when empty). Reuses `safeMatrixEntry` + matrix grid editor. Actions: `setTableCell`, `add/removeTableRow/Column`, `setTableMathMode/RowLabels/ColLabels`.
 - **`complex_plane`** / **`polar_plane`**: mirror `numberplane`; `xRange`/`yRange` + `width`/`height` → `x_length`/`y_length`. `polar_plane` → `PolarPlane(radius_max, radius_step, azimuth_units, size)` (`size = min(w,h)/sw*FRAME_WIDTH`). Actions: `setPolarRadiusMax/Step` (clamp ≥0.1), `setPolarAzimuth`.
@@ -266,6 +269,7 @@ Optional fields; absent ⇒ byte-identical legacy output. Delete the field on nu
 - Tex term-matching morph shows a generic crossfade in preview (Manim does real term alignment); typewriter timing is approximate in preview.
 - **LaTeX sizing**: default = contain-fit into the box → `m.scale(min(W / m.width, H / m.height))` (W/H = box in Manim units; parser restores width/height from this line). Optional `fontSize` → `MathTex(…, font_size=N)` and no scale line (inspector "Fit to box" toggle; absent field = fit). Preview `latexPreviewFontSize` (configs/text.ts) mirrors both.
 - **Render fonts** (`renderFontFor` in helpers.ts): Arial/Helvetica→Arimo, Times(/New Roman)→Tinos, Courier(/New)→Cousine, Georgia→Gelasio (metric-compatible Google Fonts, RegisterFont'ed); other `isSystemFont` families emit `warn_missing_font=False`; Google fonts unchanged. The `# Font: <chosen>` comment before `Text(` lets the parser restore the user's family. Renderer Dockerfile pre-fetches Roboto + the clones into `$HOME/.cache/Manim-Fonts` (offline renders).
+- **Text objects store their string in `content`** (store, inspector, preview, codegen). A `text:` field is silently ignored → "Text" placeholder in preview AND render (bit `theorem_proof`/`algo_steps`; guarded by `template-library.test.ts`). Small LaTeX glyphs (`\cdot`) need a fixed `fontSize`, or fit-to-box blows them up.
 - **Math → use the `latex` object, not `text`.** A `latex` object emits `MathTex(...)` (proper math typesetting: italic variables, real superscripts); a `text` object emits `Text(..., font=…)` (plain font). Authoring a math expression as a `text` object renders it in the wrong font (regression source — fixed in the `axes_intro` template).
 
 ## 3D Scene Support

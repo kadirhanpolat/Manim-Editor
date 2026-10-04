@@ -66,6 +66,14 @@ The next development stage should not primarily add more object types. The highe
   - Arrow tips and LaTeX sizing share one rule between the preview and the render.
   - Microsoft core fonts render through metric-compatible clones. The divergence matrix lists all of this.
 - Every palette template now renders in the real-Manim harness. This caught two broken templates: `sin_cos_wave` (NameError) and `unit_circle` (`Angle.get_tex` does not exist).
+- *Template-quality pass (2026-10-04):* rendering every template and comparing it with the preview exposed seven more mismatches, all fixed and listed in the divergence matrix:
+  - 2D rotation rendered mirrored, because Manim is counter-clockwise-positive.
+  - Point-built objects rendered 40–155 px off their origin (`ORIGIN_ANCHORED_TYPES`).
+  - The angle preview drew a half-size reflex arc, and the render left out the rays.
+  - Dots rendered at half size.
+  - Graph tangents landed at the wrong x, because TangentLine's alpha is an arc-length proportion.
+  - Riemann rectangles rendered opaque.
+  - NumberPlane step edits never reached the render.
 
 ### 3. Code / Visual Round-Trip Robustness
 
@@ -273,7 +281,16 @@ The next development stage should not primarily add more object types. The highe
 
 **Implemented so far:**
 - Render smoke coverage for **every** template in the opt-in real-Manim harness (`render-truth: every template renders in real Manim`); two previously crashing templates (`sin_cos_wave`, `unit_circle`) fixed.
-- Still open: visual/narrative quality pass (e.g. `unit_circle`'s angle `radius=40` is in Manim units and draws an oversized arc), camera polish, and a "science documentary" template pack suggested by the production bug report.
+- **Visual pass (2026-10-04):** every template was rendered in real Manim, frames sampled at 45 % and 85 % of the scene, and compared against the preview. Fixed:
+  - `unit_circle` was rebuilt as a true unit circle: one plane unit is the radius, P sits on the circle at the end of the angle ray, the cos/sin projections are colored and labeled, and the scene ends on cos²θ + sin²θ = 1.
+  - `theorem_proof` and `algo_steps` showed "Text" placeholders: the template data used `text:` instead of `content:`.
+  - `axes_intro` had no curve for its f(x) = x² label.
+  - `derivative_tangent` and `integral_area` plotted outside their axes, and the tangent sat at the wrong x.
+  - `vector_addition` drew its resultant horizontally from the wrong point, with u ∥ v.
+  - The `algo_steps` arrows started inside the boxes.
+  - The `matrix_product` `\cdot` was blown up by fit-to-box.
+  - `template-library.test.ts` now locks these properties (geometry, graphs inside axes, text `content`, layout).
+- Still open: narrative timing and camera polish, English template copy (section 11), and a "science documentary" template pack suggested by the production bug report.
 
 ## Backlog: Feature Requests from Production Use
 
