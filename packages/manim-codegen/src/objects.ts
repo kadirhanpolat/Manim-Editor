@@ -462,7 +462,7 @@ export function objectCode(
       const xLen = (((o.width as number) || 600) / sw) * FRAME_WIDTH;
       const yLen = (((o.height as number) || 400) / sh) * FRAME_HEIGHT;
       lines.push(
-        `${n} = BarChart(values=[${values.join(', ')}], bar_names=[${names.map((s) => `"${s}"`).join(', ')}], y_range=[0, ${yMax}, ${yStep}], bar_colors=[${colors.join(', ')}], x_length=${xLen.toFixed(1)}, y_length=${yLen.toFixed(1)})`
+        `${n} = BarChart(values=[${values.join(', ')}], bar_names=[${names.map((s) => `"${s}"`).join(', ')}], y_range=[0, ${yMax}, ${yStep}], bar_colors=[${colors.join(', ')}], x_length=${xLen.toFixed(3)}, y_length=${yLen.toFixed(3)})`
       );
       break;
     }
@@ -528,7 +528,7 @@ export function objectCode(
       const xr = (o.xRange as number[] | undefined) || [-5, 5, 1];
       const yr = (o.yRange as number[] | undefined) || [-3, 3, 1];
       lines.push(
-        `${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)}, tips=True)`
+        `${n} = Axes(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(3)}, tips=True)`
       );
       if (o.graphs && (o.graphs as unknown[]).length > 0) {
         for (const g of o.graphs as GraphDef[]) {
@@ -598,7 +598,7 @@ export function objectCode(
       const xs = xr[2] || (o.xStep as number | undefined) || 1;
       const ys = yr[2] || (o.yStep as number | undefined) || 1;
       lines.push(
-        `${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)})`
+        `${n} = NumberPlane(x_range=[${xr[0]}, ${xr[1]}, ${xs}], y_range=[${yr[0]}, ${yr[1]}, ${ys}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(3)})`
       );
       break;
     }
@@ -606,7 +606,7 @@ export function objectCode(
       const xr = (o.xRange as number[] | undefined) || [-3, 3, 1];
       const yr = (o.yRange as number[] | undefined) || [-2, 2, 1];
       lines.push(
-        `${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(1)})`
+        `${n} = ComplexPlane(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], y_range=[${yr[0]}, ${yr[1]}, ${yr[2] ?? 1}], x_length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)}, y_length=${(((o.height as number) / sh) * FRAME_HEIGHT).toFixed(3)})`
       );
       break;
     }
@@ -619,14 +619,14 @@ export function objectCode(
         ? Math.max(1, Math.trunc(o.azimuthUnits as number))
         : 12;
       lines.push(
-        `${n} = PolarPlane(radius_max=${rMax}, radius_step=${rStep}, azimuth_units=${az}, size=${((Math.min(o.width as number, o.height as number) / sw) * FRAME_WIDTH).toFixed(1)})`
+        `${n} = PolarPlane(radius_max=${rMax}, radius_step=${rStep}, azimuth_units=${az}, size=${((Math.min(o.width as number, o.height as number) / sw) * FRAME_WIDTH).toFixed(3)})`
       );
       break;
     }
     case 'numberline': {
       const xr = (o.xRange as number[] | undefined) || [-5, 5, 1];
       lines.push(
-        `${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(1)})`
+        `${n} = NumberLine(x_range=[${xr[0]}, ${xr[1]}, ${xr[2] ?? 1}], length=${(((o.width as number) / sw) * FRAME_WIDTH).toFixed(3)})`
       );
       break;
     }
@@ -669,6 +669,16 @@ export function objectCode(
       lines.push(
         `${n}.add(VectorizedPoint(-${n}.get_corner(DL)), VectorizedPoint(-${n}.get_corner(UR)))`
       );
+    if (o.type === 'axes') {
+      // Center the PLOT AREA, not the bounding box: tips at one end only (origin
+      // in a corner) shift the box center ~12 px. 2·center = c2p(min) + c2p(max).
+      const xr = (o.xRange as number[] | undefined) || [-5, 5, 1];
+      const yr = (o.yRange as number[] | undefined) || [-3, 3, 1];
+      const twoC = `${n}.c2p(${xr[0]}, ${yr[0]}) + ${n}.c2p(${xr[1]}, ${yr[1]})`;
+      lines.push(
+        `${n}.add(VectorizedPoint(${twoC} - ${n}.get_corner(DL)), VectorizedPoint(${twoC} - ${n}.get_corner(UR)))`
+      );
+    }
     lines.push(`${n}.move_to([${mp.x.toFixed(3)}, ${mp.y.toFixed(3)}, 0])`);
     // Editor rotation is Konva's (clockwise-positive on the y-down canvas);
     // Manim's rotate() is counter-clockwise-positive, hence the minus.

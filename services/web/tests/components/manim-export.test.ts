@@ -143,6 +143,19 @@ describe('generator/parser — rotation direction', () => {
   });
 });
 
+describe('generator/parser — axes plot-area anchor', () => {
+  it('round-trips corner-origin axes without parser warnings', () => {
+    const project = makeProject(
+      [makeObj('obj1', 'axes', { x: 700, y: 400, xRange: [0, 5, 1], yRange: [0, 1, 0.2] })],
+      []
+    );
+    const parsed = parseManimScript(generateManimScript(project), SW, SH);
+    expect(parsed.warnings.filter((w) => /VectorizedPoint/.test(w))).toEqual([]);
+    expect(parsed.objects[0].x).toBe(700);
+    expect(parsed.objects[0].y).toBe(400);
+  });
+});
+
 describe('generator/parser — dot size', () => {
   // The preview draws a dot of radius width/2 px; px → Manim units is
   // /sw * FRAME_WIDTH (FRAME_X_RADIUS drew it at half size).
@@ -1014,7 +1027,7 @@ describe('generator — bar_chart (BarChart, single-line)', () => {
     const py = generateManimScript(project);
     // x_length = 600/1920*14.2222 = 4.4 ; y_length = 400/1080*8 = 3.0 ; step = 8/5 = 1.6
     expect(py).toContain(
-      'obj1 = BarChart(values=[3, 5, 2, 6], bar_names=["A", "B", "C", "D"], y_range=[0, 8, 1.6], bar_colors=["#58c4dd", "#83c167", "#fc6255", "#ffff00"], x_length=4.4, y_length=3.0)'
+      'obj1 = BarChart(values=[3, 5, 2, 6], bar_names=["A", "B", "C", "D"], y_range=[0, 8, 1.6], bar_colors=["#58c4dd", "#83c167", "#fc6255", "#ffff00"], x_length=4.444, y_length=2.963)'
     );
     expect(py).toContain('obj1.move_to([0.000, 0.000, 0])');
   });

@@ -75,6 +75,36 @@ describe('origin-anchored objects', () => {
   });
 });
 
+describe('coordinate-system lengths', () => {
+  // x_length/y_length/length used toFixed(1): 560 px → 4.148 units → "4.1",
+  // shifting the far end of an axis by ~6 px, and every value plotted on it.
+  it('emits axis lengths precisely enough to land within a pixel', () => {
+    const at = (type: string, extra: Record<string, unknown> = {}) =>
+      scene(obj(type, { width: 900, height: 560, ...extra })).join('\n');
+    expect(at('axes')).toContain('x_length=6.667, y_length=4.148');
+    expect(at('numberplane')).toContain('x_length=6.667, y_length=4.148');
+    expect(at('complex_plane')).toContain('x_length=6.667, y_length=4.148');
+    expect(at('numberline')).toContain('length=6.667)');
+  });
+});
+
+describe('axes plot-area anchoring', () => {
+  // With the origin in a corner, the arrow tips stick out at one end only and
+  // shift the bounding-box center by (0.0875, 0.0875) units (~12 px, measured
+  // in Manim 0.20.1) — every plotted value moved with it. Mirror the box
+  // through the plot-area center so move_to centers the plot area itself.
+  it('centers the plot area, not the bounding box, on the object position', () => {
+    const lines = scene(obj('axes', { xRange: [0, 5, 1], yRange: [0, 1.2, 0.2] }));
+    const anchor = lines.findIndex(
+      (l) =>
+        l ===
+        'o1.add(VectorizedPoint(o1.c2p(0, 0) + o1.c2p(5, 1.2) - o1.get_corner(DL)), VectorizedPoint(o1.c2p(0, 0) + o1.c2p(5, 1.2) - o1.get_corner(UR)))'
+    );
+    expect(anchor).toBeGreaterThan(-1);
+    expect(lines[anchor + 1]).toMatch(/^o1\.move_to\(/);
+  });
+});
+
 describe('angle rays', () => {
   it('draws both rays with the arc, like the preview', () => {
     const lines = scene(obj('angle', { vertex: [0, 0], point1: [100, 0], point2: [0, -100] }));

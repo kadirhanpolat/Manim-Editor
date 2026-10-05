@@ -1522,6 +1522,8 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
       /^(\w+)\.add\(VectorizedPoint\(-\1\.get_corner\(DL\)\), VectorizedPoint\(-\1\.get_corner\(UR\)\)\)$/
     );
     if (m) continue;
+    // Axes plot-area anchor: the same trick, mirrored through the plot-area center.
+    if (/^(\w+)\.add\(VectorizedPoint\(\1\.c2p\(/.test(line)) continue;
 
     // Angle with its rays: `<n> = VGroup(<n>_l1, <n>_l2, <n>_arc[, MathTex("…").move_to(…)])`
     // — renames the `<n>_arc` object to the VGroup var and restores the label.
