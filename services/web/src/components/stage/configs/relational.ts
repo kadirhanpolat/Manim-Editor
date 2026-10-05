@@ -4,6 +4,9 @@
 import { FRAME_WIDTH } from '@manim/codegen';
 import type { SceneObject } from '@manim/codegen';
 import type { StageCtx } from './context.js';
+import { latexToUnicode } from '../../../utils/latexPreview.js';
+
+const MATHTEX_DEFAULT_FONT_SIZE = 48;
 
 export function relationalHitCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
   const w = ((obj.width as number | undefined) || 140) * ctx.vs,
@@ -27,13 +30,17 @@ export function relationalLabelCfg(
   anchor: [number, number],
   ctx: StageCtx
 ): Record<string, unknown> {
+  // Rendered as MathTex at its default font_size 48: show glyphs (θ, not
+  // "\theta") at the size the LaTeX preview uses for font_size 48.
+  const fontSize = MATHTEX_DEFAULT_FONT_SIZE * ctx.vs;
+  const width = fontSize * 4;
   return {
-    x: anchor[0] - 12,
-    y: anchor[1] - 8,
-    width: 24,
-    text: (obj.label as string | undefined) || '',
+    x: anchor[0] - width / 2,
+    y: anchor[1] - fontSize / 2,
+    width,
+    text: latexToUnicode((obj.label as string | undefined) || ''),
     align: 'center',
-    fontSize: Math.max(11, 16 * ctx.vs),
+    fontSize,
     fill: (obj.fill as string | undefined) || '#ffffff',
     fontStyle: 'italic',
     listening: false,

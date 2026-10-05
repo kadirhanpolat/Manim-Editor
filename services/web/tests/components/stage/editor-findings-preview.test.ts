@@ -38,4 +38,18 @@ describe('latex preview sizing', () => {
     );
     expect(tall.fontSize as number).toBeGreaterThan(small.fontSize as number);
   });
+
+  it('lets a one-line formula fill a short box, at any zoom (no fixed pixel padding)', () => {
+    // Manim scales the formula's ink to the box (contain-fit, no padding). A
+    // fixed 8 px canvas padding + line-height divisor shrank a 40 px label box
+    // to the 6 px floor at editor zoom. Ink height ≈ 0.75 em for one line.
+    for (const vs of [0.4, 1]) {
+      const cfg = textCfgs.latexTextCfg(
+        { ...OBJECTS.latex, latex: 'x', width: 4000, height: 40 } as never,
+        makeCtx({ vs }) as never
+      );
+      expect(cfg.fontSize as number).toBeCloseTo((40 * vs) / 0.75, 1);
+      expect(cfg.padding).toBe(0);
+    }
+  });
 });

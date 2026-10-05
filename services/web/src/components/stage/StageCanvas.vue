@@ -288,26 +288,14 @@
                   width: (obj.width ?? 0) * vs,
                   height: (obj.height ?? 0) * vs,
                   fill: obj.fill || '#334155',
-                  opacity: 0.3,
+                  opacity: 0.06, // hit area only: Manim draws no plane background
                   listening: true,
                 }"
               />
-              <v-line
-                :config="{
-                  points: [(-(obj.width ?? 0) / 2) * vs, 0, ((obj.width ?? 0) / 2) * vs, 0],
-                  stroke: obj.stroke || '#64748b',
-                  strokeWidth: 1.5,
-                  listening: false,
-                }"
-              />
-              <v-line
-                :config="{
-                  points: [0, (-(obj.height ?? 0) / 2) * vs, 0, ((obj.height ?? 0) / 2) * vs],
-                  stroke: obj.stroke || '#64748b',
-                  strokeWidth: 1.5,
-                  listening: false,
-                }"
-              />
+              <template v-for="(pl, pi) in [planeGrid(obj)]" :key="'pg' + pi">
+                <v-line v-for="(g, gi) in pl.grid" :key="'pgl' + gi" :config="g" />
+                <v-line v-for="(a, ai) in pl.axes" :key="'pga' + ai" :config="a" />
+              </template>
               <v-text
                 :config="{
                   text: obj.type === 'complex_plane' ? 'ComplexPlane' : 'NumberPlane',
@@ -1389,6 +1377,7 @@ const axesYLineCfg = (o: SceneObject) => axes.axesYLineCfg(o, ctx.value);
 const axesXArrowCfg = (o: SceneObject) => axes.axesXArrowCfg(o, ctx.value);
 const axesYArrowCfg = (o: SceneObject) => axes.axesYArrowCfg(o, ctx.value);
 const axesXTicks = (o: SceneObject) => axes.axesXTicks(o, ctx.value);
+const planeGrid = (o: SceneObject) => axes.planeGridCfgs(o, ctx.value);
 const axesYTicks = (o: SceneObject) => axes.axesYTicks(o, ctx.value);
 const axesLabelCfg = (o: SceneObject, axis: string) => axes.axesLabelCfg(o, axis, ctx.value);
 

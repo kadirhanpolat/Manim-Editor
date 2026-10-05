@@ -175,7 +175,9 @@ export function latexBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkn
   };
 }
 
-const LATEX_PAD = 8;
+// Ink height of one line and line pitch, in em (serif italic preview font).
+const LATEX_INK_EM = 0.75;
+const LATEX_LINE_EM = 1.2;
 
 /**
  * Preview font size mirroring the codegen: an explicit `fontSize` maps like a
@@ -195,8 +197,9 @@ function latexPreviewFontSize(
   // no canvas (tests/SSR) → ~0.55 em per character
   const width100 = (l: string) => measureTextWidth(l, 100, 'serif', 'italic ') || l.length * 55;
   const widest = Math.max(...lines.map(width100), 1);
-  const byWidth = (100 * Math.max(w - 2 * LATEX_PAD, 1)) / widest;
-  const byHeight = Math.max(h - 2 * LATEX_PAD, 1) / (lines.length * 1.2);
+  // No padding: Manim scales the formula's ink to the whole box.
+  const byWidth = (100 * Math.max(w, 1)) / widest;
+  const byHeight = Math.max(h, 1) / (LATEX_INK_EM + (lines.length - 1) * LATEX_LINE_EM);
   return Math.max(6, Math.min(byWidth, byHeight));
 }
 
@@ -221,7 +224,7 @@ export function latexTextCfg(obj: SceneObject, ctx: StageCtx): Record<string, un
     fill: (obj.fill as string | undefined) || '#ffffff',
     align: 'center',
     verticalAlign: 'middle',
-    padding: LATEX_PAD,
+    padding: 0,
     listening: false,
   };
 }

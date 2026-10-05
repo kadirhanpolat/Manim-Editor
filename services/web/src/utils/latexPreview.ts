@@ -52,6 +52,8 @@ const SYMBOLS: Record<string, string> = {
   coprod: '∐',
   // operators / relations
   infty: '∞',
+  square: '□',
+  blacksquare: '■',
   partial: '∂',
   nabla: '∇',
   pm: '±',
@@ -210,21 +212,56 @@ const SUB: Record<string, string> = {
   x: 'ₓ',
 };
 
-// Map a string to a sub/superscript run; return null if any char is unmappable.
+// Map a string to a sub/superscript run. Spaces are dropped and symbols with no
+// script form (→, ,) pass through, so `x \to 0` still reads `ₓ→₀`; a letter or
+// digit that cannot be mapped returns null (the caller falls back to `^(…)`).
 function toScript(str: string, table: Record<string, string>): string | null {
   let out = '';
-  for (const ch of str) {
-    if (!table[ch]) return null;
-    out += table[ch];
+  for (const ch of str.replace(/\s+/g, '')) {
+    if (table[ch]) out += table[ch];
+    else if (/[A-Za-z0-9]/.test(ch)) return null;
+    else out += ch;
   }
   return out;
 }
 
+// Upright function names MathTex sets apart from a following letter (cos θ).
+const FUNCTIONS =
+  'arcsin|arccos|arctan|sinh|cosh|tanh|sin|cos|tan|cot|sec|csc|log|ln|exp|lim|max|min|det';
+const FUNCTION_BEFORE_LETTER = new RegExp(
+  `\\\\(${FUNCTIONS})(?![a-zA-Z])\\s*(?=\\\\?[a-zA-Z])`,
+  'g'
+);
+// Combining marks for accents (\hat{x} → x̂). \vec gets none: U+20D7 is missing
+// from common serif fonts and drew a tofu box.
+const ACCENTS: Record<string, string> = {
+  vec: '',
+  hat: '̂',
+  bar: '̄',
+  dot: '̇',
+  tilde: '̃',
+};
+const BLACKBOARD: Record<string, string> = { R: 'ℝ', N: 'ℕ', Z: 'ℤ', Q: 'ℚ', C: 'ℂ' };
+
 export function latexToUnicode(src: unknown): string {
   if (!src) return '';
   let s = String(src);
+  s = s.replace(/\\([%&#])/g, '$1'); // escaped specials
   s = s.replace(/\$/g, ''); // drop math delimiters
+  s = s.replace(/\\ /g, ' '); // explicit space
   s = s.replace(/\\(left|right|displaystyle|textstyle|,|;|:|!|quad|qquad)\b/g, '');
+  s = s.replace(/\\mathbb\s*\{([^{}]*)\}/g, (_m, g: string) =>
+    [...g].map((c) => BLACKBOARD[c] ?? c).join('')
+  );
+  s = s.replace(
+    /\\(mathcal|mathbf|mathrm|mathit|mathsf|mathtt|text|textbf|textit|operatorname)\s*\{([^{}]*)\}/g,
+    '$2'
+  );
+  s = s.replace(
+    /\\(vec|hat|bar|dot|tilde)\s*\{([^{}]*)\}/g,
+    (_m, a: string, g: string) => g + ACCENTS[a]
+  );
+  s = s.replace(FUNCTION_BEFORE_LETTER, '$1 ');
   s = s.replace(/\\\\/g, ' '); // line breaks → space
   s = s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)');
   s = s.replace(/\\sqrt\s*\{([^{}]*)\}/g, '√($1)');

@@ -26,7 +26,7 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 855 unit tests (store, components, export, template geometry, characterization snapshots)
+cd services/web && npm run test:unit    # 871 unit tests (store, components, export, template geometry, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 73 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
@@ -171,6 +171,7 @@ clip.audio = {
 
 ### Per-type notes
 
+- **`axes` preview** (`axesFrame` in `configs/axes.ts`): axes cross at the origin = 0 clamped into each range (Manim's rule), ticks on origin-aligned steps, each graph drawn over its own `[xMin, xMax]`; `numberplane`/`complex_plane` grid via `planeGridCfgs`/`planeGridValues` (range ends get no line).
 - **`axes`**: `graphs: []` array, each `{ id, expression, color, xMin, xMax, strokeWidth }`. Each graph also has optional `area` (`get_area`), `riemann` (`get_riemann_rectangles`), `tangent` (`TangentLine(G, alpha=G.proportion_from_point(ax.i2gp(x, G)))` — TangentLine's alpha is an ARC-LENGTH proportion, so never map x linearly to alpha; legacy numeric-alpha form still parses). Riemann rectangles use `fill_opacity=RIEMANN_FILL_OPACITY` (0.45, shared with the preview). `numberplane` grid step comes from `xRange[2]`/`yRange[2]` (what the inspector edits); `xStep`/`yStep` are legacy fallbacks.
 - **Geometry**: `annulus`/`arc`/`sector`/`double_arrow` → `Annulus`/`Arc`/`Sector`/`DoubleArrow`; radii in px (via `FRAME_WIDTH`), angles in deg → `<deg> * DEGREES`.
 - **Arrow tips** (`arrow`, `double_arrow`): `arrowTipPx(length, strokeWidth)` (helpers.ts) = min(max(28, 6·stroke), 0.25·length) px → `tip_length` + `max_tip_length_to_length_ratio=0.25`; the Konva preview uses the same helper for `pointerLength`/`pointerWidth` (Manim tip width == length).

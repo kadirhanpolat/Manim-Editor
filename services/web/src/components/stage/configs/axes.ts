@@ -28,96 +28,89 @@ export function axesBgCfg(obj: SceneObject, ctx: StageCtx): Record<string, unkno
   };
 }
 
-export function axesXLineCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+// Shared geometry for the axes preview, mirroring Manim's Axes: the axes cross
+// at the origin (0 clamped into each range), span the full width/height, and
+// value → canvas mapping is linear over the ranges.
+function axesFrame(obj: SceneObject, ctx: StageCtx) {
   const L = ctx.live(obj);
-  const ow = obj.width as number;
-  const w = L ? L.w : ow * ctx.vs;
+  const w = L ? L.w : (obj.width as number) * ctx.vs;
+  const h = L ? L.h : (obj.height as number) * ctx.vs;
+  const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1];
+  const yr = (obj.yRange as number[] | undefined) || [-3, 3, 1];
+  const toCx = (x: number) => clean(((x - xr[0]!) / (xr[1]! - xr[0]!)) * w - w / 2);
+  const toCy = (y: number) => clean(-((y - yr[0]!) / (yr[1]! - yr[0]!)) * h + h / 2);
+  const gx = planeGridValues(xr[0]!, xr[1]!, xr[2]!);
+  const gy = planeGridValues(yr[0]!, yr[1]!, yr[2]!);
+  return { w, h, xr, yr, toCx, toCy, gx, gy, ox: toCx(gx.origin), oy: toCy(gy.origin) };
+}
+
+const axisStroke = (obj: SceneObject) => (obj.stroke as string | undefined) || '#ffffff';
+
+export function axesXLineCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
+  const f = axesFrame(obj, ctx);
   return {
-    points: [-w / 2 + 10, 0, w / 2 - 10, 0],
-    stroke: (obj.stroke as string | undefined) || '#ffffff',
+    points: [-f.w / 2, f.oy, f.w / 2, f.oy],
+    stroke: axisStroke(obj),
     strokeWidth: 1.5,
     listening: false,
   };
 }
 
 export function axesYLineCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
-  const L = ctx.live(obj);
-  const oh = obj.height as number;
-  const h = L ? L.h : oh * ctx.vs;
+  const f = axesFrame(obj, ctx);
   return {
-    points: [0, h / 2 - 10, 0, -h / 2 + 10],
-    stroke: (obj.stroke as string | undefined) || '#ffffff',
+    points: [f.ox, f.h / 2, f.ox, -f.h / 2],
+    stroke: axisStroke(obj),
     strokeWidth: 1.5,
     listening: false,
   };
 }
 
 export function axesXArrowCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
-  const L = ctx.live(obj);
-  const ow = obj.width as number;
-  const w = L ? L.w : ow * ctx.vs;
-  const tip = w / 2 - 10;
+  const f = axesFrame(obj, ctx);
+  const tip = f.w / 2;
   return {
-    points: [tip - 8, -5, tip, 0, tip - 8, 5],
-    stroke: (obj.stroke as string | undefined) || '#ffffff',
+    points: [tip - 8, f.oy - 5, tip, f.oy, tip - 8, f.oy + 5],
+    stroke: axisStroke(obj),
     strokeWidth: 1.5,
     listening: false,
   };
 }
 
 export function axesYArrowCfg(obj: SceneObject, ctx: StageCtx): Record<string, unknown> {
-  const L = ctx.live(obj);
-  const oh = obj.height as number;
-  const h = L ? L.h : oh * ctx.vs;
-  const tip = -h / 2 + 10;
+  const f = axesFrame(obj, ctx);
+  const tip = -f.h / 2;
   return {
-    points: [-5, tip + 8, 0, tip, 5, tip + 8],
-    stroke: (obj.stroke as string | undefined) || '#ffffff',
+    points: [f.ox - 5, tip + 8, f.ox, tip, f.ox + 5, tip + 8],
+    stroke: axisStroke(obj),
     strokeWidth: 1.5,
     listening: false,
   };
 }
 
+// Ticks on the origin-aligned steps (the origin itself gets none).
 export function axesXTicks(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {
-  const L = ctx.live(obj);
-  const ow = obj.width as number;
-  const w = L ? L.w : ow * ctx.vs;
-  const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1];
-  const ticks: Record<string, unknown>[] = [];
-  const range = xr[1] - xr[0];
-  const step = xr[2] || 1;
-  for (let v = xr[0]; v <= xr[1]; v += step) {
-    if (Math.abs(v) < 0.001) continue;
-    const px = ((v - xr[0]) / range - 0.5) * (w - 20);
-    ticks.push({
-      points: [px, -4, px, 4],
-      stroke: (obj.stroke as string | undefined) || '#ffffff',
+  const f = axesFrame(obj, ctx);
+  return f.gx.values
+    .filter((v) => v !== f.gx.origin)
+    .map((v) => ({
+      points: [f.toCx(v), f.oy - 4, f.toCx(v), f.oy + 4],
+      stroke: axisStroke(obj),
       strokeWidth: 1,
       listening: false,
-    });
-  }
-  return ticks;
+    }));
 }
 
 export function axesYTicks(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {
-  const L = ctx.live(obj);
-  const oh = obj.height as number;
-  const h = L ? L.h : oh * ctx.vs;
-  const yr = (obj.yRange as number[] | undefined) || [-3, 3, 1];
-  const ticks: Record<string, unknown>[] = [];
-  const range = yr[1] - yr[0];
-  const step = yr[2] || 1;
-  for (let v = yr[0]; v <= yr[1]; v += step) {
-    if (Math.abs(v) < 0.001) continue;
-    const py = -((v - yr[0]) / range - 0.5) * (h - 20);
-    ticks.push({
-      points: [-4, py, 4, py],
-      stroke: (obj.stroke as string | undefined) || '#ffffff',
+  const f = axesFrame(obj, ctx);
+  return f.gy.values
+    .filter((v) => v !== f.gy.origin)
+    .map((v) => ({
+      points: [f.ox - 4, f.toCy(v), f.ox + 4, f.toCy(v)],
+      stroke: axisStroke(obj),
       strokeWidth: 1,
       listening: false,
-    });
-  }
-  return ticks;
+    }));
 }
 
 export function axesLabelCfg(
@@ -125,56 +118,33 @@ export function axesLabelCfg(
   axis: string,
   ctx: StageCtx
 ): Record<string, unknown> {
-  const L = ctx.live(obj);
-  const ow = obj.width as number,
-    oh = obj.height as number;
-  const w = L ? L.w : ow * ctx.vs,
-    h = L ? L.h : oh * ctx.vs;
-  if (axis === 'x') {
-    return {
-      x: w / 2 - 20,
-      y: 6,
-      text: 'x',
-      fontSize: 12,
-      fill: (obj.stroke as string | undefined) || '#ffffff',
-      fontFamily: 'serif',
-      fontStyle: 'italic',
-      listening: false,
-    };
-  }
-  return {
-    x: 6,
-    y: -h / 2 + 12,
-    text: 'y',
+  const f = axesFrame(obj, ctx);
+  const base = {
     fontSize: 12,
-    fill: (obj.stroke as string | undefined) || '#ffffff',
+    fill: axisStroke(obj),
     fontFamily: 'serif',
     fontStyle: 'italic',
     listening: false,
   };
+  if (axis === 'x') return { ...base, x: f.w / 2 - 20, y: f.oy + 6, text: 'x' };
+  return { ...base, x: f.ox + 6, y: -f.h / 2 + 12, text: 'y' };
 }
 
+// Each graph is plotted over its own [xMin, xMax] (codegen: plot(x_range=…)).
 export function axesGraphCurves(obj: SceneObject, ctx: StageCtx): Record<string, unknown>[] {
   const graphs = obj.graphs as Array<Record<string, unknown>> | undefined;
   if (!graphs || graphs.length === 0) return [];
+  const f = axesFrame(obj, ctx);
   const curves: Record<string, unknown>[] = [];
-  const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1];
-  const yr = (obj.yRange as number[] | undefined) || [-3, 3, 1];
-  const xMin = xr[0],
-    xMax = xr[1];
-  const yMin = yr[0],
-    yMax = yr[1];
-  const pw = (obj.width as number) * ctx.vs;
-  const ph = (obj.height as number) * ctx.vs;
-
   for (const graph of graphs) {
     const fn = compileExpr(graph.expression as string, 'x');
     if (!fn) continue;
-
+    const g0 = Number.isFinite(graph.xMin as number) ? (graph.xMin as number) : f.xr[0]!;
+    const g1 = Number.isFinite(graph.xMax as number) ? (graph.xMax as number) : f.xr[1]!;
     const steps = 80;
     const points: number[] = [];
     for (let i = 0; i <= steps; i++) {
-      const x = xMin + (xMax - xMin) * (i / steps);
+      const x = g0 + (g1 - g0) * (i / steps);
       let y: number;
       try {
         y = fn(x);
@@ -182,8 +152,8 @@ export function axesGraphCurves(obj: SceneObject, ctx: StageCtx): Record<string,
         continue;
       }
       if (!Number.isFinite(y)) continue;
-      const cx = ((x - xMin) / (xMax - xMin)) * pw - pw / 2;
-      const cy = -((y - yMin) / (yMax - yMin)) * ph + ph / 2;
+      const cx = f.toCx(x);
+      const cy = f.toCy(y);
       if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
       points.push(cx, cy);
     }
@@ -313,4 +283,55 @@ export function axesAreaRiemann(
     }
   }
   return { areas, rects, tangents };
+}
+
+// ── NumberPlane / ComplexPlane grid ─────────────────────────────────────────
+// Mirrors Manim's NumberPlane: the axis origin is 0 clamped into the range;
+// background lines step out from it by the range step, and the range ends
+// themselves get no line. Colors are Manim's defaults (BLUE_D lines, white axes).
+export const PLANE_GRID_COLOR = '#29ABCA';
+export const PLANE_AXIS_COLOR = '#FFFFFF';
+
+const clean = (v: number) => Number(v.toFixed(10)) || 0;
+
+export function planeGridValues(
+  min: number,
+  max: number,
+  step: number
+): { origin: number; values: number[] } {
+  const origin = Math.min(max, Math.max(min, 0));
+  if (!(step > 0)) return { origin, values: [origin] };
+  const values = [origin];
+  for (let v = origin + step; v < max - 1e-9; v += step) values.push(clean(v));
+  for (let v = origin - step; v > min + 1e-9; v -= step) values.unshift(clean(v));
+  return { origin, values };
+}
+
+export function planeGridCfgs(
+  obj: SceneObject,
+  ctx: StageCtx
+): { grid: Record<string, unknown>[]; axes: Record<string, unknown>[] } {
+  const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1];
+  const yr = (obj.yRange as number[] | undefined) || [-3, 3, 1];
+  const w = (obj.width as number) * ctx.vs;
+  const h = (obj.height as number) * ctx.vs;
+  const toCx = (x: number) => clean(((x - xr[0]!) / (xr[1]! - xr[0]!)) * w - w / 2);
+  const toCy = (y: number) => clean(-((y - yr[0]!) / (yr[1]! - yr[0]!)) * h + h / 2);
+  const line = (points: number[], stroke: string, strokeWidth: number) => ({
+    points,
+    stroke,
+    strokeWidth,
+    listening: false,
+  });
+  const gx = planeGridValues(xr[0]!, xr[1]!, xr[2]!);
+  const gy = planeGridValues(yr[0]!, yr[1]!, yr[2]!);
+  const grid = [
+    ...gx.values.map((x) => line([toCx(x), -h / 2, toCx(x), h / 2], PLANE_GRID_COLOR, 1)),
+    ...gy.values.map((y) => line([-w / 2, toCy(y), w / 2, toCy(y)], PLANE_GRID_COLOR, 1)),
+  ];
+  const axes = [
+    line([-w / 2, toCy(gy.origin), w / 2, toCy(gy.origin)], PLANE_AXIS_COLOR, 1.5),
+    line([toCx(gx.origin), -h / 2, toCx(gx.origin), h / 2], PLANE_AXIS_COLOR, 1.5),
+  ];
+  return { grid, axes };
 }

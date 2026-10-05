@@ -84,3 +84,21 @@ describe('right angle preview parity', () => {
     expect(pts[0]).toBeCloseTo((2 / 3) * 60, 5);
   });
 });
+
+describe('relational label preview', () => {
+  // The label renders as MathTex at Manim's default font_size (48): show the
+  // glyphs (θ, not "\theta") at the size the LaTeX preview uses for 48.
+  it('shows LaTeX labels as glyphs at MathTex size, centred on the anchor', () => {
+    const c = makeCtx({ vs: 0.5 });
+    const cfg = relational.relationalLabelCfg(
+      { ...rightThenUp, label: '\\theta' } as never,
+      [100, 50],
+      c as never
+    );
+    expect(cfg.text).toBe('θ');
+    expect(cfg.fontSize).toBe(48 * 0.5);
+    const w = cfg.width as number;
+    expect((cfg.x as number) + w / 2).toBeCloseTo(100);
+    expect((cfg.y as number) + (cfg.fontSize as number) / 2).toBeCloseTo(50);
+  });
+});
