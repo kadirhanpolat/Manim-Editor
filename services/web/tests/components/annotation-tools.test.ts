@@ -231,7 +231,7 @@ describe('annotation round-trip', () => {
     expect(parsedAnn).toBeDefined();
     expect(parsedAnn!.color).toBe('#facc15');
     // bound to the PARSED circle (a new id), not the old variable name
-    expect(parsedAnn!.targetId).toBe(parsed.objects.find((o: any) => o.type === 'circle')!.id);
+    expect(parsedAnn!.targetId).toBe(parsed.objects.find((o) => o.type === 'circle')!.id);
     expect(Number(parsedAnn!.buff)).toBeCloseTo(10, 0);
     expect(Number(parsedAnn!.cornerRadius)).toBeCloseTo(0, 1);
   });
@@ -247,7 +247,7 @@ describe('annotation round-trip', () => {
     const parsed = parseManimScript(generateManimScript(makeProject([latex, ann]) as any), SW, SH);
     const parsedAnn = parsed.objects.find((o: any) => o.type === 'underline');
     expect(parsedAnn).toBeDefined();
-    expect(parsedAnn!.targetId).toBe(parsed.objects.find((o: any) => o.type === 'latex')!.id);
+    expect(parsedAnn!.targetId).toBe(parsed.objects.find((o) => o.type === 'latex')!.id);
     expect(parsedAnn!.color).toBe('#f97316');
   });
 
@@ -261,7 +261,7 @@ describe('annotation round-trip', () => {
     const parsed = parseManimScript(generateManimScript(makeProject([latex, ann]) as any), SW, SH);
     const parsedAnn = parsed.objects.find((o: any) => o.type === 'cross');
     expect(parsedAnn).toBeDefined();
-    expect(parsedAnn!.targetId).toBe(parsed.objects.find((o: any) => o.type === 'latex')!.id);
+    expect(parsedAnn!.targetId).toBe(parsed.objects.find((o) => o.type === 'latex')!.id);
     expect(parsedAnn!.color).toBe('#ef4444');
     expect(Number(parsedAnn!.strokeWidth)).toBe(3);
   });

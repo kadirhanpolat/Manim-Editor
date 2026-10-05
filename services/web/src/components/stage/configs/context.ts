@@ -124,6 +124,8 @@ export interface StageCtx {
    * or null if the object is not found / not visible.
    */
   objectBounds: (id: string) => { x: number; y: number; width: number; height: number } | null;
+  /** The scene object with this id (bound annotations read their target's data). */
+  objectById?: (id: string) => SceneObject | null;
 }
 
 export const CTX_KEYS = [
@@ -152,4 +154,5 @@ export const CTX_KEYS = [
   'activeTool',
   'selectedObjectIds',
   'objectBounds',
+  'objectById',
 ] as const;

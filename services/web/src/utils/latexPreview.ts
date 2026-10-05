@@ -219,8 +219,61 @@ function toScript(str: string, table: Record<string, string>): string | null {
   let out = '';
   for (const ch of str.replace(/\s+/g, '')) {
     if (table[ch]) out += table[ch];
-    else if (/[A-Za-z0-9]/.test(ch)) return null;
+    else if (/[\p{L}\p{N}]/u.test(ch))
+      return null; // a letter/digit with no script form
     else out += ch;
+  }
+  return out;
+}
+
+const VULGAR: Record<string, string> = {
+  '1/2': '½',
+  '1/3': '⅓',
+  '2/3': '⅔',
+  '1/4': '¼',
+  '3/4': '¾',
+  '1/5': '⅕',
+  '1/6': '⅙',
+  '1/8': '⅛',
+  '3/8': '⅜',
+  '5/8': '⅝',
+  '7/8': '⅞',
+};
+
+/**
+ * Turn ^… / _… into Unicode scripts. Braced groups are matched with their
+ * nesting (2^{-t/T_{1/2}}) and converted inside-out; an unmappable group falls
+ * back to a readable ^(…) / _(…) that is not scanned again.
+ */
+function scripts(s: string): string {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i]!;
+    if ((ch !== '^' && ch !== '_') || i + 1 >= s.length) {
+      out += ch;
+      continue;
+    }
+    let inner: string;
+    let braced = false;
+    if (s[i + 1] === '{') {
+      let depth = 0;
+      let j = i + 1;
+      for (; j < s.length; j++) {
+        if (s[j] === '{') depth++;
+        else if (s[j] === '}' && --depth === 0) break;
+      }
+      inner = scripts(s.slice(i + 2, j));
+      braced = true;
+      i = j;
+    } else if (/\s/.test(s[i + 1]!)) {
+      out += ch;
+      continue;
+    } else {
+      inner = s[i + 1]!;
+      i += 1;
+    }
+    const mapped = toScript(inner, ch === '^' ? SUP : SUB);
+    out += mapped ?? (braced ? `${ch}(${inner})` : `${ch}${inner}`);
   }
   return out;
 }
@@ -257,7 +310,8 @@ export function latexToUnicode(src: unknown): string {
   s = s.replace(/\$/g, ''); // drop math delimiters
   s = s.replace(new RegExp(DOLLAR, 'g'), '$');
   s = s.replace(/\\ /g, ' '); // explicit space
-  s = s.replace(/\\(left|right|displaystyle|textstyle|,|;|:|!|quad|qquad)\b/g, '');
+  // punctuation spacing (\, \; \: \!) needs no word boundary: "\, 2" must go too
+  s = s.replace(/\\(?:[,;:!]|(?:left|right|displaystyle|textstyle|quad|qquad)\b)/g, '');
   s = s.replace(/\\mathbb\s*\{([^{}]*)\}/g, (_m, g: string) =>
     [...g].map((c) => BLACKBOARD[c] ?? c).join('')
   );
@@ -271,21 +325,14 @@ export function latexToUnicode(src: unknown): string {
   );
   s = s.replace(FUNCTION_BEFORE_LETTER, '$1 ');
   s = s.replace(new RegExp(LINE_BREAK, 'g'), ' '); // line breaks → space
-  s = s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)');
+  s = s.replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, (_m, a: string, b: string) => {
+    const key = `${a.trim()}/${b.trim()}`;
+    if (VULGAR[key]) return VULGAR[key];
+    return /^\d+$/.test(a.trim()) && /^\d+$/.test(b.trim()) ? key : `(${a})/(${b})`;
+  });
   s = s.replace(/\\sqrt\s*\{([^{}]*)\}/g, '√($1)');
   s = s.replace(/\\([a-zA-Z]+)/g, (_m, name: string) => (name in SYMBOLS ? SYMBOLS[name] : name));
-  // Scripts in one pass each (braced `{...}` or a single char), so an unmappable
-  // fallback like `^(AB)` isn't re-scanned and mangled by a later single-char pass.
-  s = s.replace(/\^(\{[^{}]*\}|\S)/g, (_m, g: string) => {
-    const braced = g[0] === '{';
-    const inner = braced ? g.slice(1, -1) : g;
-    return toScript(inner, SUP) ?? (braced ? `^(${inner})` : `^${inner}`);
-  });
-  s = s.replace(/_(\{[^{}]*\}|\S)/g, (_m, g: string) => {
-    const braced = g[0] === '{';
-    const inner = braced ? g.slice(1, -1) : g;
-    return toScript(inner, SUB) ?? (braced ? `_(${inner})` : `_${inner}`);
-  });
+  s = scripts(s);
   s = s.replace(/[{}]/g, ''); // strip leftover braces
   return s;
 }

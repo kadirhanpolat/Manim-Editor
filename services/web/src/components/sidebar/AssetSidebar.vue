@@ -492,6 +492,12 @@ const shapes = [
     color: '#f43f5e',
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>',
   },
+  {
+    type: 'axis_point',
+    label: 'Axis Point',
+    color: '#f97316',
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v17h17"/><path d="M15 9v11M4 9h11" stroke-dasharray="2 2"/><circle cx="15" cy="9" r="2.5" fill="currentColor"/></svg>',
+  },
 ];
 
 // Data & Coordinate shapes — Table, NumberPlane, ComplexPlane, PolarPlane, Graph, VectorField

@@ -12,6 +12,7 @@
 
 import { createPinia, defineStore, setActivePinia } from 'pinia';
 import type { SceneObject, Clip, Track, Group, Camera3d, KeyframeDefaults } from '@manim/codegen';
+import { ANNOTATION_TYPES } from '@manim/codegen';
 import api, { connectJobWebSocket, DEFAULT_RENDER_OPTIONS } from '../api.js';
 import type { RenderOptions } from '../api.js';
 import { presetVertices } from '../engine/polygonVertices.js';
@@ -461,6 +462,14 @@ export const SHAPE_DEFAULTS = {
     color: '#ef4444',
     targetId: '',
   },
+  axis_point: {
+    width: 22,
+    height: 22,
+    fill: '#f97316',
+    stroke: '#f97316',
+    strokeWidth: 0,
+    targetId: '',
+  },
 };
 
 export const SHAPE_COLORS = {
@@ -513,6 +522,7 @@ export const SHAPE_COLORS = {
   surrounding_rect: '#facc15',
   underline: '#f97316',
   cross: '#ef4444',
+  axis_point: '#f97316',
 };
 
 function loadRecentColors(): string[] {
@@ -722,6 +732,7 @@ const useProjectStore = defineStore('project', {
         surrounding_rect: 'Frame',
         underline: 'Underline',
         cross: 'Strikethrough',
+        axis_point: 'Axis Point',
         code: 'Code',
         bar_chart: 'Bar Chart',
       };
@@ -861,6 +872,15 @@ const useProjectStore = defineStore('project', {
           : {}),
         ...(type === 'underline' ? { color: '#f97316', buff: 6, targetId: '' } : {}),
         ...(type === 'cross' ? { color: '#ef4444', targetId: '' } : {}),
+        ...(type === 'axis_point'
+          ? {
+              valueX: 1,
+              valueY: 1,
+              label: '',
+              showGuides: true,
+              targetId: this.defaultAxesTarget(),
+            }
+          : {}),
         ...extraProps,
       };
 
@@ -1102,6 +1122,12 @@ const useProjectStore = defineStore('project', {
       this._debouncedCommit();
     },
 
+    /** The axes a new axis_point binds to: the selected axes, else the first one. */
+    defaultAxesTarget(): string {
+      const axes = this.project.objects.filter((o) => o.type === 'axes');
+      const selected = axes.find((o) => this.selectedObjectIds.includes(o.id));
+      return (selected ?? axes[0])?.id ?? '';
+    },
     setAnnotationTarget(objId: string, targetId: string) {
       const obj = this.objectById(objId);
       if (!obj) return;
@@ -1349,7 +1375,6 @@ const useProjectStore = defineStore('project', {
         );
       }
       // Cascade: remove annotation objects bound to this target
-      const ANNOTATION_TYPES = new Set(['surrounding_rect', 'underline', 'cross']);
       const boundAnnotations = this.project.objects
         .filter((o) => ANNOTATION_TYPES.has(o.type as string) && o.targetId === id)
         .map((o) => o.id);

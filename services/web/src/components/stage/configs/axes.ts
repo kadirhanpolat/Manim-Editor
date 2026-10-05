@@ -3,7 +3,8 @@
 // No Vue refs, no reactive imports — all live values come through ctx.
 
 import { compileExpr } from '../../../engine/mathExpr.js';
-import { RIEMANN_FILL_OPACITY } from '@manim/codegen';
+import { FRAME_WIDTH, RIEMANN_FILL_OPACITY } from '@manim/codegen';
+import { latexToUnicode } from '../../../utils/latexPreview.js';
 import type { SceneObject } from '@manim/codegen';
 import type { StageCtx } from './context.js';
 
@@ -335,4 +336,52 @@ export function planeGridCfgs(
     line([toCx(gx.origin), -h / 2, toCx(gx.origin), h / 2], PLANE_AXIS_COLOR, 1.5),
   ];
   return { grid, axes };
+}
+
+// ── axis_point: a point placed by its value on an axes object ───────────────
+const AXIS_POINT_TARGETS = new Set(['axes', 'numberplane', 'complex_plane']);
+const MATHTEX_FONT_SIZE = 48;
+const NEXT_TO_BUFF = 0.1; // Manim units, as in next_to(dot, UR, buff=0.1)
+
+export function axisPointCfgs(
+  obj: SceneObject,
+  ctx: StageCtx
+): {
+  dot: { x: number; y: number; radius: number; fill: string; listening: boolean };
+  guides: Record<string, unknown>[];
+  label: Record<string, unknown> | null;
+} | null {
+  const target = ctx.objectById?.((obj.targetId as string) || '');
+  if (!target || !AXIS_POINT_TARGETS.has(target.type)) return null;
+  const f = axesFrame(target, ctx);
+  const L = ctx.live(target);
+  const e = ctx.eff(target);
+  const c = L ? { x: L.x, y: L.y } : ctx.s2c((e.x as number) ?? 0, (e.y as number) ?? 0);
+  const x = c.x + f.toCx(Number(obj.valueX) || 0);
+  const y = c.y + f.toCy(Number(obj.valueY) || 0);
+  const fill = (obj.fill as string | undefined) || '#f97316';
+  const radius = (((obj.width as number | undefined) ?? 22) / 2) * ctx.vs;
+  const guides = obj.showGuides
+    ? [
+        [x, c.y + f.oy, x, y], // down to the x-axis
+        [c.x + f.ox, y, x, y], // across to the y-axis
+      ].map((points) => ({ points, stroke: fill, strokeWidth: 2, dash: [6, 4], listening: false }))
+    : [];
+  const text = latexToUnicode((obj.label as string | undefined) || '');
+  let label: Record<string, unknown> | null = null;
+  if (text) {
+    const fontSize = MATHTEX_FONT_SIZE * ctx.vs;
+    const buff = NEXT_TO_BUFF * ((ctx.stg.width as number) / FRAME_WIDTH) * ctx.vs;
+    label = {
+      x: x + radius + buff,
+      y: y - radius - buff - fontSize,
+      text,
+      fontSize,
+      fontFamily: 'serif',
+      fontStyle: 'italic',
+      fill,
+      listening: false,
+    };
+  }
+  return { dot: { x, y, radius, fill, listening: false }, guides, label };
 }

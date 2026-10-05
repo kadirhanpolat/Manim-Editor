@@ -630,6 +630,24 @@ export function objectCode(
       );
       break;
     }
+    case 'axis_point': {
+      // A point placed by its VALUE on the target axes (ax.c2p), so it stays
+      // exactly on the plotted coordinates.
+      const ax = vn((o.targetId as string) || '');
+      const num = (v: unknown) => Number(safeNum(v, 0).toFixed(6));
+      const at = `${ax}.c2p(${num(o.valueX)}, ${num(o.valueY)})`;
+      const col = hex(o.fill) || '"#f97316"';
+      const r = (((o.width as number) / 2 / sw) * FRAME_WIDTH).toFixed(3);
+      lines.push(`${n} = Dot(${at}, radius=${r}, color=${col})`);
+      const label = ((o.label as string | undefined) || '').trim();
+      if (label)
+        lines.push(
+          `${n} = VGroup(${n}, MathTex("${safeLatex(label)}").next_to(${n}, UR, buff=0.1).set_color(${col}))`
+        );
+      if (o.showGuides)
+        lines.push(`${n} = VGroup(${ax}.get_lines_to_point(${at}, color=${col}), ${n})`);
+      break;
+    }
     case 'surrounding_rect': {
       const target = vn((o.targetId as string) || '');
       const annColor = hex(o.color) || fill;

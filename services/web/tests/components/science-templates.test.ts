@@ -4,7 +4,6 @@
 // mirrors codegen, which centres the axes' plot area on the object.
 import { describe, it, expect } from 'vitest';
 import TEMPLATES from '../../src/templates/index.js';
-import { onAxes } from '../../src/templates/science.js';
 
 type Obj = Record<string, unknown> & {
   type: string;
@@ -52,12 +51,15 @@ describe('radioactive_decay', () => {
     expect([g.xMin, g.xMax]).toEqual([0, ax.xRange[1]]);
   });
 
-  it('marks 1/2, 1/4 and 1/8 exactly on the curve after 1, 2, 3 half-lives', () => {
+  it('marks 1/2, 1/4 and 1/8 on the curve after 1, 2, 3 half-lives, by value', () => {
+    const axesId = named(objs, 'Axes').id as string;
     for (const k of [1, 2, 3]) {
-      const dot = named(objs, `After ${k} half-life${k > 1 ? 's' : ''}`);
-      const p = onAxes(ax, k, 2 ** -k);
-      expect(dot.x).toBeCloseTo(p.x, 1);
-      expect(dot.y).toBeCloseTo(p.y, 1);
+      const p = named(objs, `After ${k} half-life${k > 1 ? 's' : ''}`);
+      expect(p.type).toBe('axis_point');
+      expect(p.targetId).toBe(axesId);
+      expect([p.valueX, p.valueY]).toEqual([k, 2 ** -k]);
+      expect(p.label).toBe(`\\tfrac{1}{${2 ** k}}`);
+      expect(p.showGuides).toBe(true);
     }
   });
 });
@@ -89,8 +91,9 @@ describe('isochron', () => {
     const samples = objs.filter((o) => o.name.startsWith('Sample'));
     expect(samples.length).toBeGreaterThanOrEqual(5);
     for (const s of samples) {
-      const v = toValue(s);
-      expect(Math.abs(v.y - (0.7 + 0.015 * v.x))).toBeLessThan(0.004);
+      expect(s.type).toBe('axis_point');
+      const [x, y] = [s.valueX as number, s.valueY as number];
+      expect(Math.abs(y - (0.7 + 0.015 * x))).toBeLessThan(0.004);
     }
   });
 });

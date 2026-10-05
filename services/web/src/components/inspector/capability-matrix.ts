@@ -86,6 +86,7 @@ export const ANNOTATION_TYPES = [
   'surrounding_rect',
   'underline',
   'cross',
+  'axis_point',
 ] as const;
 
 export const THREE_D_TYPES = [
@@ -143,6 +144,7 @@ export const INSPECTOR_CAPABILITY_MATRIX: readonly InspectorCapabilityRow[] = [
   row('surrounding_rect', 'annotation', 'AnnotationSettings'),
   row('underline', 'annotation', 'AnnotationSettings'),
   row('cross', 'annotation', 'AnnotationSettings'),
+  row('axis_point', 'annotation', 'AxisPointSettings', 'Positioned by value on an axes object'),
   row(
     'sphere',
     '3d',

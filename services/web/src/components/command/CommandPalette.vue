@@ -127,6 +127,7 @@ const ADDABLE_OBJECTS: AddableSpec[] = [
   { type: 'surrounding_rect', label: 'Surrounding Rectangle', group: 'Annotations' },
   { type: 'underline', label: 'Underline', group: 'Annotations' },
   { type: 'cross', label: 'Cross', group: 'Annotations' },
+  { type: 'axis_point', label: 'Axis Point', group: 'Annotations' },
   { type: 'sphere', label: 'Sphere', group: '3D', is3D: true },
   { type: 'cube', label: 'Cube', group: '3D', is3D: true },
   { type: 'prism', label: 'Prism', group: '3D', is3D: true },

@@ -495,6 +495,17 @@
               <v-line v-if="underlineCfg(obj)" :config="underlineCfg(obj)" />
             </template>
 
+            <!-- Axis point (placed by value on its axes) -->
+            <template v-if="obj.type === 'axis_point'">
+              <template v-for="(ap, api) in [axisPoint(obj)]" :key="'ap' + api">
+                <template v-if="ap">
+                  <v-line v-for="(g, gi) in ap.guides" :key="'apg' + gi" :config="g" />
+                  <v-circle :config="ap.dot" />
+                  <v-text v-if="ap.label" :config="ap.label" />
+                </template>
+              </template>
+            </template>
+
             <!-- Cross annotation (two diagonal lines) -->
             <template v-if="obj.type === 'cross'">
               <template v-if="crossCfg(obj)">
@@ -1259,6 +1270,7 @@ const ctx = computed(() => ({
   measureTextWidth: text.measureTextWidth,
   activeTool: store.activeTool,
   selectedObjectIds: store.selectedObjectIds,
+  objectById: (id: string) => store.objectById(id) ?? null,
   objectBounds(id: string) {
     const target = store.objectById(id);
     if (!target || target.visible === false) return null;
@@ -1378,6 +1390,7 @@ const axesXArrowCfg = (o: SceneObject) => axes.axesXArrowCfg(o, ctx.value);
 const axesYArrowCfg = (o: SceneObject) => axes.axesYArrowCfg(o, ctx.value);
 const axesXTicks = (o: SceneObject) => axes.axesXTicks(o, ctx.value);
 const planeGrid = (o: SceneObject) => axes.planeGridCfgs(o, ctx.value);
+const axisPoint = (o: SceneObject) => axes.axisPointCfgs(o, ctx.value);
 const axesYTicks = (o: SceneObject) => axes.axesYTicks(o, ctx.value);
 const axesLabelCfg = (o: SceneObject, axis: string) => axes.axesLabelCfg(o, axis, ctx.value);
 

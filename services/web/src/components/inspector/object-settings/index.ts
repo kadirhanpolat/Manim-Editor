@@ -24,6 +24,7 @@ import CoordPointSettings from './CoordPointSettings.vue';
 import BezierSettings from './BezierSettings.vue';
 import NumberLineSettings from './NumberLineSettings.vue';
 import AnnotationSettings from './AnnotationSettings.vue';
+import AxisPointSettings from './AxisPointSettings.vue';
 import CodeSettings from './CodeSettings.vue';
 import BarChartSettings from './BarChartSettings.vue';
 const REGISTRY: Record<string, Component> = {
@@ -55,6 +56,7 @@ const REGISTRY: Record<string, Component> = {
   surrounding_rect: AnnotationSettings,
   underline: AnnotationSettings,
   cross: AnnotationSettings,
+  axis_point: AxisPointSettings,
   code: CodeSettings,
   bar_chart: BarChartSettings,
 };

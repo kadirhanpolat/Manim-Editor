@@ -323,7 +323,10 @@ The next development stage should not primarily add more object types. The highe
 
 These requests came from the same documentary production as the 2026-10 bug report. They are not scheduled: each one adds a new object type or workflow, which the non-goals below defer until sections 9-12 land.
 
-- **Data point on axes:** a point plus label positioned by its (x, y) value on an `axes` object (Manim `axes.c2p`). Today the points are placed by hand in pixels, and the axis arrows shift them by about 12 px.
+- ~~**Data point on axes:**~~ Done 2026-10-05.
+  - The new `axis_point` object is bound to an axes and placed by its (x, y) value through `Dot(ax.c2p(x, y))`. It has an optional MathTex label and dashed guides (`get_lines_to_point`).
+  - The ~12 px shift came from the axis tips. It is fixed separately: the plot area is anchored to the object position.
+  - The science templates use the new object.
 - **Scene parameters / language variables:** a text table for TR/EN versions of the same scene, plus the decimal separator (`4{,}55` / `4.55`).
 - **Ken Burns preset** for image objects: slow zoom and pan.
 - **Timeline object:** an axis generated automatically from a list of years and labels.

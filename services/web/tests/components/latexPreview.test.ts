@@ -49,6 +49,22 @@ describe('latexToUnicode', () => {
     expect(latexToUnicode('5\\$')).toBe('5$');
   });
 
+  it('shows fractions as vulgar fractions or a/b', () => {
+    expect(latexToUnicode('\\tfrac{1}{2} \\dfrac{1}{4} \\frac{1}{8}')).toBe('½ ¼ ⅛');
+    expect(latexToUnicode('\\frac{3}{7}')).toBe('3/7');
+  });
+
+  it('removes punctuation spacing commands even before a space', () => {
+    expect(latexToUnicode('N_0 \\, 2')).toBe('N₀  2');
+    expect(latexToUnicode('{}^{87}\\mathrm{Rb} \\,/\\, x')).toBe('⁸⁷Rb / x');
+  });
+
+  it('keeps nested superscripts, falling back to ^(…) when a letter has no script form', () => {
+    expect(latexToUnicode('2^{-t/T_{1/2}}')).toBe('2^(-t/T₁/₂)');
+    expect(latexToUnicode('e^{\\lambda t}')).toBe('e^(λ t)');
+    expect(latexToUnicode('x^{2n}')).toBe('x²ⁿ');
+  });
+
   it('renders accents and drops font wrappers', () => {
     // U+20D7 (combining arrow above) is missing from common serif fonts and
     // drew a tofu box; the preview shows the plain letter (render: real arrow).

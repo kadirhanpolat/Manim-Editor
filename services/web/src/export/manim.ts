@@ -1532,6 +1532,59 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     // Axes plot-area anchor: the same trick, mirrored through the plot-area center.
     if (/^(\w+)\.add\(VectorizedPoint\(\1\.c2p\(/.test(line)) continue;
 
+    // axis_point — `<n> = Dot(<axes>.c2p(x, y), radius=r, color="#hex")` (before the
+    // plain Dot parser, which would otherwise read it as a free dot)
+    m = line.match(
+      /^(\w+)\s*=\s*Dot\((\w+)\.c2p\(([-\d.e+]+),\s*([-\d.e+]+)\),\s*radius=([\d.]+),\s*color="([^"]+)"\)$/
+    );
+    if (m) {
+      const [, name, axVar, vx, vy, r, color] = m;
+      const id = uid('obj');
+      const size = Math.round(((parseFloat(r) * 2) / FRAME_WIDTH) * sw);
+      const obj: SceneObject = {
+        id,
+        type: 'axis_point',
+        name,
+        targetId: varMap[axVar] ?? '',
+        valueX: parseFloat(vx),
+        valueY: parseFloat(vy),
+        label: '',
+        showGuides: false,
+        x: sw / 2,
+        y: sh / 2,
+        width: size,
+        height: size,
+        fill: color,
+        stroke: color,
+        strokeWidth: 0,
+        opacity: 1,
+        rotation: 0,
+        zOrder: objects.length,
+        enterTime: 0,
+        duration: 10,
+        enterAnim: 'fade_in',
+        exitAnim: 'none',
+      };
+      objects.push(obj);
+      varMap[name] = id;
+      objById[id] = obj;
+      continue;
+    }
+    // axis_point label: `<n> = VGroup(<n>, MathTex("…").next_to(<n>, UR, buff=0.1).set_color(…))`
+    m = line.match(
+      /^(\w+)\s*=\s*VGroup\(\1, MathTex\("(.*)"\)\.next_to\(\1, UR, buff=0\.1\)\.set_color\([^)]*\)\)$/
+    );
+    if (m && objById[varMap[m[1]] ?? '']?.type === 'axis_point') {
+      objById[varMap[m[1]]!]!.label = m[2].replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+      continue;
+    }
+    // axis_point guides: `<n> = VGroup(<axes>.get_lines_to_point(…), <n>)`
+    m = line.match(/^(\w+)\s*=\s*VGroup\(\w+\.get_lines_to_point\(.*\), \1\)$/);
+    if (m && objById[varMap[m[1]] ?? '']?.type === 'axis_point') {
+      objById[varMap[m[1]]!]!.showGuides = true;
+      continue;
+    }
+
     // Angle with its rays: `<n> = VGroup(<n>_l1, <n>_l2, <n>_arc[, MathTex("…").move_to(…)])`
     // — renames the `<n>_arc` object to the VGroup var and restores the label.
     m = line.match(

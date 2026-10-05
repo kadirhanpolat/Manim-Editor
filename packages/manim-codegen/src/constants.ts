@@ -75,7 +75,14 @@ export const SHADOW_TYPES: Set<string> = new Set([
   'text',
   'latex',
 ]);
-export const ANNOTATION_TYPES: Set<string> = new Set(['surrounding_rect', 'underline', 'cross']);
+// Bound to another object via `targetId`: emitted after it, positioned from it
+// (no move_to / effects), skipped when it is hidden or missing.
+export const ANNOTATION_TYPES: Set<string> = new Set([
+  'surrounding_rect',
+  'underline',
+  'cross',
+  'axis_point',
+]);
 
 // Riemann rectangles are translucent so the curve and the area stay visible;
 // the canvas preview draws them with the same opacity.

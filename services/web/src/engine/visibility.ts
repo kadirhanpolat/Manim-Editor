@@ -4,10 +4,8 @@
 // StageCanvas.isVis.
 import type { StageObject } from './types.js';
 
-// Local mirror of the annotation set — precedent: store/project.ts deleteObject
-// keeps its own local copy as well (the codegen constant is not re-exported
-// from the @manim/codegen barrel).
-const ANNOTATION_TYPES = new Set(['surrounding_rect', 'underline', 'cross']);
+// The single annotation set from codegen (the store's cascade delete uses it too).
+import { ANNOTATION_TYPES } from '@manim/codegen';
 
 /**
  * True if the object must not be drawn in the preview:

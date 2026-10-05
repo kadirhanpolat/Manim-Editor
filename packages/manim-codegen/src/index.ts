@@ -29,11 +29,14 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
   // output stays byte-identical.
   const allObjects = project.objects || [];
   const hiddenIds = new Set<string>(allObjects.filter((o) => o.hidden === true).map((o) => o.id));
+  const allIds = new Set(allObjects.map((o) => o.id));
   for (const o of allObjects) {
+    const target = o.targetId;
+    // hidden, missing or unset target → the annotation would reference an
+    // undefined Python name
     if (
       ANNOTATION_TYPES.has(o.type) &&
-      typeof o.targetId === 'string' &&
-      hiddenIds.has(o.targetId)
+      (typeof target !== 'string' || !allIds.has(target) || hiddenIds.has(target))
     ) {
       hiddenIds.add(o.id);
     }

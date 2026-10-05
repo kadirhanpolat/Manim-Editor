@@ -131,6 +131,38 @@ function dot(
   };
 }
 
+/** A point placed by its value on an axes object (rendered as Dot(ax.c2p(x, y))). */
+function axisPoint(
+  name: string,
+  axesId: string,
+  x: number,
+  y: number,
+  fill: string,
+  timing: ReturnType<typeof shown>,
+  extra: Record<string, unknown> = {}
+): SceneObject {
+  return {
+    ...timing,
+    id: uid('obj'),
+    type: 'axis_point',
+    name,
+    targetId: axesId,
+    valueX: x,
+    valueY: y,
+    label: '',
+    showGuides: false,
+    x: 0,
+    y: 0,
+    width: 22,
+    height: 22,
+    fill,
+    stroke: fill,
+    strokeWidth: 0,
+    zOrder: 5,
+    ...extra,
+  };
+}
+
 function baseProject(name: string, sceneDuration: number, objects: SceneObject[]): TemplateProject {
   return {
     name,
@@ -156,10 +188,11 @@ function radioactiveDecay(): TemplateProject {
     xRange: [0, 5, 1],
     yRange: [0, 1.2, 0.2],
   };
+  const axesId = uid('obj');
   const objects: SceneObject[] = [
     {
       ...shown(0, END, 'draw', 1.5),
-      id: uid('obj'),
+      id: axesId,
       type: 'axes',
       name: 'Axes',
       ...ax,
@@ -199,38 +232,18 @@ function radioactiveDecay(): TemplateProject {
       rotation: -90,
     }),
   ];
-  const fractions = ['\\tfrac{1}{2}', '\\tfrac{1}{4}', '\\tfrac{1}{8}'];
+  // The point, its dashed guides to both axes and its 1/2, 1/4, 1/8 label all
+  // come from one axis_point placed by value: Dot(ax.c2p(k, 2^-k)).
   [1, 2, 3].forEach((k, i) => {
-    const t = 3.2 + i * 1.3;
-    const p = onAxes(ax, k, 2 ** -k);
-    const foot = onAxes(ax, k, 0);
     objects.push(
-      {
-        ...shown(t, END, 'draw', 0.5),
-        id: uid('obj'),
-        type: 'line',
-        name: `Drop line ${k}`,
-        ...segment(foot, p),
-        height: 0,
-        fill: '#f97316',
-        stroke: '#f97316',
-        strokeWidth: 3,
-        zOrder: 3,
-        dash: { numDashes: 10, ratio: 0.5 },
-      },
-      dot(
+      axisPoint(
         `After ${k} half-life${k > 1 ? 's' : ''}`,
-        p,
+        axesId,
+        k,
+        2 ** -k,
         '#f97316',
-        shown(t + 0.4, END, 'grow_in', 0.4)
-      ),
-      latex(
-        `Fraction ${k}`,
-        fractions[i]!,
-        { x: p.x + 60, y: p.y - 45 },
-        { width: 60, height: 70 },
-        '#fdba74',
-        shown(t + 0.6, END, 'fade_in', 0.4)
+        shown(3.2 + i * 1.3, END, 'grow_in', 0.5),
+        { label: `\\tfrac{1}{${2 ** k}}`, showGuides: true }
       )
     );
   });
@@ -257,10 +270,11 @@ function isochron(): TemplateProject {
     [6.4, -0.003],
     [8.3, 0.001],
   ];
+  const axesId = uid('obj');
   const objects: SceneObject[] = [
     {
       ...shown(0, END, 'draw', 1.5),
-      id: uid('obj'),
+      id: axesId,
       type: 'axes',
       name: 'Axes',
       ...ax,
@@ -296,9 +310,11 @@ function isochron(): TemplateProject {
   ];
   samples.forEach(([x, scatter], i) => {
     objects.push(
-      dot(
+      axisPoint(
         `Sample ${i + 1}`,
-        onAxes(ax, x, line(x) + scatter),
+        axesId,
+        x,
+        Number((line(x) + scatter).toFixed(4)),
         '#facc15',
         shown(1.8 + i * 0.35, END, 'grow_in', 0.3)
       )
