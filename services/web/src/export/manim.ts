@@ -1406,7 +1406,8 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     );
     if (m) {
       const [, varName, targetVar, color, sw2Str, buffStr, crStr] = m;
-      const targetId = varMap[targetVar] ? targetVar : '';
+      // bind to the parsed target's id (objects get fresh ids on import)
+      const targetId = varMap[targetVar] ?? '';
       const buffPx = Math.round((parseFloat(buffStr) / FRAME_WIDTH) * sw);
       const crPx = Math.round((parseFloat(crStr) / FRAME_WIDTH) * sw);
       const id = uid('obj');
@@ -1448,7 +1449,8 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     );
     if (m) {
       const [, varName, targetVar, color, sw2Str, buffStr] = m;
-      const targetId = varMap[targetVar] ? targetVar : '';
+      // bind to the parsed target's id (objects get fresh ids on import)
+      const targetId = varMap[targetVar] ?? '';
       const buffPx = Math.round((parseFloat(buffStr) / FRAME_WIDTH) * sw);
       const id = uid('obj');
       const obj: SceneObject = {
@@ -1488,7 +1490,8 @@ export function parseManimScript(code: string, sw = 1920, sh = 1080): ParsedProj
     );
     if (m) {
       const [, varName, targetVar, color, sw2Str] = m;
-      const targetId = varMap[targetVar] ? targetVar : '';
+      // bind to the parsed target's id (objects get fresh ids on import)
+      const targetId = varMap[targetVar] ?? '';
       const id = uid('obj');
       const obj: SceneObject = {
         id,
