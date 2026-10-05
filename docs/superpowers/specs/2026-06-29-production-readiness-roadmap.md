@@ -327,7 +327,7 @@ These requests came from the same documentary production as the 2026-10 bug repo
 - **Scene parameters / language variables:** a text table for TR/EN versions of the same scene, plus the decimal separator (`4{,}55` / `4.55`).
 - **Ken Burns preset** for image objects: slow zoom and pan.
 - **Timeline object:** an axis generated automatically from a list of years and labels.
-- **SRT export** built from the text of voiceover clips.
+- ~~**SRT export** built from the text of voiceover clips.~~ Done 2026-10-05: File → Export Subtitles (.srt) (`export/srt.ts`). A cue starts with its clip (plus the manual offset) and lasts as long as the audio; lines wrap at 42 characters.
 - **Batch render:** render a list of projects in sequence and report the results.
 - **"Science documentary" template pack:** decay curve, isochron, isotope chain, comparison scale.
 

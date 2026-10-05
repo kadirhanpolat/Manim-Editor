@@ -147,6 +147,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useProjectStore } from '../../store/project.js';
 import { generateManimScript } from '../../export/manim.js';
+import { downloadSrt, hasNarration } from '../../export/srt.js';
 import { buildMenus } from './menus.js';
 import NewProjectDialog from './NewProjectDialog.vue';
 import ProjectSnapshotsDialog from './ProjectSnapshotsDialog.vue';
@@ -204,6 +205,8 @@ const menus = computed(() =>
     browseServer,
     openSnapshots,
     openExport,
+    exportSubtitles,
+    hasSubtitles: () => hasNarration(store.project),
     openRender,
     showShortcuts,
     showAbout,
@@ -284,6 +287,9 @@ async function saveToServer() {
 function browseServer() {
   store.showProjectBrowser = true;
   store.listServerProjects();
+}
+function exportSubtitles() {
+  if (!downloadSrt(store.project)) store.notify('No narration text to export');
 }
 function openSnapshots() {
   showProjectSnapshotsDialog.value = true;

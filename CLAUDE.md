@@ -26,7 +26,7 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 894 unit tests (store, components, export, template geometry, characterization snapshots)
+cd services/web && npm run test:unit    # 901 unit tests (store, components, export, template geometry, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 73 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
@@ -210,6 +210,7 @@ clip.audio = {
 - **Flow**: `AudioPanel` → `POST /api/audio/tts` → Redis `audio:queue:gtts` → `worker.py` → WAV to `/data/assets/audio/` → `POST /api/audio/:jobId/complete` → `broadcastAudioEvent` WS → `actions.setClipAudio`.
 - **File upload** skips the queue: `POST /api/audio/upload` (ffprobe duration) → `{ src, duration, status:'ready' }`.
 - **Codegen priority**: `MovingCameraScene` > `VoiceoverScene` > `Scene`. 3D: `is3D && hasReadyAudio → 'ThreeDScene, VoiceoverScene'` > `is3D → 'ThreeDScene'` > 2D chain.
+- **Subtitles**: File → Export Subtitles (.srt) (`export/srt.ts`, `subtitleCues`/`buildSrt`): cue = clip start (+ manual offset) → + audio.duration (else clip duration), 42-char lines; disabled without narration text.
 - **Render lock**: `store.hasPendingAudio` disables render in `App.vue` (render dialog, which hosts `RenderOptionsDialog.vue`) and `Topbar.vue`. (There is no `RenderPanel.vue`.)
 - **Coqui** (optional): `docker compose --profile coqui up`; `audio-coqui` handles `audio:queue:coqui`.
 

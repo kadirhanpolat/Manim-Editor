@@ -32,6 +32,9 @@ export interface MenuCtx {
   browseServer: () => void;
   openSnapshots: () => void;
   openExport: () => void;
+  /** Download the voiceover narration as SubRip subtitles. */
+  exportSubtitles: () => void;
+  hasSubtitles: () => boolean;
   openRender: () => void;
   showShortcuts: () => void;
   showAbout: () => void;
@@ -109,6 +112,12 @@ export function buildMenus(ctx: MenuCtx): Menu[] {
         { type: 'separator' },
         { id: 'f-snapshots', label: 'Project Snapshots...', action: () => openSnapshots() },
         { id: 'f-export', label: 'Export .py', action: () => openExport() },
+        {
+          id: 'f-export-srt',
+          label: 'Export Subtitles (.srt)',
+          action: () => ctx.exportSubtitles(),
+          disabled: () => !ctx.hasSubtitles(),
+        },
       ],
     },
     {

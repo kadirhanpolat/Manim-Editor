@@ -49,6 +49,44 @@ describe('buildMenus', () => {
   });
 });
 
+describe('buildMenus — subtitles', () => {
+  it('offers "Export Subtitles (.srt)" only when there is narration text', () => {
+    const exportSubtitles = vi.fn();
+    let narrated = false;
+    const menus = buildMenus({
+      mod: 'Ctrl+',
+      isMac: false,
+      store: {},
+      isSaving: ref(false),
+      canGroup: ref(false),
+      gridVisible: ref(true),
+      snapEnabled: ref(false),
+      currentTheme: ref('dark'),
+      newProject: vi.fn(),
+      loadProject: vi.fn(),
+      saveProject: vi.fn(),
+      saveToServer: vi.fn(),
+      browseServer: vi.fn(),
+      openExport: vi.fn(),
+      exportSubtitles,
+      hasSubtitles: () => narrated,
+      openRender: vi.fn(),
+      showShortcuts: vi.fn(),
+      showAbout: vi.fn(),
+      toggleGrid: vi.fn(),
+      toggleSnap: vi.fn(),
+      groupSelected: vi.fn(),
+    } as never);
+    const item = menus[0].items.find((i) => i.id === 'f-export-srt')!;
+    expect(item.label).toBe('Export Subtitles (.srt)');
+    expect(item.disabled!()).toBe(true);
+    narrated = true;
+    expect(item.disabled!()).toBe(false);
+    item.action!();
+    expect(exportSubtitles).toHaveBeenCalled();
+  });
+});
+
 describe('NewProjectDialog', () => {
   it('Create calls store.newProject and emits close', async () => {
     const store = useProjectStore();
