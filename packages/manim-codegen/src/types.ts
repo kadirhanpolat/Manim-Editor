@@ -415,6 +415,8 @@ export interface GeneratedStep {
   /** For a merged same-time step: its animations, each with its own run_time,
    *  so a later overlapping step can fold them into one self.play. */
   parts?: string[];
+  /** Objects an enter/exit step animates (folding never puts one object twice in a play). */
+  objIds?: string[];
 }
 
 export interface GenerateOptions {

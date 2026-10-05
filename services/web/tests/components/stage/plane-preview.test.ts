@@ -26,6 +26,13 @@ describe('planeGridValues', () => {
   it('survives a zero or negative step', () => {
     expect(planeGridValues(-1, 1, 0).values).toEqual([0]);
   });
+
+  it('caps the number of lines (a tiny step must not freeze the canvas)', () => {
+    const { values } = planeGridValues(-5, 5, 0.001);
+    expect(values.length).toBeLessThanOrEqual(201);
+    expect(values).toContain(0);
+    expect(planeGridValues(0, 1e6, 1).values.length).toBeLessThanOrEqual(201);
+  });
 });
 
 describe('planeGridCfgs', () => {
@@ -50,6 +57,20 @@ describe('planeGridCfgs', () => {
     ]);
     expect(horizontal.map((l) => (l.points as number[])[1])).toEqual([270, 135, 0, -135, -270]);
     expect(grid.every((l) => l.stroke === '#29ABCA')).toBe(true);
+  });
+
+  it('follows the live size during a resize, like the hit rect', () => {
+    const live = makeCtx({ vs: 1, live: () => ({ w: 540, h: 405, x: 0, y: 0, rotation: 0 }) });
+    const { axes } = planeGridCfgs(plane as never, live as never);
+    expect((axes[0]!.points as number[])[2]).toBe(270); // x-axis spans the live width
+  });
+
+  it('draws nothing broken for an empty range', () => {
+    const flat = { ...plane, xRange: [1, 1, 1] };
+    const { grid, axes } = planeGridCfgs(flat as never, ctx as never);
+    for (const l of [...grid, ...axes]) {
+      expect((l.points as number[]).every(Number.isFinite)).toBe(true);
+    }
   });
 
   it('puts the axes through the origin, not the box center', () => {

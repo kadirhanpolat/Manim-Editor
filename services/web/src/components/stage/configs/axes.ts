@@ -37,8 +37,10 @@ function axesFrame(obj: SceneObject, ctx: StageCtx) {
   const h = L ? L.h : (obj.height as number) * ctx.vs;
   const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1];
   const yr = (obj.yRange as number[] | undefined) || [-3, 3, 1];
-  const toCx = (x: number) => clean(((x - xr[0]!) / (xr[1]! - xr[0]!)) * w - w / 2);
-  const toCy = (y: number) => clean(-((y - yr[0]!) / (yr[1]! - yr[0]!)) * h + h / 2);
+  const spanX = xr[1]! - xr[0]! || 1; // an empty range must not divide by zero
+  const spanY = yr[1]! - yr[0]! || 1;
+  const toCx = (x: number) => clean(((x - xr[0]!) / spanX) * w - w / 2);
+  const toCy = (y: number) => clean(-((y - yr[0]!) / spanY) * h + h / 2);
   const gx = planeGridValues(xr[0]!, xr[1]!, xr[2]!);
   const gy = planeGridValues(yr[0]!, yr[1]!, yr[2]!);
   return { w, h, xr, yr, toCx, toCy, gx, gy, ox: toCx(gx.origin), oy: toCy(gy.origin) };
@@ -294,13 +296,18 @@ export const PLANE_AXIS_COLOR = '#FFFFFF';
 
 const clean = (v: number) => Number(v.toFixed(10)) || 0;
 
+// More lines than this per axis are unreadable anyway; a tiny step (0.001
+// over -5..5) would otherwise build thousands of Konva lines per render.
+const MAX_GRID_LINES = 200;
+
 export function planeGridValues(
   min: number,
   max: number,
-  step: number
+  rawStep: number
 ): { origin: number; values: number[] } {
   const origin = Math.min(max, Math.max(min, 0));
-  if (!(step > 0)) return { origin, values: [origin] };
+  if (!(rawStep > 0)) return { origin, values: [origin] };
+  const step = rawStep * Math.max(1, Math.ceil((max - min) / rawStep / MAX_GRID_LINES));
   const values = [origin];
   for (let v = origin + step; v < max - 1e-9; v += step) values.push(clean(v));
   for (let v = origin - step; v > min + 1e-9; v -= step) values.unshift(clean(v));
@@ -311,20 +318,14 @@ export function planeGridCfgs(
   obj: SceneObject,
   ctx: StageCtx
 ): { grid: Record<string, unknown>[]; axes: Record<string, unknown>[] } {
-  const xr = (obj.xRange as number[] | undefined) || [-5, 5, 1];
-  const yr = (obj.yRange as number[] | undefined) || [-3, 3, 1];
-  const w = (obj.width as number) * ctx.vs;
-  const h = (obj.height as number) * ctx.vs;
-  const toCx = (x: number) => clean(((x - xr[0]!) / (xr[1]! - xr[0]!)) * w - w / 2);
-  const toCy = (y: number) => clean(-((y - yr[0]!) / (yr[1]! - yr[0]!)) * h + h / 2);
+  // Same frame as the axes (live size during a resize, clamped origin).
+  const { w, h, toCx, toCy, gx, gy } = axesFrame(obj, ctx);
   const line = (points: number[], stroke: string, strokeWidth: number) => ({
     points,
     stroke,
     strokeWidth,
     listening: false,
   });
-  const gx = planeGridValues(xr[0]!, xr[1]!, xr[2]!);
-  const gy = planeGridValues(yr[0]!, yr[1]!, yr[2]!);
   const grid = [
     ...gx.values.map((x) => line([toCx(x), -h / 2, toCx(x), h / 2], PLANE_GRID_COLOR, 1)),
     ...gy.values.map((y) => line([-w / 2, toCy(y), w / 2, toCy(y)], PLANE_GRID_COLOR, 1)),

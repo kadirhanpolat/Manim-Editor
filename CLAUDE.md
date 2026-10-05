@@ -26,11 +26,11 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 890 unit tests (store, components, export, template geometry, characterization snapshots)
+cd services/web && npm run test:unit    # 894 unit tests (store, components, export, template geometry, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 73 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
-npm test --workspace packages/manim-codegen  # 64 codegen tests
+npm test --workspace packages/manim-codegen  # 66 codegen tests
 npm run test:scripts                    # 23 support-tool tests (node --test scripts/tests/) — CI node job
 python -m pytest services/renderer/tests -q   # 44 renderer tests (render args, history, path safety, render limits — 3 kernel-enforcement tests Linux-only, Dockerfile COPYs every worker import) — CI python job
 # All must pass before any commit.

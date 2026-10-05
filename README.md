@@ -451,7 +451,7 @@ Set them in the shell or a `.env` file before `docker compose up`; compose passe
 ```bash
 cd services/web
 npm test           # 122 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 890 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
+npm run test:unit  # 894 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -633,7 +633,7 @@ Render isolation (roadmap section 9), support tooling (section 10) and a templat
 - The last Turkish labels and tooltips are translated.
 - A test keeps Turkish text out of the editor source.
 
-**Tests**: web unit 800 → 890, codegen 43 → 64, api 72 → 73, support tools 23 (new), renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
+**Tests**: web unit 800 → 894, codegen 43 → 66, api 72 → 73, support tools 23 (new), renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
 
 ### v3.28.0
 

@@ -241,13 +241,21 @@ const ACCENTS: Record<string, string> = {
   dot: '̇',
   tilde: '̃',
 };
+// Private-use placeholders while escapes are resolved.
+const LINE_BREAK = '';
+const DOLLAR = '';
 const BLACKBOARD: Record<string, string> = { R: 'ℝ', N: 'ℕ', Z: 'ℤ', Q: 'ℚ', C: 'ℂ' };
 
 export function latexToUnicode(src: unknown): string {
   if (!src) return '';
   let s = String(src);
+  // Protect line breaks (\\) first: in "\\ " or "\\%" the second backslash is
+  // part of the break, not an escape of the next character.
+  s = s.replace(/\\\\/g, LINE_BREAK);
   s = s.replace(/\\([%&#])/g, '$1'); // escaped specials
+  s = s.replace(/\\\$/g, DOLLAR); // an escaped $ survives the delimiter strip
   s = s.replace(/\$/g, ''); // drop math delimiters
+  s = s.replace(new RegExp(DOLLAR, 'g'), '$');
   s = s.replace(/\\ /g, ' '); // explicit space
   s = s.replace(/\\(left|right|displaystyle|textstyle|,|;|:|!|quad|qquad)\b/g, '');
   s = s.replace(/\\mathbb\s*\{([^{}]*)\}/g, (_m, g: string) =>
@@ -262,7 +270,7 @@ export function latexToUnicode(src: unknown): string {
     (_m, a: string, g: string) => g + ACCENTS[a]
   );
   s = s.replace(FUNCTION_BEFORE_LETTER, '$1 ');
-  s = s.replace(/\\\\/g, ' '); // line breaks → space
+  s = s.replace(new RegExp(LINE_BREAK, 'g'), ' '); // line breaks → space
   s = s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)');
   s = s.replace(/\\sqrt\s*\{([^{}]*)\}/g, '√($1)');
   s = s.replace(/\\([a-zA-Z]+)/g, (_m, name: string) => (name in SYMBOLS ? SYMBOLS[name] : name));

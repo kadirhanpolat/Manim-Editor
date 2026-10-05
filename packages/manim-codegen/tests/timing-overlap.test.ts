@@ -106,6 +106,32 @@ describe('overlapping staggered entrances', () => {
     expect(totalTime(lines)).toBeCloseTo(10, 1);
   });
 
+  it('end the cluster at a section boundary, so the section keeps its time', () => {
+    const code = generateScene(
+      {
+        name: 'T',
+        stage: { width: 1920, height: 1080 },
+        objects: [sq('a', 0), sq('b', 0.6)],
+        tracks: [],
+        cameraTrack: [],
+        sections: [{ id: 's', time: 0.4, title: 'Two' }],
+      } as never,
+      { resolveAsset } as never
+    );
+    const lines = code.split('\n').map((l) => l.trim());
+    expect(code).not.toContain('Succession');
+    const sec = lines.indexOf('self.next_section("Two")');
+    expect(sec).toBeGreaterThan(lines.indexOf('self.play(FadeIn(a))'));
+    expect(sec).toBeLessThan(lines.findIndex((l) => l.startsWith('self.play(FadeIn(b')));
+  });
+
+  it("never fold an object's exit into the play of its own entrance", () => {
+    // duration (0.3) shorter than the entrance (1 s): the exit overlaps it
+    const lines = plays([sq('a', 0, { duration: 0.3, exitAnim: 'fade_out', exitAnimDur: 0.5 })]);
+    expect(lines.join('\n')).not.toContain('Succession');
+    expect(lines[0]).toBe('self.play(FadeIn(a))');
+  });
+
   it('leave simultaneous entrances in the existing merged form', () => {
     expect(plays([sq('a', 0), sq('b', 0)])[0]).toBe('self.play(FadeIn(a), FadeIn(b))');
   });

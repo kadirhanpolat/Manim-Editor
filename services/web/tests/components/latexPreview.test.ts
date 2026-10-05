@@ -43,6 +43,12 @@ describe('latexToUnicode', () => {
     expect(latexToUnicode('\\square')).toBe('□');
   });
 
+  it('keeps a line break followed by a space or % intact, and an escaped $', () => {
+    // "\\ " is a line break + space, not an escaped space; "\\%" is a break + comment-less %
+    expect(latexToUnicode('a \\\\ b')).toBe('a   b');
+    expect(latexToUnicode('5\\$')).toBe('5$');
+  });
+
   it('renders accents and drops font wrappers', () => {
     // U+20D7 (combining arrow above) is missing from common serif fonts and
     // drew a tofu box; the preview shows the plain letter (render: real arrow).

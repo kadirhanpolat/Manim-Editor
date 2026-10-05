@@ -199,7 +199,14 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     if (anim === null) {
       steps.push({ time: t, order: 0, code: `self.add(${n})`, dur: 0 });
     } else {
-      steps.push({ time: t, order: 0, code: `self.play(${anim}${rtOpt(dur)})`, dur, anim });
+      steps.push({
+        time: t,
+        order: 0,
+        code: `self.play(${anim}${rtOpt(dur)})`,
+        dur,
+        anim,
+        objIds: [o.id],
+      });
     }
   }
 
@@ -455,13 +462,21 @@ export function generateScene(project: Project, { resolveAsset }: GenerateOption
     const anim = exitAnimExpr(o, vn(o.id));
     if (anim === null) continue; // exitAnim 'none' → stays on screen
     const dur = o.exitAnimDur || 0.5;
-    steps.push({ time: exitTime, order: 2, code: `self.play(${anim}${rtOpt(dur)})`, dur, anim });
+    steps.push({
+      time: exitTime,
+      order: 2,
+      code: `self.play(${anim}${rtOpt(dur)})`,
+      dur,
+      anim,
+      objIds: [o.id],
+    });
   }
 
   // Sort: by time, then enter → clip → exit; then fold enters/exits that
   // start together into one self.play so they really play simultaneously.
   steps.sort((a, b) => a.time - b.time || a.order - b.order);
-  const playSteps = mergeSimultaneousSteps(steps);
+  const sectionTimes = (project.sections ?? []).map((s) => s.time);
+  const playSteps = mergeSimultaneousSteps(steps, sectionTimes);
 
   // ── Emit animation code ──
   L.push(`${indent}# Animation`);
@@ -616,7 +631,10 @@ const SAME_TIME_EPS = 0.01;
  * durations carry a run_time per animation (Manim plays them in parallel and
  * the play lasts as long as the longest). Steps are assumed sorted.
  */
-function mergeSimultaneousSteps(steps: GeneratedStep[]): GeneratedStep[] {
+function mergeSimultaneousSteps(
+  steps: GeneratedStep[],
+  sectionTimes: number[] = []
+): GeneratedStep[] {
   const out: GeneratedStep[] = [];
   let i = 0;
   while (i < steps.length) {
@@ -637,7 +655,7 @@ function mergeSimultaneousSteps(steps: GeneratedStep[]): GeneratedStep[] {
     else if (anims.length > 1) out.push(mergedPlayStep(anims));
     i = j;
   }
-  return foldOverlappingSteps(out);
+  return foldOverlappingSteps(out, sectionTimes);
 }
 
 /** An enter/exit animation step that can run inside a shared self.play. */
@@ -651,7 +669,7 @@ const foldable = (s: GeneratedStep) =>
  * the previous one and push the rest of the scene back. A clip, an instant
  * self.add or a voiceover step ends the cluster.
  */
-function foldOverlappingSteps(steps: GeneratedStep[]): GeneratedStep[] {
+function foldOverlappingSteps(steps: GeneratedStep[], sectionTimes: number[]): GeneratedStep[] {
   const out: GeneratedStep[] = [];
   let i = 0;
   while (i < steps.length) {
@@ -664,9 +682,16 @@ function foldOverlappingSteps(steps: GeneratedStep[]): GeneratedStep[] {
     const cluster = [head];
     let end = head.time + head.dur;
     let j = i + 1;
+    const objs = new Set(head.objIds ?? []);
     while (j < steps.length && foldable(steps[j]!) && steps[j]!.time < end - SAME_TIME_EPS) {
-      end = Math.max(end, steps[j]!.time + steps[j]!.dur);
-      cluster.push(steps[j]!);
+      const next = steps[j]!;
+      // A section marker between the cluster start and this step must stay
+      // between them; an object's exit never shares a play with its entrance.
+      if (sectionTimes.some((st) => st > head.time + SAME_TIME_EPS && st <= next.time)) break;
+      if ((next.objIds ?? []).some((id) => objs.has(id))) break;
+      for (const id of next.objIds ?? []) objs.add(id);
+      end = Math.max(end, next.time + next.dur);
+      cluster.push(next);
       j++;
     }
     out.push(cluster.length === 1 ? head : overlapPlayStep(cluster, end));
@@ -704,7 +729,8 @@ function mergedPlayStep(anims: GeneratedStep[]): GeneratedStep {
     ? `self.play(${anims.map((s) => s.anim).join(', ')}${rtOpt(dur)})`
     : `self.play(${anims.map((s) => `${s.anim!.slice(0, -1)}${rtOpt(s.dur)})`).join(', ')})`;
   const parts = anims.map((s) => `${s.anim!.slice(0, -1)}, run_time=${s.dur.toFixed(2)})`);
-  return { time: anims[0]!.time, order: anims[0]!.order, code, dur, parts };
+  const objIds = anims.flatMap((s) => s.objIds ?? []);
+  return { time: anims[0]!.time, order: anims[0]!.order, code, dur, parts, objIds };
 }
 
 export { objectCode } from './objects.js';
