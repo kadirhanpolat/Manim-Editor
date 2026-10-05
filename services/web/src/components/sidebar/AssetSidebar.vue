@@ -12,7 +12,7 @@
           :key="s.type"
           class="shape-card group"
           draggable="true"
-          :title="'Drag or click to add ' + displayLabel(s.label)"
+          :title="'Drag or click to add ' + s.label"
           @dragstart="onDragStart(s.type, $event)"
           @dragend="onDragEnd"
           @click="addShape(s.type)"
@@ -20,7 +20,7 @@
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
           </div>
-          <span class="shape-label">{{ displayLabel(s.label) }}</span>
+          <span class="shape-label">{{ s.label }}</span>
         </button>
       </div>
     </div>
@@ -34,7 +34,7 @@
           :key="s.type"
           class="shape-card group"
           draggable="true"
-          :title="'Drag or click to add ' + displayLabel(s.label)"
+          :title="'Drag or click to add ' + s.label"
           @dragstart="onDragStart(s.type, $event)"
           @dragend="onDragEnd"
           @click="addShape(s.type)"
@@ -42,7 +42,7 @@
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
           </div>
-          <span class="shape-label">{{ displayLabel(s.label) }}</span>
+          <span class="shape-label">{{ s.label }}</span>
         </button>
       </div>
     </div>
@@ -55,13 +55,13 @@
           v-for="s in shapes3D"
           :key="s.type"
           class="shape-card group"
-          :title="'Add ' + displayLabel(s.label)"
+          :title="'Add ' + s.label"
           @click="addShape(s.type)"
         >
           <div class="shape-icon" :style="{ color: s.color }">
             <span v-html="s.icon"></span>
           </div>
-          <span class="shape-label">{{ displayLabel(s.label) }}</span>
+          <span class="shape-label">{{ s.label }}</span>
         </button>
       </div>
     </div>
@@ -476,19 +476,19 @@ const shapes = [
   },
   {
     type: 'surrounding_rect',
-    label: 'Çerçeve',
+    label: 'Frame',
     color: '#f97316',
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>',
   },
   {
     type: 'underline',
-    label: 'Altı Çizgi',
+    label: 'Underline',
     color: '#22d3ee',
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><text x="4" y="14" font-size="13" font-style="italic" fill="currentColor" stroke="none">x</text><line x1="3" y1="18" x2="21" y2="18"/></svg>',
   },
   {
     type: 'cross',
-    label: 'Üstü Çizili',
+    label: 'Strikethrough',
     color: '#f43f5e',
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>',
   },
@@ -621,16 +621,6 @@ const shapes3D = [
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9c3 4 6 4 9 0s6-4 9 0"/><path d="M3 15c3 4 6 4 9 0s6-4 9 0"/><line x1="6" y1="7" x2="6" y2="17"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="18" y1="7" x2="18" y2="17"/></svg>',
   },
 ];
-
-const LABEL_MAP: Record<string, string> = {
-  Çerçeve: 'Frame',
-  'Altı Çizgi': 'Underline',
-  'Üstü Çizili': 'Strikethrough',
-};
-
-function displayLabel(label: string): string {
-  return LABEL_MAP[label] ?? label;
-}
 
 const assets = computed(() => store.project.assets);
 const imageAssets = computed(() => assets.value.filter((a) => a.type === 'image'));

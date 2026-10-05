@@ -163,7 +163,7 @@ The marketing site in `website/` deploys to Netlify via `netlify.toml`. Connect 
 
 ## Roadmap
 
-The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-10 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI, render isolation, startup/support tooling) are implemented, and all CI jobs are green. The remaining work is the last localization leftovers (section 11) and the rest of template/education quality (section 12: narrative timing, camera polish, a science-documentary pack). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
+The active production-readiness plan lives in [`docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`](docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md). Sections 1-11 (render reliability, preview/render parity, round-trip robustness, large-scene performance, inspector matrix, render UX, project history, CI, render isolation, startup/support tooling, English-only UI) are implemented, and all CI jobs are green. The remaining work is the rest of template/education quality (section 12: narrative timing, camera polish, a science-documentary pack). Accepted preview-vs-render differences are listed in [`docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`](docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md).
 
 ---
 
@@ -451,7 +451,7 @@ Set them in the shell or a `.env` file before `docker compose up`; compose passe
 ```bash
 cd services/web
 npm test           # 122 engine tests (easing, geometry, transform, blending, keyframe + path interpolation) — run via tsx
-npm run test:unit  # 839 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
+npm run test:unit  # 855 unit tests (store, templates, graphs, parallel clips, path, camera, audio, keyframe, manim export + LaTeX round-trip, 3D scene/path/projection/camera, 2D object effects, Phase 2 geometry/calculus + math-expr security, relational/effects/emphasis/text-math, data objects, object-library extensions, geometry+transform engine coverage, ErrorBoundary, notify/toast, UI-tools audit, codegen→valid-Python checks, math annotation tools, template library, render export options, code/bar_chart content objects, lock/hide/marquee/context-menu/autosave UX pack, command palette, Wave 2: splitClip/sections/guides/snap/timeline-ctx, Wave 3: next_section parser round-trip, + characterization snapshots)
 npm run test:coverage  # same suite with a v8 coverage report
 ```
 
@@ -612,7 +612,13 @@ Render isolation (roadmap section 9), support tooling (section 10) and a templat
 - **Worker count**: the render dialog no longer counts workers from removed containers. After a rebuild it showed 6 workers instead of 2.
 - **CI**: now also runs the codegen tests and the support-tool tests.
 
-**Tests**: web unit 800 → 839, codegen 43 → 57, api 72 → 73, support tools 23 (new), renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
+**English-only UI** (section 11):
+- Templates are authored in English: names, descriptions, object names and text.
+- The runtime translation maps are gone. They used to mistranslate object names and missed new strings.
+- The last Turkish labels and tooltips are translated.
+- A test keeps Turkish text out of the editor source.
+
+**Tests**: web unit 800 → 855, codegen 43 → 57, api 72 → 73, support tools 23 (new), renderer pytest 7 → 44. The real-Manim harness passes for all 26 cases.
 
 ### v3.28.0
 

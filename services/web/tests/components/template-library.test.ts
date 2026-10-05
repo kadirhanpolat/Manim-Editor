@@ -99,7 +99,7 @@ describe('unit_circle template geometry', () => {
     if (!o) throw new Error(`missing object ${name}`);
     return o;
   };
-  const plane = byName('Düzlem');
+  const plane = byName('Plane');
   const xr = plane.xRange as number[];
   const unit = plane.width / (xr[1] - xr[0]);
 
@@ -112,14 +112,14 @@ describe('unit_circle template geometry', () => {
   });
 
   it('has a circle of radius one plane unit, centred on the origin', () => {
-    const c = byName('Birim Çember');
+    const c = byName('Unit Circle');
     expect(c.width / 2).toBeCloseTo(unit, 1);
     expect([c.x, c.y]).toEqual([plane.x, plane.y]);
   });
 
   it('puts P on the circle, at the end of the angle ray', () => {
     const p = byName('P');
-    const ang = byName('Açı θ');
+    const ang = byName('Angle θ');
     const dx = p.x - plane.x;
     const dy = p.y - plane.y;
     expect(Math.hypot(dx, dy)).toBeCloseTo(unit, 0);
@@ -197,9 +197,9 @@ describe('vector_addition template geometry', () => {
   ).objects;
   const by = (name: string) => objs.find((o) => o.name === name)!;
   it('draws the resultant from the tail of u to the tip of v', () => {
-    const u = by('u vektörü');
-    const v = by('v vektörü');
-    const w = by('Bileşke');
+    const u = by('u vector');
+    const v = by('v vector');
+    const w = by('Resultant');
     const r = (w.rotation * Math.PI) / 180;
     const half = [(w.width / 2) * Math.cos(r), (w.width / 2) * Math.sin(r)];
     expect(w.x - half[0]).toBeCloseTo(u.x, 0);
@@ -211,8 +211,8 @@ describe('vector_addition template geometry', () => {
   });
 
   it('uses clearly different directions so the parallelogram is visible', () => {
-    const u = by('u vektörü');
-    const v = by('v vektörü');
+    const u = by('u vector');
+    const v = by('v vector');
     const deg = (o: Record<string, number>) => (Math.atan2(-o.vy, o.vx) * 180) / Math.PI;
     expect(Math.abs(deg(u) - deg(v))).toBeGreaterThan(30);
   });
@@ -237,4 +237,28 @@ describe('algo_steps template layout', () => {
       expect(a.x + a.width / 2).toBeLessThanOrEqual(gapEnd - 10);
     });
   });
+});
+
+// UI language policy: English. Templates are authored in English directly —
+// there is no runtime translation table (it used to string-match and
+// mistranslate object names, and missed every newly added string).
+describe('templates are authored in English', () => {
+  const TURKISH = /[çğıöşüÇĞİÖŞÜ]/;
+  const strings = (value: unknown, path: string, out: string[]) => {
+    if (typeof value === 'string') {
+      if (TURKISH.test(value)) out.push(`${path} = ${JSON.stringify(value)}`);
+    } else if (Array.isArray(value)) {
+      value.forEach((v, i) => strings(v, `${path}[${i}]`, out));
+    } else if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) if (k !== 'id') strings(v, `${path}.${k}`, out);
+    }
+    return out;
+  };
+  for (const t of TEMPLATES) {
+    it(`${t.id}`, () => {
+      const found = strings({ label: t.label, description: t.description }, t.id, []);
+      if (t.project) strings(t.project(), `${t.id}.project`, found);
+      expect(found).toEqual([]);
+    });
+  }
 });

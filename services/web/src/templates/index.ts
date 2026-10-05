@@ -54,22 +54,22 @@ const STAGE = {
 export const TEMPLATES: Template[] = [
   {
     id: 'blank',
-    label: 'Boş Proje',
-    description: 'Sıfırdan başla',
+    label: 'Blank Project',
+    description: 'Start from scratch',
     icon: '□',
     category: 'general',
     project: null,
   },
   {
     id: 'formula_reveal',
-    label: 'Formül Tanıtım',
-    description: 'LaTeX formülü yazma efektiyle ortaya çıkar',
+    label: 'Formula Reveal',
+    description: 'Reveal a LaTeX formula with a writing effect',
     icon: '∑',
     category: 'general',
     project: () => {
       const id1 = uid('obj');
       return {
-        name: 'Formül Tanıtım',
+        name: 'Formula Reveal',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -80,7 +80,7 @@ export const TEMPLATES: Template[] = [
           {
             id: id1,
             type: 'latex',
-            name: 'Formül',
+            name: 'Formula',
             x: 960,
             y: 540,
             width: 300,
@@ -106,8 +106,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'shape_transform',
-    label: 'Şekil Dönüşümü',
-    description: 'Bir şekil diğerine morph olur',
+    label: 'Shape Transform',
+    description: 'Morph one shape into another',
     icon: '⇌',
     category: 'general',
     project: () => {
@@ -115,7 +115,7 @@ export const TEMPLATES: Template[] = [
       const tgt = uid('obj');
       const clip = uid('clip');
       return {
-        name: 'Şekil Dönüşümü',
+        name: 'Shape Transform',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -126,7 +126,7 @@ export const TEMPLATES: Template[] = [
           {
             id: src,
             type: 'circle',
-            name: 'Kaynak',
+            name: 'Source',
             x: 960,
             y: 540,
             width: 200,
@@ -147,7 +147,7 @@ export const TEMPLATES: Template[] = [
           {
             id: tgt,
             type: 'square',
-            name: 'Hedef',
+            name: 'Target',
             x: 960,
             y: 540,
             width: 200,
@@ -193,15 +193,15 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'title_slide',
-    label: 'Başlık Slaydı',
-    description: 'Başlık ve alt başlık kademeli giriş',
+    label: 'Title Slide',
+    description: 'Title and subtitle fade in sequentially',
     icon: 'T',
     category: 'general',
     project: () => {
       const title = uid('obj');
       const sub = uid('obj');
       return {
-        name: 'Başlık Slaydı',
+        name: 'Title Slide',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -212,7 +212,7 @@ export const TEMPLATES: Template[] = [
           {
             id: title,
             type: 'text',
-            name: 'Başlık',
+            name: 'Title',
             x: 960,
             y: 480,
             width: 800,
@@ -223,7 +223,7 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 0,
-            content: 'Başlık Metni',
+            content: 'Title Text',
             fontSize: 72,
             fontFamily: 'Roboto',
             textAlign: 'center',
@@ -239,7 +239,7 @@ export const TEMPLATES: Template[] = [
           {
             id: sub,
             type: 'text',
-            name: 'Alt Başlık',
+            name: 'Subtitle',
             x: 960,
             y: 600,
             width: 600,
@@ -250,7 +250,7 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 1,
-            content: 'Alt başlık açıklaması',
+            content: 'Subtitle description',
             fontSize: 36,
             fontFamily: 'Roboto',
             textAlign: 'center',
@@ -270,15 +270,15 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'axes_intro',
-    label: 'Koordinat Sistemi',
-    description: 'Eksenler sahneye çizilir',
+    label: 'Coordinate System',
+    description: 'Axes are drawn onto the stage',
     icon: '⊕',
     category: 'general',
     project: () => {
       const ax = uid('obj');
       const lbl = uid('obj');
       return {
-        name: 'Koordinat Sistemi',
+        name: 'Coordinate System',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -289,7 +289,7 @@ export const TEMPLATES: Template[] = [
           {
             id: ax,
             type: 'axes',
-            name: 'Eksenler',
+            name: 'Axes',
             x: 960,
             y: 540,
             width: 800,
@@ -324,7 +324,7 @@ export const TEMPLATES: Template[] = [
             // A LaTeX (MathTex) object so the expression typesets in the proper
             // math font (italic x, real superscript) instead of a plain Text font.
             type: 'latex',
-            name: 'Etiket',
+            name: 'Label',
             x: 960,
             y: 200,
             width: 220,
@@ -350,8 +350,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'limit_approach',
-    label: 'Limit Yaklaşımı',
-    description: 'x → c yaklaşımı ile limit kavramı',
+    label: 'Limit Approach',
+    description: 'Visualize the limit concept as x approaches c',
     icon: 'lim',
     category: 'calculus',
     project: () => {
@@ -360,7 +360,7 @@ export const TEMPLATES: Template[] = [
       const d2 = uid('obj');
       const lbl = uid('obj');
       return {
-        name: 'Limit Yaklaşımı',
+        name: 'Limit Approach',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -371,7 +371,7 @@ export const TEMPLATES: Template[] = [
           {
             id: np,
             type: 'numberplane',
-            name: 'Düzlem',
+            name: 'Plane',
             x: 960,
             y: 540,
             width: 1000,
@@ -394,7 +394,7 @@ export const TEMPLATES: Template[] = [
           {
             id: d1,
             type: 'dot',
-            name: 'x yaklaşan nokta',
+            name: 'Point approaching x',
             x: 800,
             y: 540,
             width: 20,
@@ -415,7 +415,7 @@ export const TEMPLATES: Template[] = [
           {
             id: d2,
             type: 'dot',
-            name: 'Limit noktası',
+            name: 'Limit point',
             x: 960,
             y: 540,
             width: 24,
@@ -462,8 +462,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'derivative_tangent',
-    label: 'Türev Teğet',
-    description: 'Bir noktada türev ve teğet çizgisi gösterimi',
+    label: 'Derivative Tangent',
+    description: 'Show the derivative and tangent line at a point',
     icon: '∂',
     category: 'calculus',
     project: () => {
@@ -471,7 +471,7 @@ export const TEMPLATES: Template[] = [
       const lbl = uid('obj');
       const gid = uid('obj');
       return {
-        name: 'Türev Teğet',
+        name: 'Derivative Tangent',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -482,7 +482,7 @@ export const TEMPLATES: Template[] = [
           {
             id: ax,
             type: 'axes',
-            name: 'Eksenler',
+            name: 'Axes',
             x: 960,
             y: 560,
             width: 900,
@@ -516,7 +516,7 @@ export const TEMPLATES: Template[] = [
           {
             id: lbl,
             type: 'latex',
-            name: 'Türev',
+            name: 'Derivative',
             x: 960,
             y: 160,
             width: 500,
@@ -542,8 +542,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'integral_area',
-    label: 'İntegral Alan',
-    description: 'Belirli integral ve Riemann alanı gösterimi',
+    label: 'Integral Area',
+    description: 'Show a definite integral and Riemann area',
     icon: '∫',
     category: 'calculus',
     project: () => {
@@ -551,7 +551,7 @@ export const TEMPLATES: Template[] = [
       const lbl = uid('obj');
       const gid = uid('obj');
       return {
-        name: 'İntegral Alan',
+        name: 'Integral Area',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -562,7 +562,7 @@ export const TEMPLATES: Template[] = [
           {
             id: ax,
             type: 'axes',
-            name: 'Eksenler',
+            name: 'Axes',
             x: 960,
             y: 570,
             width: 900,
@@ -605,7 +605,7 @@ export const TEMPLATES: Template[] = [
           {
             id: lbl,
             type: 'latex',
-            name: 'İntegral',
+            name: 'Integral',
             x: 960,
             y: 160,
             width: 440,
@@ -631,8 +631,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'vector_addition',
-    label: 'Vektör Toplama',
-    description: 'İki vektörün bileşke toplamı gösterimi',
+    label: 'Vector Addition',
+    description: 'Show the resultant sum of two vectors',
     icon: '→',
     category: 'linear_algebra',
     project: () => {
@@ -641,7 +641,7 @@ export const TEMPLATES: Template[] = [
       const res = uid('obj');
       const lbl = uid('obj');
       return {
-        name: 'Vektör Toplama',
+        name: 'Vector Addition',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -652,7 +652,7 @@ export const TEMPLATES: Template[] = [
           {
             id: vc1,
             type: 'vector_components',
-            name: 'u vektörü',
+            name: 'u vector',
             x: 660,
             y: 800,
             width: 450,
@@ -675,7 +675,7 @@ export const TEMPLATES: Template[] = [
           {
             id: vc2,
             type: 'vector_components',
-            name: 'v vektörü',
+            name: 'v vector',
             x: 1110,
             y: 680,
             width: 380,
@@ -698,7 +698,7 @@ export const TEMPLATES: Template[] = [
           {
             id: res,
             type: 'arrow',
-            name: 'Bileşke',
+            name: 'Resultant',
             // From u's tail (660, 800) to v's tip (1260, 300): centred on the
             // midpoint, rotated up by atan2(500, 600).
             x: 960,
@@ -721,7 +721,7 @@ export const TEMPLATES: Template[] = [
           {
             id: lbl,
             type: 'latex',
-            name: 'Formül',
+            name: 'Formula',
             x: 960,
             y: 160,
             width: 400,
@@ -747,8 +747,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'matrix_product',
-    label: 'Matris Çarpımı',
-    description: 'İki 2×2 matrisin çarpımı',
+    label: 'Matrix Multiplication',
+    description: 'Multiply two 2×2 matrices',
     icon: '⊗',
     category: 'linear_algebra',
     project: () => {
@@ -757,7 +757,7 @@ export const TEMPLATES: Template[] = [
       const mC = uid('obj');
       const lbl = uid('obj');
       return {
-        name: 'Matris Çarpımı',
+        name: 'Matrix Multiplication',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -794,7 +794,7 @@ export const TEMPLATES: Template[] = [
           {
             id: lbl,
             type: 'latex',
-            name: 'Çarpı',
+            name: 'Times',
             x: 720,
             y: 540,
             width: 80,
@@ -844,7 +844,7 @@ export const TEMPLATES: Template[] = [
           {
             id: mC,
             type: 'matrix',
-            name: 'Sonuç',
+            name: 'Result',
             x: 1380,
             y: 540,
             width: 240,
@@ -874,8 +874,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'unit_circle',
-    label: 'Birim Çember',
-    description: 'Trigonometrik birim çember ve sin/cos gösterimi',
+    label: 'Unit Circle',
+    description: 'Trigonometric unit circle with sin/cos display',
     icon: '○',
     category: 'trigonometry',
     project: () => {
@@ -898,7 +898,7 @@ export const TEMPLATES: Template[] = [
         exitAnimDur: 0.5,
       });
       return {
-        name: 'Birim Çember',
+        name: 'Unit Circle',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -910,7 +910,7 @@ export const TEMPLATES: Template[] = [
             ...base(0),
             id: uid('obj'),
             type: 'numberplane',
-            name: 'Düzlem',
+            name: 'Plane',
             x: CX,
             y: CY,
             width: 4 * U,
@@ -930,7 +930,7 @@ export const TEMPLATES: Template[] = [
             ...base(0.8),
             id: uid('obj'),
             type: 'circle',
-            name: 'Birim Çember',
+            name: 'Unit Circle',
             x: CX,
             y: CY,
             width: 2 * U,
@@ -947,7 +947,7 @@ export const TEMPLATES: Template[] = [
             ...base(2.2),
             id: uid('obj'),
             type: 'angle',
-            name: 'Açı θ',
+            name: 'Angle θ',
             x: CX,
             y: CY,
             width: U,
@@ -985,7 +985,7 @@ export const TEMPLATES: Template[] = [
             ...base(3.5),
             id: uid('obj'),
             type: 'latex',
-            name: 'P etiketi',
+            name: 'P label',
             x: CX + PX + 150,
             y: CY - PY - 45,
             width: 300,
@@ -1018,7 +1018,7 @@ export const TEMPLATES: Template[] = [
             ...base(4.9),
             id: uid('obj'),
             type: 'latex',
-            name: 'cos etiketi',
+            name: 'cos label',
             x: CX + PX / 2,
             y: CY + 40,
             width: 110,
@@ -1052,7 +1052,7 @@ export const TEMPLATES: Template[] = [
             ...base(6.1),
             id: uid('obj'),
             type: 'latex',
-            name: 'sin etiketi',
+            name: 'sin label',
             x: CX + PX + 75,
             y: CY - PY / 2,
             width: 110,
@@ -1069,7 +1069,7 @@ export const TEMPLATES: Template[] = [
             ...base(7.0),
             id: uid('obj'),
             type: 'latex',
-            name: 'Pisagor özdeşliği',
+            name: 'Pythagorean identity',
             x: CX,
             y: 105,
             width: 560,
@@ -1089,8 +1089,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'sin_cos_wave',
-    label: 'Sin & Cos Grafiği',
-    description: 'Sinüs ve kosinüs dalgaları karşılaştırması',
+    label: 'Sine & Cosine Graph',
+    description: 'Compare the sine and cosine waves',
     icon: '∿',
     category: 'trigonometry',
     project: () => {
@@ -1098,7 +1098,7 @@ export const TEMPLATES: Template[] = [
       const g1 = uid('obj');
       const g2 = uid('obj');
       return {
-        name: 'Sin & Cos Grafiği',
+        name: 'Sine & Cosine Graph',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -1109,7 +1109,7 @@ export const TEMPLATES: Template[] = [
           {
             id: ax,
             type: 'axes',
-            name: 'Eksenler',
+            name: 'Axes',
             x: 960,
             y: 560,
             width: 1100,
@@ -1154,8 +1154,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'normal_distribution',
-    label: 'Normal Dağılım',
-    description: 'Gauss çanı eğrisi ve ±1σ alanı',
+    label: 'Normal Distribution',
+    description: 'Gaussian bell curve with the ±1σ region',
     icon: '⌒',
     category: 'statistics',
     project: () => {
@@ -1164,7 +1164,7 @@ export const TEMPLATES: Template[] = [
       const lbl1 = uid('obj');
       const lbl2 = uid('obj');
       return {
-        name: 'Normal Dağılım',
+        name: 'Normal Distribution',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -1175,7 +1175,7 @@ export const TEMPLATES: Template[] = [
           {
             id: ax,
             type: 'axes',
-            name: 'Eksenler',
+            name: 'Axes',
             x: 960,
             y: 600,
             width: 1200,
@@ -1209,7 +1209,7 @@ export const TEMPLATES: Template[] = [
           {
             id: lbl1,
             type: 'latex',
-            name: 'Formül',
+            name: 'Formula',
             x: 960,
             y: 140,
             width: 400,
@@ -1257,8 +1257,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'theorem_proof',
-    label: 'Teorem İspatı',
-    description: 'Teorem ifadesi, kanıt adımları ve sonuç',
+    label: 'Theorem Proof',
+    description: 'Theorem statement, proof steps, and conclusion',
     icon: '∎',
     category: 'general',
     project: () => {
@@ -1267,7 +1267,7 @@ export const TEMPLATES: Template[] = [
       const proofBody = uid('obj');
       const qed = uid('obj');
       return {
-        name: 'Teorem İspatı',
+        name: 'Theorem Proof',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -1278,7 +1278,7 @@ export const TEMPLATES: Template[] = [
           {
             id: thmTxt,
             type: 'latex',
-            name: 'Teorem',
+            name: 'Theorem',
             x: 960,
             y: 260,
             width: 900,
@@ -1300,7 +1300,7 @@ export const TEMPLATES: Template[] = [
           {
             id: proofHdr,
             type: 'text',
-            name: 'Kanıt başlığı',
+            name: 'Proof title',
             x: 960,
             y: 440,
             width: 300,
@@ -1311,7 +1311,7 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 1,
-            content: 'Kanıt:',
+            content: 'Proof:',
             fontSize: 32,
             fontFamily: 'Arial',
             enterTime: 1.5,
@@ -1324,7 +1324,7 @@ export const TEMPLATES: Template[] = [
           {
             id: proofBody,
             type: 'text',
-            name: 'Kanıt metni',
+            name: 'Proof text',
             x: 960,
             y: 580,
             width: 1100,
@@ -1335,7 +1335,8 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 2,
-            content: 'Dik üçgende hipotenüs karesi, diğer iki kenar karelerinin toplamına eşittir.',
+            content:
+              'In a right triangle, the square of the hypotenuse equals the sum of the squares of the other two sides.',
             fontSize: 28,
             fontFamily: 'Arial',
             enterTime: 2.5,
@@ -1374,8 +1375,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'algo_steps',
-    label: 'Algoritma Adımları',
-    description: 'Üç adımlı akış şeması: Başlat → İşle → Bitir',
+    label: 'Algorithm Steps',
+    description: 'Three-step flowchart: Start → Process → End',
     icon: '⚙',
     category: 'programming',
     project: () => {
@@ -1388,7 +1389,7 @@ export const TEMPLATES: Template[] = [
       const arr1 = uid('obj');
       const arr2 = uid('obj');
       return {
-        name: 'Algoritma Adımları',
+        name: 'Algorithm Steps',
         editorMode: 'visual',
         codeSource: '',
         stage: { ...STAGE },
@@ -1399,7 +1400,7 @@ export const TEMPLATES: Template[] = [
           {
             id: box1,
             type: 'rectangle',
-            name: 'Adım 1 kutusu',
+            name: 'Step 1 box',
             x: 320,
             y: 540,
             width: 320,
@@ -1420,7 +1421,7 @@ export const TEMPLATES: Template[] = [
           {
             id: txt1,
             type: 'text',
-            name: 'Başlat',
+            name: 'Start',
             x: 320,
             y: 540,
             width: 320,
@@ -1431,7 +1432,7 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 1,
-            content: 'Başlat',
+            content: 'Start',
             fontSize: 32,
             fontFamily: 'Arial',
             enterTime: 0.2,
@@ -1444,7 +1445,7 @@ export const TEMPLATES: Template[] = [
           {
             id: arr1,
             type: 'arrow',
-            name: 'Ok 1',
+            name: 'Arrow 1',
             // centred in the 320 px gap between two boxes
             x: 640,
             y: 540,
@@ -1466,7 +1467,7 @@ export const TEMPLATES: Template[] = [
           {
             id: box2,
             type: 'rectangle',
-            name: 'Adım 2 kutusu',
+            name: 'Step 2 box',
             x: 960,
             y: 540,
             width: 320,
@@ -1487,7 +1488,7 @@ export const TEMPLATES: Template[] = [
           {
             id: txt2,
             type: 'text',
-            name: 'İşle',
+            name: 'Process',
             x: 960,
             y: 540,
             width: 320,
@@ -1498,7 +1499,7 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 4,
-            content: 'İşle',
+            content: 'Process',
             fontSize: 32,
             fontFamily: 'Arial',
             enterTime: 1.7,
@@ -1511,7 +1512,7 @@ export const TEMPLATES: Template[] = [
           {
             id: arr2,
             type: 'arrow',
-            name: 'Ok 2',
+            name: 'Arrow 2',
             // centred in the 320 px gap between two boxes
             x: 1280,
             y: 540,
@@ -1533,7 +1534,7 @@ export const TEMPLATES: Template[] = [
           {
             id: box3,
             type: 'rectangle',
-            name: 'Adım 3 kutusu',
+            name: 'Step 3 box',
             x: 1600,
             y: 540,
             width: 320,
@@ -1554,7 +1555,7 @@ export const TEMPLATES: Template[] = [
           {
             id: txt3,
             type: 'text',
-            name: 'Bitir',
+            name: 'End',
             x: 1600,
             y: 540,
             width: 320,
@@ -1565,7 +1566,7 @@ export const TEMPLATES: Template[] = [
             strokeWidth: 0,
             opacity: 1,
             zOrder: 7,
-            content: 'Bitir',
+            content: 'End',
             fontSize: 32,
             fontFamily: 'Arial',
             enterTime: 3.2,

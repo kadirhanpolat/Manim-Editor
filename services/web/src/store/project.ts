@@ -719,9 +719,9 @@ const useProjectStore = defineStore('project', {
         vector_components: 'Vector Comp',
         ray: 'Ray',
         coord_point: 'Coord Point',
-        surrounding_rect: 'Çerçeve',
-        underline: 'Altı Çizgi',
-        cross: 'Üstü Çizili',
+        surrounding_rect: 'Frame',
+        underline: 'Underline',
+        cross: 'Strikethrough',
         code: 'Code',
         bar_chart: 'Bar Chart',
       };

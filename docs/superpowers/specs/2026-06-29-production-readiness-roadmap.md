@@ -1,6 +1,6 @@
 # Manim Motion Editor Production Readiness Roadmap
 
-**Date:** 2026-06-29 (last updated 2026-10-04: sections 9-10 done, 12 partly)
+**Date:** 2026-06-29 (last updated 2026-10-05: sections 9-11 done, 12 partly)
 **Status:** Active
 **Purpose:** Turn the current feature-rich editor into a more reliable production tool.
 
@@ -8,7 +8,7 @@
 
 The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
 
-Sections 1-10 below already have implementation notes or shipped work; section 12 is partly done. The remaining planned work is section 11 (localization) and the rest of section 12.
+Sections 1-11 below already have implementation notes or shipped work; section 12 is partly done. The remaining planned work is the rest of section 12.
 
 **2026-10-04 update:** a bug report from real production use (a documentary built through the API) was worked through: seven render-correctness bugs were fixed (see the notes tagged *EDITOR_FINDINGS* below and the README v3.28.0 changelog), the renderer image was repaired, and every CI job on `main` is green again for the first time since June.
 
@@ -273,8 +273,15 @@ The next development stage should not primarily add more object types. The highe
 - User-facing labels follow one clear language policy.
 
 **Implemented so far:**
-- The New Project dialog now renders template names/descriptions in English even when the source template data remains localized.
-- The asset sidebar normalizes the remaining localized shape labels into English at render time.
+- ~~The New Project dialog rendered template names/descriptions in English through a string-matching map, and the asset sidebar normalized localized labels at render time.~~ Replaced on 2026-10-05, see below.
+- **Decision: English-only UI (2026-10-05).** Templates are authored in English (labels, descriptions, object names, text content). The runtime translation layers are deleted:
+  - `TEMPLATE_TEXT_MAP`/`localizeTemplateValue` in `NewProjectDialog.vue`. It deep-walked every string of a new project, mistranslated object names ("Çarpı" → "Cross") and missed every string added since.
+  - `LABEL_MAP` in `AssetSidebar.vue`.
+- The last Turkish strings are translated: annotation default names (Frame/Underline/Strikethrough) and the keyframe tooltips.
+- Two guards now enforce the policy:
+  - `tests/components/ui-language-policy.test.ts` fails on Turkish-specific letters anywhere in `services/web/src` outside comments.
+  - `template-library.test.ts` checks every template string.
+- Animation *content* in other languages (TR/EN text tables for the same scene) is a separate feature request; see the backlog.
 - README render guidance now uses the same English-only language policy as the editor UI.
 - Repaired double/triple-encoded mojibake in `App.vue` (it broke ESLint parsing: 402 `control-character-in-input-stream` errors) and in the original roadmap spec; a repo-wide scan finds no corrupted characters left.
 

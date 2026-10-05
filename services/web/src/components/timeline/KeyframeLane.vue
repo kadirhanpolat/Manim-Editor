@@ -67,8 +67,8 @@
           :style="{ left: kf.time * pps + 'px' }"
           :title="
             `t=${kf.time.toFixed(2)}s  v=${kf.value}` +
-            (kf.pinned ? ' (uçta sabit)' : '') +
-            (isSelected(kf) ? ' (seçili)' : '')
+            (kf.pinned ? ' (pinned to the end)' : '') +
+            (isSelected(kf) ? ' (selected)' : '')
           "
           @click.stop="toggleKf(kf)"
           @contextmenu.prevent="rightClickKf(kf)"
