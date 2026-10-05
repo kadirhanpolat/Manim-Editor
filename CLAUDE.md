@@ -12,7 +12,7 @@ services/audio/      # Python TTS worker (gTTS; Coqui via --profile coqui)
 packages/manim-codegen/  # Shared Manim Python codegen (single source of truth)
 ```
 
-**Status / where to look (2026-10-04):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md` (sections 1-11 done; 12 template quality partly done — visual pass + parity fixes landed, narrative/camera polish open; plus a "Backlog: Feature Requests from Production Use" list). Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All CI jobs green on `main`.
+**Status / where to look (2026-10-05):** active plan = `docs/superpowers/specs/2026-06-29-production-readiness-roadmap.md`. Sections 1-11 are done (9 render isolation, 10 support tooling, 11 English-only UI). Section 12 (template quality) is done except camera polish: there was a visual pass, preview/render parity fixes, the science pack and overlap timing. In its "Backlog: Feature Requests from Production Use", these are done: SRT export, axis_point and the science pack. Still open: Ken Burns preset, timeline object, TR/EN text tables and batch render. Preview-vs-render rules: `docs/superpowers/specs/2026-06-29-preview-render-divergence-matrix.md`. All 5 CI jobs are green on `main` (f18a64b). **Verify template work visually:** render frames in real Manim and compare them with a Playwright screenshot of the preview.
 
 ## Running
 
@@ -80,6 +80,9 @@ npm run format:check   # Prettier (covers .js/.ts/.vue/.json/.css)
 | `services/api/src/queue.ts` | Redis client (`getRedisClient` bounded by `REDIS_CONNECT_TIMEOUT_MS`, offline queue off), `RedisUnavailableError` → 503, `getHealthReport` for `/health`, render/audio job queue helpers |
 | `services/renderer/{worker,safety,history,render_args,isolation}.py` | Render worker + path clamping/process-tree kill, render-history rotation, argv mapping, per-render limits (`run_limited`, `describe_failure` → job `failureReason`). **Every sibling module needs a `COPY` in `services/renderer/Dockerfile`** (`tests/test_dockerfile.py`) |
 | `services/web/src/components/RenderOptionsDialog.vue` + `services/renderer/render_args.py` | Render export options (format/resolution/fps) — zod allowlist in `compiler/validator.ts` (`parseRenderOptions`), fixed-dict argv mapping |
+| `services/web/src/templates/{index,science,stage}.ts` | Template palette (`TEMPLATES`, English-authored). `science.ts` = science pack + `onAxes` (codegen's axes mapping). Geometry/physics locked by `template-library.test.ts` / `science-templates.test.ts` |
+| `services/web/src/export/srt.ts` | SubRip subtitles from voiceover narration (`subtitleCues`/`buildSrt`/`downloadSrt`); File → Export Subtitles |
+| `scripts/support.mjs` + `scripts/lib/support.mjs` | `npm run support -- doctor\|logs\|repair <name>` (also `start.bat doctor\|logs\|repair`); pure logic in `lib/`, tests in `scripts/tests/` |
 | `services/web/src/components/stage/ContextMenu.vue` | Canvas right-click menu (object + empty-canvas variants), calls store actions |
 
 ## Codegen — single source of truth (`@manim/codegen`)

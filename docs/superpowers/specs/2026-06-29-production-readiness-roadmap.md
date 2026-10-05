@@ -1,6 +1,6 @@
 # Manim Motion Editor Production Readiness Roadmap
 
-**Date:** 2026-06-29 (last updated 2026-10-05: sections 9-11 done, 12 partly)
+**Date:** 2026-06-29 (last updated 2026-10-05: sections 1-11 done, 12 done except camera polish)
 **Status:** Active
 **Purpose:** Turn the current feature-rich editor into a more reliable production tool.
 
@@ -8,9 +8,15 @@
 
 The original roadmap and later Wave 1-4 work closed the main feature backlog. The product now has a broad visual editor, many object types, server rendering, render history, export options, strict TypeScript, and browser/API test coverage.
 
-Sections 1-11 below already have implementation notes or shipped work; section 12 is partly done. The remaining planned work is the rest of section 12.
+Sections 1-11 below are done. Section 12 is done except for camera polish. What remains is that, plus the production backlog at the end (Ken Burns, timeline object, TR/EN text tables, batch render).
 
 **2026-10-04 update:** a bug report from real production use (a documentary built through the API) was worked through: seven render-correctness bugs were fixed (see the notes tagged *EDITOR_FINDINGS* below and the README v3.28.0 changelog), the renderer image was repaired, and every CI job on `main` is green again for the first time since June.
+
+**2026-10-05 update:**
+- Shipped sections 9 (render limits), 10 (support tooling) and 11 (English-only UI).
+- Rendered every template in real Manim and compared it with the preview. The parity bugs this exposed are fixed: rotation direction, origin anchoring, angle arcs, dot size, tangents, Riemann opacity, plane grid, axes origin and plot-area anchoring, LaTeX fit, and overlap timing. See the divergence matrix.
+- Added the science pack, SRT export and `axis_point`.
+- Pushed as `f18a64b`; all five CI jobs are green.
 
 The next development stage should not primarily add more object types. The highest-value work is reliability, preview/render trust, large-scene performance, maintainability, startup/support, security, and content quality.
 
@@ -321,18 +327,18 @@ The next development stage should not primarily add more object types. The highe
 
 ## Backlog: Feature Requests from Production Use
 
-These requests came from the same documentary production as the 2026-10 bug report. They are not scheduled: each one adds a new object type or workflow, which the non-goals below defer until sections 9-12 land.
+These requests came from the same documentary production as the 2026-10 bug report. Now that sections 9-12 have landed, they are the next candidates. Each one adds a new object type or workflow.
 
 - ~~**Data point on axes:**~~ Done 2026-10-05.
   - The new `axis_point` object is bound to an axes and placed by its (x, y) value through `Dot(ax.c2p(x, y))`. It has an optional MathTex label and dashed guides (`get_lines_to_point`).
   - The ~12 px shift came from the axis tips. It is fixed separately: the plot area is anchored to the object position.
   - The science templates use the new object.
 - **Scene parameters / language variables:** a text table for TR/EN versions of the same scene, plus the decimal separator (`4{,}55` / `4.55`).
-- **Ken Burns preset** for image objects: slow zoom and pan.
+- **Ken Burns preset** for image objects: slow zoom and pan. Emit it as ONE combined animation (`img.animate.scale(z).move_to(p)`); two parallel `.animate` clips on the same mobject conflict in Manim.
 - **Timeline object:** an axis generated automatically from a list of years and labels.
 - ~~**SRT export** built from the text of voiceover clips.~~ Done 2026-10-05: File → Export Subtitles (.srt) (`export/srt.ts`). A cue starts with its clip (plus the manual offset) and lasts as long as the audio; lines wrap at 42 characters.
 - **Batch render:** render a list of projects in sequence and report the results.
-- **"Science documentary" template pack:** decay curve, isochron, isotope chain, comparison scale.
+- ~~**"Science documentary" template pack:**~~ Done 2026-10-05 (`templates/science.ts`): Radioactive Decay, Isochron Dating, Decay Chain and Scale of Time; see section 12.
 
 ## Recommended Execution Order
 
