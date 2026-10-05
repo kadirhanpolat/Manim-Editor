@@ -124,6 +124,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   trigonometry: 'Trigonometry',
   statistics: 'Statistics',
   programming: 'Programming',
+  science: 'Science',
 };
 
 const ALL_CATEGORIES: Array<'all' | TemplateCategory> = [
@@ -134,6 +135,7 @@ const ALL_CATEGORIES: Array<'all' | TemplateCategory> = [
   'trigonometry',
   'statistics',
   'programming',
+  'science',
 ];
 
 const selectedCategory = ref<'all' | TemplateCategory>('all');

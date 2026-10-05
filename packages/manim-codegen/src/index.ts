@@ -637,7 +637,64 @@ function mergeSimultaneousSteps(steps: GeneratedStep[]): GeneratedStep[] {
     else if (anims.length > 1) out.push(mergedPlayStep(anims));
     i = j;
   }
+  return foldOverlappingSteps(out);
+}
+
+/** An enter/exit animation step that can run inside a shared self.play. */
+const foldable = (s: GeneratedStep) =>
+  s.order !== 1 && (s.anim !== undefined || s.parts !== undefined) && !s.audio;
+
+/**
+ * Staggered enter/exit animations whose windows overlap (B starts while A is
+ * still running) become ONE self.play: each later part is delayed with
+ * Succession(Wait(run_time=offset), …). Sequential plays would each wait for
+ * the previous one and push the rest of the scene back. A clip, an instant
+ * self.add or a voiceover step ends the cluster.
+ */
+function foldOverlappingSteps(steps: GeneratedStep[]): GeneratedStep[] {
+  const out: GeneratedStep[] = [];
+  let i = 0;
+  while (i < steps.length) {
+    const head = steps[i]!;
+    if (!foldable(head)) {
+      out.push(head);
+      i++;
+      continue;
+    }
+    const cluster = [head];
+    let end = head.time + head.dur;
+    let j = i + 1;
+    while (j < steps.length && foldable(steps[j]!) && steps[j]!.time < end - SAME_TIME_EPS) {
+      end = Math.max(end, steps[j]!.time + steps[j]!.dur);
+      cluster.push(steps[j]!);
+      j++;
+    }
+    out.push(cluster.length === 1 ? head : overlapPlayStep(cluster, end));
+    i = j;
+  }
   return out;
+}
+
+/** The parts of a (possibly already merged) step: its animations with own run_times. */
+function stepParts(s: GeneratedStep): string[] {
+  if (s.parts) return s.parts;
+  return [`${s.anim!.slice(0, -1)}, run_time=${s.dur.toFixed(2)})`];
+}
+
+function overlapPlayStep(cluster: GeneratedStep[], end: number): GeneratedStep {
+  const t0 = cluster[0]!.time;
+  const parts = cluster.flatMap((s) => {
+    const off = s.time - t0;
+    return stepParts(s).map((p) =>
+      off < SAME_TIME_EPS ? p : `Succession(Wait(run_time=${off.toFixed(2)}), ${p})`
+    );
+  });
+  return {
+    time: t0,
+    order: cluster[0]!.order,
+    code: `self.play(${parts.join(', ')})`,
+    dur: end - t0,
+  };
 }
 
 function mergedPlayStep(anims: GeneratedStep[]): GeneratedStep {
@@ -646,7 +703,8 @@ function mergedPlayStep(anims: GeneratedStep[]): GeneratedStep {
   const code = sameDur
     ? `self.play(${anims.map((s) => s.anim).join(', ')}${rtOpt(dur)})`
     : `self.play(${anims.map((s) => `${s.anim!.slice(0, -1)}${rtOpt(s.dur)})`).join(', ')})`;
-  return { time: anims[0]!.time, order: anims[0]!.order, code, dur };
+  const parts = anims.map((s) => `${s.anim!.slice(0, -1)}, run_time=${s.dur.toFixed(2)})`);
+  return { time: anims[0]!.time, order: anims[0]!.order, code, dur, parts };
 }
 
 export { objectCode } from './objects.js';

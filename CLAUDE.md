@@ -26,11 +26,11 @@ docker compose --profile coqui up      # + Coqui TTS service
 ## Testing
 
 ```bash
-cd services/web && npm run test:unit    # 871 unit tests (store, components, export, template geometry, characterization snapshots)
+cd services/web && npm run test:unit    # 890 unit tests (store, components, export, template geometry, characterization snapshots)
 cd services/web && npm run test:coverage # same, with v8 coverage report
 cd services/web && npm test             # 122 engine tests (easing, geometry, transform, keyframe) — runs via tsx
 npm test --workspace services/api       # 73 api tests (compiler pipeline + path/scene-name/render-options safety + redis availability/503)
-npm test --workspace packages/manim-codegen  # 57 codegen tests
+npm test --workspace packages/manim-codegen  # 64 codegen tests
 npm run test:scripts                    # 23 support-tool tests (node --test scripts/tests/) — CI node job
 python -m pytest services/renderer/tests -q   # 44 renderer tests (render args, history, path safety, render limits — 3 kernel-enforcement tests Linux-only, Dockerfile COPYs every worker import) — CI python job
 # All must pass before any commit.
@@ -92,7 +92,7 @@ Both services are **thin wrappers** calling `generateScene(project, { resolveAss
 
 `Project` type carries `sections?: Array<{ id: string; time: number; title: string }>` and `sceneDuration?: number` — used by `generateScene` to emit `self.next_section(…)` calls interleaved with animation steps.
 
-**Scene timing (generateScene emit loop):** enter/exit steps that start at the same time (±0.01 s) are folded by `mergeSimultaneousSteps` into ONE `self.play(A, B, …, run_time=d)` (mixed durations → a `run_time` inside each animation; instant `self.add` enters stay separate). Waits are measured from the real `elapsed` clock (Σ waits + run_times — exactly what Manim and the parser accumulate), not the nominal step end, so overlaps don't push later steps back. Voiceover blocks count as `max(clip dur, audio.duration)` (+ manual offset). The tail is `self.wait(max(1, sceneDuration − elapsed))`: it reaches `sceneDuration` when there is room and always holds ≥1 s after the last animation (mirrors the preview's `computedDuration = max(sceneDuration, end + 1)`); without `sceneDuration` it is the legacy `self.wait(1)`. The parser's `expandSimultaneousPlays` splits a multi-animation `self.play(…)` into one sub-play per animation bracketed by NUL-prefixed `SIM_*` marker lines that rewind its clock.
+**Scene timing (generateScene emit loop):** enter/exit steps that start at the same time (±0.01 s) are folded by `mergeSimultaneousSteps` into ONE `self.play(A, B, …, run_time=d)` (mixed durations → a `run_time` inside each animation; instant `self.add` enters stay separate). Then `foldOverlappingSteps` folds STAGGERED enters/exits whose windows overlap into one `self.play(A(run_time=…), Succession(Wait(run_time=Δt), B(run_time=…)), …)` (a clip, instant add or voiceover step ends the cluster; Manim does not show B before its turn — verified). The parser's `expandSimultaneousPlays` turns each `Succession(Wait(o), X)` member into `self.wait(o)` + X inside the SIM bracket. Waits are measured from the real `elapsed` clock (Σ waits + run_times — exactly what Manim and the parser accumulate), not the nominal step end, so overlaps don't push later steps back. Voiceover blocks count as `max(clip dur, audio.duration)` (+ manual offset). The tail is `self.wait(max(1, sceneDuration − elapsed))`: it reaches `sceneDuration` when there is room and always holds ≥1 s after the last animation (mirrors the preview's `computedDuration = max(sceneDuration, end + 1)`); without `sceneDuration` it is the legacy `self.wait(1)`. The parser's `expandSimultaneousPlays` splits a multi-animation `self.play(…)` into one sub-play per animation bracketed by NUL-prefixed `SIM_*` marker lines that rewind its clock.
 
 **Origin anchoring (`ORIGIN_ANCHORED_TYPES`: polygon_free, bezier, brace, angle, vector_components, ray, coord_point):** these are built from points relative to the object's origin, which is what the preview draws around, but Manim's `move_to`/`set_x`/`MoveAlongPath`/rotate/scale use the bounding-box center. Right before `move_to`, codegen emits `n.add(VectorizedPoint(-n.get_corner(DL)), VectorizedPoint(-n.get_corner(UR)))` (mirrors the bbox through the origin → center == origin); the parser skips that line. A new point-built type belongs in the set. `graph` is excluded (Graph.add semantics).
 

@@ -11,6 +11,7 @@ const VALID_CATEGORIES: TemplateCategory[] = [
   'trigonometry',
   'statistics',
   'programming',
+  'science',
 ];
 
 describe('template veri bütünlüğü', () => {

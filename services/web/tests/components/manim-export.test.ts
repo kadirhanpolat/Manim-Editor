@@ -143,6 +143,20 @@ describe('generator/parser — rotation direction', () => {
   });
 });
 
+describe('generator/parser — overlapping staggered entrances', () => {
+  it('round-trips each enter time through the Succession(Wait) form', () => {
+    const starts = [0, 0.4, 0.9, 3];
+    const objs = starts.map((t, i) =>
+      makeObj(`o${i}`, 'square', { enterTime: t, enterAnim: 'fade_in', enterAnimDur: 1 })
+    );
+    const script = generateManimScript(makeProject(objs, []));
+    expect(script).toContain('Succession(Wait(run_time=0.40)');
+    const parsed = parseManimScript(script, SW, SH);
+    expect(parsed.warnings.filter((w) => /Succession|Wait/.test(w))).toEqual([]);
+    expect(parsed.objects.map((o) => o.enterTime)).toEqual(starts);
+  });
+});
+
 describe('generator/parser — axes plot-area anchor', () => {
   it('round-trips corner-origin axes without parser warnings', () => {
     const project = makeProject(

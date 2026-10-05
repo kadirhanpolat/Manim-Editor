@@ -150,8 +150,8 @@ describe('project snapshots', () => {
 import TEMPLATES from '../../src/templates/index.js';
 
 describe('TEMPLATES', () => {
-  it('has 15 entries', () => {
-    expect(TEMPLATES).toHaveLength(15);
+  it('has 19 entries (15 + the science pack)', () => {
+    expect(TEMPLATES).toHaveLength(19);
   });
 
   it('each non-blank template returns a valid project with required object fields', () => {

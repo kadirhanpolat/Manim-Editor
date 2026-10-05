@@ -412,6 +412,9 @@ export interface GeneratedStep {
   /** Bare animation expression (e.g. `FadeIn(a)`) for enter/exit steps that
    *  may be merged with others starting at the same time into one self.play. */
   anim?: string;
+  /** For a merged same-time step: its animations, each with its own run_time,
+   *  so a later overlapping step can fold them into one self.play. */
+  parts?: string[];
 }
 
 export interface GenerateOptions {

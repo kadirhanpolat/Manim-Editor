@@ -268,8 +268,12 @@ function expandSimultaneousPlays(lines: string[]): string[] {
     const kwargs = args.filter((a) => /^\w+\s*=/.test(a) && !/^run_time\s*=/.test(a));
     const sharedRt = args.find((a) => /^run_time\s*=/.test(a))?.replace(/^run_time\s*=\s*/, '');
     out.push(SIM_BEGIN);
-    anims.forEach((anim, i) => {
+    anims.forEach((part, i) => {
       if (i > 0) out.push(SIM_NEXT);
+      // Staggered member: Succession(Wait(run_time=o), X) starts o s into the play.
+      const delayed = part.match(/^Succession\(Wait\(run_time=([\d.]+)\),\s*(.*)\)$/);
+      if (delayed) out.push(`self.wait(${delayed[1]})`);
+      const anim = delayed ? delayed[2]! : part;
       const own = anim.match(/^(.*),\s*run_time=([\d.]+)\)$/);
       const expr = own ? `${own[1]})` : anim;
       const rt = own ? own[2] : (sharedRt ?? '1'); // Manim's default run_time is 1

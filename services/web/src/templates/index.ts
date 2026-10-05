@@ -1,5 +1,7 @@
 import { uid } from '../store/project.js';
 import type { SceneObject, Clip } from '@manim/codegen';
+import { STAGE } from './stage.js';
+import { SCIENCE_TEMPLATES } from './science.js';
 
 export type TemplateCategory =
   | 'general'
@@ -7,7 +9,8 @@ export type TemplateCategory =
   | 'linear_algebra'
   | 'trigonometry'
   | 'statistics'
-  | 'programming';
+  | 'programming'
+  | 'science';
 
 /** A wider clip type that allows extra template-only fields (overshoot, morphQuality, …). */
 type TemplateClip = Clip & Record<string, unknown>;
@@ -34,22 +37,6 @@ export interface Template {
   category: TemplateCategory;
   project: (() => TemplateProject) | null;
 }
-
-const STAGE = {
-  width: 1920,
-  height: 1080,
-  backgroundColor: '#0f0f0f',
-  backgroundOpacity: 1,
-  backgroundImage: null,
-  gridVisible: true,
-  gridSize: 8,
-  gridColor: '#ffffff',
-  gridOpacity: 0.12,
-  snapEnabled: true,
-  snapToGrid: true,
-  snapToCenter: true,
-  snapToObjects: false,
-};
 
 export const TEMPLATES: Template[] = [
   {
@@ -1581,6 +1568,7 @@ export const TEMPLATES: Template[] = [
       };
     },
   },
+  ...SCIENCE_TEMPLATES,
 ];
 
 export default TEMPLATES;

@@ -309,7 +309,15 @@ The next development stage should not primarily add more object types. The highe
   - The `algo_steps` arrows started inside the boxes.
   - The `matrix_product` `\cdot` was blown up by fit-to-box.
   - `template-library.test.ts` now locks these properties (geometry, graphs inside axes, text `content`, layout).
-- Still open: narrative timing and camera polish, English template copy (section 11), and a "science documentary" template pack suggested by the production bug report.
+- **Science-documentary pack (2026-10-05):** four templates in a new Science category, in `templates/science.ts`.
+  - Radioactive Decay: N/N₀ = 2^(−t/T½) with markers for ½, ¼ and ⅛.
+  - Isochron Dating: Rb–Sr samples, then the isochron, whose slope is e^{λt} − 1.
+  - Decay Chain: ²³⁸U →α ²³⁴Th →β⁻ ²³⁴Pa →β⁻ ²³⁴U, with half-lives.
+  - Scale of Time: log₁₀ years from a human life to the age of the Earth.
+  - Values are placed with `onAxes`, the same mapping codegen uses. `science-templates.test.ts` checks the physics (conserved A/Z, exact decay fractions, line fit, log positions) and the geometry.
+- **Narrative timing:** staggered entrances that overlap now play as one `self.play` with `Succession(Wait)` offsets. Every template's render length now equals its `sceneDuration`; before, the decay chain stretched from 10 s to 12.5 s.
+- **Preview fidelity:** NumberPlane grid, axes origin, graphs over their own range, LaTeX box fill and LaTeX glyphs. Values placed on axes land within 0.04 px of `c2p`. See the divergence matrix.
+- Still open: camera polish and any further template pack.
 
 ## Backlog: Feature Requests from Production Use
 
